@@ -5,9 +5,9 @@ import {
   distortedRow,
   distortionHint,
   isDistorted,
-} from "../../src/boards/distortion";
-import { threeDMenuModes } from "../../src/boards/catalog";
-import { hasMode } from "../../src/boards/presets";
+} from "../../src/modes/distortion";
+import { threeDMenuModes } from "../../src/modes/catalog";
+import { hasMode } from "../../src/modes/presets";
 
 // `data/distortion.json` is measured by `scripts/difficulty/distortion.py`.
 // What is pinned here is how the app reads it and the shape of the list, not

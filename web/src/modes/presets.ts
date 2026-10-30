@@ -1,6 +1,12 @@
 // Port of minesweeper/boards/presets.py's build entry point, reading the same
 // data/presets.json. A builder-name → function dispatch mirrors Python's
 // _JSON_BUILDERS. M1 ported the flat regular modes; M2 adds the solids.
+//
+// This is the game's side of the boards, not the geometry's: a preset is a
+// board's size *and* its mine count. The args in presets.json are positional
+// for the Python builders, which take the mine count; the builders in
+// boards/ do not — the geometry knows nothing of mines — so `mineArg` names
+// which arg it is, and it is split out here (`presetMineCount`).
 import presetsData from "@data/presets.json";
 import windowsData from "@data/windows.json";
 import {
@@ -14,8 +20,6 @@ import {
   pentaSpiral6Board,
   pentaSpiral7Board,
   phyllotaxisBoard,
-} from "./aperiodic";
-import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
   disdyakisDodecahedronBoard,
@@ -29,27 +33,22 @@ import {
   triakisIcosahedronBoard,
   triakisOctahedronBoard,
   triakisTetrahedronBoard,
-} from "./catalan";
-import {
   cuboctahedronBoard,
   rhombicosidodecahedronSplitBoard,
   snubCubeBoard,
   snubDodecahedronSplitBoard,
   truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
-} from "./archimedean";
-import {
   carpetBoard,
   chairBoard,
   gosperBoard,
   pentaflakeBoard,
   sphinxBoard,
-} from "./fractal";
-import { hurwitzBoard } from "./hurwitz";
-import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "./hyperbolic";
-import { DIFFICULTIES } from "./catalog";
-import type { AnyBoard } from "./core";
-import {
+  hurwitzBoard,
+  binaryBoard,
+  hyperbolicBoard,
+  hyperbolicUniformBoard,
+  type AnyBoard,
   brickCubeBoard,
   c180Board,
   gp21Board,
@@ -64,9 +63,7 @@ import {
   steppedPyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
-} from "./solids";
-import { solidCubeBoard } from "./volume";
-import {
+  solidCubeBoard,
   archimedeanBoard,
   hexBoard,
   hexhexBoard,
@@ -76,8 +73,6 @@ import {
   squareDiamondBoard,
   triangleBoard,
   triangleGridBoard,
-} from "./tilings";
-import {
   archCylinderBoard,
   archKleinBoard,
   archMobiusBoard,
@@ -104,7 +99,8 @@ import {
   doubleTorusHexBoard,
   doubleTorusTriangleBoard,
   torusTriangleBoard,
-} from "./surfaces";
+} from "../boards";
+import { DIFFICULTIES } from "./catalog";
 
 // The Archimedean/Laves builders take the tiling key as their first argument,
 // so a preset's args are a mix of that leading string and numbers. The dispatch
@@ -126,7 +122,7 @@ const BUILDERS: Record<string, Builder> = {
   sphere_square_board: sphereSquareBoard,
   sphere_triangle_board: sphereTriangleBoard,
   // the Archimedean solids cut into boards (boards/archimedean.ts), duals of
-  // their Catalan solids; (mineCount, frequency) like those. The three
+  // their Catalan solids; (frequency) like those. The three
   // icosahedral ones take frequency 0 as well, the solid uncut.
   cuboctahedron_board: cuboctahedronBoard,
   truncated_octahedron_board: truncatedOctahedronBoard,
@@ -148,7 +144,7 @@ const BUILDERS: Record<string, Builder> = {
   stepped_bipyramid_board: steppedBipyramidBoard,
   stepped_pyramid_board: steppedPyramidBoard,
   // The thirteen Catalan solids (boards/catalan.ts). Every one takes
-  // (mineCount, frequency), the face subdivision being their only size knob.
+  // (frequency), the face subdivision being their only size knob.
   triakis_tetrahedron_board: triakisTetrahedronBoard,
   rhombic_dodecahedron_board: rhombicDodecahedronBoard,
   triakis_octahedron_board: triakisOctahedronBoard,
@@ -232,6 +228,8 @@ const VARIANT_BUILDERS = new Set([
 
 interface PresetSpec {
   builder: string;
+  // the index of the mine count among `args` (see the top of this file)
+  mineArg: number;
   args: Record<string, Arg[]>;
 }
 
@@ -309,10 +307,15 @@ export function presetBoard(mode: string, difficulty: string): AnyBoard {
   return variant ? builder(...args, 0) : builder(...args);
 }
 
+/** The mine count a mode's preset plays at this difficulty. */
+export function presetMineCount(mode: string, difficulty: string): number {
+  return presetBuilder(mode, difficulty).mineCount;
+}
+
 function presetBuilder(
   mode: string,
   difficulty: string,
-): { builder: Builder; args: Arg[]; variant: boolean } {
+): { builder: Builder; args: Arg[]; mineCount: number; variant: boolean } {
   const spec = PRESETS[mode];
   if (!spec) throw new Error(`unknown mode ${mode}`);
   if (!DIFFICULTIES.includes(difficulty)) {
@@ -321,7 +324,12 @@ function presetBuilder(
   const builder = BUILDERS[spec.builder];
   const args = spec.args[difficulty];
   if (!builder || !args) throw new Error(`no preset for ${mode}/${difficulty}`);
-  return { builder, args, variant: VARIANT_BUILDERS.has(spec.builder) };
+  return {
+    builder,
+    args: args.filter((_, i) => i !== spec.mineArg),
+    mineCount: Number(args[spec.mineArg]),
+    variant: VARIANT_BUILDERS.has(spec.builder),
+  };
 }
 
 /**

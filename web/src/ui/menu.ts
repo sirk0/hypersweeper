@@ -1,14 +1,14 @@
 import { screens } from "../config/screens";
-import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../boards/catalog";
+import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../modes/catalog";
 import {
   blockedExplanation,
   fairnessHint,
   modeFairness,
   type Fairness,
-} from "../boards/fairness";
-import { distortedDifficulties, distortionHint, isDistorted } from "../boards/distortion";
-import { hasMode } from "../boards/presets";
-import { randomMode, type RandomKind } from "../boards/randomBoard";
+} from "../modes/fairness";
+import { distortedDifficulties, distortionHint, isDistorted } from "../modes/distortion";
+import { hasMode } from "../modes/presets";
+import { randomMode, type RandomKind } from "../modes/randomBoard";
 import { clearAchievements, loadProgress, type Progress } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
 import { clearCloudRecord, syncCloudRecord } from "../cloudRecord";
@@ -1316,7 +1316,7 @@ export class Menu {
     }
   }
 
-  /** The mark on a board its surface draws out of shape (boards/distortion.ts):
+  /** The mark on a board its surface draws out of shape (modes/distortion.ts):
    * a "Distorted" pill on the desktop card, a hint line and — unless the
    * fairness mark already holds the corner — a ⚠ on the phone row. Unlike the
    * fairness mark it is per difficulty, since most of these boards are fine
@@ -1529,7 +1529,7 @@ export class Menu {
       // still in the pool -- they are real boards and some players like them
       // -- but a tap meant to produce a nice surprise should not land on one
       // as often as on a board that can actually be solved
-      // (boards/randomBoard.ts, shared with the record window's New board).
+      // (modes/randomBoard.ts, shared with the record window's New board).
       const mode = randomMode(key, this.settings.difficulty);
       if (mode) this.onSelect({ mode, difficulty: this.settings.difficulty, random: true });
     });

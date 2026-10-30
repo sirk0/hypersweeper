@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard } from "../../src/modes/presets";
 import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
 import {
   binaryBoard,
@@ -12,7 +12,7 @@ import {
   type WythoffOp,
 } from "../../src/boards/hyperbolic";
 import { classifyShapes, corners } from "../../src/render/shapePalette";
-import { HYPERBOLIC_MODES } from "../../src/boards/catalog";
+import { HYPERBOLIC_MODES } from "../../src/modes/catalog";
 
 /** The first `shells` shells of a grown tiling, each face named by where its
  * corners are rather than by its index -- the uniform tilings number their
@@ -65,7 +65,7 @@ describe("the hyperbolic boards", () => {
 
   it("give an inner cell p(q - 2) neighbours", () => {
     for (const [p, q] of TILINGS) {
-      const board = hyperbolicBoard(p, q, 12, 1);
+      const board = hyperbolicBoard(p, q, 12);
       const degrees = [...board.adjacency.values()].map((n) => n.length);
       expect(Math.max(...degrees), `{${p},${q}}`).toBe(p * (q - 2));
       expect(board.adjacency.get("0")!.length).toBe(p * (q - 2));
@@ -89,7 +89,7 @@ describe("the hyperbolic boards", () => {
     // draws them at every size and bent by their arcs, but one tiling is one
     // colour. Without the mask a heptagon's 21 points read as a 21-gon.
     for (const [p, q] of TILINGS) {
-      const board = hyperbolicBoard(p, q, 15, 1);
+      const board = hyperbolicBoard(p, q, 15);
       const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
       const kinds = new Set([...tones.values()].map((t) => JSON.stringify(t)));
       expect(kinds.size, `{${p},${q}}`).toBe(1);
@@ -101,7 +101,7 @@ describe("the hyperbolic boards", () => {
   });
 
   it("sit the central polygon in the middle of the board", () => {
-    const board = hyperbolicBoard(7, 3, 9, 1);
+    const board = hyperbolicBoard(7, 3, 9);
     const centre = corners(board.polygons.get("0")!, board.cornerMask!.get("0")!);
     const mx = centre.reduce((s, v) => s + v[0]!, 0) / centre.length;
     const my = centre.reduce((s, v) => s + v[1]!, 0) / centre.length;
@@ -111,7 +111,7 @@ describe("the hyperbolic boards", () => {
 
   it("centre a triangle tiling on a vertex, its q triangles round it", () => {
     for (const q of [7, 8]) {
-      const board = hyperbolicBoard(3, q, 9, 1);
+      const board = hyperbolicBoard(3, q, 9);
       for (let cell = 0; cell < q; cell++) {
         const hit = board.polygons
           .get(String(cell))!
@@ -142,7 +142,7 @@ describe("the hyperbolic boards", () => {
       [5, 3],
       [3, 6],
     ] as const) {
-      expect(() => hyperbolicBoard(p, q, 3, 1)).toThrow();
+      expect(() => hyperbolicBoard(p, q, 3)).toThrow();
     }
   });
 });
@@ -192,7 +192,7 @@ describe("the uniform hyperbolic boards", () => {
 
   it("give an inner tile the neighbours its shape has", () => {
     for (const [p, q, op, config] of UNIFORM) {
-      const board = hyperbolicUniformBoard(p, q, op, 30, 1);
+      const board = hyperbolicUniformBoard(p, q, op, 30);
       const most = new Map<number, number>();
       for (const [cell, poly] of board.polygons) {
         const n = corners(poly, board.cornerMask!.get(cell)).length;
@@ -215,7 +215,7 @@ describe("the uniform hyperbolic boards", () => {
 
   it("colour one class per side count, and keep the central face in the middle", () => {
     for (const [p, q, op, config] of UNIFORM) {
-      const board = hyperbolicUniformBoard(p, q, op, 20, 1);
+      const board = hyperbolicUniformBoard(p, q, op, 20);
       const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
       const sides = new Set([...tones.values()].map((t) => t.sides));
       expect([...sides].sort((a, b) => a - b), config).toEqual(Object.keys(degrees(config)).map(Number));
@@ -247,13 +247,13 @@ describe("the binary tiling", () => {
       }, 0);
       expect(area / (board.width * board.height)).toBeCloseTo(1, 9);
     }
-    expect(binaryBoard(2, 7, 0).adjacency.size).toBe(254);
-    expect(binaryBoard(3, 5, 0).adjacency.size).toBe(93);
+    expect(binaryBoard(2, 7).adjacency.size).toBe(254);
+    expect(binaryBoard(3, 5).adjacency.size).toBe(93);
   });
 
   it("gives an interior tile 2 beside, 4 below and 2 above", () => {
     const levels = 7;
-    const board = binaryBoard(2, levels, 0, 2 ** (levels - 1));
+    const board = binaryBoard(2, levels, 2 ** (levels - 1));
     let checked = 0;
     for (const [cell, others] of board.adjacency) {
       const [row, j] = cell.split(",").map(Number) as [number, number];
@@ -276,7 +276,7 @@ describe("the binary tiling", () => {
   });
 
   it("colours every cell as one four-sided shape, at every size", () => {
-    const board = binaryBoard(2, 6, 0);
+    const board = binaryBoard(2, 6);
     const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
     const kinds = new Set([...tones.values()].map((t) => JSON.stringify(t)));
     expect(kinds.size).toBe(1);
@@ -284,7 +284,7 @@ describe("the binary tiling", () => {
   });
 
   it("puts the ideal line one bottom row below the board", () => {
-    const board = binaryBoard(2, 5, 0, 320);
+    const board = binaryBoard(2, 5, 320);
     // bottom-row tiles are 320 / 16 = 20px, and the board ends one of them
     // above the line y = 0
     expect(board.halfPlane).toEqual({ boundary: board.height + 20, maxZoom: 16 });

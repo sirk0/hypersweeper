@@ -1,13 +1,13 @@
 import { screens } from "../config/screens";
-import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../boards/catalog";
+import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../modes/catalog";
 import {
   blockedExplanation,
   fairnessHint,
   modeFairness,
   type Fairness,
-} from "../boards/fairness";
-import { distortedDifficulties, distortionHint, isDistorted } from "../boards/distortion";
-import { randomMode, type RandomKind } from "../boards/randomBoard";
+} from "../modes/fairness";
+import { distortedDifficulties, distortionHint, isDistorted } from "../modes/distortion";
+import { randomMode, type RandomKind } from "../modes/randomBoard";
 import { clearAchievements, loadProgress, type Progress } from "../achievements";
 import { clearBestTimes } from "../leaderboard";
 import { clearCloudRecord, syncCloudRecord } from "../cloudRecord";

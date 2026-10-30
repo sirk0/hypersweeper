@@ -19,16 +19,21 @@ import {
   type IconVariant,
   type ShapeTone,
 } from "../render/shapePalette";
-import { ARCH_TILINGS, type ArchTemplate, archTemplate, templateCells } from "../boards/tilings";
 import {
+  ARCH_TILINGS,
+  type ArchTemplate,
+  archTemplate,
+  templateCells,
   placePoint,
   substitutionPlacements,
   SUBSTITUTIONS,
-} from "../boards/fractal";
-import { CLOSED_SURFACES, gcDisc, SURFACE_MODES } from "../boards/hurwitz";
-import { binaryBoard, hyperbolicBoard, hyperbolicUniformBoard } from "../boards/hyperbolic";
-import type { WythoffOp } from "../boards/hyperbolic";
-import {
+  CLOSED_SURFACES,
+  gcDisc,
+  SURFACE_MODES,
+  binaryBoard,
+  hyperbolicBoard,
+  hyperbolicUniformBoard,
+  type WythoffOp,
   ammannBeenkerBoard,
   brickRingsBoard,
   brickRingsTiles,
@@ -40,8 +45,6 @@ import {
   phyllotaxisBoard,
   spectreBoard,
   z7ToXy,
-} from "../boards/aperiodic";
-import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
   disdyakisDodecahedronBoard,
@@ -55,8 +58,6 @@ import {
   triakisIcosahedronBoard,
   triakisOctahedronBoard,
   triakisTetrahedronBoard,
-} from "../boards/catalan";
-import {
   brickCubeBoard,
   c180Board,
   gp21Board,
@@ -71,16 +72,12 @@ import {
   steppedPyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
-} from "../boards/solids";
-import {
   cuboctahedronBoard,
   rhombicosidodecahedronSplitBoard,
   snubCubeBoard,
   snubDodecahedronSplitBoard,
   truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
-} from "../boards/archimedean";
-import {
   boyBoard,
   cylinderBoard,
   doubleTorusBoard,
@@ -89,12 +86,17 @@ import {
   projectiveBoard,
   torusBoard,
   trefoilBoard,
-} from "../boards/surfaces";
-import { solidCubeBoard } from "../boards/volume";
-import { FRACTAL_MODES, SHAPED_MODES, surfaceOf } from "../boards/catalog";
-import { hasMode, presetBoard } from "../boards/presets";
+  solidCubeBoard,
+  cid,
+  isBoard3D,
+  newellNormal,
+  type Board,
+  type Board3D,
+  type Vec3,
+} from "../boards";
+import { FRACTAL_MODES, SHAPED_MODES, surfaceOf } from "../modes/catalog";
+import { hasMode, presetBoard } from "../modes/presets";
 import { DOMAINS } from "./backgroundPattern";
-import { cid, isBoard3D, newellNormal, type Board, type Board3D, type Vec3 } from "../boards/core";
 
 const D = 100;
 const C = D / 2;
@@ -672,56 +674,56 @@ type V3 = readonly [number, number, number];
 // Built at the easy preset's parameters (data/presets.json), so an icon has as
 // many cells as the board a tap on that row opens.
 const SOLID_BUILDERS: Record<string, () => Board3D> = {
-  sphere: () => sphereBoard(0),
-  gp21: () => gp21Board(0),
-  c180: () => c180Board(0),
-  spheretri: () => sphereTriangleBoard(0),
-  spheresquare: () => sphereSquareBoard(0),
-  tetraframe: () => tetrahedronFrameBoard(0, 2),
+  sphere: () => sphereBoard(),
+  gp21: () => gp21Board(),
+  c180: () => c180Board(),
+  spheretri: () => sphereTriangleBoard(),
+  spheresquare: () => sphereSquareBoard(),
+  tetraframe: () => tetrahedronFrameBoard(2),
   // The three solids the small icon draws as a symbol rather than a board — a
   // fanned triangle and two isometric boxes, which is what fits in 38px. A card
   // has room for the real thing, so they are built here for `previewIcon`;
   // `draw` still routes them to their hand-drawn branches.
-  tetrahedron: () => tetrahedronBoard(0, 5),
-  cube: () => cubeBoard(4, 0),
-  cubeframe: () => cubeFrameBoard(3, 1, 0),
-  octahedron: () => octahedronBoard(0, 3),
+  tetrahedron: () => tetrahedronBoard(5),
+  cube: () => cubeBoard(4),
+  cubeframe: () => cubeFrameBoard(3, 1),
+  octahedron: () => octahedronBoard(3),
 
-  icosahedron: () => icosahedronBoard(0, 2),
-  dodecahedron: () => dodecahedronBoard(0, 1),
-  steppedbipyramid: () => steppedBipyramidBoard(7, 4, 0),
-  steppedpyramid: () => steppedPyramidBoard(5, 3, 0),
+  icosahedron: () => icosahedronBoard(2),
+  dodecahedron: () => dodecahedronBoard(1),
+  steppedbipyramid: () => steppedBipyramidBoard(7, 4),
+  steppedpyramid: () => steppedPyramidBoard(5, 3),
   // the cube of cubes at its easy size: four sheets of sixteen, which is the
   // board itself and about the density of a brick cube's icon
-  cube3d: () => solidCubeBoard(4, 0),
+  cube3d: () => solidCubeBoard(4),
   // the four brick cubes, at their own easy block (or ring) counts
-  cubestackedbond: () => brickCubeBoard("stackedbond", 3, 0),
-  cubebasketweave: () => brickCubeBoard("basketweave", 3, 0),
-  cubebasketweave3: () => brickCubeBoard("basketweave3", 2, 0),
-  cubebrickrings: () => brickCubeBoard("brickrings", 3, 0),
+  cubestackedbond: () => brickCubeBoard("stackedbond", 3),
+  cubebasketweave: () => brickCubeBoard("basketweave", 3),
+  cubebasketweave3: () => brickCubeBoard("basketweave3", 2),
+  cubebrickrings: () => brickCubeBoard("brickrings", 3),
   // The thirteen Catalan solids, at their own easy frequencies. There is no
   // drawing of a disdyakis triacontahedron a reader could tell from a pentakis
   // dodecahedron, so every one of these is the real board.
-  triakistetra: () => triakisTetrahedronBoard(0, 3),
-  rhombicdodeca: () => rhombicDodecahedronBoard(0, 3),
-  triakisocta: () => triakisOctahedronBoard(0, 2),
-  tetrakishexa: () => tetrakisHexahedronBoard(0, 2),
-  deltoidalicositetra: () => deltoidalIcositetrahedronBoard(0, 2),
-  pentagonalicositetra: () => pentagonalIcositetrahedronBoard(0, 1),
-  disdyakisdodeca: () => disdyakisDodecahedronBoard(0, 1),
-  rhombictriaconta: () => rhombicTriacontahedronBoard(0, 2),
-  triakisicosa: () => triakisIcosahedronBoard(0, 2),
-  pentakisdodeca: () => pentakisDodecahedronBoard(0, 1),
-  deltoidalhexeconta: () => deltoidalHexecontahedronBoard(0, 1),
-  disdyakistriaconta: () => disdyakisTriacontahedronBoard(0, 1),
+  triakistetra: () => triakisTetrahedronBoard(3),
+  rhombicdodeca: () => rhombicDodecahedronBoard(3),
+  triakisocta: () => triakisOctahedronBoard(2),
+  tetrakishexa: () => tetrakisHexahedronBoard(2),
+  deltoidalicositetra: () => deltoidalIcositetrahedronBoard(2),
+  pentagonalicositetra: () => pentagonalIcositetrahedronBoard(1),
+  disdyakisdodeca: () => disdyakisDodecahedronBoard(1),
+  rhombictriaconta: () => rhombicTriacontahedronBoard(2),
+  triakisicosa: () => triakisIcosahedronBoard(2),
+  pentakisdodeca: () => pentakisDodecahedronBoard(1),
+  deltoidalhexeconta: () => deltoidalHexecontahedronBoard(1),
+  disdyakistriaconta: () => disdyakisTriacontahedronBoard(1),
   // The Archimedean solids cut into boards, flat-faced like the Catalan ones,
   // at their own easy frequencies.
-  cubocta: () => cuboctahedronBoard(0, 2),
-  truncocta: () => truncatedOctahedronBoard(0, 2),
-  snubcube: () => snubCubeBoard(0, 2),
-  rhombicosidodecasplit: () => rhombicosidodecahedronSplitBoard(0, 0),
-  truncicosidodecasplit: () => truncatedIcosidodecahedronSplitBoard(0, 0),
-  snubdodecsplit: () => snubDodecahedronSplitBoard(0, 0),
+  cubocta: () => cuboctahedronBoard(2),
+  truncocta: () => truncatedOctahedronBoard(2),
+  snubcube: () => snubCubeBoard(2),
+  rhombicosidodecasplit: () => rhombicosidodecahedronSplitBoard(0),
+  truncicosidodecasplit: () => truncatedIcosidodecahedronSplitBoard(0),
+  snubdodecsplit: () => snubDodecahedronSplitBoard(0),
   // The flat manifolds in squares, at their easy sizes: the wrapped lattice
   // itself, every cell of the board a quad on the icon (see SURFACE_ICONS).
   // Two are the exception. The trefoil is at its medium size: the easy knot's
@@ -729,14 +731,14 @@ const SOLID_BUILDERS: Record<string, () => Board3D> = {
   // knot draws as a chain of kinks. Boy's surface is at its hard size: the
   // easy board's 75 cells are too coarse for its lobes and funnel to read at
   // all, and the surface is a lump of a few dozen bent squares.
-  mobius: () => mobiusBoard(14, 6, 0),
-  cylinder: () => cylinderBoard(16, 5, 0),
-  torus: () => torusBoard(10, 8, 0, 0.38),
-  trefoil: () => trefoilBoard(32, 8, 0, 0.8),
-  klein: () => kleinBoard(10, 8, 0, 1.15),
-  projective: () => projectiveBoard(5, 0),
-  boy: () => boyBoard(13, 0),
-  doubletorus: () => doubleTorusBoard(8, 8, 0, 0.38),
+  mobius: () => mobiusBoard(14, 6),
+  cylinder: () => cylinderBoard(16, 5),
+  torus: () => torusBoard(10, 8, 0.38),
+  trefoil: () => trefoilBoard(32, 8, 0.8),
+  klein: () => kleinBoard(10, 8, 1.15),
+  projective: () => projectiveBoard(5),
+  boy: () => boyBoard(13),
+  doubletorus: () => doubleTorusBoard(8, 8, 0.38),
 };
 
 /** The thirteen Catalan solids, drawn as the real board in projection like the
@@ -1694,7 +1696,7 @@ function draw(rawKey: string): string[] {
     // the binary tiling's top three rows, two tiles, four and eight: each row
     // half the width of the one above, the top row lighter. Three, because the
     // fourth's sixteen are already too narrow to read at row size.
-    const board = binaryBoard(2, 3, 0, 1);
+    const board = binaryBoard(2, 3, 1);
     const sc = (d * 0.9) / board.width;
     const ox = (d - board.width * sc) / 2;
     const oy = (d - board.height * sc) / 2;
@@ -1718,7 +1720,7 @@ function draw(rawKey: string): string[] {
     // the innermost ring of hexagons, each drawn as its two pentagons: the n
     // that meet at the centre and the n of the odd wedges offset one side out,
     // the half with the 360/n corner lighter
-    const board = pentaSpiralBoard(Number(key.slice("pentaspiral".length)), 1, 0, null, 1);
+    const board = pentaSpiralBoard(Number(key.slice("pentaspiral".length)), 1, null, 1);
     const cells = [...board.polygons];
     const xs = cells.flatMap(([, poly]) => poly.map((p) => p[0]));
     const ys = cells.flatMap(([, poly]) => poly.map((p) => p[1]));
@@ -1965,19 +1967,19 @@ function klaassenSeed(board: Board): P {
 const SPIRAL = { centre: symmetryCentre, tiles: 60 } as const;
 
 const PATCH_BOARDS: Record<string, PatchBoard> = {
-  penrose: { build: () => penroseBoard(5, 0, 437.727, null) },
-  kitedart: { build: () => kiteDartBoard(5, 0, 437.727, null) },
-  ammannbeenker: { build: () => ammannBeenkerBoard(3, 0, 35.891, null) },
-  spectre: { build: () => spectreBoard(3, 0, null, 14.361) },
-  phyllotaxis: { build: () => phyllotaxisBoard(5, 0, null, 22.907), ...SPIRAL },
-  klaassen: { build: () => klaassenBoard(3, 0, null, 29.521), ...SPIRAL, centre: klaassenSeed },
-  pentaspiral5: { build: () => pentaSpiralBoard(5, 4, 0, null, 10.85), ...SPIRAL },
-  pentaspiral6: { build: () => pentaSpiralBoard(6, 4, 0, null, 11.389), ...SPIRAL },
-  pentaspiral7: { build: () => pentaSpiralBoard(7, 3, 0, null, 12.097), ...SPIRAL },
+  penrose: { build: () => penroseBoard(5, 437.727, null) },
+  kitedart: { build: () => kiteDartBoard(5, 437.727, null) },
+  ammannbeenker: { build: () => ammannBeenkerBoard(3, 35.891, null) },
+  spectre: { build: () => spectreBoard(3, null, 14.361) },
+  phyllotaxis: { build: () => phyllotaxisBoard(5, null, 22.907), ...SPIRAL },
+  klaassen: { build: () => klaassenBoard(3, null, 29.521), ...SPIRAL, centre: klaassenSeed },
+  pentaspiral5: { build: () => pentaSpiralBoard(5, 4, null, 10.85), ...SPIRAL },
+  pentaspiral6: { build: () => pentaSpiralBoard(6, 4, null, 11.389), ...SPIRAL },
+  pentaspiral7: { build: () => pentaSpiralBoard(7, 3, null, 12.097), ...SPIRAL },
   // Cropped, not whole: the rings are a course of bricks turning a quarter at
   // each remove from the middle, which is what the crop catches — a whole ring
   // block shrunk into the card is just a brick wall.
-  brickrings: { build: () => brickRingsBoard(8, 0, 27) },
+  brickrings: { build: () => brickRingsBoard(8, 27) },
   // The fractals and the shaped boards: the easy board itself, whole. A
   // fractal's picture is the one tile grown into itself, which a crop of a
   // deeper patch loses; a shaped board *is* a regular tiling cut to an
@@ -1991,15 +1993,15 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   ),
   // Whole: the disc is the picture -- the tiles shrinking toward a rim they
   // never reach is what a hyperbolic tiling looks like.
-  hyperbolic93: { build: () => hyperbolicBoard(9, 3, 11, 0, 100), whole: true },
-  hyperbolic83: { build: () => hyperbolicBoard(8, 3, 13, 0, 100), whole: true },
-  hyperbolic73: { build: () => hyperbolicBoard(7, 3, 16, 0, 100), whole: true },
-  hyperbolic74: { build: () => hyperbolicBoard(7, 4, 14, 0, 100), whole: true },
-  hyperbolic64: { build: () => hyperbolicBoard(6, 4, 14, 0, 100), whole: true },
-  hyperbolic54: { build: () => hyperbolicBoard(5, 4, 18, 0, 100), whole: true },
-  hyperbolic55: { build: () => hyperbolicBoard(5, 5, 15, 0, 100), whole: true },
-  hyperbolic45: { build: () => hyperbolicBoard(4, 5, 21, 0, 100), whole: true },
-  hyperbolic46: { build: () => hyperbolicBoard(4, 6, 17, 0, 100), whole: true },
+  hyperbolic93: { build: () => hyperbolicBoard(9, 3, 11, 100), whole: true },
+  hyperbolic83: { build: () => hyperbolicBoard(8, 3, 13, 100), whole: true },
+  hyperbolic73: { build: () => hyperbolicBoard(7, 3, 16, 100), whole: true },
+  hyperbolic74: { build: () => hyperbolicBoard(7, 4, 14, 100), whole: true },
+  hyperbolic64: { build: () => hyperbolicBoard(6, 4, 14, 100), whole: true },
+  hyperbolic54: { build: () => hyperbolicBoard(5, 4, 18, 100), whole: true },
+  hyperbolic55: { build: () => hyperbolicBoard(5, 5, 15, 100), whole: true },
+  hyperbolic45: { build: () => hyperbolicBoard(4, 5, 21, 100), whole: true },
+  hyperbolic46: { build: () => hyperbolicBoard(4, 6, 17, 100), whole: true },
   hyperbolic37: { build: () => hyperbolicDisc("hyperbolic37", 16, 100), whole: true },
   hyperbolic38: { build: () => hyperbolicDisc("hyperbolic38", 14, 100), whole: true },
   hyperbolic667: { build: () => hyperbolicDisc("hyperbolic667", 18, 100), whole: true },
@@ -2026,7 +2028,7 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   hyperbolic669: { build: () => hyperbolicDisc("hyperbolic669", 11, 100), whole: true },
   // Whole as well: the rectangle with its rows halving down to the ideal line
   // is the picture, as the disc is the {p,q} boards'.
-  hyperbolicbinary: { build: () => binaryBoard(2, 5, 0, 100), whole: true },
+  hyperbolicbinary: { build: () => binaryBoard(2, 5, 100), whole: true },
   // The closed surfaces' tilings, drawn in the disc on their own: the boards
   // themselves build the surface and its cover, a second or more for all of
   // them, which a menu page cannot wait on. Up close a closed surface looks
@@ -2137,7 +2139,7 @@ const HYPERBOLIC_SEAM = 0.12;
 function hyperbolicDisc(key: string, shells: number, scale: number): Board {
   const uniform = HYPERBOLIC_UNIFORM[key];
   if (uniform) return hyperbolicUniformBoard(...uniform, shells, 0, scale);
-  return hyperbolicBoard(Number(key.at(-2)), Number(key.at(-1)), shells, 0, scale);
+  return hyperbolicBoard(Number(key.at(-2)), Number(key.at(-1)), shells, scale);
 }
 
 /** The hyperbolic boards' row icons: how many distance shells to draw -- the

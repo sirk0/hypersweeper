@@ -28,9 +28,9 @@ import {
   flatMenuModes,
   hyperbolicMenuModes,
   threeDMenuModes,
-} from "../../src/boards/catalog";
-import { blockedModes } from "../../src/boards/fairness";
-import { buildBoard, hasMode } from "../../src/boards/presets";
+} from "../../src/modes/catalog";
+import { blockedModes } from "../../src/modes/fairness";
+import { buildBoard, hasMode } from "../../src/modes/presets";
 import { cellSides } from "../../src/render/shapePalette";
 import { menuIcon } from "../../src/ui/icons";
 
@@ -332,7 +332,7 @@ describe("group membership", () => {
 
   it("leaves the unplayable boards out of every target", () => {
     // The triakis boards' menu row opens an explanation instead of a game, so a
-    // set containing one could never be finished (boards/fairness.ts).
+    // set containing one could never be finished (modes/fairness.ts).
     expect(EXCLUDED_MODES.length).toBeGreaterThan(0);
     const everything = ACHIEVEMENTS_BY_ID.get("all-boards")!;
     const finished = measureOf(everything, havingWon(playable));

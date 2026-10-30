@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import presets from "@data/presets.json";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard } from "../../src/modes/presets";
 import { cellSides } from "../../src/render/shapePalette";
 import { SOUND_PRESETS, type SoundPreset } from "../../src/audio/presets";
 import { gridNote, noteFor, voicesFor, type CellSound } from "../../src/audio/sound";

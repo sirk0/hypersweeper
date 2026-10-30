@@ -1,6 +1,6 @@
 import type { Achievement } from "../achievements";
 import { difficulty as difficultySpec } from "../config/screens";
-import { fullModeLabel } from "../boards/catalog";
+import { fullModeLabel } from "../modes/catalog";
 import { formatTime, TOP_N, type ScoreEntry } from "../leaderboard";
 import type { ShareResult } from "../share";
 import { menuIcon } from "./icons";
@@ -78,7 +78,7 @@ export interface ScoreDialogOptions {
   primary?: "play-again" | "new-board" | undefined;
   onPlayAgain(): void;
   /** Deal another board at random, from the half of the catalogue this one came
-   * from (see boards/randomBoard.ts). Optional so a layout from the test seam
+   * from (see modes/randomBoard.ts). Optional so a layout from the test seam
    * can leave it out; the app always passes one. */
   onNewBoard?: (() => void) | undefined;
   onClose(): void;

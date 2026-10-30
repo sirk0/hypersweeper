@@ -1,5 +1,5 @@
 import { Color, type Group, type Quaternion, type Texture, type Vector3 } from "three";
-import type { CellId, Vec3 } from "../boards/core";
+import type { CellId, Vec3 } from "../boards";
 import { MAX_DIGIT_GLYPH, type Glyph } from "./glyphAtlas";
 import type { GlowCell } from "./markerGlow";
 import type { CellPalette } from "./shapePalette";

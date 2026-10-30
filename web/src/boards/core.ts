@@ -31,7 +31,6 @@ export interface Board {
   mode: string;
   polygons: Map<CellId, Vertex[]>; // pixel-space vertices
   adjacency: Map<CellId, CellId[]>;
-  mineCount: number;
   width: number;
   height: number;
   // The rotations and reflections of the plane that map this patch onto itself,
@@ -164,7 +163,6 @@ export interface Board3D {
   mode: string;
   polygons: Map<CellId, Vec3[]>; // vertices on the surface, origin-centered
   adjacency: Map<CellId, CellId[]>;
-  mineCount: number;
   radius: number; // max vertex distance from the origin
   twoSided: boolean; // open/non-orientable surfaces show both sides
   // The symmetries the UI offers as controls, in SYMMETRY_IDS order. Every one
@@ -307,7 +305,6 @@ export function buildLattice(
   mode: string,
   latticeCells: Map<CellId, Vertex[]>,
   unit: [number, number],
-  mineCount: number,
 ): Board {
   if (latticeCells.size === 0) throw new Error("board has no cells");
   const keyed = new Map<CellId, string[]>();
@@ -330,7 +327,7 @@ export function buildLattice(
       if (y > height) height = y;
     }
   }
-  return flatBoard({ mode, polygons, adjacency, mineCount, width, height });
+  return flatBoard({ mode, polygons, adjacency, width, height });
 }
 
 /**
@@ -344,7 +341,6 @@ export function finalizeFlat(
   mode: string,
   cells: Map<CellId, string[]>,
   positions: Map<string, Vertex>,
-  mineCount: number,
   scale: number,
 ): Board {
   if (cells.size === 0) throw new Error("board has no cells");
@@ -372,7 +368,7 @@ export function finalizeFlat(
       if (y > height) height = y;
     }
   }
-  return flatBoard({ mode, polygons, adjacency, mineCount, width, height });
+  return flatBoard({ mode, polygons, adjacency, width, height });
 }
 
 /** Finish a flat board by measuring its point group.

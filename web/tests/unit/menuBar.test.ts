@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { hasMode } from "../../src/boards/presets";
+import { hasMode } from "../../src/modes/presets";
 import { menuBarTree, type MenuBarNode } from "../../src/menuBar";
 import { boardGroups, pickerFor, quickPlayEntries } from "../../src/ui/boardTree";
 

@@ -377,7 +377,7 @@ and fairness are measured on the board as drawn. Where a
 calibrated density looks low for the board's degree, count them before
 believing it -- or compare it with the same tiling's donut, which has no rim. Every row the calibration cannot bring on target lands in the
 generated `data/difficulty.json`, which the TypeScript app reads
-(`web/src/boards/fairness.ts`) to mark the menu row and to deal the board less
+(`web/src/modes/fairness.ts`) to mark the menu row and to deal the board less
 often at random — so a new unfair board needs no front-end edit, only a
 `scripts/difficulty/report.py` re-run.
 

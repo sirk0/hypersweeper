@@ -22,7 +22,7 @@ import {
   trefoilHexBoard,
   trefoilTriangleBoard,
 } from "../../src/boards/surfaces";
-import { buildBoard, MODES } from "../../src/boards/presets";
+import { buildBoard, MODES } from "../../src/modes/presets";
 import { c180Board, cubeBoard, sphereTriangleBoard } from "../../src/boards/solids";
 import {
   fanTriangles,
@@ -91,7 +91,7 @@ function cycleOrder(cycle: Map<CellId, CellId>): number {
 
 describe("wrapped surfaces", () => {
   it("torus quads all have eight neighbours, closed and one-sided", () => {
-    const board = torusBoard(12, 6, 9);
+    const board = torusBoard(12, 6);
     expect(degrees(board)).toEqual(new Set([8]));
     expect(board.twoSided).toBe(false);
     // A donut is closed both ways, so it has every motion of the square
@@ -103,7 +103,7 @@ describe("wrapped surfaces", () => {
   });
 
   it("the torus tube step walks a cell all the way round the cross-section", () => {
-    const board = torusBoard(12, 6, 9);
+    const board = torusBoard(12, 6);
     const tube = symmetryOf(board, "tube")!;
     expect(tube.involution).toBe(false);
     // six rows round the tube: six steps and a cell is back where it started,
@@ -113,13 +113,13 @@ describe("wrapped surfaces", () => {
   });
 
   it("torus of hexagons is borderless with six neighbours each", () => {
-    const board = torusHexBoard(6, 12, 9);
+    const board = torusHexBoard(6, 12);
     expect(degrees(board)).toEqual(new Set([6]));
     expect(board.twoSided).toBe(false);
   });
 
   it("cylinder and Möbius are two-sided and turn about their axis", () => {
-    for (const board of [cylinderBoard(12, 7, 10), mobiusBoard(20, 4, 10)]) {
+    for (const board of [cylinderBoard(12, 7), mobiusBoard(20, 4)]) {
       expect(board.twoSided).toBe(true);
       // open across, so no translation that way — but both can still be turned
       // end over end, and both keep the step round their own axis
@@ -131,33 +131,33 @@ describe("wrapped surfaces", () => {
     // A cylinder keeps one mirror on top of those; a Möbius band's is already
     // the end-over-end turn after a step round the loop, because its seam
     // flips the band — so it is not offered.
-    expect(ids(cylinderBoard(12, 7, 10))).toEqual(["ring", "turn", "mirror-ring"]);
-    expect(ids(mobiusBoard(20, 4, 10))).toEqual(["ring", "turn"]);
+    expect(ids(cylinderBoard(12, 7))).toEqual(["ring", "turn", "mirror-ring"]);
+    expect(ids(mobiusBoard(20, 4))).toEqual(["ring", "turn"]);
   });
 
   it("the Möbius ring step returns only after two loops", () => {
     // the seam flips the band, so one loop lands a cell on its mirror image
-    expect(cycleOrder(symmetryOf(mobiusBoard(20, 4, 10), "ring")!.cycle)).toBe(40);
+    expect(cycleOrder(symmetryOf(mobiusBoard(20, 4), "ring")!.cycle)).toBe(40);
   });
 
   it("klein square is a closed non-orientable surface, 8 neighbours each", () => {
-    const board = kleinBoard(12, 6, 9);
+    const board = kleinBoard(12, 6);
     expect(degrees(board)).toEqual(new Set([8]));
     expect(board.twoSided).toBe(true);
   });
 
   it("klein carries a ring-translation graph automorphism", () => {
-    assertSymmetry(kleinBoard(12, 6, 9), "ring");
-    assertSymmetry(kleinBoard(16, 8, 20), "ring");
+    assertSymmetry(kleinBoard(12, 6), "ring");
+    assertSymmetry(kleinBoard(16, 8), "ring");
   });
 
   it("klein ring cycle has period twice the ring (seam flips the tube)", () => {
     // crossing the seam flips the tube, so a cell returns only after two loops
-    expect(cycleOrder(symmetryOf(kleinBoard(12, 6, 9), "ring")!.cycle)).toBe(24);
+    expect(cycleOrder(symmetryOf(kleinBoard(12, 6), "ring")!.cycle)).toBe(24);
   });
 
   it("the Klein bottle's only tube step is the half turn", () => {
-    const board = kleinBoard(12, 6, 9);
+    const board = kleinBoard(12, 6);
     // both mirrors are combinations of the turn and each other, so neither is
     // offered: the bottle's three controls are its two steps and its half turn
     expect(ids(board)).toEqual(["ring", "tube", "turn"]);
@@ -176,7 +176,7 @@ describe("wrapped surfaces", () => {
   it("a whole-tube step is no symmetry of the Klein bottle", () => {
     // the negative half of the rule above, measured rather than argued: the
     // permutation exists, it just is not adjacency-preserving
-    const board = kleinBoard(12, 6, 9);
+    const board = kleinBoard(12, 6);
     const step = new Map(
       [...board.adjacency.keys()].map((cell) => {
         const [i, j] = cell.split(",").map(Number);
@@ -187,31 +187,31 @@ describe("wrapped surfaces", () => {
   });
 
   it("klein triangle/hex cell counts match Python", () => {
-    expect(kleinTriangleBoard(18, 6, 13).adjacency.size).toBe(108);
-    expect(kleinHexBoard(6, 4, 9).adjacency.size).toBe(24);
+    expect(kleinTriangleBoard(18, 6).adjacency.size).toBe(108);
+    expect(kleinHexBoard(6, 4).adjacency.size).toBe(24);
   });
 
   it("klein hexagons carry a scroll cycle", () => {
-    assertSymmetry(kleinHexBoard(8, 6, 20), "ring");
+    assertSymmetry(kleinHexBoard(8, 6), "ring");
   });
 
   it("klein triangles carry a scroll cycle of two lattice columns", () => {
-    assertSymmetry(kleinTriangleBoard(18, 6, 13), "ring");
-    assertSymmetry(kleinTriangleBoard(25, 8, 20), "ring");
+    assertSymmetry(kleinTriangleBoard(18, 6), "ring");
+    assertSymmetry(kleinTriangleBoard(25, 8), "ring");
   });
 
   it("every symmetry a wrapped board ships really is one", () => {
     const boards = [
-      torusBoard(12, 6, 9),
-      torusHexBoard(6, 12, 9),
-      cylinderBoard(12, 7, 10),
-      cylinderTriangleBoard(12, 6, 10),
-      cylinderHexBoard(6, 5, 10),
-      mobiusBoard(20, 4, 10),
-      mobiusHexBoard(9, 3, 10),
-      kleinBoard(12, 6, 9),
-      kleinTriangleBoard(18, 6, 13),
-      kleinHexBoard(8, 6, 20),
+      torusBoard(12, 6),
+      torusHexBoard(6, 12),
+      cylinderBoard(12, 7),
+      cylinderTriangleBoard(12, 6),
+      cylinderHexBoard(6, 5),
+      mobiusBoard(20, 4),
+      mobiusHexBoard(9, 3),
+      kleinBoard(12, 6),
+      kleinTriangleBoard(18, 6),
+      kleinHexBoard(8, 6),
     ];
     for (const board of boards) {
       // every wrapped surface turns about its axis, whatever else it has
@@ -223,16 +223,16 @@ describe("wrapped surfaces", () => {
   it("klein triangles need a ring parity matching the seam flip", () => {
     // the seam mirror (ky -> tube/2 - 1 - ky) lands on the offset lattice
     // only when the ring shift matches that flip's parity
-    expect(() => kleinTriangleBoard(19, 6, 13)).toThrow();
-    expect(() => kleinTriangleBoard(24, 8, 20)).toThrow();
-    expect(() => kleinTriangleBoard(10, 5, 12)).toThrow();
+    expect(() => kleinTriangleBoard(19, 6)).toThrow();
+    expect(() => kleinTriangleBoard(24, 8)).toThrow();
+    expect(() => kleinTriangleBoard(10, 5)).toThrow();
   });
 
   it("only the Klein bottle carries a self-intersection clip", () => {
-    expect(kleinBoard(16, 8, 20).clip).not.toBeNull();
-    expect(kleinTriangleBoard(18, 6, 13).clip).not.toBeNull();
-    expect(kleinHexBoard(8, 6, 20).clip).not.toBeNull();
-    for (const board of [torusBoard(12, 6, 9), cylinderBoard(12, 7, 10), mobiusBoard(20, 4, 10)]) {
+    expect(kleinBoard(16, 8).clip).not.toBeNull();
+    expect(kleinTriangleBoard(18, 6).clip).not.toBeNull();
+    expect(kleinHexBoard(8, 6).clip).not.toBeNull();
+    for (const board of [torusBoard(12, 6), cylinderBoard(12, 7), mobiusBoard(20, 4)]) {
       expect(board.clip).toBeNull();
     }
   });
@@ -242,14 +242,14 @@ describe("wrapped surfaces", () => {
     // so a piece of a couple of big cells is enclosed and must not be drawn;
     // everything else — the neck itself above all — is left whole. The collar
     // cuts a few more back round them, so `cells` holds those too.
-    const small = kleinBoard(12, 6, 9);
-    const mid = kleinBoard(16, 8, 20);
+    const small = kleinBoard(12, 6);
+    const mid = kleinBoard(16, 8);
     expect(holeCells(small)).toEqual(["6,2", "7,2"]);
     expect(holeCells(mid)).toEqual(["8,3", "9,3"]);
     for (const board of [small, mid]) {
       for (const cell of holeCells(board)) expect(board.clip!.cells.has(cell)).toBe(true);
     }
-    for (const board of [kleinBoard(24, 10, 48), kleinTriangleBoard(18, 6, 13)]) {
+    for (const board of [kleinBoard(24, 10), kleinTriangleBoard(18, 6)]) {
       expect(board.clip!.cells.size).toBeLessThan(board.polygons.size / 10);
       for (const cell of board.clip!.cells) expect(board.polygons.has(cell)).toBe(true);
     }
@@ -263,10 +263,10 @@ describe("wrapped surfaces", () => {
     // fold keeps its tiles: whatever is left of a cut down there is a hairline
     // where the two sheets share their rim, never a hole.
     for (const board of [
-      kleinBoard(10, 8, 14, 1.15),
-      kleinBoard(26, 10, 55),
-      kleinTriangleBoard(21, 4, 18),
-      kleinHexBoard(14, 6, 16, 1.15),
+      kleinBoard(10, 8, 1.15),
+      kleinBoard(26, 10),
+      kleinTriangleBoard(21, 4),
+      kleinHexBoard(14, 6, 1.15),
     ]) {
       const { cells, solid } = board.clip!;
       let lowest = Infinity;
@@ -299,10 +299,10 @@ describe("wrapped surfaces", () => {
     // the two answers may disagree only in a shell a hundredth of the board
     // thick, where the sheets are edge on and nothing shows either way.
     for (const board of [
-      kleinBoard(10, 8, 14, 1.15),
-      kleinBoard(16, 8, 20),
-      kleinTriangleBoard(21, 4, 18),
-      kleinHexBoard(14, 6, 16, 1.15),
+      kleinBoard(10, 8, 1.15),
+      kleinBoard(16, 8),
+      kleinTriangleBoard(21, 4),
+      kleinHexBoard(14, 6, 1.15),
     ]) {
       const { cells, solid, occluder } = board.clip!;
       let tested = 0;
@@ -332,11 +332,11 @@ describe("wrapped surfaces", () => {
     // sheets meet almost tangentially, ran a long way along the belly and
     // turned most of a cell grey (beta feedback).
     for (const board of [
-      kleinBoard(10, 8, 14, 1.15),
-      kleinBoard(16, 8, 20),
-      kleinBoard(26, 10, 55),
-      kleinTriangleBoard(21, 4, 18),
-      kleinHexBoard(14, 6, 16, 1.15),
+      kleinBoard(10, 8, 1.15),
+      kleinBoard(16, 8),
+      kleinBoard(26, 10),
+      kleinTriangleBoard(21, 4),
+      kleinHexBoard(14, 6, 1.15),
     ]) {
       const { cells, solid, collar, occluder } = board.clip!;
       // The widest it can be: COLLAR_WIDTH of an edge, out to a capsule's
@@ -412,7 +412,7 @@ describe("wrapped surfaces", () => {
   });
 
   it("the clip is render-only: cells, adjacency and symmetries are untouched", () => {
-    const board = kleinBoard(16, 8, 20);
+    const board = kleinBoard(16, 8);
     expect(board.polygons.size).toBe(128);
     expect(degrees(board)).toEqual(new Set([8]));
     for (const id of ids(board)) assertSymmetry(board, id);
@@ -422,9 +422,9 @@ describe("wrapped surfaces", () => {
     // the immersion moves where the cells are drawn and nothing else: the same
     // window on the donut is the same board, neighbour for neighbour
     const pairs: [Board3D, Board3D][] = [
-      [trefoilBoard(32, 8, 20), torusBoard(32, 8, 20)],
-      [trefoilTriangleBoard(64, 4, 20), torusTriangleBoard(64, 4, 20)],
-      [trefoilHexBoard(6, 43, 20), torusHexBoard(6, 43, 20)],
+      [trefoilBoard(32, 8), torusBoard(32, 8)],
+      [trefoilTriangleBoard(64, 4), torusTriangleBoard(64, 4)],
+      [trefoilHexBoard(6, 43), torusHexBoard(6, 43)],
     ];
     for (const [knot, donut] of pairs) {
       expect(knot.twoSided).toBe(false);
@@ -464,15 +464,15 @@ describe("wrapped surfaces", () => {
   });
 
   it("wrap builders validate their seam arguments", () => {
-    expect(() => kleinBoard(12, 5, 9)).toThrow(); // tube must be even
-    expect(() => kleinTriangleBoard(10, 5, 12)).toThrow(); // tube must be even
-    expect(() => kleinHexBoard(6, 5, 9)).toThrow(); // rows must be even
-    expect(() => torusHexBoard(5, 12, 9)).toThrow(); // rows must be even
-    expect(() => mobiusHexBoard(14, 4, 6)).toThrow(); // rows must be odd
-    expect(() => cylinderTriangleBoard(15, 6, 11)).toThrow(); // ring must be even
-    expect(() => cylinderHexBoard(12, 6, 9)).not.toThrow();
-    expect(() => trefoilBoard(32, 8, 9, 1)).toThrow(); // the strands would meet
-    expect(() => trefoilBoard(32, 8, 9, 0)).toThrow();
+    expect(() => kleinBoard(12, 5)).toThrow(); // tube must be even
+    expect(() => kleinTriangleBoard(10, 5)).toThrow(); // tube must be even
+    expect(() => kleinHexBoard(6, 5)).toThrow(); // rows must be even
+    expect(() => torusHexBoard(5, 12)).toThrow(); // rows must be even
+    expect(() => mobiusHexBoard(14, 4)).toThrow(); // rows must be odd
+    expect(() => cylinderTriangleBoard(15, 6)).toThrow(); // ring must be even
+    expect(() => cylinderHexBoard(12, 6)).not.toThrow();
+    expect(() => trefoilBoard(32, 8, 1)).toThrow(); // the strands would meet
+    expect(() => trefoilBoard(32, 8, 0)).toThrow();
   });
 });
 
@@ -614,9 +614,9 @@ function barycentricGrid(tri: Tri, steps: number): Vec3[] {
 // boards/surfaces.ts). Mirrors TestProjectivePlane in tests/test_boards.py.
 describe("the projective plane", () => {
   const boards = (frequency: number) => [
-    projectiveTriangleBoard(frequency, 5),
-    projectiveHexBoard(frequency, 5),
-    projectiveBoard(frequency, 5),
+    projectiveTriangleBoard(frequency),
+    projectiveHexBoard(frequency),
+    projectiveBoard(frequency),
   ];
 
   it("draws every cell twice, on antipodal faces", () => {
@@ -661,16 +661,16 @@ describe("the projective plane", () => {
 
   it("keeps every cell's sphere neighbourhood: one neighbour per neighbour", () => {
     // squares against the cube they are cut from, by shared lattice corners
-    const squares = projectiveBoard(4, 5);
-    const cube = cubeBoard(4, 5);
+    const squares = projectiveBoard(4);
+    const cube = cubeBoard(4);
     expect(cube.adjacency.size).toBe(2 * squares.adjacency.size);
     const sevens = (b: Board3D) => [...b.adjacency.values()].filter((n) => n.length === 7).length;
     expect(sevens(cube)).toBe(2 * sevens(squares));
     // The gluing moves every point half the sphere away, so no cell meets its
     // twin and no two of a cell's neighbours are each other's twins.
     const pairs: [Board3D, Board3D][] = [
-      [projectiveTriangleBoard(3, 5), sphereTriangleBoard(5, 3)],
-      [projectiveHexBoard(3, 5), c180Board(5)],
+      [projectiveTriangleBoard(3), sphereTriangleBoard(3)],
+      [projectiveHexBoard(3), c180Board()],
     ];
     for (const [board, sphere] of pairs) {
       const key = (poly: Vec3[]) =>
@@ -711,8 +711,8 @@ describe("Boy's surface", () => {
 
   it("is the projective plane cell for cell, each cell drawn once", () => {
     for (const n of [2, 3, 5, 9]) {
-      const board = boyBoard(n, 5);
-      const projective = projectiveBoard(n, 5);
+      const board = boyBoard(n);
+      const projective = projectiveBoard(n);
       expect(board.adjacency).toEqual(projective.adjacency);
       expect(board.faces).toBeUndefined();
       expect(board.twoSided).toBe(true);
@@ -724,7 +724,7 @@ describe("Boy's surface", () => {
     // The surface passes through itself, and the topology helpers key on
     // rounded coordinates: two vertex classes on one point would lower χ.
     for (const n of [2, 3, 5, 9, 13]) {
-      expect(eulerCharacteristic(boyBoard(n, 5))).toBe(1);
+      expect(eulerCharacteristic(boyBoard(n))).toBe(1);
     }
   });
 
@@ -744,7 +744,7 @@ describe("Boy's surface", () => {
   });
 
   it("turns a third about z with the cube's turn about its diagonal", () => {
-    const board = boyBoard(5, 5);
+    const board = boyBoard(5);
     const hull = [...board.polygons.values()].flat();
     const key = (p: Vec3) => p.map((c) => c.toFixed(6)).join(",");
     const points = new Set(hull.map(key));

@@ -7,9 +7,9 @@ import {
   previewIcon,
   setIconPalette,
 } from "../../src/ui/icons";
-import { FRACTAL_MODES, MENU, SHAPED_MODES, SOLID_MODES } from "../../src/boards/catalog";
+import { FRACTAL_MODES, MENU, SHAPED_MODES, SOLID_MODES } from "../../src/modes/catalog";
 import type { Board } from "../../src/boards/core";
-import { presetBoard } from "../../src/boards/presets";
+import { presetBoard } from "../../src/modes/presets";
 import { theme } from "../../src/ui/theme";
 
 // The desktop menu's card previews (icons.ts `previewIcon`). A card is four

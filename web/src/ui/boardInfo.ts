@@ -1,6 +1,6 @@
-import { fullModeLabel, surfaceCaution } from "../boards/catalog";
-import { distortionHint } from "../boards/distortion";
-import { fairnessHint, fairnessOf } from "../boards/fairness";
+import { fullModeLabel, surfaceCaution } from "../modes/catalog";
+import { distortionHint } from "../modes/distortion";
+import { fairnessHint, fairnessOf } from "../modes/fairness";
 import { screens, type HudSlot } from "../config/screens";
 import { ICONS, slotKept, slotVisible } from "./hud";
 import { planeLie, symmetryIcon, type SymmetryPicture } from "./symmetryIcon";

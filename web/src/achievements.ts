@@ -5,9 +5,9 @@ import {
   familyRows,
   pickerFamilies,
   surfaceMenuModes,
-} from "./boards/catalog";
-import { blockedModes, fairnessOf } from "./boards/fairness";
-import { hasMode } from "./boards/presets";
+} from "./modes/catalog";
+import { blockedModes, fairnessOf } from "./modes/fairness";
+import { hasMode } from "./modes/presets";
 import { screens } from "./config/screens";
 import { sideNoun } from "./ui/boardFacts";
 import { readObject, storage } from "./storage";
@@ -33,7 +33,7 @@ import { allBestTimes, splitBoardKey } from "./leaderboard";
 // boards are `blocked` at all three difficulties in `data/difficulty.json`:
 // every cell has a look-alike twin, so the menu opens an explanation instead of
 // a game and they *cannot be played*. A set containing one could never be
-// finished. See `boards/fairness.ts`.
+// finished. See `modes/fairness.ts`.
 //
 // **The stored record is history; unlocking is a pure function of it.** What is
 // kept is what was won (and the handful of facts about a win that the mode

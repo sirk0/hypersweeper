@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { archTemplate } from "../../src/boards/tilings";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard } from "../../src/modes/presets";
 import { isBoard3D } from "../../src/boards/core";
 import fixture from "./straighten.fixture.json";
 

@@ -16,8 +16,8 @@ import {
   pickerFamilies,
   tilingAllows,
   tilingOf,
-} from "../../src/boards/catalog";
-import { MODES } from "../../src/boards/presets";
+} from "../../src/modes/catalog";
+import { MODES } from "../../src/modes/presets";
 
 // The catalog derivations: the uniform / Laves / isogonal / rectangle families
 // lifted from the ARCH_TILINGS registry, chirality and per-family surface gating, and

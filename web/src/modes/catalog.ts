@@ -3,7 +3,7 @@
 // mirror the Python and grow as later milestones port more of the catalog.
 import catalog from "@data/catalog.json";
 import presetsData from "@data/presets.json";
-import { ARCH_TILINGS, wrapTemplate } from "./tilings";
+import { ARCH_TILINGS, wrapTemplate } from "../boards";
 
 export interface SurfaceSpec {
   key: string;

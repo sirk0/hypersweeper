@@ -18,7 +18,7 @@ submenus of one page (`SOLIDS_PAGE` in `src/ui/boardTree.ts`); they stay
 groups of their own everywhere else (achievements, a board's family in its
 info window, the pygame menu), so only this menu nests them. Hyperbolic is the one geometry group the pygame menu does
 not have: there it is a family on the flat picker, and the web menu lifts it
-out into a group of its own (`MENU_GROUP_FAMILIES` in `src/boards/catalog.ts`)
+out into a group of its own (`MENU_GROUP_FAMILIES` in `src/modes/catalog.ts`)
 — a curved space rather than a kind of flat tiling — after Flat manifolds and
 before the solids. Its page is three submenus, **Regular** (the {p,q} tilings),
 **Uniform** (Wythoff's tilings of them) and **Closed surfaces** (the plane glued
@@ -36,7 +36,7 @@ catalog's order, which the pygame menu keeps. Everywhere but the menu the hyperb
 plane's: the info window says Hyperbolic, and the achievements file them there.
 A board reachable from the home page is still reachable through Custom — the
 home row is a shortcut, not a move, which is how `square` has always worked.
-The reverse is **`CUSTOM_ONLY`** (`src/boards/randomBoard.ts`): boards kept off
+The reverse is **`CUSTOM_ONLY`** (`src/modes/randomBoard.ts`): boards kept off
 the home page *and* out of every random pool until their UX is ready to be
 promoted. Both pools also drop, per difficulty, the boards
 `data/distortion.json` marks as distorted at the difficulty being dealt, and at
@@ -46,7 +46,7 @@ be a second launch row beside Classic, and is now Custom › Volumes only.
 In every tiling picker the three regular tilings are promoted to rows of their
 own, leaving the Regular family holding the shaped boards alone under the label
 **Shaped boards** (plane only). That shape is *derived* from
-the shared port in the "web menu" section of `src/boards/catalog.ts`, so
+the shared port in the "web menu" section of `src/modes/catalog.ts`, so
 `data/catalog.json` and the pygame menu are untouched;
 `tests/unit/menu.test.ts` pins it.
 
@@ -92,7 +92,7 @@ read from `tilingNotations` in `data/catalog.json` through `TilingSpec.notation`
 literature calls it.
 
 A wrapped board its surface draws **too far out of shape** carries a second
-mark, per difficulty (`src/boards/distortion.ts`, reading the measured
+mark, per difficulty (`src/modes/distortion.ts`, reading the measured
 `data/distortion.json`): a *Distorted* pill on the desktop card, and on the
 phone a hint line — "Distorted on Easy — Medium and Hard draw the tiles truer"
 — with a ⚠ in the corner unless the fairness mark already holds it. Most of
@@ -104,7 +104,7 @@ in-game caption takes the same ⚠ (its tooltip says why) and the info window a
 line, and the random launchers never deal it at that difficulty.
 
 A third mark is **declared** rather than measured: a surface may carry a
-`caution` in `data/catalog.json` (`surfaceCaution` in `src/boards/catalog.ts`),
+`caution` in `data/catalog.json` (`surfaceCaution` in `src/modes/catalog.ts`),
 and every board on it is marked the distortion mark's way — an *Intersects*
 pill on the desktop card, the caution as the hint line and a ⚠ on the phone
 row, the ⚠ on the caption and the line in the info window — at every
@@ -628,7 +628,7 @@ menu is in anyway.
 
 - **It follows the tiling, not the surface.** All five surfaces of a tiling
   share one tile, so the cache holds 38 entries for 159 modes. `tilingOf(mode)`
-  in `boards/catalog.ts` is the inverse of `modeFor` — not a prefix strip, since
+  in `modes/catalog.ts` is the inverse of `modeFor` — not a prefix strip, since
   `torustri`, `torustriakis` and `torustrihex` are three tilings on one surface.
 - **The pattern is the board's tile, laid down periodically.** A board's own
   patch may be aperiodic, fractal or wrapped round a solid, but what the page
@@ -1134,7 +1134,7 @@ It asks **one question** — this board again, or another — and its foot is th
 question and nothing else. **Play again** re-deals the same board. **New board**
 deals a random one from the pool this board came from — flat if it was flat,
 hyperbolic if it was on the Hyperbolic page, otherwise a manifold, sphere or
-polyhedron (`randomKindOf`) — through `src/boards/randomBoard.ts`, which is the
+polyhedron (`randomKindOf`) — through `src/modes/randomBoard.ts`, which is the
 home page's Flat, 3D and Hyperbolic pools and
 their fairness weighting, shared rather than re-derived. It is the same call as
 the header's die (`App.startRandomBoard`), which is that move without having to
@@ -1219,7 +1219,7 @@ player has been, and the list of where they have not.
   cannot ship without a badge (the `soundHarmony.test.ts` pattern).
 - **Blocked boards are left out of every completion target.** The five triakis
   boards cannot be played at all — their menu row opens `blockedExplanation`
-  instead of a game (see "fairness" in `src/boards/fairness.ts`) — so a set
+  instead of a game (see "fairness" in `src/modes/fairness.ts`) — so a set
   containing one could never be finished. `blockedModes()` is the filter, the
   totals leave those five out, and the page says so in a line rather than
   leaving a silent gap.

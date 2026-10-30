@@ -18,8 +18,8 @@ import {
   type Texture,
 } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import type { CellId } from "../boards/core";
-import { SOLID_GROUPS, surfaceOf, viewHint } from "../boards/catalog";
+import type { CellId } from "../boards";
+import { SOLID_GROUPS, surfaceOf, viewHint } from "../modes/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
 import { halfPlaneDrag } from "./halfPlane";
 import { anchoredPan, clampPan, clampZoom, MAX_ZOOM, MIN_ZOOM } from "./zoom";

@@ -1,7 +1,7 @@
 import type { GameStats } from "./analyticsEvent";
 import { playSound, soundEnabled, type CellSound } from "./audio/sound";
-import { surfaceOf } from "./boards/catalog";
-import { buildBoard } from "./boards/presets";
+import { surfaceOf } from "./modes/catalog";
+import { buildBoard, presetMineCount } from "./modes/presets";
 import {
   invertCycle,
   isBoard3D,
@@ -10,7 +10,7 @@ import {
   type BoardSymmetry,
   type CellId,
   type SymmetryId,
-} from "./boards/core";
+} from "./boards";
 import { Game } from "./game";
 import { haptic } from "./haptics";
 import { mulberry32, type Rng } from "./rng";
@@ -178,7 +178,7 @@ export class GameSession {
     // The seed picks the *window* as well as the mines: on the aperiodic
     // substitution boards a re-deal is played somewhere else in the tiling —
     // one of the windows measured to play like the calibrated board
-    // (boards/presets.ts `windowFor`) — and a share link, which carries the
+    // (modes/presets.ts `windowFor`) — and a share link, which carries the
     // seed, reopens the one it names. Every other mode ignores it.
     this.board = buildBoard(mode, difficulty, opts.seed ?? 0);
     // The cell style is baked into the mesh: a profile's loop count fixes the
@@ -201,7 +201,7 @@ export class GameSession {
     const rng: Rng | undefined =
       opts.seed !== undefined ? mulberry32(opts.seed >>> 0) : undefined;
     this.game = new Game(this.board.adjacency, {
-      mineCount: this.board.mineCount,
+      mineCount: presetMineCount(mode, difficulty),
       ...(opts.minePositions ? { minePositions: opts.minePositions } : {}),
       ...(rng ? { rng } : {}),
     });

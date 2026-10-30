@@ -1,5 +1,5 @@
 import { Color } from "three";
-import { cross, normalize, type Vec3 } from "../boards/core";
+import { cross, normalize, type Vec3 } from "../boards";
 import { FLAG_COLORS, MINE_COLORS } from "./glyphAtlas";
 
 // The 3D models that **stand on** a cell of a board you can turn, for the styles

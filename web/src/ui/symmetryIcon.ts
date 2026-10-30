@@ -21,8 +21,14 @@
 //   * a **reflection** draws its mirror line at the angle the plane really
 //     makes on screen, with a shape and its image either side.
 import { Quaternion, Vector3 } from "three";
-import { surfaceOf } from "../boards/catalog";
-import { isBoard3D, type AnyBoard, type BoardSymmetry, type CellId, type SymmetryId } from "../boards/core";
+import { surfaceOf } from "../modes/catalog";
+import {
+  isBoard3D,
+  type AnyBoard,
+  type BoardSymmetry,
+  type CellId,
+  type SymmetryId,
+} from "../boards";
 import { initialOrientation } from "../render/renderer";
 
 export type MotionKind = "step" | "turn" | "reflection";

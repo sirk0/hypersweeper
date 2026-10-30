@@ -10,6 +10,13 @@ what already ships. Sizes and mine counts are **measured, never invented**: see
 [`difficulty.md`](difficulty.md). The `data/*.json` contract both front-ends
 read is in [`shared-data.md`](shared-data.md).
 
+Porting a builder to `web/src/boards/` drops its `mine_count` argument: the web
+geometry knows nothing of mines, and `web/src/modes/presets.ts` splits the mine
+count out of a preset's args (the `mineArg` that `scripts/export_data.py`
+writes beside each row). Export the new builder from
+`web/src/boards/index.ts` — the `BUILDERS` table in `presets.ts` imports from
+there, like everything outside the folder.
+
 ## Recipe: add an Archimedean (periodic) tiling
 
 Example goal: a new uniform tiling `foo` (say 3.4.6.4-like).
@@ -275,12 +282,12 @@ Adding one, or adding a tiling to one:
    family with two tile shapes in it.
 3. **Flat-only** — map the family key to `{"flat"}` in `_FAMILY_SURFACES` in
    `catalog.py` and to `["flat"]` in `ARCH_FAMILY_SURFACES` in
-   `web/src/boards/catalog.ts`, and put it
+   `web/src/modes/catalog.ts`, and put it
    in `PICKER_FAMILIES` (both sides) where it should sit in the menu. Nothing
    else gates it: `picker_families` drops a family with no enabled row.
 4. **Labels and hints** — `menu.familyLabels` in `data/catalog.json` (the
    authored leaf; re-run `scripts/export_data.py`) and `MENU_FAMILY_HINTS` in
-   `web/src/boards/catalog.ts`. A family whose key is also a tiling key (as
+   `web/src/modes/catalog.ts`. A family whose key is also a tiling key (as
    `durer` is) already has an icon; otherwise add a case to `menuIcon` in
    `web/src/ui/icons.ts` picking the member that reads at icon size.
 5. **Presets** — a `"foo"` block in `ARCH_PRESETS` with a `flat` row only, then
@@ -741,7 +748,7 @@ Adding a sixth is one ``_Substitution`` record plus its wiring:
    them by mine density instead). Re-run `scripts/export_data.py` and
    `export_conformance.py`.
 3. **Port it to `web/src/boards/fractal.ts`** — the same record, verbatim, plus
-   one `BUILDERS` row in `presets.ts`. The conformance oracle compares the two
+   one `BUILDERS` row in `web/src/modes/presets.ts`. The conformance oracle compares the two
    boards immediately. Its menu icon is generated: `SUBSTITUTIONS` in
    `web/src/ui/icons.ts` (and `gui.py`'s `_render_icon`) draws the level-1
    supertile — the substitution itself — from the board's own geometry.
@@ -806,7 +813,7 @@ rather than D_3 -- that too is automatic. Read
 
 The web menu files a hyperbolic board on its own: Custom › Hyperbolic is split
 into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMILIES` in
-`web/src/boards/catalog.ts`). A board from a builder no submenu names fails
+`web/src/modes/catalog.ts`). A board from a builder no submenu names fails
 `web/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
 submenu there, with a label, a hint and an icon alias.
 
@@ -894,7 +901,7 @@ What it needs that the disc boards do not:
 - a row icon of its own in `icons.ts` and `gui.py`, instead of an entry in the icon-shell tables.
 
 The web menu lists it under Flat › Fractals rather than on the Hyperbolic page
-(`MENU_REFILED` in `web/src/boards/catalog.ts`), so the home page's Flat row
+(`MENU_REFILED` in `web/src/modes/catalog.ts`), so the home page's Flat row
 deals it, not the Hyperbolic one.
 
 See [`geometry.md`](geometry.md#the-binary-tiling).
@@ -940,7 +947,8 @@ These are one-offs, not tiling×surface products.
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
    `data/presets.json` (positional args), and re-run
-   `scripts/export_data.py` + `export_conformance.py`. This is what both
+   `scripts/export_data.py` (which adds the row's `mineArg`) +
+   `export_conformance.py`. This is what both
    front-ends read, so the mode is shared and the conformance oracle
    covers it. (A Python-only one-off can still go in `_PRESETS` as an
    explicit lambda, but the JSON path is preferred.)

@@ -438,7 +438,6 @@ export function hyperbolicBoard(
   p: number,
   q: number,
   shells: number,
-  mineCount: number,
   scale = 300,
   arc = ARC_SEGMENTS,
 ): Board {
@@ -452,7 +451,7 @@ export function hyperbolicBoard(
       .flat()
       .sort((a, b) => a - b),
   );
-  return discBoard(`hyperbolic${p}${q}`, `{${p},${q}}`, shells, faces, kept, pos, mineCount, scale, arc);
+  return discBoard(`hyperbolic${p}${q}`, `{${p},${q}}`, shells, faces, kept, pos, scale, arc);
 }
 
 /** The kept faces as a board in the disc, each edge drawn as its geodesic arc
@@ -465,7 +464,6 @@ function discBoard(
   faces: readonly (readonly number[])[],
   kept: number[],
   pos: Map<number, C>,
-  mineCount: number,
   scale: number,
   arc: number,
 ): Board {
@@ -476,7 +474,6 @@ function discBoard(
     mode,
     polygons,
     adjacency: sharedVertexAdjacency(cells),
-    mineCount,
     width: size,
     height: size,
     cornerMask,
@@ -903,7 +900,6 @@ export function hyperbolicUniformBoard(
   q: number,
   op: WythoffOp,
   shells: number,
-  mineCount: number,
   scale = 300,
   arc = ARC_SEGMENTS,
 ): Board {
@@ -918,7 +914,7 @@ export function hyperbolicUniformBoard(
       .sort((a, b) => a - b),
   );
   const name = vertexConfig(p, q, op).join(".");
-  return discBoard(wythoffMode(p, q, op), name, shells, faces, kept, pos, mineCount, scale, arc);
+  return discBoard(wythoffMode(p, q, op), name, shells, faces, kept, pos, scale, arc);
 }
 
 // -- Böröczky's binary tiling, in the upper half-plane -----------------------
@@ -936,7 +932,6 @@ export function hyperbolicUniformBoard(
 export function binaryBoard(
   top: number,
   levels: number,
-  mineCount: number,
   scale = 300,
 ): Board {
   if (top < 1 || levels < 1) {
@@ -980,7 +975,6 @@ export function binaryBoard(
     mode: "hyperbolicbinary",
     polygons,
     adjacency: sharedVertexAdjacency(cells),
-    mineCount,
     width: top * scale,
     height: (height - 1) * unit,
     cornerMask,

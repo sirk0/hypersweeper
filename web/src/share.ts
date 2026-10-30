@@ -1,4 +1,4 @@
-import { fullModeLabel } from "./boards/catalog";
+import { fullModeLabel } from "./modes/catalog";
 import { difficulty as difficultySpec, hasDifficulty } from "./config/screens";
 import { boardLinkQuery } from "./link";
 

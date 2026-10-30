@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { boardLinkQuery, parseBoardLink } from "../../src/link";
-import { hasMode, MODES } from "../../src/boards/presets";
+import { hasMode, MODES } from "../../src/modes/presets";
 import { screens } from "../../src/config/screens";
 
 // Shared links are untrusted input. The rule under test throughout: a parameter

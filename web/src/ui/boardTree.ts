@@ -10,9 +10,9 @@ import {
   menuSubfamilies,
   menuSubfamilyRows,
   menuTilingRows,
-} from "../boards/catalog";
-import { randomPool } from "../boards/randomBoard";
-import { hasMode } from "../boards/presets";
+} from "../modes/catalog";
+import { randomPool } from "../modes/randomBoard";
+import { hasMode } from "../modes/presets";
 
 // How the catalogue is grouped for a player picking a board: the quick-play
 // entries, then the geometry groups (Flat, Flat manifolds, Hyperbolic, Sphere,
@@ -213,7 +213,7 @@ export function boardGroups(): Group[] {
  * The launch entry comes first: the row that opens a named board sits above
  * the ones that deal a surprise. Volumetric (cube3d) used to be a second
  * launch entry; it is in Custom › Volumes only until its UX is ready to be
- * promoted (see CUSTOM_ONLY in boards/randomBoard.ts). */
+ * promoted (see CUSTOM_ONLY in modes/randomBoard.ts). */
 export function quickPlayEntries(): QuickEntry[] {
   const entries: QuickEntry[] = [];
   // Classic — flat squares, launched straight away (gui.py MenuScreen).

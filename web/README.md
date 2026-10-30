@@ -170,7 +170,7 @@ make a neighbour.
 It sat on the **home page**, second, under **Volumetric** — the game's fifth
 front-page row and its second one-tap launcher, beside Classic. *(Since taken
 off it, and out of the random 3D pool: it is Custom › Volumes only until its UX
-is ready to be promoted — `CUSTOM_ONLY` in `src/boards/randomBoard.ts`.)* Three
+is ready to be promoted — `CUSTOM_ONLY` in `src/modes/randomBoard.ts`.)* Three
 notes on that. The name: *Solid* was the obvious word and is unusable, because "solid"
 already means *polyhedron* everywhere in this codebase (`SOLID_MODES`,
 `solidBoard`, Platonic and Catalan solids), and a sixth meaning for it would
@@ -340,7 +340,7 @@ Hexagons · Uniform · Laves · … . On the plane that leaves the Regular famil
 holding the shaped boards alone, relabelled **Shaped boards**. The header
 gains a **?** beside the gear, opening a How-to-play page (`src/ui/help.ts`)
 built like the settings pages. All of this is web-only: it is derived in the
-"web menu" section of `src/boards/catalog.ts` (`menuTilingRows`,
+"web menu" section of `src/modes/catalog.ts` (`menuTilingRows`,
 `menuFamilies`, `menuFamilyRows`, `flatMenuModes`, `threeDMenuModes`,
 `MENU_FAMILY_LABELS`) from the shared port above it, so `data/catalog.json` and
 the pygame menu are untouched and keep their own shape.

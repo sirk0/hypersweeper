@@ -1054,7 +1054,7 @@ body {
   opacity: 0.6;
 }
 
-/* The distortion mark (boards/distortion.ts) is per difficulty, so it is built
+/* The distortion mark (modes/distortion.ts) is per difficulty, so it is built
    once and toggled with `hidden` — which a `display` rule would override. */
 .menu-distortion-mark[hidden] {
   display: none;

@@ -10,9 +10,9 @@ import { hasMode } from "./presets";
 // player decides what to play next, and it should be able to deal them one on
 // the same terms the menu does — the same pools, and the same weighting, which
 // keeps the boards whose tiling forces guesses in the pool but deals them a
-// quarter as often (boards/fairness.ts). A board its surface draws too far out
+// quarter as often (modes/fairness.ts). A board its surface draws too far out
 // of shape at the difficulty being dealt is left out of the pool altogether
-// (boards/distortion.ts), and so is one on a surface that carries a caution
+// (modes/distortion.ts), and so is one on a surface that carries a caution
 // (catalog.ts `surfaceCaution`, Boy's surface): both are in the menu, marked,
 // for whoever wants them.
 
