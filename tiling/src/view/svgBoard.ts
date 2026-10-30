@@ -34,6 +34,8 @@ export class SvgBoard {
   /** Where each tray kind sits, centroid in board units. */
   trayAt: XY[] = [];
   private tileXY: XY[][] = [];
+  /** The placed tile picked by a tap, drawn highlighted; what Delete removes. */
+  selected: number | null = null;
 
   constructor(
     host: HTMLElement,
@@ -93,7 +95,7 @@ export class SvgBoard {
         "polygon",
         {
           points: points(tile.verts.map((v) => ring.toXY(v))),
-          class: `tile kind-${tile.kind}`,
+          class: `tile kind-${tile.kind}${tile.id === this.selected ? " selected" : ""}`,
           "data-tile": tile.id,
         },
         this.still,
@@ -102,6 +104,9 @@ export class SvgBoard {
     for (const e of this.puzzle.openEdges) {
       el("line", { x1: e.axy[0], y1: e.axy[1], x2: e.bxy[0], y2: e.bxy[1], class: "open" }, this.still);
     }
+    // The selected tile on top, so the open edges do not hide its outline.
+    const selected = this.still.querySelector(".selected");
+    if (selected) this.still.appendChild(selected);
     this.tileXY.forEach((outline, kind) => {
       const [cx, cy] = this.trayAt[kind]!;
       el("circle", { cx, cy, r: Math.max(...outline.map(([x, y]) => Math.hypot(x, y))) + 0.25, class: "tray", "data-tray": kind }, this.still);
@@ -122,13 +127,13 @@ export class SvgBoard {
     return this.tileXY[kind]!;
   }
 
-  /** The dragged tile — `outline` about its centroid, moved to `at` — and the
-   * ghost where it would land. */
-  drawDrag(kind: number, outline: XY[], at: XY, ghost: XY[] | null): void {
+  /** The dragged tile — `outline` about its centroid, moved to `at` — and,
+   * when it would snap, a dot on each corner it would stick to. */
+  drawDrag(kind: number, outline: XY[], at: XY, stick: XY[]): void {
     this.moving.replaceChildren();
-    if (ghost) el("polygon", { points: points(ghost), class: "ghost" }, this.moving);
     const moved = outline.map(([x, y]): XY => [x + at[0], y + at[1]]);
     el("polygon", { points: points(moved), class: `tile kind-${kind} floating` }, this.moving);
+    for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
   }
 
   clearDrag(): void {

@@ -7,8 +7,10 @@
   --open: #c4572f;
   --tile-0: #5b8db8;
   --tile-0-edge: #2f5679;
-  --ghost: rgba(91, 141, 184, 0.35);
-  --ghost-edge: #2f5679;
+  --stick: #c4572f;
+  --stick-ring: #fffdf8;
+  --selected: #9cc0e0;
+  --selected-edge: #1f3a52;
   --tray: rgba(0, 0, 0, 0.05);
   --button: #fffdf8;
   --button-edge: #cfc7b6;
@@ -26,8 +28,10 @@
     --open: #e2774f;
     --tile-0: #6e9fca;
     --tile-0-edge: #b8d4ee;
-    --ghost: rgba(110, 159, 202, 0.35);
-    --ghost-edge: #b8d4ee;
+    --stick: #f08a5d;
+    --stick-ring: #1d1c1a;
+    --selected: #a9cdee;
+    --selected-edge: #ffffff;
     --tray: rgba(255, 255, 255, 0.06);
     --button: #2a2926;
     --button-edge: #4a4740;
@@ -139,12 +143,22 @@ button {
   cursor: grabbing;
 }
 
-.ghost {
-  fill: var(--ghost);
-  stroke: var(--ghost-edge);
-  stroke-width: 0.05;
-  stroke-dasharray: 0.12 0.08;
+.stick {
+  fill: var(--stick);
+  stroke: var(--stick-ring);
+  stroke-width: 0.04;
   pointer-events: none;
+}
+
+.tile.selected {
+  fill: var(--selected);
+  stroke: var(--selected-edge);
+  stroke-width: 0.08;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .won {

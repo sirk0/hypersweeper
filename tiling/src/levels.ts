@@ -38,7 +38,7 @@ export const LEVELS: Level[] = [
     key: "squares",
     label: "Squares",
     ring: Z4,
-    region: [rectangle(Z4, 5, 5)],
+    region: [rectangle(Z4, 4, 4)],
     tiles: [regular(Z4, 4)],
     mirror: false,
   },

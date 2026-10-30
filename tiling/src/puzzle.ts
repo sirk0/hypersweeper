@@ -35,6 +35,11 @@ export class Puzzle {
     return this.frontier.edges;
   }
 
+  /** The frontier's corners — the only points a tile sticks to. */
+  get corners(): ReadonlyMap<string, Cyc> {
+    return this.frontier.corners;
+  }
+
   /** How many tiles fill the region — exact for a one-kind tray, which is
    * every level so far (the float areas are of whole tiles). */
   get needed(): number {

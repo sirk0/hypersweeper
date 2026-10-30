@@ -2,12 +2,15 @@
 
 The second game in this repo. The player gets a bounded flat region and a tray
 of tiles and must cover the region exactly, dragging tiles in; a dropped tile
-snaps to the points and edges already on the board. The ladder it is built for
+sticks to a corner of what is still uncovered — never part-way along a
+straight edge — and a dot marks each corner it would stick to. Tap a placed
+tile to select it; Delete (the button, or the key) removes it, and a lifted
+tile dropped where it cannot land goes back where it was. The ladder it is built for
 is every flat board Hypersweeper has: squares, triangles, hexagons, the uniform
 and 2-uniform tilings, then spirals and aperiodic ones, with vertex rules
 ("every point is 3.3.4.3.4") on the later levels.
 
-**Status: one level (Squares, 5×5), local only.** No CI job, no deploy, no
+**Status: one level (Squares, 4×4), local only.** No CI job, no deploy, no
 packaging — `ci.yml` and the Pages deploy do not look at this folder.
 
 ## Build and run
@@ -41,12 +44,13 @@ completes the board greedily — the quick way to see the win state.
   as directed edges, uncovered side on the left. Covering a tile adds its
   edges reversed and cancels a→b against b→a, after splitting both at each
   other's vertices (so T-junctions work). `fits` is the overlap test,
-  `placements` the snap candidates (a tile vertex on a frontier vertex, an edge
-  laid along a frontier edge), `nearest` the one the drag shows. Won ⇔ empty.
+  `corners` the frontier vertices where it turns, `placements` the snap
+  candidates (a tile vertex on a corner, an edge laid along a frontier edge),
+  `nearest` the one the drag shows. Won ⇔ empty.
 - `src/levels.ts` — the levels: ring, region loops, tray tile kinds, mirror.
 - `src/puzzle.ts` — pure game state: `place`, `lift`, `snap`, `won`, `needed`.
 - `src/view/svgBoard.ts` — the SVG drawing (board units, y up, one flip).
-- `src/input/drag.ts` — pointer drag and drop.
+- `src/input/drag.ts` — pointer drag and drop, and tap to select.
 
 `@boards/*` is `../web/src/boards/*` and `@data/*` is `../data/*`, set in
 `vite.config.ts` (and through it `vitest.config.ts`) and `tsconfig.json`.

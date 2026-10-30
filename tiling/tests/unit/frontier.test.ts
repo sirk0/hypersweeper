@@ -83,10 +83,16 @@ describe("frontier", () => {
     expect(f.empty).toBe(true);
   });
 
-  it("offers a square every position along the region's edge", () => {
-    const f = Frontier.ofRegion(Z4, [box(3, 3)]);
-    const spots = f.placements(square, [1.5, 1.5], 10, false);
-    // the 8 squares touching the rim (corner ones reachable two ways, once each)
-    expect(spots).toHaveLength(8);
+  it("sticks only at corners, never part-way along an edge", () => {
+    let f = Frontier.ofRegion(Z4, [box(3, 3)]);
+    // the region's four corners, though its outline has a vertex every unit
+    expect(f.corners.size).toBe(4);
+    const centres = (spots: Cyc[][]): string[] =>
+      spots.map((s) => s.map((v) => v.join(",")).sort()[0]!).sort();
+    expect(centres(f.placements(square, [1.5, 1.5], 10, false))).toEqual(["0,0", "0,2", "2,0", "2,2"]);
+    expect(f.nearest(square, [1.5, 0.5], 0.7, false)).toBeNull(); // mid-edge
+    // one square in the corner: next to it, above it, or another region corner
+    f = f.cover(at(square, 0, 0));
+    expect(centres(f.placements(square, [1.5, 1.5], 10, false))).toEqual(["0,1", "0,2", "1,0", "2,0", "2,2"]);
   });
 });

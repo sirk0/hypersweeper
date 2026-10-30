@@ -152,6 +152,36 @@ export class Frontier {
     return this.edges.length === 0;
   }
 
+  private cornerCache: Map<string, Cyc> | null = null;
+
+  /**
+   * The frontier's corners, by key: the vertices where it turns. A point part-way
+   * along a straight run — a step of the region's outline, or where a tile's
+   * side ends against a longer edge — is a vertex but not a corner. Where the
+   * frontier pinches (two runs through one point) the point is a corner too.
+   */
+  get corners(): ReadonlyMap<string, Cyc> {
+    if (this.cornerCache) return this.cornerCache;
+    const { ring } = this;
+    const into = new Map<string, Edge[]>();
+    const outOf = new Map<string, Edge[]>();
+    for (const e of this.edges) {
+      (into.get(e.bk) ?? into.set(e.bk, []).get(e.bk)!).push(e);
+      (outOf.get(e.ak) ?? outOf.set(e.ak, []).get(e.ak)!).push(e);
+    }
+    const corners = new Map<string, Cyc>();
+    for (const [k, ins] of into) {
+      const outs = outOf.get(k) ?? [];
+      const straight =
+        ins.length === 1 &&
+        outs.length === 1 &&
+        sameDirection(ring, ring.sub(ins[0]!.b, ins[0]!.a), ring.sub(outs[0]!.b, outs[0]!.a));
+      if (!straight) corners.set(k, ins[0]!.b);
+    }
+    this.cornerCache = corners;
+    return corners;
+  }
+
   /** The frontier once `poly` (counter-clockwise) is covered too. The caller
    * has checked `fits`. */
   cover(poly: Cyc[]): Frontier {
@@ -210,10 +240,15 @@ export class Frontier {
 
   /**
    * Every fitting placement of `shape` that puts one of its vertices on a
-   * frontier vertex within `reach` of `near`, with the edge leaving (or
-   * entering) that vertex laid along a frontier edge leaving (or entering) it.
-   * That one rule covers edge-to-edge gluing and corners meeting a side
-   * part-way. Placements are returned as posed vertex lists, each once.
+   * frontier *corner* within `reach` of `near`, with the edge leaving (or
+   * entering) that corner laid along the frontier edge leaving (or entering)
+   * it. A tile never sticks part-way along a straight run: the first square
+   * goes into a corner of the region, the next into a corner the first one
+   * made. Every tiling can still be laid that way — whatever is left uncovered
+   * always has a convex corner, and some tile of the tiling fills it. A tile
+   * corner meeting a side part-way (a T-junction) still fits; it just has to be
+   * reached from one of the tile's other vertices. Placements are returned as
+   * posed vertex lists, each once.
    */
   placements(shape: Shape, near: XY, reach: number, mirror: boolean): Cyc[][] {
     const { ring } = this;
@@ -225,12 +260,14 @@ export class Frontier {
     };
     const flips = mirror ? [false, true] : [false];
     const r2 = reach * reach;
+    const corners = this.corners;
     for (const f of this.edges) {
       for (const [v, vxy, d, leaving] of [
         [f.a, f.axy, ring.sub(f.b, f.a), true],
         [f.b, f.bxy, ring.sub(f.b, f.a), false],
       ] as const) {
         if ((vxy[0] - near[0]) ** 2 + (vxy[1] - near[1]) ** 2 > r2) continue;
+        if (!corners.has(ring.key(v))) continue;
         for (const flip of flips) {
           const base = posed(shape, { rot: 0, flip, t: ring.zero });
           const m = base.length;
