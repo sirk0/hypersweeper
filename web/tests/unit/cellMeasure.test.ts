@@ -46,10 +46,7 @@ function inradiusOf(poly: readonly Vec3[], centre: Vec3): number {
   const ey = cross(normal, ex);
   const flat = poly.map((p): [number, number] => {
     const d: Vec3 = [p[0] - centre[0], p[1] - centre[1], p[2] - centre[2]];
-    return [
-      d[0] * ex[0] + d[1] * ex[1] + d[2] * ex[2],
-      d[0] * ey[0] + d[1] * ey[1] + d[2] * ey[2],
-    ];
+    return [d[0] * ex[0] + d[1] * ex[1] + d[2] * ex[2], d[0] * ey[0] + d[1] * ey[1] + d[2] * ey[2]];
   });
   return polygonInradius(flat, [0, 0]);
 }

@@ -120,8 +120,12 @@ import {
 
 // The two triangles of a billboard quad, in billboard-plane units.
 const QUAD_CORNERS: readonly (readonly [number, number])[] = [
-  [-1, -1], [1, -1], [1, 1],
-  [-1, -1], [1, 1], [-1, 1],
+  [-1, -1],
+  [1, -1],
+  [1, 1],
+  [-1, -1],
+  [1, 1],
+  [-1, 1],
 ];
 const BASE_COLOR = "#8e8e8e"; // grout surface showing through the tile gaps
 
@@ -214,10 +218,7 @@ class DynGeometry {
     this.capacity = Math.max(verts, Math.ceil(this.capacity * 1.5), 64);
     this.spec.forEach(([name, items], i) => {
       this.arrays[i] = new Float32Array(this.capacity * items);
-      this.geometry.setAttribute(
-        name,
-        new BufferAttribute(this.arrays[i]!, items),
-      );
+      this.geometry.setAttribute(name, new BufferAttribute(this.arrays[i]!, items));
     });
   }
 
@@ -244,10 +245,16 @@ class DynGeometry {
       sphere.radius = 0;
       return;
     }
-    let minX = Infinity, minY = Infinity, minZ = Infinity;
-    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      minZ = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity,
+      maxZ = -Infinity;
     for (let j = 0, end = verts * 3; j < end; j += 3) {
-      const x = pos[j]!, y = pos[j + 1]!, z = pos[j + 2]!;
+      const x = pos[j]!,
+        y = pos[j + 1]!,
+        z = pos[j + 2]!;
       if (x < minX) minX = x;
       if (y < minY) minY = y;
       if (z < minZ) minZ = z;
@@ -255,10 +262,14 @@ class DynGeometry {
       if (y > maxY) maxY = y;
       if (z > maxZ) maxZ = z;
     }
-    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+    const cx = (minX + maxX) / 2,
+      cy = (minY + maxY) / 2,
+      cz = (minZ + maxZ) / 2;
     let r2 = 0;
     for (let j = 0, end = verts * 3; j < end; j += 3) {
-      const dx = pos[j]! - cx, dy = pos[j + 1]! - cy, dz = pos[j + 2]! - cz;
+      const dx = pos[j]! - cx,
+        dy = pos[j + 1]! - cy,
+        dz = pos[j + 2]! - cz;
       const d2 = dx * dx + dy * dy + dz * dz;
       if (d2 > r2) r2 = d2;
     }
@@ -462,7 +473,11 @@ function buttonTriangles(
     for (let e = 0; e < n; e++) {
       const a = crown.points[e]!;
       const b = crown.points[(e + 1) % n]!;
-      out.push({ p: [crown.center, s > 0 ? a : b, s > 0 ? b : a], n: faceNormal, t: [1, rim, rim] });
+      out.push({
+        p: [crown.center, s > 0 ? a : b, s > 0 ? b : a],
+        n: faceNormal,
+        t: [1, rim, rim],
+      });
     }
     // one ring of walls per loop gap, from the outer edge up to the top edge.
     // One normal per quad keeps its two (slightly non-coplanar) triangles
@@ -480,9 +495,7 @@ function buttonTriangles(
         // negates it, which is exactly what the mirroring asks for.
         const quadNormal = normalize(
           newellNormal(
-            s > 0
-              ? [low[a]!, low[b]!, high[b]!, high[a]!]
-              : [low[b]!, low[a]!, high[a]!, high[b]!],
+            s > 0 ? [low[a]!, low[b]!, high[b]!, high[a]!] : [low[b]!, low[a]!, high[a]!, high[b]!],
           ),
         );
         if (s > 0) {
@@ -757,17 +770,13 @@ export class SolidBoard extends Group implements BoardMesh {
       const normal = normalize(newellNormal(poly));
       const radius =
         shape.reduce(
-          (s, p) =>
-            s +
-            Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]),
+          (s, p) => s + Math.hypot(p[0] - centroid[0], p[1] - centroid[1], p[2] - centroid[2]),
           0,
         ) / shape.length;
       // ...and the inradius, measured in the cell's own tangent plane (see
       // CellGeom.fit). Any two perpendicular in-plane axes will do — nothing
       // downstream cares which way they point, only how far the nearest edge is.
-      const ex = normalize(
-        cross(normal, Math.abs(normal[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]),
-      );
+      const ex = normalize(cross(normal, Math.abs(normal[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));
       const ey = cross(normal, ex);
       const fit = polygonInradius(
         shape.map((p): [number, number] => {
@@ -799,16 +808,28 @@ export class SolidBoard extends Group implements BoardMesh {
       // cell — found once, rather than by every one of its triangles in turn.
       const buttons = cut
         ? ([this.profile.closed, this.profile.open] as const).map((loops) =>
-            buttonTriangles(drawn, centroid, normal, radius, loops, this.profile.gap, this.twoSided),
+            buttonTriangles(
+              drawn,
+              centroid,
+              normal,
+              radius,
+              loops,
+              this.profile.gap,
+              this.twoSided,
+            ),
           )
         : null;
       const near = buttons
         ? (() => {
             const reach = buttons.flatMap((tris) => tris.flatMap((t) => t.p));
-            return { hole: pruneSolid(cut!.solid, [reach]), collar: pruneSolid(cut!.collar, [reach]) };
+            return {
+              hole: pruneSolid(cut!.solid, [reach]),
+              collar: pruneSolid(cut!.collar, [reach]),
+            };
           })()
         : null;
-      const tile = plate && near ? clipTriangles(clipTriangles(plate, near.collar), near.hole) : null;
+      const tile =
+        plate && near ? clipTriangles(clipTriangles(plate, near.collar), near.hole) : null;
       const trim = plate && tile ? keptScale(tile, plate) : 1;
       const cutButtons =
         buttons && near
@@ -934,10 +955,7 @@ export class SolidBoard extends Group implements BoardMesh {
     // surface it is shown from both faces and pushed back in depth
     // (polygonOffset) — the lenses only touch its plane along their loop-0 rim.
     const baseGeometry = new BufferGeometry();
-    baseGeometry.setAttribute(
-      "position",
-      new BufferAttribute(new Float32Array(basePositions), 3),
-    );
+    baseGeometry.setAttribute("position", new BufferAttribute(new Float32Array(basePositions), 3));
     baseGeometry.computeVertexNormals();
     const base = new Mesh(
       baseGeometry,
@@ -978,10 +996,7 @@ export class SolidBoard extends Group implements BoardMesh {
         new BufferAttribute(new Float32Array(collarPositions), 3),
       );
       collarGeometry.computeVertexNormals();
-      this.collarColors = new BufferAttribute(
-        new Float32Array(collarPositions.length),
-        3,
-      );
+      this.collarColors = new BufferAttribute(new Float32Array(collarPositions.length), 3);
       collarGeometry.setAttribute("color", this.collarColors);
       const collar = new Mesh(
         collarGeometry,
@@ -1096,10 +1111,7 @@ export class SolidBoard extends Group implements BoardMesh {
         depthWrite: false,
       });
       patchGlow(this.markerDropMaterial, uniforms);
-      const markerDropMesh = new Mesh(
-        this.markerDropGeometry.geometry,
-        this.markerDropMaterial,
-      );
+      const markerDropMesh = new Mesh(this.markerDropGeometry.geometry, this.markerDropMaterial);
       markerDropMesh.name = "markerDrop";
       markerDropMesh.renderOrder = 3;
       this.add(markerDropMesh);
@@ -1109,8 +1121,7 @@ export class SolidBoard extends Group implements BoardMesh {
       this.writeGeometry(i);
       this.writeColor(i);
     }
-    this.meanRadius =
-      this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
+    this.meanRadius = this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
     this.motion.setUnit(this.meanRadius);
     this.openDrop =
       this.profile.closed[this.profile.closed.length - 1]!.height -
@@ -1126,7 +1137,11 @@ export class SolidBoard extends Group implements BoardMesh {
 
   cellForFace(faceIndex: number, layer: PickLayer = "cells"): CellId | null {
     const faces =
-      layer === "base" ? this.baseFaceCell : layer === "collar" ? this.collarFaceCell : this.faceCell;
+      layer === "base"
+        ? this.baseFaceCell
+        : layer === "collar"
+          ? this.collarFaceCell
+          : this.faceCell;
     const ci = faces[faceIndex];
     return ci == null ? null : (this.order[ci] ?? null);
   }
@@ -1222,11 +1237,9 @@ export class SolidBoard extends Group implements BoardMesh {
    * glossy tile catching a window of light as the board turns. */
   setEffects(env: Texture | null): void {
     const tiles = (this.getObjectByName("cells") as Mesh | undefined)?.material as
-      | MeshStandardMaterial
-      | undefined;
+      MeshStandardMaterial | undefined;
     const markers = (this.getObjectByName("markers") as Mesh | undefined)?.material as
-      | MeshStandardMaterial
-      | undefined;
+      MeshStandardMaterial | undefined;
     // A matte tile would take the map almost wholly as *diffuse* light, which is
     // a wash over colours already paid back for the key light (the albedo), so
     // the map is weighted by how glossy the tile is and divided by that payback.
@@ -1262,9 +1275,7 @@ export class SolidBoard extends Group implements BoardMesh {
     this.viewRight = toVec3(new Vector3(1, 0, 0).applyQuaternion(inverse));
     this.viewUp = toVec3(new Vector3(0, 1, 0).applyQuaternion(inverse));
     this.updateWorldMatrix(true, false);
-    const camLocal = cameraWorldPos
-      .clone()
-      .applyMatrix4(_inv.copy(this.matrixWorld).invert());
+    const camLocal = cameraWorldPos.clone().applyMatrix4(_inv.copy(this.matrixWorld).invert());
     this.cameraLocal = [camLocal.x, camLocal.y, camLocal.z];
     this.rebuildGlyphs();
   }
@@ -1437,8 +1448,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // this cull; depth-testing then hides any number a nearer wall occludes.
       if (
         !this.twoSided &&
-        toCam[0] * g.normal[0] + toCam[1] * g.normal[1] + toCam[2] * g.normal[2] <=
-          0.05
+        toCam[0] * g.normal[0] + toCam[1] * g.normal[1] + toCam[2] * g.normal[2] <= 0.05
       ) {
         continue;
       }
@@ -1449,15 +1459,10 @@ export class SolidBoard extends Group implements BoardMesh {
       // the cell currently is.
       const projected = g.shape.map((p): [number, number] => {
         const d: Vec3 = [p[0] - c[0], p[1] - c[1], p[2] - c[2]];
-        return [
-          d[0] * u[0] + d[1] * u[1] + d[2] * u[2],
-          d[0] * v[0] + d[1] * v[1] + d[2] * v[2],
-        ];
+        return [d[0] * u[0] + d[1] * u[1] + d[2] * u[2], d[0] * v[0] + d[1] * v[1] + d[2] * v[2]];
       });
-      const px =
-        projected.reduce((a, q) => a + q[0], 0) / projected.length;
-      const py =
-        projected.reduce((a, q) => a + q[1], 0) / projected.length;
+      const px = projected.reduce((a, q) => a + q[0], 0) / projected.length;
+      const py = projected.reduce((a, q) => a + q[1], 0) / projected.length;
       const settled = polygonInradius(projected, [px, py]) * 0.9 * g.trim;
       const s = settled * this.anim.popScale(i, now);
       if (!(settled > 0)) continue;
@@ -1487,10 +1492,7 @@ export class SolidBoard extends Group implements BoardMesh {
       // nothing while the crown does not. So the crown is a floor under the
       // lift there.
       const clear = this.twoSided ? g.radius * this.crownLift * 1.35 : 0;
-      const lift =
-        glyph === "cross"
-          ? g.fit * MARKER_REACH * 1.1
-          : Math.max(settled * 1.3, clear);
+      const lift = glyph === "cross" ? g.fit * MARKER_REACH * 1.1 : Math.max(settled * 1.3, clear);
       const cx = c[0] + toCam[0] * lift;
       const cy = c[1] + toCam[1] * lift;
       const cz = c[2] + toCam[2] * lift;
@@ -1514,10 +1516,7 @@ export class SolidBoard extends Group implements BoardMesh {
           into[k++] = p[1];
           into[k++] = p[2];
         }
-        uvInto.set(
-          [u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1],
-          vert * 2,
-        );
+        uvInto.set([u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1], vert * 2);
       };
       // A cell with a flag coming down draws only that flag — the drop lands
       // on exactly the settled size, so the cell's own glyph takes over on the
@@ -1894,11 +1893,7 @@ function centroidOf(points: readonly Vec3[]): Vec3 {
 }
 
 function lerp3(p: Vec3, q: Vec3, t: number): Vec3 {
-  return [
-    p[0] + (q[0] - p[0]) * t,
-    p[1] + (q[1] - p[1]) * t,
-    p[2] + (q[2] - p[2]) * t,
-  ];
+  return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
 }
 
 function add3(p: Vec3, q: Vec3): Vec3 {

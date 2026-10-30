@@ -146,8 +146,8 @@ describe("card previews", () => {
       const { svg, tiled } = previewIcon(key);
       expect(tiled, key).toBe(false);
       const [x, y, w, h] = box(svg) as [number, number, number, number];
-      const coords = [...svg.matchAll(/ d="([^"]*)"/g)].flatMap(
-        (m) => (m[1]!.match(/-?\d*\.?\d+/g) ?? []).map(Number),
+      const coords = [...svg.matchAll(/ d="([^"]*)"/g)].flatMap((m) =>
+        (m[1]!.match(/-?\d*\.?\d+/g) ?? []).map(Number),
       );
       const xs = coords.filter((_, i) => i % 2 === 0);
       const ys = coords.filter((_, i) => i % 2 === 1);
@@ -225,13 +225,7 @@ describe("card previews", () => {
       [...svg.matchAll(/ d="([^"]*)"/g)].map((m) =>
         (m[1]!.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number),
       );
-    for (const key of [
-      "phyllotaxis",
-      "klaassen",
-      "pentaspiral5",
-      "pentaspiral6",
-      "pentaspiral7",
-    ]) {
+    for (const key of ["phyllotaxis", "klaassen", "pentaspiral5", "pentaspiral6", "pentaspiral7"]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(true);
       expect(paths(preview.svg), key).toBeGreaterThan(30);

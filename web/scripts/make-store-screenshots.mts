@@ -62,6 +62,7 @@ interface Device extends View {
 // The insets: 62pt is the Dynamic Island's (iPhone 16 Pro and Pro Max); 24pt
 // is a status bar with no sensor housing in it, which is an iPad's and, as an
 // estimate until one can be measured, the iPhone Duo's.
+// prettier-ignore
 const DEVICES: Device[] = [
   { key: "iphone-6.9", viewport: { width: 440, height: 956 }, scale: 3, touch: true, native: "phone", safeTop: 62 },
   { key: "iphone-6.3", viewport: { width: 402, height: 874 }, scale: 3, touch: true, native: "phone", safeTop: 62 },
@@ -253,6 +254,7 @@ const HEADER_FOCUS = { centreY: 0.41, maxH: 0.4 };
 // The wide size is the iPad's and the Mac's, which crop it less.
 const WIDE_HEADER_FOCUS = { centreY: 0.44, maxH: 0.52 };
 
+// prettier-ignore
 const ART: Art[] = [
   { key: "header", file: "header-5244x2950.png", viewport: { width: 2622, height: 1475 }, scale: 2, focus: HEADER_FOCUS },
   { key: "header", file: "header-3840x1646.png", viewport: { width: 1920, height: 823 }, scale: 2, focus: WIDE_HEADER_FOCUS },
@@ -275,6 +277,7 @@ const ART: Art[] = [
 
 /** The header's boards, left to right, with their relative heights: the
  * middle one is the focal point. */
+// prettier-ignore
 const HEADER_BOARDS: { scene: Scene; weight: number }[] = [
   { scene: { name: "h-hyperbolic", shape: "soft", mode: "hyperbolic73", seed: 4, reveal: 0.4, flags: 5 }, weight: 0.72 },
   { scene: { name: "h-mobius", shape: "realistic", mode: "mobiushex", difficulty: "easy", seed: 3, reveal: 0.34, flags: 4, rotate: [70, 40] }, weight: 0.86 },
@@ -299,7 +302,12 @@ const PENROSE_HEADER: Scene = {
 const SEARCH_SHOTS = ["02-snub-square-torus", "01-snub-dodecahedron", "03-trefoil"];
 const SEARCH_HEADLINE = "Minesweeper on every shape";
 
-const CUTOUT_VIEW: View = { viewport: { width: 1000, height: 1000 }, scale: 3, touch: true, native: "pad" };
+const CUTOUT_VIEW: View = {
+  viewport: { width: 1000, height: 1000 },
+  scale: 3,
+  touch: true,
+  native: "pad",
+};
 
 /** A board alone on a transparent ground: no header, no name, no page. */
 async function cutout(browser: Browser, scene: Scene): Promise<Buffer> {
@@ -326,11 +334,19 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
   const images =
     art.key === "header"
       ? await Promise.all(
-          HEADER_BOARDS.map(async ({ scene }) => memo(`cut:${scene.name}`, () => cutout(browser, scene))),
+          HEADER_BOARDS.map(async ({ scene }) =>
+            memo(`cut:${scene.name}`, () => cutout(browser, scene)),
+          ),
         )
       : await Promise.all(
           SEARCH_SHOTS.map((name) =>
-            memo(`phone:${name}`, () => shoot(browser, phone, SCENES.find((s) => s.name === name)!)),
+            memo(`phone:${name}`, () =>
+              shoot(
+                browser,
+                phone,
+                SCENES.find((s) => s.name === name)!,
+              ),
+            ),
           ),
         );
 
@@ -340,7 +356,9 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
     { viewport: art.viewport, scale: art.scale, touch: false, native: "mac" },
     { name: "art", shape: "soft" },
   );
-  await page.addStyleTag({ content: "#ui, #board, .board-name-layer { display: none !important; }" });
+  await page.addStyleTag({
+    content: "#ui, #board, .board-name-layer { display: none !important; }",
+  });
   await page.evaluate(
     async ([kind, srcs, weights, headline, focus]) => {
       const W = window.innerWidth;
@@ -369,7 +387,10 @@ async function composeArt(browser: Browser, art: Art, file: string): Promise<voi
           const g = c.getContext("2d")!;
           g.drawImage(img, 0, 0);
           const { data } = g.getImageData(0, 0, c.width, c.height);
-          let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+          let x0 = c.width,
+            y0 = c.height,
+            x1 = 0,
+            y1 = 0;
           for (let y = 0; y < c.height; y++) {
             for (let x = 0; x < c.width; x++) {
               if (data[(y * c.width + x) * 4 + 3]! > 24) {
@@ -561,10 +582,15 @@ function readPack(): { stickers: PackSticker[]; icon: string } {
     ({ filename }) => {
       const dir = path.join(pack, filename);
       const { properties } = json(path.join(dir, "Contents.json"));
-      return { src: dataUrl(path.join(dir, properties.filename)), label: properties["accessibility-label"] };
+      return {
+        src: dataUrl(path.join(dir, properties.filename)),
+        label: properties["accessibility-label"],
+      };
     },
   );
-  const icon = dataUrl(path.join(STICKER_CATALOG, "iMessage App Icon.stickersiconset/icon-180x135.png"));
+  const icon = dataUrl(
+    path.join(STICKER_CATALOG, "iMessage App Icon.stickersiconset/icon-180x135.png"),
+  );
   return { stickers, icon };
 }
 
@@ -742,7 +768,10 @@ async function messagesShot(
 }
 
 async function main(): Promise<void> {
-  const outRoot = path.resolve(process.cwd(), process.argv[2] ?? path.join(WEB, "../app-store-screenshots"));
+  const outRoot = path.resolve(
+    process.cwd(),
+    process.argv[2] ?? path.join(WEB, "../app-store-screenshots"),
+  );
   const distDir = process.env.STORE_DIST ?? path.join(WEB, "node_modules/.store-shots-dist");
 
   if (!process.env.SKIP_BUILD) {
@@ -796,7 +825,9 @@ async function main(): Promise<void> {
         ? tiledHeader(browser, art, file)
         : composeArt(browser, art, file));
     }
-    const wantsMessages = MESSAGES_SLOTS.some((slot) => !onlyDevices || onlyDevices.includes(slot.key));
+    const wantsMessages = MESSAGES_SLOTS.some(
+      (slot) => !onlyDevices || onlyDevices.includes(slot.key),
+    );
     const pack = wantsMessages ? readPack() : undefined;
     for (const slot of MESSAGES_SLOTS) {
       if (onlyDevices && !onlyDevices.includes(slot.key)) continue;

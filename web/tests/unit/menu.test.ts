@@ -35,11 +35,7 @@ describe("picker pages", () => {
   });
 
   it("promotes them on every flat manifold too", () => {
-    expect(menuTilingRows("cylinder").map((r) => r.mode)).toEqual([
-      "cyltri",
-      "cylinder",
-      "cylhex",
-    ]);
+    expect(menuTilingRows("cylinder").map((r) => r.mode)).toEqual(["cyltri", "cylinder", "cylhex"]);
     expect(menuTilingRows("torus").map((r) => r.mode)).toEqual(["torustri", "torus", "torushex"]);
     expect(menuTilingRows("klein").map((r) => r.mode)).toEqual(["kleintri", "klein", "kleinhex"]);
   });
@@ -102,7 +98,13 @@ describe("picker pages", () => {
     // ...and the cylinder, Möbius strip and torus, which the 2-uniform tilings
     // wrap too
     for (const surface of ["cylinder", "mobius", "torus"]) {
-      expect(menuFamilies(surface)).toEqual(["uniform", "dual", "2-uniform", "isogonal", "rectangle"]);
+      expect(menuFamilies(surface)).toEqual([
+        "uniform",
+        "dual",
+        "2-uniform",
+        "isogonal",
+        "rectangle",
+      ]);
     }
   });
 
@@ -112,9 +114,12 @@ describe("picker pages", () => {
     const twoUniform = menuFamilyRows("2-uniform", "flat");
     expect(twoUniform).toHaveLength(20);
     for (const row of twoUniform) expect(row.notation, row.mode).toMatch(/^\[.+; .+\][₁₂]?$/);
-    expect(twoUniform.find((r) => r.mode === "snubelongated2")?.notation).toBe("[3³.4²; 3².4.3.4]₁");
+    expect(twoUniform.find((r) => r.mode === "snubelongated2")?.notation).toBe(
+      "[3³.4²; 3².4.3.4]₁",
+    );
     for (const family of menuFamilies("flat").filter((f) => f !== "2-uniform")) {
-      for (const row of menuFamilyRows(family, "flat")) expect(row.notation, row.mode).toBeUndefined();
+      for (const row of menuFamilyRows(family, "flat"))
+        expect(row.notation, row.mode).toBeUndefined();
     }
   });
 

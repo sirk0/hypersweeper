@@ -11,13 +11,7 @@ import {
   soundPreset,
   type SoundPreset,
 } from "../../src/audio/presets";
-import {
-  noteFor,
-  partialsFor,
-  voicesFor,
-  type CellSound,
-  type Voice,
-} from "../../src/audio/sound";
+import { noteFor, partialsFor, voicesFor, type CellSound, type Voice } from "../../src/audio/sound";
 
 // `voicesFor` is the whole of the sound design as a pure function: an event in,
 // the grains it sounds as out. Everything asserted here is audible — a pitch, a

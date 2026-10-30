@@ -51,7 +51,8 @@ describe("motion curves", () => {
 
   it("an opened cell overshoots into its recess before settling", () => {
     let lowest = Infinity;
-    for (let t = 0; t <= MOTION_MS.open; t += 5) lowest = Math.min(lowest, pose("open", t, 0.33).lift);
+    for (let t = 0; t <= MOTION_MS.open; t += 5)
+      lowest = Math.min(lowest, pose("open", t, 0.33).lift);
     expect(lowest).toBeLessThan(0);
   });
 
@@ -194,7 +195,13 @@ describe("roundCorners", () => {
   it("keeps a point the corner mask says is no corner as it is", () => {
     // a square whose bottom edge is drawn through its midpoint, as a hyperbolic
     // edge is drawn through its arc points
-    const drawn: [number, number][] = [[0, 0], [5, 0], [10, 0], [10, 10], [0, 10]];
+    const drawn: [number, number][] = [
+      [0, 0],
+      [5, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+    ];
     const r = roundCorners(drawn, 0.2, [true, false, true, true, true]);
     expect(r).toHaveLength(3 * 4 + 1);
     expect(r[3]).toEqual([5, 0]);

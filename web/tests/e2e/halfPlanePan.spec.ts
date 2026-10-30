@@ -62,7 +62,8 @@ async function drag(
           }),
         );
       send("pointerdown", a.x, a.y, 1);
-      for (let i = 1; i <= n; i++) send("pointermove", a.x + ((b.x - a.x) * i) / n, a.y + ((b.y - a.y) * i) / n, 1);
+      for (let i = 1; i <= n; i++)
+        send("pointermove", a.x + ((b.x - a.x) * i) / n, a.y + ((b.y - a.y) * i) / n, 1);
       send("pointerup", b.x, b.y, 0);
     },
     { a: from, b: to, n: steps },
@@ -127,7 +128,9 @@ test.describe("half-plane panning", () => {
     expect(end.y).toBeCloseTo(start.y, 1);
   });
 
-  test("the up arrow magnifies about the ideal line, and 0 puts the board back", async ({ page }) => {
+  test("the up arrow magnifies about the ideal line, and 0 puts the board back", async ({
+    page,
+  }) => {
     const start = await at(page, BOTTOM);
     await page.keyboard.press("ArrowUp");
     await frame(page);

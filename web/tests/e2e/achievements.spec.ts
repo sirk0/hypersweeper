@@ -16,10 +16,10 @@ const SCORES = "ms:scores";
  * (even an empty one) is also what stops the module seeding itself from the
  * best times, which would otherwise pre-unlock the fixture board. */
 async function seedAchievements(page: Page, record: Record<string, unknown>): Promise<void> {
-  await page.addInitScript(
-    ([key, value]) => localStorage.setItem(key as string, value as string),
-    [KEY, JSON.stringify({ version: 1, ...record })] as const,
-  );
+  await page.addInitScript(([key, value]) => localStorage.setItem(key as string, value as string), [
+    KEY,
+    JSON.stringify({ version: 1, ...record }),
+  ] as const);
 }
 
 /** Boot with times already on a board, so a win there sets no record. `0` ms is
@@ -51,10 +51,7 @@ const dialog = (page: Page) => page.locator('[data-dialog="score"]');
 
 /** One achievement as the test seam reports it. */
 async function state(page: Page, id: string) {
-  return page.evaluate(
-    (wanted) => window.__ms?.achievements().find((a) => a.id === wanted),
-    id,
-  );
+  return page.evaluate((wanted) => window.__ms?.achievements().find((a) => a.id === wanted), id);
 }
 
 test.describe("achievements", () => {

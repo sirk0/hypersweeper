@@ -102,7 +102,13 @@ const mix = (a: string, b: string, t: number): string => {
   const [x, y] = [hex(a), hex(b)];
   return (
     "#" +
-    x.map((v, i) => Math.round(v + (y[i]! - v) * t).toString(16).padStart(2, "0")).join("")
+    x
+      .map((v, i) =>
+        Math.round(v + (y[i]! - v) * t)
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")
   );
 };
 
@@ -228,7 +234,11 @@ const svg = (body: string, extra = ""): string =>
 
 /** `#rrggbb` as Icon Composer writes a colour. */
 const srgb = (s: string): string =>
-  "srgb:" + hex(s).map((v) => (v / 255).toFixed(5)).join(",") + ",1.00000";
+  "srgb:" +
+  hex(s)
+    .map((v) => (v / 255).toFixed(5))
+    .join(",") +
+  ",1.00000";
 
 /** The seed `icon.json`: the cream ground as the background fill, the mine in
  * front of the cell as two groups, so each casts its own shadow and the mine

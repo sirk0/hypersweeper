@@ -9,9 +9,7 @@ async function shot(page: Page): Promise<Buffer> {
 }
 
 /** A cell currently facing the camera, with its screen coords. */
-async function visibleCell(
-  page: Page,
-): Promise<{ cell: string; x: number; y: number }> {
+async function visibleCell(page: Page): Promise<{ cell: string; x: number; y: number }> {
   const found = await page.evaluate(() => {
     const ms = window.__ms!;
     for (const cell of ms.cells()) {

@@ -35,7 +35,9 @@ test.describe("favourites", () => {
     // On a phone row the star sits at the right edge, centred on the row's height.
     const rowBox = await page.locator('.menu-entry[data-mode="hex"]').boundingBox();
     const starBox = await star.boundingBox();
-    expect(Math.abs(starBox!.y + starBox!.height / 2 - (rowBox!.y + rowBox!.height / 2))).toBeLessThan(1);
+    expect(
+      Math.abs(starBox!.y + starBox!.height / 2 - (rowBox!.y + rowBox!.height / 2)),
+    ).toBeLessThan(1);
     expect(starBox!.x + starBox!.width).toBeGreaterThan(rowBox!.x + rowBox!.width - 8);
     await star.click();
     await expect(star).toHaveAttribute("aria-pressed", "true");
@@ -100,7 +102,12 @@ test.describe("completion marks", () => {
     await page.addInitScript(() =>
       localStorage.setItem(
         "ms:achievements",
-        JSON.stringify({ version: 1, wins: { hex: { easy: 2, hard: 1 } }, shapes: [], flagless: 0 }),
+        JSON.stringify({
+          version: 1,
+          wins: { hex: { easy: 2, hard: 1 } },
+          shapes: [],
+          flagless: 0,
+        }),
       ),
     );
     await phone(page);
@@ -125,8 +132,9 @@ test.describe("completion marks", () => {
     await page.locator('.hud-btn[data-slot="back"]').click();
 
     // Classic is the plane's squares: its Quick start card says so.
-    await expect(
-      page.locator('.menu-board-card[data-mode="square"] .menu-done'),
-    ).toHaveAttribute("data-won", "easy");
+    await expect(page.locator('.menu-board-card[data-mode="square"] .menu-done')).toHaveAttribute(
+      "data-won",
+      "easy",
+    );
   });
 });

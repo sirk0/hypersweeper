@@ -98,8 +98,9 @@ describe("menu bar tree", () => {
       resolve(__dirname, "../../../ios/App/App.xcodeproj/project.pbxproj"),
       "utf8",
     );
-    const phases = [...pbx.matchAll(/isa = PBXSourcesBuildPhase;[\s\S]*?files = \(([\s\S]*?)\);/g)]
-      .map((m) => m[1]!);
+    const phases = [
+      ...pbx.matchAll(/isa = PBXSourcesBuildPhase;[\s\S]*?files = \(([\s\S]*?)\);/g),
+    ].map((m) => m[1]!);
     const app = phases.find((p) => p.includes("AppDelegate.swift in Sources"));
     const clip = phases.find((p) => p.includes("ClipAppDelegate.swift in Sources"));
     expect(app).toContain("MenuBarPlugin.swift in Sources");

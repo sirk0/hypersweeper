@@ -83,10 +83,6 @@ import type { Scheme } from "./theme";
  * bonds as a hatch and the dodecagons nearly board-sized. */
 const CELL_AREA_PX = 108;
 
-
-
-
-
 /** No repeat tile smaller than this on either axis. Rounding the tile to whole
  * pixels keeps it crisp across the seam; a tiny tile would round badly (and a
  * 12 px tile is 30 000 draws on a large page). */
@@ -384,7 +380,10 @@ export const DOMAINS: Record<string, () => Domain> = {
   // angles, but no spiral, since a spiral is not periodic.
   klaassen: () => {
     const chevron = (rot: number): Vertex[] =>
-      walk([0, 2, 4, 12, 10, 8, 6].map((e) => (((rot + e) % 14) + 14) % 14), 14);
+      walk(
+        [0, 2, 4, 12, 10, 8, 6].map((e) => (((rot + e) % 14) + 14) % 14),
+        14,
+      );
     const tip = chevron(-6)[3]!;
     return latticeDomain([chevron(-6), chevron(-5)], [1, 0], tip);
   },
@@ -806,10 +805,7 @@ function periodicTile(domain: Domain, scheme: Scheme): string {
   for (let m = -1; m <= kx; m++) {
     for (let n = -1; n <= ky; n++) {
       // y is flipped: a tiling is y-up and SVG is y-down.
-      const place = ([x, y]: Vertex): Vertex => [
-        (x + m * width) * sx,
-        h - (y + n * height) * sy,
-      ];
+      const place = ([x, y]: Vertex): Vertex => [(x + m * width) * sx, h - (y + n * height) * sy];
       collect(cells, place, w, h, segments);
     }
   }

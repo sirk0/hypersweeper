@@ -110,9 +110,7 @@ test.describe("a lost touch lift", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     // A single mine, so a tap on the cell beside it opens exactly that cell.
-    await page.evaluate(() =>
-      window.__ms!.startBoard("square", "medium", { mines: ["4,4"] }),
-    );
+    await page.evaluate(() => window.__ms!.startBoard("square", "medium", { mines: ["4,4"] }));
   });
 
   test("does not turn the next one-finger drag into a pinch", async ({ page }) => {

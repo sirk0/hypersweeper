@@ -409,7 +409,8 @@ export class Hud {
         .padStart(d, "0");
     for (const [source, el] of this.counters) {
       const digits = Number(el.dataset.digits ?? 3);
-      const value = source === "minesRemaining" ? this.state.minesRemaining : this.state.elapsedSeconds;
+      const value =
+        source === "minesRemaining" ? this.state.minesRemaining : this.state.elapsedSeconds;
       el.textContent = pad(value, digits);
     }
     if (this.smiley) {

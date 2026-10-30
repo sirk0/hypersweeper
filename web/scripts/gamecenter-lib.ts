@@ -84,25 +84,23 @@ export function imagePath(vendorIdentifier: string): string {
 }
 
 export function buildManifest(): Manifest {
-  const achievements = GAME_CENTER_ACHIEVEMENTS.map(
-    (a): ManifestAchievement => ({
-      vendorIdentifier: a.gameCenterId,
-      referenceName: a.id,
-      points: a.points,
-      showBeforeEarned: true,
-      repeatable: false,
-      localizations: {
-        [LOCALE]: {
-          name: a.title,
-          beforeEarnedDescription: a.brief,
-          afterEarnedDescription: a.done,
-          image: imagePath(a.gameCenterId),
-        },
+  const achievements = GAME_CENTER_ACHIEVEMENTS.map((a): ManifestAchievement => ({
+    vendorIdentifier: a.gameCenterId,
+    referenceName: a.id,
+    points: a.points,
+    showBeforeEarned: true,
+    repeatable: false,
+    localizations: {
+      [LOCALE]: {
+        name: a.title,
+        beforeEarnedDescription: a.brief,
+        afterEarnedDescription: a.done,
+        image: imagePath(a.gameCenterId),
       },
-      icon: a.icon,
-      ring: ringOf(a.id),
-    }),
-  );
+    },
+    icon: a.icon,
+    ring: ringOf(a.id),
+  }));
   return {
     count: achievements.length,
     points: achievements.reduce((sum, a) => sum + a.points, 0),

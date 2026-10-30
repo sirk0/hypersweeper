@@ -46,6 +46,9 @@ export function halfPlaneDrag(
 }
 
 /** Where the move draws board point `p`. */
-export function halfPlaneApply(move: HalfPlaneMove, p: readonly [number, number]): [number, number] {
+export function halfPlaneApply(
+  move: HalfPlaneMove,
+  p: readonly [number, number],
+): [number, number] {
   return [move.a * p[0] + move.t[0], move.a * p[1] + move.t[1]];
 }

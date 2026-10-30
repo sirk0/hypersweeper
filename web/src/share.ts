@@ -36,11 +36,7 @@ export interface ShareBoard {
  * parameters are the whole link, and a stale `seed` from the current board
  * would otherwise ride along. */
 export function shareUrlFor(board: ShareBoard, base: Base): string {
-  const query = boardLinkQuery(
-    board.mode,
-    board.difficulty,
-    board.seed ?? undefined,
-  );
+  const query = boardLinkQuery(board.mode, board.difficulty, board.seed ?? undefined);
   return `${base.origin}${base.pathname}${query}`;
 }
 
@@ -51,11 +47,7 @@ type Base = { origin: string; pathname: string };
  * Mac, Electron) has no address anyone else can open: it is
  * `capacitor://localhost/` or `app://local/`. So its links go to the published
  * site, which is where a recipient without the app can play the board. */
-export function shareBaseFor(
-  packaged: boolean,
-  siteUrl: string,
-  location: Base,
-): Base {
+export function shareBaseFor(packaged: boolean, siteUrl: string, location: Base): Base {
   if (!packaged) return location;
   const site = new URL(siteUrl);
   return { origin: site.origin, pathname: site.pathname };

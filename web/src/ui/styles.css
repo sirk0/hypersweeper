@@ -191,10 +191,7 @@
      sized so a 24pt status bar leaves a control 24px in from the edge, past the
      curve App Store Connect draws round an iPhone Duo screenshot. */
   --corner-reach: 48px;
-  --corner-clear: max(
-    0px,
-    min(calc(var(--safe-top) * 100), var(--corner-reach)) - var(--safe-top)
-  );
+  --corner-clear: max(0px, min(calc(var(--safe-top) * 100), var(--corner-reach)) - var(--safe-top));
 }
 
 /* The boot frame for a device that prefers dark. The default colour scheme is
@@ -484,7 +481,9 @@ body {
   font-weight: 600;
   text-align: center;
   opacity: 0;
-  transition: opacity 220ms ease, transform 220ms ease;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
 }
 
 /* A tap aimed at the board must not be eaten by the hint sitting over it — and
@@ -730,8 +729,7 @@ body {
   margin-inline: auto;
   /* Keep the title and the bottom difficulty row clear of the notch and the
      home indicator when installed full-screen on iOS. */
-  padding: max(24px, env(safe-area-inset-top)) 24px
-    max(24px, env(safe-area-inset-bottom));
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1843,9 +1841,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 9px;
   overflow: hidden;
-  background:
-    var(--bg-texture),
-    linear-gradient(160deg, var(--bg), var(--bg2));
+  background: var(--bg-texture), linear-gradient(160deg, var(--bg), var(--bg2));
 }
 
 /* The chrome above the board: a card the width of the tile block, carrying the
@@ -2739,7 +2735,6 @@ body {
   --ui-font: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-
 /* Sand is the one theme that carries faces of its own. Everything else about it
    — the warm ground, the terracotta accent, the 20px radii, the card fills — is
    in its palette (`sand` / `sandDark` in data/ui/screens.json) and arrives
@@ -2821,11 +2816,28 @@ body {
      smiley bounces on a win and shakes its head on a loss, and both counters
      glow once in the accent on a win.
    --------------------------------------------------------------------------- */
-:root:not([data-motion="off"]) :is(.hud-btn, .hud-smiley, .menu-entry, .difficulty-btn, .menu-header-btn, .dialog-close, .dialog-share) {
+:root:not([data-motion="off"])
+  :is(
+    .hud-btn,
+    .hud-smiley,
+    .menu-entry,
+    .difficulty-btn,
+    .menu-header-btn,
+    .dialog-close,
+    .dialog-share
+  ) {
   transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-:root:not([data-motion="off"]) :is(.hud-btn, .hud-smiley, .difficulty-btn, .menu-header-btn, .dialog-close, .dialog-share):active {
+:root:not([data-motion="off"])
+  :is(
+    .hud-btn,
+    .hud-smiley,
+    .difficulty-btn,
+    .menu-header-btn,
+    .dialog-close,
+    .dialog-share
+  ):active {
   transform: scale(0.92);
 }
 

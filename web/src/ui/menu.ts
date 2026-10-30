@@ -1,11 +1,6 @@
 import { screens } from "../config/screens";
 import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../modes/catalog";
-import {
-  blockedExplanation,
-  fairnessHint,
-  modeFairness,
-  type Fairness,
-} from "../modes/fairness";
+import { blockedExplanation, fairnessHint, modeFairness, type Fairness } from "../modes/fairness";
 import { distortedDifficulties, distortionHint, isDistorted } from "../modes/distortion";
 import { hasMode } from "../modes/presets";
 import { randomMode, type RandomKind } from "../modes/randomBoard";
@@ -379,9 +374,7 @@ export class Menu {
    * a toggle on it stays put. Each row is told its place in the stagger. */
   private riseIn(): void {
     this.body.classList.remove("menu-enter");
-    const rows = this.body.querySelectorAll<HTMLElement>(
-      ".menu-list > li",
-    );
+    const rows = this.body.querySelectorAll<HTMLElement>(".menu-list > li");
     rows.forEach((row, i) => row.style.setProperty("--i", String(Math.min(i, 14))));
     void this.body.offsetWidth;
     this.body.classList.add("menu-enter");
@@ -888,7 +881,10 @@ export class Menu {
       li.append(btn);
       list.append(li);
     }
-    this.body.replaceChildren(this.backRow("Custom", () => this.showRoot()), list);
+    this.body.replaceChildren(
+      this.backRow("Custom", () => this.showRoot()),
+      list,
+    );
   }
 
   private groupHint(group: Group): string {
@@ -958,7 +954,10 @@ export class Menu {
       this.body.replaceChildren(this.paneHeader(group.label, this.groupHint(group)), list);
     } else {
       list.className = "menu-list";
-      this.body.replaceChildren(this.backRow(group.label, () => this.showCustom()), list);
+      this.body.replaceChildren(
+        this.backRow(group.label, () => this.showCustom()),
+        list,
+      );
     }
   }
 
@@ -1050,9 +1049,7 @@ export class Menu {
     // A star, not the `start` glyph the random rows use: that one is a question
     // mark, and the sidebar already ends in a question mark — the How to play
     // button — so the two read as the same row at a glance.
-    quick.append(
-      this.sidebarRow(QUICK_START, "Quick start", "star", () => this.showQuickStart()),
-    );
+    quick.append(this.sidebarRow(QUICK_START, "Quick start", "star", () => this.showQuickStart()));
     sidebar.append(quick);
 
     if (this.groups.length > 0) {
@@ -1084,12 +1081,7 @@ export class Menu {
 
   /** One sidebar nav row. `key` is its `data-group` — the handle both
    * `syncSidebarActive` and the e2e suite know it by. */
-  private sidebarRow(
-    key: string,
-    label: string,
-    icon: string,
-    onClick: () => void,
-  ): HTMLElement {
+  private sidebarRow(key: string, label: string, icon: string, onClick: () => void): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "menu-entry";
@@ -1283,7 +1275,10 @@ export class Menu {
 
   private paintFav(btn: HTMLElement, label: string, on: boolean): void {
     btn.setAttribute("aria-pressed", String(on));
-    btn.setAttribute("aria-label", on ? `Remove ${label} from favourites` : `Add ${label} to favourites`);
+    btn.setAttribute(
+      "aria-label",
+      on ? `Remove ${label} from favourites` : `Add ${label} to favourites`,
+    );
     btn.title = on ? "Remove from favourites" : "Add to favourites";
   }
 
@@ -1414,8 +1409,9 @@ export class Menu {
   private cardBoard(iconKey: string, modes: readonly ModeEntry[] = []): string | undefined {
     const target = iconBoard(iconKey);
     if (modes.length === 0) return target;
-    return (modes.find((e) => e.mode === target) ?? modes.find((e) => e.icon === target) ?? modes[0])!
-      .mode;
+    return (modes.find((e) => e.mode === target) ??
+      modes.find((e) => e.icon === target) ??
+      modes[0])!.mode;
   }
 
   /** Cards waiting for their level to be drawn, in page order. */
@@ -1513,12 +1509,7 @@ export class Menu {
   /** A home-page random entry (Flat, 3D, Hyperbolic) — resolves to a random
    * mode from its pool at click time, so it is a different board every tap
    * (mirrors gui.py's random choice). */
-  private randomRow(
-    key: RandomKind,
-    label: string,
-    hint: string,
-    icon: string,
-  ): HTMLElement {
+  private randomRow(key: RandomKind, label: string, hint: string, icon: string): HTMLElement {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "menu-entry";

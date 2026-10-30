@@ -76,10 +76,7 @@ function shapeList(facts: BoardFacts, coloured: boolean): HTMLElement {
 
 /** Build the window and add it to `host`. The caller keeps the handle and
  * closes it when the board goes away. */
-export function openInfoDialog(
-  host: HTMLElement,
-  opts: InfoDialogOptions,
-): ModalHandle {
+export function openInfoDialog(host: HTMLElement, opts: InfoDialogOptions): ModalHandle {
   const { facts } = opts;
   const card = el("div", "dialog info-dialog");
 

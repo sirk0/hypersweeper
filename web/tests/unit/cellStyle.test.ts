@@ -162,8 +162,14 @@ describe("cell styles", () => {
     // A square at two loops: 4 top-fan triangles + a ring of 4 quads.
     const twoLoop: CellProfile = {
       gap: 0,
-      closed: [{ inset: 0, height: 0 }, { inset: 0.1, height: 0.2 }],
-      open: [{ inset: 0, height: 0 }, { inset: 0.1, height: -0.1 }],
+      closed: [
+        { inset: 0, height: 0 },
+        { inset: 0.1, height: 0.2 },
+      ],
+      open: [
+        { inset: 0, height: 0 },
+        { inset: 0.1, height: -0.1 },
+      ],
     };
     expect(cellVertexCount(4, twoLoop)).toBe(36); // 4 * (3 + 6)
     expect(cellVertexCount(6, twoLoop)).toBe(54);
@@ -181,9 +187,7 @@ describe("cell styles", () => {
 
   it("stands a closed cell above an opened one, on every board", () => {
     for (const [key, kind, profile] of profiles()) {
-      expect(crown(profile, "closed"), `${key} ${kind}`).toBeGreaterThan(
-        crown(profile, "open"),
-      );
+      expect(crown(profile, "closed"), `${key} ${kind}`).toBeGreaterThan(crown(profile, "open"));
     }
   });
 

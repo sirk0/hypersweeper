@@ -9,13 +9,7 @@ import {
 } from "./achievements";
 import { mergeStars, parseStars, replaceStars, storedStars, type Stars } from "./favourites";
 import { catchUpGameCenter } from "./gameCenter";
-import {
-  TOP_N,
-  parseEntries,
-  replaceBoards,
-  storedBoards,
-  type ScoreEntry,
-} from "./leaderboard";
+import { TOP_N, parseEntries, replaceBoards, storedBoards, type ScoreEntry } from "./leaderboard";
 import { readObject, storage } from "./storage";
 
 // iCloud, where the App Store builds keep the record in step.
@@ -225,7 +219,10 @@ function storedJson(rec: Stored, since: number): string {
 
 /** Every source's times for each board, cleared ones left out: the fastest
  * `TOP_N`, each time once. */
-function mergeBoards(sources: Record<string, unknown>[], reset: number): Record<string, ScoreEntry[]> {
+function mergeBoards(
+  sources: Record<string, unknown>[],
+  reset: number,
+): Record<string, ScoreEntry[]> {
   const keys = new Set(sources.flatMap((s) => Object.keys(s)));
   const out: Record<string, ScoreEntry[]> = {};
   for (const key of [...keys].sort()) {
@@ -248,7 +245,13 @@ function mergeBoards(sources: Record<string, unknown>[], reset: number): Record<
 
 /** One sync: the local record and iCloud's, merged. Pure, so the unit tests
  * can play several devices against one store. */
-export function mergeRecords({ boards, record, stars = {}, state, cloud }: MergeInput): MergeResult {
+export function mergeRecords({
+  boards,
+  record,
+  stars = {},
+  state,
+  cloud,
+}: MergeInput): MergeResult {
   const writes: Record<string, string> = {};
   const known = parseResets(cloud[RESET]);
   const reset: Resets = {
@@ -301,7 +304,10 @@ export function mergeRecords({ boards, record, stars = {}, state, cloud }: Merge
   const mergedBoards = mergeBoards([boards, shared], reset.scores);
   const boardsChanged = stable(mergedBoards) !== stable(mergeBoards([boards], 0));
   // Never an empty list over a full one: an empty merge has nothing to add.
-  if (Object.keys(mergedBoards).length > 0 && stable(mergedBoards) !== stable(mergeBoards([shared], 0))) {
+  if (
+    Object.keys(mergedBoards).length > 0 &&
+    stable(mergedBoards) !== stable(mergeBoards([shared], 0))
+  ) {
     writes[SCORES] = stable({ v: 1, boards: mergedBoards });
   }
 

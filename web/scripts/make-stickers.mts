@@ -69,9 +69,25 @@ interface Sticker extends Staging {
 // few enough opened that the flags stand clear of the rim, where the framing
 // would cut their pins off.
 const STICKERS: Sticker[] = [
-  { name: "snub-dodecahedron", mode: "snubdodecsplit", difficulty: "easy", seed: 5, reveal: 0.25, flags: 3 },
+  {
+    name: "snub-dodecahedron",
+    mode: "snubdodecsplit",
+    difficulty: "easy",
+    seed: 5,
+    reveal: 0.25,
+    flags: 3,
+  },
   // Tipped towards the viewer so the hole shows: square on, it reads as a ring.
-  { name: "snub-square-torus", mode: "torussnubsquare", difficulty: "easy", seed: 2, reveal: 0.3, flags: 3, rotate: [0, 50], label: "Snub square torus" },
+  {
+    name: "snub-square-torus",
+    mode: "torussnubsquare",
+    difficulty: "easy",
+    seed: 2,
+    reveal: 0.3,
+    flags: 3,
+    rotate: [0, 50],
+    label: "Snub square torus",
+  },
   { name: "trefoil", mode: "trefoilhex", seed: 6, reveal: 0.4, flags: 5 },
   { name: "penrose", mode: "penrose", difficulty: "easy", seed: 11, reveal: 0.4, flags: 4 },
   { name: "hyperbolic", mode: "hyperbolic73", shape: "soft", seed: 4, reveal: 0.4, flags: 5 },
@@ -150,7 +166,10 @@ async function dieCut(page: Page, png: Buffer): Promise<Buffer> {
       const g = src2d.getContext("2d")!;
       g.drawImage(img, 0, 0);
       const { data } = g.getImageData(0, 0, src2d.width, src2d.height);
-      let x0 = src2d.width, y0 = src2d.height, x1 = 0, y1 = 0;
+      let x0 = src2d.width,
+        y0 = src2d.height,
+        x1 = 0,
+        y1 = 0;
       for (let y = 0; y < src2d.height; y++) {
         for (let x = 0; x < src2d.width; x++) {
           if (data[(y * src2d.width + x) * 4 + 3]! > 24) {

@@ -47,10 +47,6 @@ function triangleArea(a: Vec3, b: Vec3, c: Vec3): number {
   const u: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
   const v: Vec3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
   return (
-    Math.hypot(
-      u[1] * v[2] - u[2] * v[1],
-      u[2] * v[0] - u[0] * v[2],
-      u[0] * v[1] - u[1] * v[0],
-    ) / 2
+    Math.hypot(u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]) / 2
   );
 }

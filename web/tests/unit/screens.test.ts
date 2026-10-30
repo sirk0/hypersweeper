@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  difficulty,
-  hasDifficulty,
-  hasTheme,
-  screens,
-  themeSpec,
-} from "../../src/config/screens";
+import { difficulty, hasDifficulty, hasTheme, screens, themeSpec } from "../../src/config/screens";
 import {
   activeScheme,
   DEFAULT_SCHEME,

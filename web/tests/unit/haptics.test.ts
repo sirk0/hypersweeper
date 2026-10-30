@@ -107,9 +107,7 @@ describe("haptic() in the native iOS shell", () => {
   });
 
   it("swallows a rejected haptic — a buzz must never break a move", async () => {
-    bridge.notification.mockImplementationOnce(() =>
-      Promise.reject(new Error("no engine")),
-    );
+    bridge.notification.mockImplementationOnce(() => Promise.reject(new Error("no engine")));
     const haptic = await loadHaptic();
     expect(() => haptic("lose")).not.toThrow();
     // Let the rejection settle; an unhandled one would fail the run.
@@ -213,8 +211,7 @@ describe("hapticsSupported()", () => {
     // No `vibrate`: WebKit does not implement the Vibration API, and the
     // hidden-switch tick that used to stand in for it does not buzz.
     vi.stubGlobal("navigator", {
-      userAgent:
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15",
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15",
       maxTouchPoints: 5,
     });
     const { hapticsSupported } = await loadModule();
@@ -277,8 +274,7 @@ describe("haptic() where there is no mechanism", () => {
   it("does nothing in iOS Safari, and touches no DOM doing it", async () => {
     const createElement = vi.fn();
     vi.stubGlobal("navigator", {
-      userAgent:
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15",
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15",
     });
     vi.stubGlobal("document", { createElement, body: { appendChild: vi.fn() } });
     const haptic = await loadHaptic();

@@ -1,18 +1,7 @@
 import { QUALITY_PREFS, type QualityPref } from "../render/quality";
 import { ACHIEVEMENTS, earned as earnedIds, loadProgress } from "../achievements";
-import {
-  APP_ICONS,
-  appIcon,
-  appIconSupported,
-  appIconUrls,
-  type AppIconKey,
-} from "../appIcon";
-import {
-  SOUND_CHOICES,
-  SOUND_OFF,
-  SOUND_PRESETS,
-  soundLabel,
-} from "../audio/presets";
+import { APP_ICONS, appIcon, appIconSupported, appIconUrls, type AppIconKey } from "../appIcon";
+import { SOUND_CHOICES, SOUND_OFF, SOUND_PRESETS, soundLabel } from "../audio/presets";
 import { previewSound, setSoundPreset, setSoundVolume } from "../audio/sound";
 import { screens } from "../config/screens";
 import { gameCenterSupported, showGameCenterAchievements } from "../gameCenter";
@@ -217,12 +206,7 @@ function heading(text: string): HTMLElement {
  * tile colours come from the theme (the `--tile-*` properties its `[data-theme]`
  * block declares) and the cut from `data-shape`, so the two halves compose in
  * CSS the way `composeStyle` composes them for the real board. */
-function themeSwatch(
-  key: string,
-  shape: string,
-  scheme: Scheme,
-  closeUp = false,
-): HTMLElement {
+function themeSwatch(key: string, shape: string, scheme: Scheme, closeUp = false): HTMLElement {
   const spec = themeDef(key);
   const el = document.createElement("span");
   el.className = closeUp ? "theme-swatch shape-swatch" : "theme-swatch";
@@ -300,9 +284,7 @@ function soundSwatch(key: string): HTMLElement {
     const bar = document.createElement("span");
     bar.className = "sound-swatch-bar";
     const amp =
-      preset && !(preset.timbre.oddOnly && k % 2 === 0)
-        ? 1 / k ** preset.timbre.decay
-        : 0;
+      preset && !(preset.timbre.oddOnly && k % 2 === 0) ? 1 / k ** preset.timbre.decay : 0;
     bar.style.height = `${Math.round(12 + 88 * amp)}%`;
     el.append(bar);
   }
@@ -590,10 +572,7 @@ export function renderSoundPicker(host: SettingsHost): DocumentFragment {
     const { li, btn } = buttonRow(
       [
         soundSwatch(key),
-        textBlock(
-          preset?.label ?? "Off",
-          preset?.hint ?? "No sound at all",
-        ),
+        textBlock(preset?.label ?? "Off", preset?.hint ?? "No sound at all"),
         check,
       ],
       () => {
@@ -857,7 +836,11 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
     iconChevron.className = "menu-entry-chevron";
     iconChevron.textContent = "›";
     const { li: iconLi, btn: iconBtn } = buttonRow(
-      [appIconSwatch(host.appIcon), textBlock("App icon", appIcon(host.appIcon).label), iconChevron],
+      [
+        appIconSwatch(host.appIcon),
+        textBlock("App icon", appIcon(host.appIcon).label),
+        iconChevron,
+      ],
       openAppIcons,
       "menu-submenu",
     );
@@ -947,12 +930,8 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   // promises a buzz nothing can deliver.
   if (hapticsSupported()) {
     behaviour.append(
-      toggleRow(
-        "haptics",
-        "Haptics",
-        "Buzzes on a flag, a win and a mine",
-        host.haptics,
-        () => host.setHaptics(!host.haptics),
+      toggleRow("haptics", "Haptics", "Buzzes on a flag, a win and a mine", host.haptics, () =>
+        host.setHaptics(!host.haptics),
       ),
     );
   }

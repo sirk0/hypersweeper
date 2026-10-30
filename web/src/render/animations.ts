@@ -279,11 +279,7 @@ export function dropRise(settled: number, half: number): number {
  * lands on `settled`, the size of the glyph already drawn in the cell, so the
  * hand-off at the end of the drop is invisible. `extent` is the board's
  * shorter dimension in the same units. */
-export function dropSize(
-  settled: number,
-  extent: number,
-  progress: number,
-): number {
+export function dropSize(settled: number, extent: number, progress: number): number {
   const start = Math.min(
     Math.max(extent * DROP_START_FRAC, settled * DROP_MIN_SCALE),
     settled * DROP_MAX_SCALE,

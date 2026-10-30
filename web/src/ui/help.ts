@@ -100,14 +100,10 @@ const SECTIONS: Section[] = [
   {
     heading: "Choosing a board",
     rows: [
-      [
-        "Classic",
-        "Opens straight away: the original square grid.",
-      ],
+      ["Classic", "Opens straight away: the original square grid."],
       [
         "Flat, 3D",
-        "Each deals a random board — a flat tiling, or a manifold, sphere " +
-          "or polyhedron.",
+        "Each deals a random board — a flat tiling, or a manifold, sphere " + "or polyhedron.",
       ],
       [
         "Custom",

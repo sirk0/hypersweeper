@@ -11,9 +11,7 @@ test.describe("M1 play", () => {
 
   test("win: revealing the safe field wins and shows the cool smiley", async ({ page }) => {
     // One mine in the top-left corner; revealing the far corner floods the rest.
-    await page.evaluate(() =>
-      window.__ms?.startBoard("square", "easy", { mines: ["0,0"] }),
-    );
+    await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["0,0"] }));
     const xy = await page.evaluate(() => window.__ms?.cellScreenXY("8,8"));
     await page.mouse.click(xy!.x, xy!.y);
     const state = await page.evaluate(() => window.__ms?.state());
@@ -24,9 +22,7 @@ test.describe("M1 play", () => {
 
   test("lose: revealing a mine loses and shows the dead smiley", async ({ page }) => {
     // Mine in the centre (clear of the HUD header) so the click lands on it.
-    await page.evaluate(() =>
-      window.__ms?.startBoard("square", "easy", { mines: ["4,4"] }),
-    );
+    await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["4,4"] }));
     const xy = await page.evaluate(() => window.__ms?.cellScreenXY("4,4"));
     await page.mouse.click(xy!.x, xy!.y);
     const state = await page.evaluate(() => window.__ms?.state());
@@ -37,9 +33,7 @@ test.describe("M1 play", () => {
   test("lose: a flag on a safe cell is crossed out (renders without error)", async ({ page }) => {
     // One mine; flag a safe cell (a misplaced flag), then step on the mine.
     // On loss the safe flag is repainted as a crossed-out "wrongFlag" glyph.
-    await page.evaluate(() =>
-      window.__ms?.startBoard("square", "easy", { mines: ["4,4"] }),
-    );
+    await page.evaluate(() => window.__ms?.startBoard("square", "easy", { mines: ["4,4"] }));
     await page.evaluate(() => window.__ms?.flag("0,0")); // safe cell -> wrong flag
     const xy = await page.evaluate(() => window.__ms?.cellScreenXY("4,4"));
     await page.mouse.click(xy!.x, xy!.y); // reveal the mine -> lost
@@ -49,9 +43,7 @@ test.describe("M1 play", () => {
   });
 
   test("flag counter and restart", async ({ page }) => {
-    await page.evaluate(() =>
-      window.__ms?.startBoard("square", "medium", { seed: 3 }),
-    );
+    await page.evaluate(() => window.__ms?.startBoard("square", "medium", { seed: 3 }));
     await page.evaluate(() => window.__ms?.flag("5,5"));
     let state = await page.evaluate(() => window.__ms?.state());
     expect(state?.minesRemaining).toBe(39);

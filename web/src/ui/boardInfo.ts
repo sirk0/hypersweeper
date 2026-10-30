@@ -147,8 +147,11 @@ export class BoardInfo {
     // does one whose surface carries a caution (Boy's surface), at every
     // difficulty.
     const level = fairnessOf(mode, difficulty);
-    const warnings = [fairnessHint(level), distortionHint(mode, difficulty), surfaceCaution(mode)]
-      .filter((w): w is string => w !== undefined);
+    const warnings = [
+      fairnessHint(level),
+      distortionHint(mode, difficulty),
+      surfaceCaution(mode),
+    ].filter((w): w is string => w !== undefined);
     this.nameEl.textContent =
       warnings.length === 0 ? fullModeLabel(mode) : `${fullModeLabel(mode)} ⚠`;
     this.nameEl.title = warnings.join("\n");
@@ -211,9 +214,7 @@ export class BoardInfo {
     this.hint.hidden = false;
     // Two frames, so the class change is a transition rather than the first
     // paint (the same trick the record window uses).
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => this.hint.classList.add("open")),
-    );
+    requestAnimationFrame(() => requestAnimationFrame(() => this.hint.classList.add("open")));
     window.clearTimeout(this.hintTimer);
     this.hintTimer = window.setTimeout(() => this.dismissHint(), HINT_MS);
   }

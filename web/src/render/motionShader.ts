@@ -110,12 +110,7 @@ export class BoardMotion {
   }
 
   /** Where cell `i` pivots, which way is out, and its radius. */
-  setCell(
-    i: number,
-    pivot: readonly number[],
-    axis: readonly number[],
-    radius: number,
-  ): void {
+  setCell(i: number, pivot: readonly number[], axis: readonly number[], radius: number): void {
     const k = i * 8;
     this.geo[k] = pivot[0] ?? 0;
     this.geo[k + 1] = pivot[1] ?? 0;
@@ -195,12 +190,19 @@ export class BoardMotion {
       ...e,
       amount: 0.55 * Math.exp(-e.distance / 5),
     }));
-    this.motion.start("shock", shock.filter((e) => e.amount > 0.02), now);
+    this.motion.start(
+      "shock",
+      shock.filter((e) => e.amount > 0.02),
+      now,
+    );
     this.motion.start(
       "reveal",
-      this.wave(mines.filter((i) => i !== origin), origin, MINE_PER_CELL, MINE_SPREAD_MS).map(
-        (e) => ({ ...e, delay: e.delay + 120 }),
-      ),
+      this.wave(
+        mines.filter((i) => i !== origin),
+        origin,
+        MINE_PER_CELL,
+        MINE_SPREAD_MS,
+      ).map((e) => ({ ...e, delay: e.delay + 120 })),
       now,
     );
     if (origin != null) this.setExempt(origin, true);

@@ -40,11 +40,7 @@ export interface ModalOptions {
 }
 
 /** Mount `card` (a `.dialog`) in a backdrop on `host`, wired up as a modal. */
-export function openModal(
-  host: HTMLElement,
-  card: HTMLElement,
-  opts: ModalOptions,
-): ModalHandle {
+export function openModal(host: HTMLElement, card: HTMLElement, opts: ModalOptions): ModalHandle {
   const previousFocus = document.activeElement as HTMLElement | null;
 
   const backdrop = document.createElement("div");

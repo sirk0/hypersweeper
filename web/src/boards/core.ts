@@ -111,7 +111,11 @@ export interface Board {
 export interface DiscCover {
   /** In the board's own disc coordinates, as its polygons are -- y downward,
    * the way the pixels run. */
-  steps: { c: readonly [number, number]; rot: readonly [number, number]; cells: Map<CellId, CellId> }[];
+  steps: {
+    c: readonly [number, number];
+    rot: readonly [number, number];
+    cells: Map<CellId, CellId>;
+  }[];
   /** How far round the centre of the view, in hyperbolic distance, the patch
    * is drawn whole wherever the pan has the view: the renderer shows that
    * circle of it and hides the rest, so the board's edge stays put. */
@@ -204,9 +208,7 @@ export function isBoard3D(board: AnyBoard): board is Board3D {
 }
 
 /** Two cells are neighbours when they share a vertex (exact vertex keys). */
-export function sharedVertexAdjacency(
-  cells: Map<CellId, string[]>,
-): Map<CellId, CellId[]> {
+export function sharedVertexAdjacency(cells: Map<CellId, string[]>): Map<CellId, CellId[]> {
   const byVertex = new Map<string, CellId[]>();
   for (const [cell, verts] of cells) {
     for (const v of verts) {
@@ -498,11 +500,7 @@ export function normalize(v: Vec3): Vec3 {
 }
 
 export function cross(a: Vec3, b: Vec3): Vec3 {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0],
-  ];
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 }
 
 export function dot(a: Vec3, b: Vec3): number {
@@ -526,9 +524,7 @@ export function newellNormal(points: readonly Vec3[]): Vec3 {
 
 /** Order vertices counterclockwise as seen from outside the surface. */
 export function orientOutward(polygon: Vec3[], outward: Vec3): Vec3[] {
-  return dot(newellNormal(polygon), outward) > 0
-    ? polygon
-    : [...polygon].reverse();
+  return dot(newellNormal(polygon), outward) > 0 ? polygon : [...polygon].reverse();
 }
 
 /** Order (key, position) pairs by angle around `center` (for points lying
@@ -539,11 +535,7 @@ export function tangentOrder<K>(center: Vec3, items: [K, Vec3][]): K[] {
   const a = normalize(cross(n, reference));
   const b = cross(n, a);
   const angle = (position: Vec3): number => {
-    const d: Vec3 = [
-      position[0] - center[0],
-      position[1] - center[1],
-      position[2] - center[2],
-    ];
+    const d: Vec3 = [position[0] - center[0], position[1] - center[1], position[2] - center[2]];
     return Math.atan2(dot(d, b), dot(d, a));
   };
   return items

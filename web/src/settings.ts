@@ -309,14 +309,11 @@ export function loadSettings(): Settings {
     // finite 0..1 level (a string, a NaN, a record from a build without it)
     // falls back to full volume, which is what every earlier build played at.
     volume:
-      typeof rec["volume"] === "number"
-        ? clampVolume(rec["volume"])
-        : DEFAULT_SETTINGS.volume,
+      typeof rec["volume"] === "number" ? clampVolume(rec["volume"]) : DEFAULT_SETTINGS.volume,
     // Additive field: a record from a build without haptics simply lacks it and
     // takes the default (on), which is what a device that can buzz should do
     // out of the box.
-    haptics:
-      typeof rec["haptics"] === "boolean" ? rec["haptics"] : DEFAULT_SETTINGS.haptics,
+    haptics: typeof rec["haptics"] === "boolean" ? rec["haptics"] : DEFAULT_SETTINGS.haptics,
     // Additive, and a duration rather than a key: a record from a build that
     // had the hold fixed at 450 ms lacks it and picks up today's brisker
     // default, and anything off the slider's grid (or not a number at all) is
@@ -329,9 +326,7 @@ export function loadSettings(): Settings {
     // Additive, and defaulting *off*: a record from a build before the page
     // could be patterned lacks the key, and should look the way it did.
     backgrounds:
-      typeof rec["backgrounds"] === "boolean"
-        ? rec["backgrounds"]
-        : DEFAULT_SETTINGS.backgrounds,
+      typeof rec["backgrounds"] === "boolean" ? rec["backgrounds"] : DEFAULT_SETTINGS.backgrounds,
     // Additive, and defaulting *on* for both: a record from a build before they
     // were settings lacks the keys and takes the polished tiles, and pins are
     // what a turnable board wants.
@@ -351,8 +346,7 @@ export function loadSettings(): Settings {
       typeof rec["analytics"] === "boolean" ? rec["analytics"] : DEFAULT_SETTINGS.analytics,
     // Purely additive, so it needs no schema bump: a record written by an older
     // build simply lacks it and the player gets the hint once, which is right.
-    seenHint:
-      typeof rec["seenHint"] === "boolean" ? rec["seenHint"] : DEFAULT_SETTINGS.seenHint,
+    seenHint: typeof rec["seenHint"] === "boolean" ? rec["seenHint"] : DEFAULT_SETTINGS.seenHint,
     // Additive: a record from before the effects existed lacks the key and
     // takes `auto`, as does anything this build does not know.
     quality: resolveQuality(rec["quality"]),

@@ -78,10 +78,7 @@ export function symmetryMoves(
   for (const symmetry of symmetries) {
     const forward = symmetry.cycle;
     const back = invertCycle(forward);
-    moves.set(
-      symmetry.id,
-      flip && symmetry.id === "ring" ? [back, forward] : [forward, back],
-    );
+    moves.set(symmetry.id, flip && symmetry.id === "ring" ? [back, forward] : [forward, back]);
   }
   return moves;
 }
@@ -198,8 +195,7 @@ export class GameSession {
     // An explicit mine layout is not reproducible from a seed, so a board
     // built from one claims none even if a seed was passed alongside it.
     this.seed = opts.minePositions ? null : (opts.seed ?? null);
-    const rng: Rng | undefined =
-      opts.seed !== undefined ? mulberry32(opts.seed >>> 0) : undefined;
+    const rng: Rng | undefined = opts.seed !== undefined ? mulberry32(opts.seed >>> 0) : undefined;
     this.game = new Game(this.board.adjacency, {
       mineCount: presetMineCount(mode, difficulty),
       ...(opts.minePositions ? { minePositions: opts.minePositions } : {}),
@@ -437,16 +433,10 @@ export class GameSession {
     // What the chord reaches, read before it moves: the closed, unflagged
     // neighbours it would open. They dip as it opens them, or the chorded cell
     // and they shake when it cannot (the flags around it do not add up).
-    const reach = this.game
-      .neighbors(chorded)
-      .filter((n) => this.game.cellState(n) === "hidden");
+    const reach = this.game.neighbors(chorded).filter((n) => this.game.cellState(n) === "hidden");
     const changed = this.game.chord(chorded);
     if (reach.length > 0) {
-      this.mesh.chordFeedback(
-        this.geomFor(chorded),
-        this.allFaces(reach),
-        changed.length > 0,
-      );
+      this.mesh.chordFeedback(this.geomFor(chorded), this.allFaces(reach), changed.length > 0);
     }
     if (this.game.state === "lost") {
       // the mine that ended the chord is whichever revealed mine exists
@@ -461,9 +451,7 @@ export class GameSession {
   /** The cells a move actually opened — what both the reveal ripple and the
    * cascade of sound are built from. */
   private openedFrom(changed: CellId[]): CellId[] {
-    return changed.filter(
-      (c) => this.game.cellState(c) === "revealed" && !this.game.isMine(c),
-    );
+    return changed.filter((c) => this.game.cellState(c) === "revealed" && !this.game.isMine(c));
   }
 
   /** Everything a move's opened cells set off, measured once.
@@ -585,8 +573,7 @@ export class GameSession {
       reveals: this.reveals,
       chords: this.chords,
       flagMoves: this.flagMoves,
-      firstMoveMs:
-        this.startedAt == null ? 0 : Math.max(0, this.startedAt - this.openedAt),
+      firstMoveMs: this.startedAt == null ? 0 : Math.max(0, this.startedAt - this.openedAt),
       viewMoved: this.viewMoved,
     };
   }
@@ -674,10 +661,7 @@ export class GameSession {
         const autoFlagged = changed.filter(
           (c) => this.game.isMine(c) && this.game.cellState(c) === "flagged",
         );
-        this.mesh.celebrateWin(
-          this.geomFor(origin),
-          this.allFaces(autoFlagged),
-        );
+        this.mesh.celebrateWin(this.geomFor(origin), this.allFaces(autoFlagged));
         this.fx?.win(this.geomFor(origin));
         haptic("win");
         if (soundEnabled()) playSound({ kind: "win", pan: this.panFor(origin) });
@@ -700,8 +684,7 @@ export class GameSession {
       const mine = this.game.isMine(cell);
       if ((mine && !flagged) || (!mine && flagged)) {
         const visual = this.visualFor(cell);
-        for (const face of this.facesFor(cell))
-          this.mesh.setVisual(face, visual);
+        for (const face of this.facesFor(cell)) this.mesh.setVisual(face, visual);
       }
     }
   }

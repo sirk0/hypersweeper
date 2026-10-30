@@ -183,7 +183,11 @@ export function hyperbolicPositions(p: number, q: number, faces: number[][]): Ma
   if (p === 3) {
     const side = abs(toOrigin(centre[0]!, centre[1]!)); // tanh(edge / 2)
     const t = Math.PI / 2 + (2 * Math.PI) / q;
-    first = [[0, 0], [0, side], [side * Math.cos(t), side * Math.sin(t)]];
+    first = [
+      [0, 0],
+      [0, side],
+      [side * Math.cos(t), side * Math.sin(t)],
+    ];
   }
   const pos = new Map<number, C>();
   faces[0]!.forEach((v, i) => pos.set(v, first[i]!));
@@ -247,7 +251,8 @@ const TILINGS = new Map<string, Tiling>();
 
 /** `tiling`, for the closed surfaces (`hurwitz.ts`), which cover their own
  * patch of it. */
-export const hyperbolicTiling = (p: number, q: number, rings: number): Tiling => tiling(p, q, rings);
+export const hyperbolicTiling = (p: number, q: number, rings: number): Tiling =>
+  tiling(p, q, rings);
 
 /** The {p,q} tiling out to `rings` rings: its faces, their rings, every
  * vertex's position and every face's centre. Cached, and only ever read: a trim
@@ -316,7 +321,12 @@ function reach(faces: readonly (readonly number[])[], pos: Map<number, C>): numb
  * missing face can have -- is past that shell (and a tolerance, so a missing
  * face cannot belong to it either). The bound is only measured once there
  * are that many shells to hold. */
-function holdsShells(groups: number[][], centres: C[], shells: number, bound: () => number): boolean {
+function holdsShells(
+  groups: number[][],
+  centres: C[],
+  shells: number,
+  bound: () => number,
+): boolean {
   if (groups.length < shells) return false;
   const last = groups[shells - 1]!;
   return bound() > distance(centres[last[last.length - 1]!]!) + SHELL_TOL;
@@ -643,11 +653,7 @@ export function drop(v: V3): C {
 
 /** A vector Minkowski-orthogonal to both a and b. */
 function minkCross(a: V3, b: V3): V3 {
-  return [
-    -(a[1] * b[2] - a[2] * b[1]),
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0],
-  ];
+  return [-(a[1] * b[2] - a[2] * b[1]), a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 }
 
 const minus = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -706,7 +712,8 @@ export function wythoffFaces(
 
 /** What a face of a uniform tiling stands on: an old face, an old vertex, or
  * an old edge (`u < v`). Mirrors the origins `wythoff_loops` returns. */
-export type WythoffOrigin = readonly ["F", number] | readonly ["V", number] | readonly ["E", number, number];
+export type WythoffOrigin =
+  readonly ["F", number] | readonly ["V", number] | readonly ["E", number, number];
 
 export interface WythoffLoops {
   /** Each face as the loop of flag keys round it: the {p,q} ids the key is
@@ -819,7 +826,12 @@ export function wythoffLoops(p: number, q: number, op: WythoffOp, rings: number)
       const other = left.get(`${v}>${u}`);
       if (u > v || !other) continue;
       const [g, j] = other;
-      const loop = ringOf([flag(g, (j + 1) % p, 1), flag(g, j, 0), flag(f, (i + 1) % p, 1), flag(f, i, 0)]);
+      const loop = ringOf([
+        flag(g, (j + 1) % p, 1),
+        flag(g, j, 0),
+        flag(f, (i + 1) % p, 1),
+        flag(f, i, 0),
+      ]);
       if (loop.length >= 3) {
         newFaces.push(loop);
         centres.push(maps[f]!(mul(turn[i]!, mid)));
@@ -862,7 +874,11 @@ function wythoffTiling(p: number, q: number, op: WythoffOp, rings: number) {
 /** The smallest inradius among the faces: every face is regular, so the
  * distance from its centre to the midpoint of one of its sides. Every shape
  * the tiling has is already among the faces round the central one. */
-function leastInradius(faces: readonly (readonly number[])[], pos: Map<number, C>, centres: C[]): number {
+function leastInradius(
+  faces: readonly (readonly number[])[],
+  pos: Map<number, C>,
+  centres: C[],
+): number {
   let least = Infinity;
   faces.forEach((face, f) => {
     const [mid] = arcPoints(pos.get(face[0]!)!, pos.get(face[1]!)!, 2);
@@ -929,11 +945,7 @@ export function hyperbolicUniformBoard(
 
 /** `top` tiles across the top row, `levels` rows; `scale` is the pixel width of
  * one top-row tile. Cells are `row,j`, row 0 the top row. */
-export function binaryBoard(
-  top: number,
-  levels: number,
-  scale = 300,
-): Board {
+export function binaryBoard(top: number, levels: number, scale = 300): Board {
   if (top < 1 || levels < 1) {
     throw new Error("binaryBoard needs at least one tile and one row");
   }
@@ -969,7 +981,10 @@ export function binaryBoard(
   }
   const polygons = new Map<CellId, Vertex[]>();
   for (const [cell, ids] of cells) {
-    polygons.set(cell, ids.map((k) => [...points.get(k)!] as Vertex));
+    polygons.set(
+      cell,
+      ids.map((k) => [...points.get(k)!] as Vertex),
+    );
   }
   return flatBoard({
     mode: "hyperbolicbinary",

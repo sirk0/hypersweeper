@@ -16,16 +16,19 @@ const BASE = "http://localhost:4173";
 const BOARDS = process.argv[3]
   ? process.argv[3].split(",")
   : [
-      "kleinbasketweave3:medium", "kleinbasketweave3:easy",
-      "kleinbasketweave:easy", "kleintrihex:easy", "torustrihex:easy",
-      "kleintetrakis:medium", "torustetrakis:medium",
-      "kleintrunctrihex:medium", "torustrunctrihex:medium",
+      "kleinbasketweave3:medium",
+      "kleinbasketweave3:easy",
+      "kleinbasketweave:easy",
+      "kleintrihex:easy",
+      "torustrihex:easy",
+      "kleintetrakis:medium",
+      "torustetrakis:medium",
+      "kleintrunctrihex:medium",
+      "torustrunctrihex:medium",
     ];
 
 const settle = (page) =>
-  page.evaluate(
-    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-  );
+  page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({

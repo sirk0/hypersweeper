@@ -21,36 +21,39 @@ async function stubToolbar(
   height: number,
   top = 0,
 ): Promise<void> {
-  await page.addInitScript(({ toolbar, top }: { toolbar: number; top: number }) => {
-    const real = window.visualViewport;
-    const fake = {
-      get width() {
-        return window.innerWidth;
-      },
-      get height() {
-        return window.innerHeight - toolbar - top;
-      },
-      offsetLeft: 0,
-      // Chrome the browser draws over the *top* of the layout viewport: the
-      // visible viewport starts that far down it, which is what an address bar
-      // at the top of an iPhone does (`viewport-fit=cover` spans the layout
-      // viewport across the whole screen and Safari covers it).
-      offsetTop: top,
-      scale: 1,
-      addEventListener: (...args: unknown[]) =>
-        (real as unknown as HTMLElement | null)?.addEventListener?.(
-          ...(args as Parameters<HTMLElement["addEventListener"]>),
-        ),
-      removeEventListener: (...args: unknown[]) =>
-        (real as unknown as HTMLElement | null)?.removeEventListener?.(
-          ...(args as Parameters<HTMLElement["removeEventListener"]>),
-        ),
-    };
-    Object.defineProperty(window, "visualViewport", {
-      configurable: true,
-      get: () => fake,
-    });
-  }, { toolbar: height, top });
+  await page.addInitScript(
+    ({ toolbar, top }: { toolbar: number; top: number }) => {
+      const real = window.visualViewport;
+      const fake = {
+        get width() {
+          return window.innerWidth;
+        },
+        get height() {
+          return window.innerHeight - toolbar - top;
+        },
+        offsetLeft: 0,
+        // Chrome the browser draws over the *top* of the layout viewport: the
+        // visible viewport starts that far down it, which is what an address bar
+        // at the top of an iPhone does (`viewport-fit=cover` spans the layout
+        // viewport across the whole screen and Safari covers it).
+        offsetTop: top,
+        scale: 1,
+        addEventListener: (...args: unknown[]) =>
+          (real as unknown as HTMLElement | null)?.addEventListener?.(
+            ...(args as Parameters<HTMLElement["addEventListener"]>),
+          ),
+        removeEventListener: (...args: unknown[]) =>
+          (real as unknown as HTMLElement | null)?.removeEventListener?.(
+            ...(args as Parameters<HTMLElement["removeEventListener"]>),
+          ),
+      };
+      Object.defineProperty(window, "visualViewport", {
+        configurable: true,
+        get: () => fake,
+      });
+    },
+    { toolbar: height, top },
+  );
 }
 
 /** Reproduce an iOS home-screen launch that draws under the status bar — an
@@ -123,8 +126,7 @@ async function chrome(page: import("@playwright/test").Page) {
       // The whole header block the board is framed below: the header row *and*
       // the caption under it naming the board (`App.onResize` reserves both).
       headerBottom: (
-        document.querySelector(".board-caption:not([hidden])") ??
-        document.querySelector(".hud")!
+        document.querySelector(".board-caption:not([hidden])") ?? document.querySelector(".hud")!
       ).getBoundingClientRect().bottom,
       visibleHeight: window.visualViewport?.height ?? window.innerHeight,
       innerHeight: window.innerHeight,
@@ -162,9 +164,7 @@ test.describe("viewport layout", () => {
     });
   }
 
-  test("with no browser chrome the board centres in the whole window", async ({
-    page,
-  }) => {
+  test("with no browser chrome the board centres in the whole window", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/?mode=square&difficulty=hard&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -201,9 +201,7 @@ test.describe("viewport layout", () => {
   // Only that exact signature is corrected. An iPad PWA in Split View is
   // standalone and far shorter than the screen too, and there the window really
   // is all the app has.
-  test("a standalone window that is short for another reason is left alone", async ({
-    page,
-  }) => {
+  test("a standalone window that is short for another reason is left alone", async ({ page }) => {
     await stubStandalone(page, { inset: 62, screenHeight: 1180 });
     await page.setViewportSize({ width: 402, height: 812 });
     await page.goto("/?mode=square&difficulty=hard&seed=1");
@@ -258,9 +256,7 @@ test.describe("viewport layout", () => {
   // first-time player is meant to read — and the dialog scrim, `inset: 0`,
   // covered ground the player could not see with its dialog centred half a
   // toolbar low.
-  test("the first-run hint and the dialogs stay inside the visible viewport", async ({
-    page,
-  }) => {
+  test("the first-run hint and the dialogs stay inside the visible viewport", async ({ page }) => {
     const toolbar = TOOLBARS.at(-1)!;
     await stubToolbar(page, toolbar);
     await page.setViewportSize({ width: 390, height: 844 });
@@ -357,9 +353,7 @@ test.describe("viewport layout", () => {
     expect(band.bottom).toBeLessThanOrEqual(c.visibleBottom);
   });
 
-  test("the menu keeps its difficulty row above the browser chrome", async ({
-    page,
-  }) => {
+  test("the menu keeps its difficulty row above the browser chrome", async ({ page }) => {
     await stubToolbar(page, TOOLBARS.at(-1)!);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
@@ -444,9 +438,11 @@ test.describe("the desktop menu breakpoint", () => {
       expect(body.y + body.height).toBeGreaterThanOrEqual(difficulty.y + difficulty.height);
       // The title is one line in the rail (its line-height is `normal`, so
       // measured against its font size: a second line would double it).
-      const ratio = await page.locator(".menu-header .menu-title").evaluate(
-        (el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).fontSize),
-      );
+      const ratio = await page
+        .locator(".menu-header .menu-title")
+        .evaluate(
+          (el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).fontSize),
+        );
       expect(ratio).toBeLessThan(1.8);
 
       // A board list goes two-up, and a page opens at its top: the Custom row
@@ -463,9 +459,7 @@ test.describe("the desktop menu breakpoint", () => {
     });
   }
 
-  test("narrowing off the desktop lands on the phone's home page", async ({
-    page,
-  }) => {
+  test("narrowing off the desktop lands on the phone's home page", async ({ page }) => {
     await page.setViewportSize({ width: 1000, height: 800 });
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -494,7 +488,9 @@ test.describe("the desktop menu breakpoint", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.menu-sidebar .menu-entry[data-group="flat"]').click();
-    const cells = page.locator('.menu-board-card[data-mode="square"] .menu-board-card-preview path');
+    const cells = page.locator(
+      '.menu-board-card[data-mode="square"] .menu-board-card-preview path',
+    );
     await page.locator('.difficulty-btn[data-key="easy"]').click();
     await expect(cells).toHaveCount(81);
     await page.locator('.difficulty-btn[data-key="hard"]').click();
@@ -502,7 +498,9 @@ test.describe("the desktop menu breakpoint", () => {
     // A family's card is a level too: the board its icon is drawn from, the
     // Uniform family's rhombitrihexagonal, drawn whole rather than as the
     // tiling's wallpaper.
-    const uniform = page.locator('.menu-board-card[data-submenu="uniform"] .menu-board-card-preview');
+    const uniform = page.locator(
+      '.menu-board-card[data-submenu="uniform"] .menu-board-card-preview',
+    );
     await expect(uniform).toHaveAttribute("data-preview-mode", "rhombitrihex");
     await expect(uniform).not.toHaveClass(/is-tiled/);
   });

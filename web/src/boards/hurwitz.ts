@@ -130,7 +130,8 @@ export function tileRadius(p: number, q: number, op: HurwitzOp): number {
   } else ({ loops, where, centres } = wythoffLoops(p, q, op as WythoffOp, 3));
   let far = 0;
   loops.forEach((loop, f) => {
-    for (const k of loop) far = Math.max(far, 2 * Math.atanh(Math.hypot(...toOrigin(centres[f]!, where.get(k)!))));
+    for (const k of loop)
+      far = Math.max(far, 2 * Math.atanh(Math.hypot(...toOrigin(centres[f]!, where.get(k)!))));
   });
   radiusCache.set(cacheKey, far);
   return far;
@@ -345,7 +346,12 @@ const tcCache = new Map<string, readonly [number[], number[]]>();
  * runs in. Haselgrove--Leech--Trotter over the trivial subgroup; throws if it
  * outgrows `limit` cosets. Mirrors `todd_coxeter`.
  */
-export function toddCoxeter(p: number, q: number, relator: string, limit = 100_000): readonly [number[], number[]] {
+export function toddCoxeter(
+  p: number,
+  q: number,
+  relator: string,
+  limit = 100_000,
+): readonly [number[], number[]] {
   const cacheKey = `${p},${q},${relator},${limit}`;
   const hit = tcCache.get(cacheKey);
   if (hit) return hit;
@@ -464,7 +470,10 @@ export function darts(surface: string): readonly [number[], number[]] {
   else {
     const { elements, times, x, y } = hurwitzGroup(group);
     const index = new Map(elements.map((g, i) => [g, i]));
-    out = [elements.map((g) => index.get(times(g, x))!), elements.map((g) => index.get(times(g, y))!)];
+    out = [
+      elements.map((g) => index.get(times(g, x))!),
+      elements.map((g) => index.get(times(g, y))!),
+    ];
   }
   dartsCache.set(surface, out);
   return out;
@@ -622,7 +631,11 @@ function cover(surface: string, rings: number): Cover {
 
 /** A surface cell, named by what it stands on: `F,face`, `V,vertex` or
  * `E,u,v`. */
-function cellKey(origin: WythoffOrigin, phiFace: readonly number[], phi: Map<number, number>): string {
+function cellKey(
+  origin: WythoffOrigin,
+  phiFace: readonly number[],
+  phi: Map<number, number>,
+): string {
   if (origin[0] === "F") return `F,${phiFace[origin[1]]}`;
   if (origin[0] === "V") return `V,${phi.get(origin[1])}`;
   const [u, v] = [phi.get(origin[1])!, phi.get(origin[2])!].sort((s, t) => s - t);
@@ -630,7 +643,12 @@ function cellKey(origin: WythoffOrigin, phiFace: readonly number[], phi: Map<num
 }
 
 /** A disc key carried down to its surface vertex. Mirrors `_patch`'s `key`. */
-function surfaceKey(op: HurwitzOp, k: string, phiFace: readonly number[], phi: Map<number, number>): string {
+function surfaceKey(
+  op: HurwitzOp,
+  k: string,
+  phiFace: readonly number[],
+  phi: Map<number, number>,
+): string {
   if (op === "none") return String(phi.get(Number(k)));
   const ids = k.split(",").map(Number);
   const v = (i: number) => phi.get(ids[i]!)!;
@@ -723,7 +741,11 @@ export function gcLoops(p: number, q: number, n: number, rings: number): GcLoops
   const { centres } = hyperbolicTiling(p, q, rings);
   const lifted = centres.map(lift);
   const blend = (points: readonly V3[], weights: readonly number[]): C =>
-    drop([0, 1, 2].map((axis) => points.reduce((sum, pt, i) => sum + weights[i]! * pt[axis]!, 0)) as unknown as V3);
+    drop(
+      [0, 1, 2].map((axis) =>
+        points.reduce((sum, pt, i) => sum + weights[i]! * pt[axis]!, 0),
+      ) as unknown as V3,
+    );
   const pointAt = new Map<string, C>();
   const around = new Map<string, string[]>();
   const where = new Map<string, C>();
@@ -743,7 +765,13 @@ export function gcLoops(p: number, q: number, n: number, rings: number): GcLoops
         held.map((i) => [corners[i]!, weights[i]!] as [number, number]),
       );
       if (!pointAt.has(key)) {
-        pointAt.set(key, blend(corners.map((f) => lifted[f]!), weights));
+        pointAt.set(
+          key,
+          blend(
+            corners.map((f) => lifted[f]!),
+            weights,
+          ),
+        );
         order.push(key);
       }
       return key;
@@ -752,7 +780,11 @@ export function gcLoops(p: number, q: number, n: number, rings: number): GcLoops
     if (q === 3) {
       for (let a = 0; a < n; a++) {
         for (let b = 0; b < n - a; b++) {
-          smalls.push([point([n - a - b, a, b]), point([n - a - 1 - b, a + 1, b]), point([n - a - b - 1, a, b + 1])]);
+          smalls.push([
+            point([n - a - b, a, b]),
+            point([n - a - 1 - b, a + 1, b]),
+            point([n - a - b - 1, a, b + 1]),
+          ]);
           if (a + b <= n - 2) {
             smalls.push([
               point([n - a - b - 1, a + 1, b]),
@@ -763,9 +795,11 @@ export function gcLoops(p: number, q: number, n: number, rings: number): GcLoops
         }
       }
     } else {
-      const grid = (i: number, j: number) => point([(n - i) * (n - j), i * (n - j), i * j, (n - i) * j]);
+      const grid = (i: number, j: number) =>
+        point([(n - i) * (n - j), i * (n - j), i * j, (n - i) * j]);
       for (let i = 0; i < n; i++)
-        for (let j = 0; j < n; j++) smalls.push([grid(i, j), grid(i + 1, j), grid(i + 1, j + 1), grid(i, j + 1)]);
+        for (let j = 0; j < n; j++)
+          smalls.push([grid(i, j), grid(i + 1, j), grid(i + 1, j + 1), grid(i, j + 1)]);
     }
     for (const small of smalls) {
       const key = [...small].sort().join("|");
@@ -830,7 +864,13 @@ export function gcDisc(p: number, q: number, n: number, shells: number, scale: n
       );
     const pos = new Map<number, C>();
     for (const [k, id] of ids) pos.set(id, g.where.get(k)!);
-    const drawing = discDrawing(faces, faces.map((_, i) => i), pos, scale, ARC_SEGMENTS);
+    const drawing = discDrawing(
+      faces,
+      faces.map((_, i) => i),
+      pos,
+      scale,
+      ARC_SEGMENTS,
+    );
     const size = 2 * drawing.extent * scale;
     return flatBoard({
       mode: `gc${n}`,
@@ -848,7 +888,11 @@ export function gcDisc(p: number, q: number, n: number, shells: number, scale: n
 
 /** A point's key carried down to the surface: what it lies inside through
  * the vertex map, each face through the face map, re-sorted. */
-function pointDown(key: string, faceOf: (f: number) => number, vertexOf: (v: number) => number): string {
+function pointDown(
+  key: string,
+  faceOf: (f: number) => number,
+  vertexOf: (v: number) => number,
+): string {
   const [support, held] = key.split("/");
   return pointKey(
     support ? support.split(",").map((v) => vertexOf(Number(v))) : [],

@@ -122,7 +122,12 @@
         background-image: var(--bg-texture);
         background-attachment: fixed;
         color: var(--text);
-        font: 16px/1.55 "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font:
+          16px/1.55 "Space Grotesk",
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
       }
       main {
         max-width: 42rem;
@@ -229,19 +234,18 @@
         <ul>
           <li>
             <strong>The App Store apps</strong> (iPhone, iPad and Mac) and
-            <strong>the desktop app</strong> collect nothing and contact no server
-            of ours. The App Store apps report your achievements to Game Center if
-            you are signed in to it, and keep your best times, achievements and
-            favourite boards in step across your devices through your iCloud account. Both are Apple's
-            services, and none of it reaches us.
+            <strong>the desktop app</strong> collect nothing and contact no server of ours. The App
+            Store apps report your achievements to Game Center if you are signed in to it, and keep
+            your best times, achievements and favourite boards in step across your devices through
+            your iCloud account. Both are Apple's services, and none of it reaches us.
           </li>
           <li>
-            <strong>The website</strong> counts plays anonymously: which boards are
-            played and how the games go. You can switch that off in Settings.
+            <strong>The website</strong> counts plays anonymously: which boards are played and how
+            the games go. You can switch that off in Settings.
           </li>
           <li>
-            No accounts, no ads, and no tracking across other apps or websites.
-            The apps contain no third-party SDKs.
+            No accounts, no ads, and no tracking across other apps or websites. The apps contain no
+            third-party SDKs.
           </li>
         </ul>
       </section>
@@ -249,155 +253,140 @@
       <section aria-labelledby="apps">
         <h2 id="apps">The apps: iPhone, iPad, Mac and desktop</h2>
         <p>
-          The apps collect no data at all. They do not contact any server of ours.
-          The play counter described below is not switched off in them; it is left
-          out of them when they are built, so there is no code in them that could
-          send it. On the App Store this is labelled
+          The apps collect no data at all. They do not contact any server of ours. The play counter
+          described below is not switched off in them; it is left out of them when they are built,
+          so there is no code in them that could send it. On the App Store this is labelled
           <strong>Data Not Collected</strong>.
         </p>
         <p>
-          Your settings, favourite boards, best times and the record of your wins
-          are saved on your device, in the app's own storage. In the App Store
-          apps your favourites, best times and wins are also kept in your iCloud
-          account, as described below; your
-          settings stay on the device. In the desktop app nothing leaves the
-          device.
+          Your settings, favourite boards, best times and the record of your wins are saved on your
+          device, in the app's own storage. In the App Store apps your favourites, best times and
+          wins are also kept in your iCloud account, as described below; your settings stay on the
+          device. In the desktop app nothing leaves the device.
         </p>
         <p>
-          When you share a board, the app makes a link that holds the board and,
-          after a win, your time. It hands that link to your device's share sheet
-          or clipboard. Where it goes from there is up to you; nothing is sent to
-          us.
+          When you share a board, the app makes a link that holds the board and, after a win, your
+          time. It hands that link to your device's share sheet or clipboard. Where it goes from
+          there is up to you; nothing is sent to us.
         </p>
 
         <h3 id="game-center">Game Center</h3>
         <p>
-          In the App Store apps, achievements are shown in Apple's Game Center. If
-          you are signed in to Game Center on your device, the app tells it which
-          achievements you have earned and how far along you are with the others.
-          That is all it sends. Game Center is Apple's service, and Apple handles
-          that information under its own privacy policy. None of it reaches us,
-          and the app reads nothing back from Game Center except whether you are
-          signed in.
+          In the App Store apps, achievements are shown in Apple's Game Center. If you are signed in
+          to Game Center on your device, the app tells it which achievements you have earned and how
+          far along you are with the others. That is all it sends. Game Center is Apple's service,
+          and Apple handles that information under its own privacy policy. None of it reaches us,
+          and the app reads nothing back from Game Center except whether you are signed in.
         </p>
         <p>
-          If you are not signed in to Game Center, nothing is sent. You can sign
-          out of Game Center in your device's settings. The desktop app does not
-          use Game Center: its achievements stay on your device.
+          If you are not signed in to Game Center, nothing is sent. You can sign out of Game Center
+          in your device's settings. The desktop app does not use Game Center: its achievements stay
+          on your device.
         </p>
 
         <h3 id="icloud">iCloud</h3>
         <p>
-          The App Store apps keep your best times, the record of your wins and
-          the boards you have starred as favourites in iCloud, so your iPhone, iPad and Mac share them, and deleting and
-          reinstalling the app loses nothing. They are stored in your own iCloud
-          account, labelled with a random code made by each installation of the
-          app, not with anything about you or your device. iCloud is Apple's
-          service, and Apple handles it under its own privacy policy. We cannot
-          read it, and nothing from it reaches us.
+          The App Store apps keep your best times, the record of your wins and the boards you have
+          starred as favourites in iCloud, so your iPhone, iPad and Mac share them, and deleting and
+          reinstalling the app loses nothing. They are stored in your own iCloud account, labelled
+          with a random code made by each installation of the app, not with anything about you or
+          your device. iCloud is Apple's service, and Apple handles it under its own privacy policy.
+          We cannot read it, and nothing from it reaches us.
         </p>
         <p>
-          If you are not signed in to iCloud on your device, nothing is sent and
-          the record stays on the device. Clearing your best times or achievements in the
-          game's settings clears them on every device that shares the record. The
-          App Clip and the desktop app do not use iCloud.
+          If you are not signed in to iCloud on your device, nothing is sent and the record stays on
+          the device. Clearing your best times or achievements in the game's settings clears them on
+          every device that shares the record. The App Clip and the desktop app do not use iCloud.
         </p>
       </section>
 
       <section aria-labelledby="web">
         <h2 id="web">The website</h2>
         <p>
-          This covers the game at hypersweeper.pages.dev, in a browser tab or
-          added to a home screen.
+          This covers the game at hypersweeper.pages.dev, in a browser tab or added to a home
+          screen.
         </p>
 
         <h3 id="counts">Anonymous play counts</h3>
         <p>
-          When a board opens, and again when the game on it ends, the game sends
-          one small event to this website's own server. The events tell us which
-          boards people play and which ones are too hard.
+          When a board opens, and again when the game on it ends, the game sends one small event to
+          this website's own server. The events tell us which boards people play and which ones are
+          too hard.
         </p>
         <p id="what-a-play-count-holds">An event holds only:</p>
         <ul>
           <li>
-            the board: its name, its tiling and surface, and its difficulty (easy,
-            medium or hard);
+            the board: its name, its tiling and surface, and its difficulty (easy, medium or hard);
           </li>
           <li>whether the game is starting or has ended, and whether it was won or lost;</li>
           <li>
-            how it went: seconds on the clock, how many cells and mines the board
-            has, how many safe cells were opened, how many flags were right and
-            wrong, how many reveal, chord and flag moves were made, how long the
-            first move took, and whether the view was rotated or zoomed;
+            how it went: seconds on the clock, how many cells and mines the board has, how many safe
+            cells were opened, how many flags were right and wrong, how many reveal, chord and flag
+            moves were made, how long the first move took, and whether the view was rotated or
+            zoomed;
           </li>
           <li>
-            how the board was started (from the menu, at random, by playing again,
-            or from a shared link) and whether the previous board was still being
-            played, won or lost;
+            how the board was started (from the menu, at random, by playing again, or from a shared
+            link) and whether the previous board was still being played, won or lost;
           </li>
           <li>whether the device is a phone, tablet or desktop;</li>
           <li>whether the game runs in a browser tab or as an installed app;</li>
           <li>the game's version number.</li>
         </ul>
         <p>
-          Nothing else is stored with it: no IP address, no country, no browser or
-          device model, no referring page, no cookie, and no identifier of any
-          kind. The board's layout and your settings are not sent. No two events
-          can be linked to each other or to you.
+          Nothing else is stored with it: no IP address, no country, no browser or device model, no
+          referring page, no cookie, and no identifier of any kind. The board's layout and your
+          settings are not sent. No two events can be linked to each other or to you.
         </p>
         <p>
-          <strong>To switch it off:</strong> Settings › Privacy › Analytics. It
-          takes effect at once, including for a game in progress, and the choice
-          is saved in your browser.
+          <strong>To switch it off:</strong> Settings › Privacy › Analytics. It takes effect at
+          once, including for a game in progress, and the choice is saved in your browser.
         </p>
         <p>
-          The events are stored by Cloudflare in Workers Analytics Engine, which
-          deletes them automatically after a short retention period of at most
-          three months. We use them only as counts and averages.
+          The events are stored by Cloudflare in Workers Analytics Engine, which deletes them
+          automatically after a short retention period of at most three months. We use them only as
+          counts and averages.
         </p>
 
         <h3 id="visits">Website visits</h3>
         <p>
-          Cloudflare Web Analytics is turned on for this website. Cloudflare adds
-          its script to the site's pages, and it reports visits and page views,
-          the referring site, the browser and operating system, and the country.
-          We see only totals. This is separate from the play counts: the Settings
-          switch above does not affect it, and a content blocker may stop it.
+          Cloudflare Web Analytics is turned on for this website. Cloudflare adds its script to the
+          site's pages, and it reports visits and page views, the referring site, the browser and
+          operating system, and the country. We see only totals. This is separate from the play
+          counts: the Settings switch above does not affect it, and a content blocker may stop it.
         </p>
 
         <h3 id="hosting">Hosting</h3>
         <p>
-          Cloudflare hosts the website. Like any web host, it receives your IP
-          address and browser details with each request, in order to deliver the
-          pages and protect the site. It handles them under its own privacy
-          policy. Our play counts do not include them.
+          Cloudflare hosts the website. Like any web host, it receives your IP address and browser
+          details with each request, in order to deliver the pages and protect the site. It handles
+          them under its own privacy policy. Our play counts do not include them.
         </p>
 
         <h3 id="device">On your device</h3>
         <p>
-          Your settings, best times and achievements are kept in your browser's
-          local storage, and the game's files are cached so it works offline.
-          None of that is sent anywhere. Clearing the site's data in your browser
-          deletes it. Settings › Check for updates asks the website for its
-          current version number and sends nothing about you.
+          Your settings, best times and achievements are kept in your browser's local storage, and
+          the game's files are cached so it works offline. None of that is sent anywhere. Clearing
+          the site's data in your browser deletes it. Settings › Check for updates asks the website
+          for its current version number and sends nothing about you.
         </p>
       </section>
 
       <section aria-labelledby="children">
         <h2 id="children">Children</h2>
         <p>
-          The game is for everyone. It asks for no personal information and
-          collects none, from children or anyone else: the apps collect nothing,
-          and the website's play counts identify no one.
+          The game is for everyone. It asks for no personal information and collects none, from
+          children or anyone else: the apps collect nothing, and the website's play counts identify
+          no one.
         </p>
       </section>
 
       <section aria-labelledby="changes">
         <h2 id="changes">Changes and contact</h2>
         <p>
-          If this policy changes, the new version will be posted on this page with
-          a new effective date. Hypersweeper is open source, so every change to
-          this page and to the code it describes is public.
+          If this policy changes, the new version will be posted on this page with a new effective
+          date. Hypersweeper is open source, so every change to this page and to the code it
+          describes is public.
         </p>
         <p>
           Questions or requests:

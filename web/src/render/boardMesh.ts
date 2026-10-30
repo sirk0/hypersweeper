@@ -68,11 +68,7 @@ export function baseColorFor(visual: CellVisual, palette?: CellPalette): Color {
 /** Whether a cell is *opened* — drawn sunken rather than as a raised button.
  * Both meshes cut their cell geometry from this. */
 export function isOpened(visual: CellVisual): boolean {
-  return (
-    visual.kind === "revealed" ||
-    visual.kind === "mine" ||
-    visual.kind === "exploded"
-  );
+  return visual.kind === "revealed" || visual.kind === "mine" || visual.kind === "exploded";
 }
 
 export function glyphFor(visual: CellVisual): Glyph | null {
@@ -120,9 +116,7 @@ export function polygonInradius(
     const dy = by - ay;
     const lengthSq = dx * dx + dy * dy;
     const t =
-      lengthSq === 0
-        ? 0
-        : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSq));
+      lengthSq === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSq));
     best = Math.min(best, Math.hypot(px - (ax + t * dx), py - (ay + t * dy)));
   }
   return best;

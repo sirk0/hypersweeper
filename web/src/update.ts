@@ -93,10 +93,7 @@ export async function deployedBuild(
 }
 
 /** The check itself: what the server has, against what is running here. */
-export async function checkForUpdate(
-  fetchFn?: typeof fetch,
-  base?: string,
-): Promise<UpdateCheck> {
+export async function checkForUpdate(fetchFn?: typeof fetch, base?: string): Promise<UpdateCheck> {
   const deployed = await deployedBuild(fetchFn, base);
   if (!deployed) return { state: "unreachable" };
   if (sameBuild(deployed, runningBuild())) return { state: "current" };
@@ -140,10 +137,7 @@ export const ARRIVAL_GRACE_MS = 1_000;
  * (`redundant`), which is a real answer rather than a reason to reload: a
  * reload before the worker is ready serves the same old build again, and the
  * player would have learnt nothing. */
-async function settle(
-  reg: ServiceWorkerRegistration,
-  timeoutMs: number,
-): Promise<boolean> {
+async function settle(reg: ServiceWorkerRegistration, timeoutMs: number): Promise<boolean> {
   let incoming: ServiceWorker | null = reg.installing ?? reg.waiting;
   let arrived: (() => void) | null = null;
   const onFound = (): void => {

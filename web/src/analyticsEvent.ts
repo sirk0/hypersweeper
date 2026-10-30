@@ -90,18 +90,8 @@ export type DeviceClass = "phone" | "tablet" | "desktop" | "unknown";
  * do not report at all, so there is no native value here. */
 export type ShellKind = "browser" | "standalone";
 
-const TRIGGERS: ReadonlySet<string> = new Set<StartTrigger>([
-  "menu",
-  "random",
-  "again",
-  "link",
-]);
-const PREVIOUS: ReadonlySet<string> = new Set<PreviousState>([
-  "",
-  "playing",
-  "won",
-  "lost",
-]);
+const TRIGGERS: ReadonlySet<string> = new Set<StartTrigger>(["menu", "random", "again", "link"]);
+const PREVIOUS: ReadonlySet<string> = new Set<PreviousState>(["", "playing", "won", "lost"]);
 const DEVICES: ReadonlySet<string> = new Set<DeviceClass>([
   "phone",
   "tablet",
@@ -238,10 +228,7 @@ function count(value: unknown, max: number): number {
 }
 
 /** One of a closed set, or the empty string. */
-function oneOf<T extends string>(
-  value: unknown,
-  allowed: ReadonlySet<string>,
-): T | "" {
+function oneOf<T extends string>(value: unknown, allowed: ReadonlySet<string>): T | "" {
   return typeof value === "string" && allowed.has(value) ? (value as T) : "";
 }
 

@@ -78,10 +78,7 @@ const bodies = (posted: { body: Posted | null }[]): Posted[] =>
 /** The fixture boards from play.spec.ts: one mine in a corner, so revealing the
  * far corner floods the board and wins — or clicking the mine loses. */
 async function openSquares(page: Page, mine: string): Promise<void> {
-  await page.evaluate(
-    (cell) => window.__ms?.startBoard("square", "easy", { mines: [cell] }),
-    mine,
-  );
+  await page.evaluate((cell) => window.__ms?.startBoard("square", "easy", { mines: [cell] }), mine);
 }
 
 async function click(page: Page, cell: string): Promise<void> {
@@ -191,9 +188,7 @@ test.describe("play counts", () => {
     });
   });
 
-  test("a finished board is reported once, however much it is clicked", async ({
-    page,
-  }) => {
+  test("a finished board is reported once, however much it is clicked", async ({ page }) => {
     // The guard that matters: `afterMove` runs on every move and the HUD timer
     // ticks four times a second, so a game that has ended gets plenty of
     // chances to be counted twice.
@@ -251,9 +246,7 @@ test.describe("play counts", () => {
     expect(bodies(posted).filter((p) => p.e === "end")).toHaveLength(0);
   });
 
-  test("the Analytics switch stops every post, and the choice sticks", async ({
-    page,
-  }) => {
+  test("the Analytics switch stops every post, and the choice sticks", async ({ page }) => {
     await ready(page);
 
     await page.locator('.menu-header-btn[data-action="settings"]').click();

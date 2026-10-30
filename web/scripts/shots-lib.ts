@@ -106,9 +106,7 @@ export async function stageBoard(page: Page, shot: Staging, difficulty: string):
   const cy = page.viewportSize()!.height / 2;
   const order = placed
     .filter((entry): entry is readonly [CellId, { x: number; y: number }] => !!entry[1])
-    .sort(
-      (a, b) => Math.hypot(a[1].x - cx, a[1].y - cy) - Math.hypot(b[1].x - cx, b[1].y - cy),
-    )
+    .sort((a, b) => Math.hypot(a[1].x - cx, a[1].y - cy) - Math.hypot(b[1].x - cx, b[1].y - cy))
     .map(([cell]) => cell);
 
   const mineSet = new Set(mines);

@@ -50,7 +50,8 @@ describe("the committed Game Center list", () => {
     const { achievements } = buildManifest();
     const rings = new Map(achievements.map((a) => [a.referenceName, a.ring]));
     for (const [id, ring] of rings) {
-      const expected = id === "all-boards" ? "catalogue" : /^[a-z]+-all:/.test(id) ? "complete" : null;
+      const expected =
+        id === "all-boards" ? "catalogue" : /^[a-z]+-all:/.test(id) ? "complete" : null;
       expect(ring, id).toBe(expected);
     }
     expect([...rings.values()].filter((r) => r === "complete")).toHaveLength(25);
@@ -68,6 +69,9 @@ describe("the committed Game Center list", () => {
       expect(pngHeader(file), image).toEqual({ width: IMAGE_PX, height: IMAGE_PX, colourType: 2 });
     }
     const onDisk = readdirSync(path.join(GAME_CENTER_DIR, "images"));
-    expect(onDisk.filter((f) => !named.has(f)), REGENERATE).toEqual([]);
+    expect(
+      onDisk.filter((f) => !named.has(f)),
+      REGENERATE,
+    ).toEqual([]);
   });
 });

@@ -54,7 +54,12 @@ class Device {
     if (kind === "scores") this.boards = {};
     else {
       this.record = { progress: emptyProgress(), unlocked: {} };
-      this.state = { ...state, since: at, own: { progress: emptyProgress(), unlocked: {} }, base: emptyProgress() };
+      this.state = {
+        ...state,
+        since: at,
+        own: { progress: emptyProgress(), unlocked: {} },
+        base: emptyProgress(),
+      };
       return;
     }
     this.state = state;
@@ -112,7 +117,10 @@ describe("iCloud record", () => {
   });
 
   it("adds and subtracts progress", () => {
-    const a = applyWin(applyWin(emptyProgress(), win("square")), win("hexhex", { flagless: true, sides: [6] }));
+    const a = applyWin(
+      applyWin(emptyProgress(), win("square")),
+      win("hexhex", { flagless: true, sides: [6] }),
+    );
     const b = applyWin(emptyProgress(), win("square"));
     const since = progressSince(a, b);
     expect(since.wins).toEqual({ hexhex: { easy: 1 } });
@@ -199,7 +207,10 @@ describe("iCloud record", () => {
     mac.sync();
     // Both wrote the shared key at once, and iCloud kept the Mac's version
     // from before it had seen the phone's time: that time is gone from it…
-    cloud["scores"] = JSON.stringify({ v: 1, boards: { "square|easy": [{ ms: 20_000, at: 200 }] } });
+    cloud["scores"] = JSON.stringify({
+      v: 1,
+      boards: { "square|easy": [{ ms: 20_000, at: 200 }] },
+    });
     // …until the phone hears of the change, merges, and writes it back.
     phone.sync();
     mac.sync();

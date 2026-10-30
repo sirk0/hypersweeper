@@ -11,7 +11,13 @@ async function pinch(
   opts: { cx: number; cy: number; from: number; to: number; steps?: number },
 ): Promise<void> {
   await page.evaluate(
-    ({ cx, cy, from, to, steps }: {
+    ({
+      cx,
+      cy,
+      from,
+      to,
+      steps,
+    }: {
       cx: number;
       cy: number;
       from: number;
@@ -65,9 +71,7 @@ test.describe("board zoom", () => {
     await page.evaluate(() => window.__ms?.startBoard("square", "medium", { seed: 7 }));
   });
 
-  test("a pinch magnifies the board, and pinching back restores the fit", async ({
-    page,
-  }) => {
+  test("a pinch magnifies the board, and pinching back restores the fit", async ({ page }) => {
     const fitted = await spread(page, "0,0", "8,8");
     await pinch(page, { cx: 210, cy: 500, from: 80, to: 240 });
     const zoom = await page.evaluate(() => window.__ms!.zoom());
@@ -80,9 +84,7 @@ test.describe("board zoom", () => {
     expect(await spread(page, "0,0", "8,8")).toBeCloseTo(fitted, 0);
   });
 
-  test("zoom is bounded: never below the fit, never past the cap", async ({
-    page,
-  }) => {
+  test("zoom is bounded: never below the fit, never past the cap", async ({ page }) => {
     // Pinching in on a fitted board cannot shrink it away.
     await pinch(page, { cx: 210, cy: 500, from: 240, to: 20 });
     expect(await page.evaluate(() => window.__ms!.zoom())).toBe(1);
@@ -98,15 +100,11 @@ test.describe("board zoom", () => {
     expect(await page.evaluate(() => window.__ms!.zoom())).toBe(capped);
   });
 
-  test("a pinch reveals nothing, and taps still hit the cell aimed at", async ({
-    page,
-  }) => {
+  test("a pinch reveals nothing, and taps still hit the cell aimed at", async ({ page }) => {
     // A single mine next to the target, so revealing the target shows a number
     // and floods nothing: exactly one cell can come up, and it must be that one.
     const target = "4,5";
-    await page.evaluate(() =>
-      window.__ms!.startBoard("square", "medium", { mines: ["4,4"] }),
-    );
+    await page.evaluate(() => window.__ms!.startBoard("square", "medium", { mines: ["4,4"] }));
     const before = await page.evaluate((c) => window.__ms!.cellScreenXY(c)!, target);
     await pinch(page, { cx: before.x, cy: before.y, from: 80, to: 200 });
     // Two fingers are a zoom, never a tap.
@@ -123,15 +121,11 @@ test.describe("board zoom", () => {
     expect(after.y).toBeGreaterThan(0);
     expect(after.y).toBeLessThan(size.height);
     await page.mouse.click(after.x, after.y);
-    expect(await page.evaluate((c) => window.__ms!.cellState(c), target)).toBe(
-      "revealed",
-    );
+    expect(await page.evaluate((c) => window.__ms!.cellState(c), target)).toBe("revealed");
     expect(await page.evaluate(() => window.__ms!.state().revealed)).toBe(1);
   });
 
-  test("a zoomed board can be dragged, and cannot be dragged off screen", async ({
-    page,
-  }) => {
+  test("a zoomed board can be dragged, and cannot be dragged off screen", async ({ page }) => {
     await page.evaluate(() => window.__ms!.zoomBy(3));
     const before = await page.evaluate(() => window.__ms!.cellScreenXY("4,4")!);
     // One finger drags the board while it is zoomed in.
@@ -165,9 +159,7 @@ test.describe("board zoom", () => {
   // WebKit (Safari, the Mac Catalyst app) delivers a trackpad pinch as
   // gesture* events, not ctrl+wheel; there is no way to synthesise one in
   // Chromium but to dispatch the same events by hand.
-  test("a WebKit trackpad pinch (gesture events) zooms the board", async ({
-    page,
-  }) => {
+  test("a WebKit trackpad pinch (gesture events) zooms the board", async ({ page }) => {
     const prevented = await page.evaluate(() => {
       const canvas = document.getElementById("board")!;
       const fire = (type: string, scale: number) => {
@@ -202,9 +194,7 @@ test.describe("board zoom", () => {
 
   // The Mac Catalyst app's WebKit builds no gesture events for a trackpad, so
   // the native shell forwards the pinch as a window event instead.
-  test("a native pinch event (the Catalyst shell) zooms the board", async ({
-    page,
-  }) => {
+  test("a native pinch event (the Catalyst shell) zooms the board", async ({ page }) => {
     await page.evaluate(() => {
       const send = (phase: string, scale: number) =>
         window.dispatchEvent(
@@ -265,9 +255,7 @@ test.describe("board zoom", () => {
     const start = await at();
     await page.evaluate(() => {
       const send = (phase: string, dx: number, dy: number) =>
-        window.dispatchEvent(
-          new CustomEvent("hypersweeper:pan", { detail: { phase, dx, dy } }),
-        );
+        window.dispatchEvent(new CustomEvent("hypersweeper:pan", { detail: { phase, dx, dy } }));
       send("start", 0, 0);
       send("change", 15, 10);
       send("change", 15, 10);
@@ -295,9 +283,7 @@ test.describe("browser zoom is blocked", () => {
   // The iPhone bug: iOS ignores `user-scalable=no`, so without these the page
   // itself zooms on a double tap and the board is left offset under the
   // player's fingers, with no way to zoom back out.
-  test("the chrome opts out of double-tap zoom, the canvas out of everything", async ({
-    page,
-  }) => {
+  test("the chrome opts out of double-tap zoom, the canvas out of everything", async ({ page }) => {
     const touchAction = (sel: string) =>
       page.locator(sel).evaluate((el) => getComputedStyle(el).touchAction);
     expect(await touchAction("body")).toBe("manipulation");
@@ -310,7 +296,10 @@ test.describe("browser zoom is blocked", () => {
   // text mid-game, raising the copy menu over the board.
   test("no text in the app is selectable", async ({ page }) => {
     const userSelect = (sel: string) =>
-      page.locator(sel).first().evaluate((el) => getComputedStyle(el).userSelect);
+      page
+        .locator(sel)
+        .first()
+        .evaluate((el) => getComputedStyle(el).userSelect);
     expect(await userSelect("body")).toBe("none");
     await page.evaluate(() => window.__ms?.startBoard("square", "easy", { seed: 1 }));
     expect(await userSelect(".hud-smiley")).toBe("none");

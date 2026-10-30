@@ -19,15 +19,21 @@ const BASE = "http://localhost:4173";
 // Closed solids first, then the flat manifolds — the torus is closed and was
 // already getting markers, the other three are the two-sided ones this round
 // switched on, and they are the interesting case (one marker per face).
-const BOARDS = ["sphere", "cube", "torus", "cylinder", "mobius", "klein",
+const BOARDS = [
+  "sphere",
+  "cube",
+  "torus",
+  "cylinder",
+  "mobius",
+  "klein",
   // A stretched wrap, where the cells are long thin slivers: the case that
   // showed a marker sized off the mean vertex distance is not sized at all.
-  "torusrhombille", "torusstaggeredtri"];
+  "torusrhombille",
+  "torusstaggeredtri",
+];
 
 const settle = (page) =>
-  page.evaluate(
-    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-  );
+  page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
 mkdirSync(OUT, { recursive: true });
 
@@ -152,7 +158,13 @@ for (const mode of ["sphere", "mobius", "torusrhombille"]) {
   await ctx.addInitScript(() => {
     localStorage.setItem(
       "ms:settings",
-      JSON.stringify({ version: 5, gloss: false, theme: "bright", shape: "realistic", animations: true }),
+      JSON.stringify({
+        version: 5,
+        gloss: false,
+        theme: "bright",
+        shape: "realistic",
+        animations: true,
+      }),
     );
   });
   const page = await ctx.newPage();
@@ -167,8 +179,7 @@ for (const mode of ["sphere", "mobius", "torusrhombille"]) {
       .map((c) => ms.cellScreenXY(c))
       .filter((p) => p !== null)
       .sort(
-        (a, z) =>
-          Math.hypot(a.x - mid[0], a.y - mid[1]) - Math.hypot(z.x - mid[0], z.y - mid[1]),
+        (a, z) => Math.hypot(a.x - mid[0], a.y - mid[1]) - Math.hypot(z.x - mid[0], z.y - mid[1]),
       )[0];
   });
   const before = await page.evaluate(() => window.__ms.state().minesRemaining);

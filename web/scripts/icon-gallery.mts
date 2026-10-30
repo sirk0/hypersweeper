@@ -30,7 +30,12 @@ const groups: [string, string[]][] = [
   // derived, so a new family row cannot go stale here either
   [
     "Families / random",
-    [...PICKER_FAMILIES, ...FLAT_ONLY_FAMILIES, ...FLAT_ONLY_FAMILIES.flatMap(menuSubfamilies), "random"],
+    [
+      ...PICKER_FAMILIES,
+      ...FLAT_ONLY_FAMILIES,
+      ...FLAT_ONLY_FAMILIES.flatMap(menuSubfamilies),
+      "random",
+    ],
   ],
   ["Uniform tilings", UNIFORM_ARCH],
   ["Dual-uniform tilings", DUAL_ARCH],
@@ -48,19 +53,19 @@ const groups: [string, string[]][] = [
 const only = process.argv[3];
 const shown = only ? groups.filter(([t]) => t.toLowerCase().includes(only)) : groups;
 
-const label = (k: string): string =>
-  TILINGS_BY_KEY.get(k)?.label ?? MODE_LABELS[k] ?? k;
+const label = (k: string): string => TILINGS_BY_KEY.get(k)?.label ?? MODE_LABELS[k] ?? k;
 
 const sections = shown
   .map(
-    ([title, keys]) => `<h2>${title}</h2><div class="row">${keys
-      .map(
-        (k) =>
-          `<figure><div class="icon">${menuIcon(k)}</div><figcaption>${label(
-            k,
-          )}<br><code>${k}</code></figcaption></figure>`,
-      )
-      .join("")}</div>`,
+    ([title, keys]) =>
+      `<h2>${title}</h2><div class="row">${keys
+        .map(
+          (k) =>
+            `<figure><div class="icon">${menuIcon(k)}</div><figcaption>${label(
+              k,
+            )}<br><code>${k}</code></figcaption></figure>`,
+        )
+        .join("")}</div>`,
   )
   .join("\n");
 

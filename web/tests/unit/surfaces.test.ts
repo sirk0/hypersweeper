@@ -381,35 +381,38 @@ describe("wrapped surfaces", () => {
     expect(kleinModes.length).toBeGreaterThan(20);
   });
 
-  it.each(kleinModes)("%s gets a collar at every size, no cell mostly band, the fold whole", (mode) => {
-    for (const difficulty of ["easy", "medium", "hard"]) {
-      const board = buildBoard(mode, difficulty) as Board3D;
-      const { cells, solid, collar } = board.clip!;
-      expect(collar.length, `${mode} ${difficulty}`).toBeGreaterThan(0);
-      const floor = lowestShare(board, 0.05);
-      let band = 0;
-      for (const cell of cells) {
-        const poly = board.polygons.get(cell)!;
-        const whole = fanTriangles(poly, centroid(poly));
-        const area = trianglesArea(whole);
-        const holed = subtractSolid(whole, solid);
-        const share = (trianglesArea(holed) - trianglesArea(subtractSolid(holed, collar))) / area;
-        band += share;
-        // No cell is turned mostly to band: a tile with a seam along it, not a
-        // grey patch with a scrap of tile in it (beta feedback).
-        expect(share, `${mode} ${difficulty} ${cell}`).toBeLessThanOrEqual(0.3 + 1e-6);
-        // Whatever of the cell lies down at the fold keeps its tiles. Measured
-        // on that part alone: a coarse board's cell can run from just under
-        // the crossing, where the collar rightly cuts, all the way down.
-        // The hole itself leaves a hairline down there (see the test above);
-        // the collar must add nothing to it.
-        const low = subtractSolid(trianglesBelow(whole, floor), solid);
-        const added = trianglesArea(low) - trianglesArea(subtractSolid(low, collar));
-        expect(added / area, `${mode} ${difficulty} ${cell}`).toBeLessThan(0.002);
+  it.each(kleinModes)(
+    "%s gets a collar at every size, no cell mostly band, the fold whole",
+    (mode) => {
+      for (const difficulty of ["easy", "medium", "hard"]) {
+        const board = buildBoard(mode, difficulty) as Board3D;
+        const { cells, solid, collar } = board.clip!;
+        expect(collar.length, `${mode} ${difficulty}`).toBeGreaterThan(0);
+        const floor = lowestShare(board, 0.05);
+        let band = 0;
+        for (const cell of cells) {
+          const poly = board.polygons.get(cell)!;
+          const whole = fanTriangles(poly, centroid(poly));
+          const area = trianglesArea(whole);
+          const holed = subtractSolid(whole, solid);
+          const share = (trianglesArea(holed) - trianglesArea(subtractSolid(holed, collar))) / area;
+          band += share;
+          // No cell is turned mostly to band: a tile with a seam along it, not a
+          // grey patch with a scrap of tile in it (beta feedback).
+          expect(share, `${mode} ${difficulty} ${cell}`).toBeLessThanOrEqual(0.3 + 1e-6);
+          // Whatever of the cell lies down at the fold keeps its tiles. Measured
+          // on that part alone: a coarse board's cell can run from just under
+          // the crossing, where the collar rightly cuts, all the way down.
+          // The hole itself leaves a hairline down there (see the test above);
+          // the collar must add nothing to it.
+          const low = subtractSolid(trianglesBelow(whole, floor), solid);
+          const added = trianglesArea(low) - trianglesArea(subtractSolid(low, collar));
+          expect(added / area, `${mode} ${difficulty} ${cell}`).toBeLessThan(0.002);
+        }
+        expect(band, `${mode} ${difficulty}`).toBeGreaterThan(0);
       }
-      expect(band, `${mode} ${difficulty}`).toBeGreaterThan(0);
-    }
-  });
+    },
+  );
 
   it("the clip is render-only: cells, adjacency and symmetries are untouched", () => {
     const board = kleinBoard(16, 8);
@@ -523,7 +526,11 @@ function surfaceDistance(tris: readonly Tri[], p: Vec3): number {
   for (const [a, b, c] of tris) {
     const sub = (u: Vec3, v: Vec3): Vec3 => [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
     const dot = (u: Vec3, v: Vec3) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
-    const at = (o: Vec3, d: Vec3, k: number): Vec3 => [o[0] + d[0] * k, o[1] + d[1] * k, o[2] + d[2] * k];
+    const at = (o: Vec3, d: Vec3, k: number): Vec3 => [
+      o[0] + d[0] * k,
+      o[1] + d[1] * k,
+      o[2] + d[2] * k,
+    ];
     const ab = sub(b, a);
     const ac = sub(c, a);
     const ap = sub(p, a);
@@ -550,7 +557,11 @@ function surfaceDistance(tris: readonly Tri[], p: Vec3): number {
       const den = 1 / (va + vb + vc);
       const v = vb * den;
       const w = vc * den;
-      q = [a[0] + ab[0] * v + ac[0] * w, a[1] + ab[1] * v + ac[1] * w, a[2] + ab[2] * v + ac[2] * w];
+      q = [
+        a[0] + ab[0] * v + ac[0] * w,
+        a[1] + ab[1] * v + ac[1] * w,
+        a[2] + ab[2] * v + ac[2] * w,
+      ];
     }
     best = Math.min(best, Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]));
   }
@@ -654,7 +665,9 @@ describe("the projective plane", () => {
       expect(sevens.length).toBe(12);
       expect(tri!.adjacency.size).toBe(10 * frequency ** 2);
       expect(hex!.adjacency.size).toBe(5 * frequency ** 2 + 1);
-      const pentagons = [...hex!.adjacency.keys()].filter((c) => hex!.polygons.get(c)!.length === 5);
+      const pentagons = [...hex!.adjacency.keys()].filter(
+        (c) => hex!.polygons.get(c)!.length === 5,
+      );
       expect(pentagons.length).toBe(6); // half the sphere's twelve: 6 * chi
     }
   });
@@ -749,7 +762,8 @@ describe("Boy's surface", () => {
     const key = (p: Vec3) => p.map((c) => c.toFixed(6)).join(",");
     const points = new Set(hull.map(key));
     const [c, s] = [-0.5, Math.sqrt(3) / 2];
-    for (const [x, y, z] of hull) expect(points.has(key([c * x - s * y, s * x + c * y, z]))).toBe(true);
+    for (const [x, y, z] of hull)
+      expect(points.has(key([c * x - s * y, s * x + c * y, z]))).toBe(true);
   });
 
   it("offers the projective plane's motions, each an automorphism", () => {

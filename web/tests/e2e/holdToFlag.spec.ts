@@ -59,10 +59,7 @@ async function pointer(page: Page, kind: string, x: number, y: number): Promise<
 async function openBoard(page: Page, holdToFlagMs?: number): Promise<void> {
   if (holdToFlagMs !== undefined) {
     await page.addInitScript((ms) => {
-      window.localStorage.setItem(
-        "ms:settings",
-        JSON.stringify({ version: 5, holdToFlagMs: ms }),
-      );
+      window.localStorage.setItem("ms:settings", JSON.stringify({ version: 5, holdToFlagMs: ms }));
     }, holdToFlagMs);
   }
   await page.goto("/");
@@ -91,15 +88,11 @@ async function watchFlash(page: Page): Promise<void> {
 
 /** Whether the blink has run since `watchFlash`. */
 async function flashed(page: Page): Promise<boolean> {
-  return page.evaluate(
-    () => (window as unknown as { __flash?: boolean }).__flash === true,
-  );
+  return page.evaluate(() => (window as unknown as { __flash?: boolean }).__flash === true);
 }
 
 test.describe("holding to flag", () => {
-  test("the flag lands after the hold, and the header's flag blinks red", async ({
-    page,
-  }) => {
+  test("the flag lands after the hold, and the header's flag blinks red", async ({ page }) => {
     await openBoard(page, 400);
     const { cell, x, y } = await cellPoint(page);
     await watchFlash(page);
@@ -199,9 +192,7 @@ test.describe("the flag blink", () => {
     expect(paint.icon).toBe("1");
   });
 
-  test("blinks for a right-click too, but never for a flag taken off", async ({
-    page,
-  }) => {
+  test("blinks for a right-click too, but never for a flag taken off", async ({ page }) => {
     // The blink says "a flag went down", not "a hold finished": every way of
     // planting one gets it, and clearing one gets none.
     await openBoard(page);
@@ -227,9 +218,7 @@ test.describe("the hold-to-flag setting", () => {
     await expect(page.locator('input[data-setting="hold-to-flag"]')).toHaveCount(0);
   });
 
-  test("a touch screen gets the row, and the slider persists what it sets", async ({
-    browser,
-  }) => {
+  test("a touch screen gets the row, and the slider persists what it sets", async ({ browser }) => {
     const context = await browser.newContext({
       hasTouch: true,
       isMobile: true,
@@ -253,9 +242,11 @@ test.describe("the hold-to-flag setting", () => {
     expect(
       await page.evaluate(
         () =>
-          (JSON.parse(window.localStorage.getItem("ms:settings") ?? "{}") as {
-            holdToFlagMs?: number;
-          }).holdToFlagMs,
+          (
+            JSON.parse(window.localStorage.getItem("ms:settings") ?? "{}") as {
+              holdToFlagMs?: number;
+            }
+          ).holdToFlagMs,
       ),
     ).toBe(450);
 

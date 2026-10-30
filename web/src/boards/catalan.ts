@@ -17,15 +17,7 @@
 // knob: triangles through `geodesic` (the flat, non-projected subdivision the
 // Platonic boards use), quadrilaterals through `quadGrid`, and pentagons — which
 // cannot be cut into pentagons at all — fanned into five quadrilaterals first.
-import {
-  cid,
-  cross,
-  dot,
-  normalize,
-  tangentOrder,
-  type Board3D,
-  type Vec3,
-} from "./core";
+import { cid, cross, dot, normalize, tangentOrder, type Board3D, type Vec3 } from "./core";
 import {
   centroidOf,
   convexBoard3d,
@@ -66,7 +58,12 @@ function cube(): Polyhedron {
         if (v[axis] === sign) ring.push(i);
       });
       const centre = centroidOf(ring.map((i) => vertices[i]!));
-      faces.push(tangentOrder(centre, ring.map((i) => [i, vertices[i]!] as [number, Vec3])));
+      faces.push(
+        tangentOrder(
+          centre,
+          ring.map((i) => [i, vertices[i]!] as [number, Vec3]),
+        ),
+      );
     }
   }
   return { vertices, faces };
@@ -123,12 +120,13 @@ export class Base {
     this.faceEdges = this.faces.map(() => []);
     for (const e of this.edges) {
       const [a, b] = [this.vertices[e[0]]!, this.vertices[e[1]]!];
-      this.edgeDirs.set(ekey(e), normalize([
-        (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2,
-      ]));
-      const shared = this.vertexFaces[e[0]]!
-        .filter((f) => this.vertexFaces[e[1]]!.includes(f))
-        .sort((x, y) => x - y) as [number, number];
+      this.edgeDirs.set(
+        ekey(e),
+        normalize([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]),
+      );
+      const shared = this.vertexFaces[e[0]]!.filter((f) =>
+        this.vertexFaces[e[1]]!.includes(f),
+      ).sort((x, y) => x - y) as [number, number];
       this.edgeFaces.set(ekey(e), shared);
       for (const fi of shared) this.faceEdges[fi]!.push(e);
     }
@@ -282,7 +280,10 @@ export function catalanFaces(base: Base, op: Op): { faces: Cells; positions: Pos
     for (const e of base.edges) {
       const [f1, f2] = base.edgeFaces.get(ekey(e))!;
       faces.set(cid("r", e[0], e[1]), [
-        corner("v", e[0]), corner("f", f1), corner("v", e[1]), corner("f", f2),
+        corner("v", e[0]),
+        corner("f", f1),
+        corner("v", e[1]),
+        corner("f", f2),
       ]);
     }
   } else if (op === "kis") {
@@ -290,7 +291,9 @@ export function catalanFaces(base: Base, op: Op): { faces: Cells; positions: Pos
     base.faces.forEach((_face, fi) => {
       for (const e of base.faceEdges[fi]!) {
         faces.set(cid("t", fi, e[0], e[1]), [
-          corner("v", e[0]), corner("v", e[1]), corner("f", fi),
+          corner("v", e[0]),
+          corner("v", e[1]),
+          corner("f", fi),
         ]);
       }
     });
@@ -301,9 +304,7 @@ export function catalanFaces(base: Base, op: Op): { faces: Cells; positions: Pos
       for (const e of base.edges) {
         if (e[0] !== vi && e[1] !== vi) continue;
         const [f1, f2] = base.edgeFaces.get(ekey(e))!;
-        faces.set(cid("t", vi, e[0], e[1]), [
-          corner("f", f1), corner("f", f2), corner("v", vi),
-        ]);
+        faces.set(cid("t", vi, e[0], e[1]), [corner("f", f1), corner("f", f2), corner("v", vi)]);
       }
     });
   } else if (op === "ortho") {
@@ -313,7 +314,10 @@ export function catalanFaces(base: Base, op: Op): { faces: Cells; positions: Pos
       for (const v of face) {
         const es = base.faceEdges[fi]!.filter((e) => e[0] === v || e[1] === v);
         faces.set(cid("k", fi, v), [
-          corner("v", v), corner("e", es[0]!), corner("f", fi), corner("e", es[1]!),
+          corner("v", v),
+          corner("e", es[0]!),
+          corner("f", fi),
+          corner("e", es[1]!),
         ]);
       }
     });
@@ -322,9 +326,7 @@ export function catalanFaces(base: Base, op: Op): { faces: Cells; positions: Pos
     base.faces.forEach((_face, fi) => {
       for (const e of base.faceEdges[fi]!) {
         for (const v of e) {
-          faces.set(cid("t", fi, e[0], e[1], v), [
-            corner("v", v), corner("e", e), corner("f", fi),
-          ]);
+          faces.set(cid("t", fi, e[0], e[1], v), [corner("v", v), corner("e", e), corner("f", fi)]);
         }
       }
     });
@@ -418,7 +420,12 @@ function gyroFaces(base: Base): { faces: Cells; positions: Positions } {
     });
   });
   const onAxis = new Set(
-    snubFaces.map(({ ring }) => ring.map((f) => `${f[0]},${f[1]}`).sort().join(";")),
+    snubFaces.map(({ ring }) =>
+      ring
+        .map((f) => `${f[0]},${f[1]}`)
+        .sort()
+        .join(";"),
+    ),
   );
 
   // ...and the snub triangles between them: mutually adjacent triples that no
@@ -432,7 +439,10 @@ function gyroFaces(base: Base): { faces: Cells; positions: Positions } {
       for (let k = j + 1; k < flags.length; k++) {
         if (!adjacent(flags[i]!, flags[k]!) || !adjacent(flags[j]!, flags[k]!)) continue;
         const ring = [flags[i]!, flags[j]!, flags[k]!];
-        const tag = ring.map((f) => `${f[0]},${f[1]}`).sort().join(";");
+        const tag = ring
+          .map((f) => `${f[0]},${f[1]}`)
+          .sort()
+          .join(";");
         if (!onAxis.has(tag)) snubFaces.push({ key: `g|${tag}`, ring });
       }
     }
@@ -464,7 +474,10 @@ function gyroFaces(base: Base): { faces: Cells; positions: Positions } {
     const [fi, ci] = tag.split(",").map(Number) as [number, number];
     faces.set(
       cid("p", fi, ci),
-      tangentOrder(at([fi, ci]), ring.map((key) => [key, positions.get(key)!] as [string, Vec3])),
+      tangentOrder(
+        at([fi, ci]),
+        ring.map((key) => [key, positions.get(key)!] as [string, Vec3]),
+      ),
     );
   }
   return { faces, positions };
@@ -513,9 +526,7 @@ export function quadGrid(
     const [k0, k1, k2, k3] = ring as [string, string, string, string];
     const [p0, p1, p2, p3] = ring.map((k) => positions.get(k)!) as [Vec3, Vec3, Vec3, Vec3];
 
-    const side = (
-      ka: string, kb: string, pa: Vec3, pb: Vec3, step: number,
-    ): [string, Vec3] => [
+    const side = (ka: string, kb: string, pa: Vec3, pb: Vec3, step: number): [string, Vec3] => [
       edgeKey(ka, kb, step, n),
       ka < kb ? lerp(pa, pb, step, n) : lerp(pb, pa, n - step, n),
     ];
@@ -533,8 +544,10 @@ export function quadGrid(
         const t = j / n;
         point = [0, 1, 2].map(
           (a) =>
-            (1 - s) * (1 - t) * p0[a]! + s * (1 - t) * p1[a]! +
-            s * t * p2[a]! + (1 - s) * t * p3[a]!,
+            (1 - s) * (1 - t) * p0[a]! +
+            s * (1 - t) * p1[a]! +
+            s * t * p2[a]! +
+            (1 - s) * t * p3[a]!,
         ) as Vec3;
       }
       outPos.set(key, point);
@@ -556,7 +569,12 @@ export function quadGrid(
  * whatever their side counts, produce the same id *and* the same coordinates;
  * and an end of the edge is its corner, not a recomputation. */
 function edgePoint(
-  ka: string, kb: string, pa: Vec3, pb: Vec3, step: number, total: number,
+  ka: string,
+  kb: string,
+  pa: Vec3,
+  pb: Vec3,
+  step: number,
+  total: number,
 ): [string, Vec3] {
   const key = edgeKey(ka, kb, step, total);
   if (key === ka) return [key, pa];
@@ -615,10 +633,7 @@ export function triGrid(
  * pushed back out to their sphere, which is what keeps the fan flat rather than
  * tenting outward — the same rule `solids.dodecahedron` fans a dodecahedron's
  * pentagons by. */
-function fanPentagons(
-  faces: Cells,
-  positions: Positions,
-): { faces: Cells; positions: Positions } {
+function fanPentagons(faces: Cells, positions: Positions): { faces: Cells; positions: Positions } {
   const outCells: Cells = new Map();
   const outPos: Positions = new Map(positions);
   for (const [cell, ring] of faces) {
@@ -632,7 +647,12 @@ function fanPentagons(
       return mid;
     });
     ring.forEach((key, i) => {
-      outCells.set(cid(cell, i), [key, mids[i]!, centreKey, mids[(i + mids.length - 1) % mids.length]!]);
+      outCells.set(cid(cell, i), [
+        key,
+        mids[i]!,
+        centreKey,
+        mids[(i + mids.length - 1) % mids.length]!,
+      ]);
     });
   }
   return { faces: outCells, positions: outPos };
@@ -673,12 +693,7 @@ function subdivide(
   throw new Error(`cannot subdivide faces with ${n} sides`);
 }
 
-function catalanBoard(
-  mode: string,
-  base: string,
-  op: Op,
-  frequency: number,
-): Board3D {
+function catalanBoard(mode: string, base: string, op: Op, frequency: number): Board3D {
   const built = catalanFaces(new Base(base), op);
   const { faces, positions } = subdivide(built.faces, built.positions, frequency);
   let radius = 0;

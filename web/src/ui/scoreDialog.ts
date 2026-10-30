@@ -245,10 +245,7 @@ function shareButton(onShare: () => Promise<ShareResult>): HTMLButtonElement {
 
 /** Build the dialog and add it to `host`. The caller keeps the handle and
  * closes it when the board goes away. */
-export function openScoreDialog(
-  host: HTMLElement,
-  opts: ScoreDialogOptions,
-): ScoreDialogHandle {
+export function openScoreDialog(host: HTMLElement, opts: ScoreDialogOptions): ScoreDialogHandle {
   const unlocked = opts.unlocked ?? [];
   const dialog = el("div", "dialog");
   if (opts.rank !== null) dialog.dataset["rank"] = String(opts.rank);
@@ -258,7 +255,7 @@ export function openScoreDialog(
   // list of times both belong to a rank and are left out.
   const heading =
     opts.rank !== null
-      ? RANK_TITLES[opts.rank - 1] ?? "Top time"
+      ? (RANK_TITLES[opts.rank - 1] ?? "Top time")
       : unlocked.length > 1
         ? `${unlocked.length} achievements unlocked`
         : "Achievement unlocked";
@@ -323,7 +320,7 @@ export function openScoreDialog(
   dialog.append(
     dismiss,
     ...(share ? [share] : []),
-    el("div", "dialog-medal", opts.rank !== null ? MEDALS[opts.rank - 1] ?? "🏅" : "🏅"),
+    el("div", "dialog-medal", opts.rank !== null ? (MEDALS[opts.rank - 1] ?? "🏅") : "🏅"),
     title,
     el("p", "dialog-subtitle", `${label} · ${difficultyLabel}`),
   );

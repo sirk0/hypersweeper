@@ -248,7 +248,14 @@ test.describe("board gallery", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 5, gloss: false, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
+        JSON.stringify({
+          version: 5,
+          gloss: false,
+          theme: "bright",
+          shape: "soft",
+          scheme: "light",
+          seenHint: true,
+        }),
       );
     });
     await page.goto("/");
@@ -271,19 +278,22 @@ test.describe("board gallery", () => {
   // *before* the app boots rather than switched afterwards.
   for (const [theme, shape, scheme] of LOOKS) {
     test(`revealed square: ${theme} theme, ${shape} cells, ${scheme}`, async ({ page }) => {
-      await page.addInitScript((look: string[]) => {
-        localStorage.setItem(
-          "ms:settings",
-          JSON.stringify({
-            version: 5,
-            gloss: false,
-            theme: look[0],
-            shape: look[1],
-            scheme: look[2],
-            seenHint: true,
-          }),
-        );
-      }, [theme, shape, scheme]);
+      await page.addInitScript(
+        (look: string[]) => {
+          localStorage.setItem(
+            "ms:settings",
+            JSON.stringify({
+              version: 5,
+              gloss: false,
+              theme: look[0],
+              shape: look[1],
+              scheme: look[2],
+              seenHint: true,
+            }),
+          );
+        },
+        [theme, shape, scheme],
+      );
       await page.goto("/");
       await expect(page.locator("body[data-ready]")).toBeVisible();
       await page.evaluate(() => {
@@ -308,7 +318,14 @@ test.describe("board gallery", () => {
       await page.addInitScript(() => {
         localStorage.setItem(
           "ms:settings",
-          JSON.stringify({ version: 5, gloss: false, theme: "bright", shape: "soft", scheme: "light", seenHint: true }),
+          JSON.stringify({
+            version: 5,
+            gloss: false,
+            theme: "bright",
+            shape: "soft",
+            scheme: "light",
+            seenHint: true,
+          }),
         );
       });
       await page.goto(`/?mode=${mode}&difficulty=easy&seed=1`);
@@ -325,19 +342,22 @@ test.describe("board gallery", () => {
   // `SOLID_LOOKS` rather than the whole cross again.
   for (const [theme, shape, scheme] of SOLID_LOOKS) {
     test(`sphere: ${theme} theme, ${shape} cells, ${scheme}`, async ({ page }) => {
-      await page.addInitScript((look: string[]) => {
-        localStorage.setItem(
-          "ms:settings",
-          JSON.stringify({
-            version: 5,
-            gloss: false,
-            theme: look[0],
-            shape: look[1],
-            scheme: look[2],
-            seenHint: true,
-          }),
-        );
-      }, [theme, shape, scheme]);
+      await page.addInitScript(
+        (look: string[]) => {
+          localStorage.setItem(
+            "ms:settings",
+            JSON.stringify({
+              version: 5,
+              gloss: false,
+              theme: look[0],
+              shape: look[1],
+              scheme: look[2],
+              seenHint: true,
+            }),
+          );
+        },
+        [theme, shape, scheme],
+      );
       await page.goto("/?mode=sphere&difficulty=easy&seed=1");
       await expect(page.locator("body[data-ready]")).toBeVisible();
       await page.waitForTimeout(150);

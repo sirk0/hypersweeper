@@ -92,7 +92,10 @@ describe("the disc view", () => {
 function stroke(v: DiscView, from: Cx, to: Cx, reach = 0.99, steps = 400): DiscView {
   let at = from;
   for (let i = 1; i <= steps; i++) {
-    const next: Cx = [from[0] + ((to[0] - from[0]) * i) / steps, from[1] + ((to[1] - from[1]) * i) / steps];
+    const next: Cx = [
+      from[0] + ((to[0] - from[0]) * i) / steps,
+      from[1] + ((to[1] - from[1]) * i) / steps,
+    ];
     v = discDrag(v, at, next, reach);
     at = next;
   }
@@ -117,7 +120,11 @@ describe("a drag", () => {
   });
 
   it("moves the grabbed point by the finger's step, to first order", () => {
-    for (const from of [[0, 0], [0.3, -0.4], [-0.5, 0.45]] as Cx[]) {
+    for (const from of [
+      [0, 0],
+      [0.3, -0.4],
+      [-0.5, 0.45],
+    ] as Cx[]) {
       const d: Cx = [2e-4, -1e-4];
       const [mx, my] = grabbedMove(from, [from[0] + d[0], from[1] + d[1]]);
       expect(mx).toBeCloseTo(d[0], 6);
@@ -165,7 +172,11 @@ describe("a drag", () => {
   it("follows the finger exactly away from the rim", () => {
     // Out to sqrt(1 - 1/DRAG_SPEED) the speed cap never bites.
     const edge = Math.sqrt(1 - 1 / DRAG_SPEED) - 0.01;
-    for (const dir of [[1, 0], [0, 1], [0.6, 0.8]] as Cx[]) {
+    for (const dir of [
+      [1, 0],
+      [0, 1],
+      [0.6, 0.8],
+    ] as Cx[]) {
       const from: Cx = [edge * dir[0], edge * dir[1]];
       const d: Cx = [-1e-4, 1e-4];
       const [mx, my] = grabbedMove(from, [from[0] + d[0], from[1] + d[1]]);
@@ -180,8 +191,16 @@ describe("a drag", () => {
     // hyperbolically, as a drag through it would carry it.
     const step = 1e-3;
     for (let r = 0; r < 1.5; r += 0.01) {
-      for (const along of [[1, 0], [-1, 0], [0, 1], [0.6, -0.8]] as Cx[]) {
-        const p = dragShift([r * 0.8, r * 0.6], [r * 0.8 + along[0] * step, r * 0.6 + along[1] * step]);
+      for (const along of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0.6, -0.8],
+      ] as Cx[]) {
+        const p = dragShift(
+          [r * 0.8, r * 0.6],
+          [r * 0.8 + along[0] * step, r * 0.6 + along[1] * step],
+        );
         expect(dist([0, 0], p), `at ${r}`).toBeLessThanOrEqual(DRAG_SPEED * 2 * step * (1 + 1e-6));
       }
     }
@@ -193,7 +212,11 @@ describe("a drag", () => {
     // so a sideways drag at the edge carried the board up or down.
     // (past GRAB_LIMIT the grabbed point is the one at the limit)
     for (const r of [0.8, 0.9, GRAB_LIMIT]) {
-      for (const along of [[-1, 0], [0, 1], [-0.6, 0.8]] as Cx[]) {
+      for (const along of [
+        [-1, 0],
+        [0, 1],
+        [-0.6, 0.8],
+      ] as Cx[]) {
         const from: Cx = [r * 0.8, r * 0.6];
         const [mx, my] = grabbedMove(from, [from[0] + along[0] * 1e-4, from[1] + along[1] * 1e-4]);
         const n = Math.hypot(mx, my);
@@ -280,7 +303,10 @@ describe("the hyperbolic boards' disc", () => {
       const r = (disc.rim - 0.005) * disc.radius;
       for (let k = 0; k < 360; k++) {
         const t = (k * Math.PI) / 180;
-        expect(inside(disc.cx + r * Math.cos(t), disc.cy + r * Math.sin(t)), `${mode} at ${k}°`).toBe(true);
+        expect(
+          inside(disc.cx + r * Math.cos(t), disc.cy + r * Math.sin(t)),
+          `${mode} at ${k}°`,
+        ).toBe(true);
       }
     }
   });
@@ -312,7 +338,12 @@ describe("a closed surface's pan", () => {
       expect(dist(next.c, [0, 0])).toBeLessThan(dist(view.c, [0, 0]));
       // what the new view draws of a point is what the old one drew of the
       // point the step carries it to -- the same picture, relabelled
-      for (const z of [[0, 0], [0.2, 0.1], [-0.3, 0.25], [0.05, -0.4]] as Cx[]) {
+      for (const z of [
+        [0, 0],
+        [0.2, 0.1],
+        [-0.3, 0.25],
+        [0.05, -0.4],
+      ] as Cx[]) {
         close(discMap(next, z), discMap(view, step(k, z)));
       }
     }
@@ -324,7 +355,12 @@ describe("a closed surface's pan", () => {
     // mirror image of where it was.
     const mesh = meshCoverSteps(steps);
     for (let k = 0; k < steps.length; k++) {
-      for (const z of [[0, 0], [0.2, 0.1], [-0.3, 0.25], [0.05, -0.4]] as Cx[]) {
+      for (const z of [
+        [0, 0],
+        [0.2, 0.1],
+        [-0.3, 0.25],
+        [0.05, -0.4],
+      ] as Cx[]) {
         const there = step(k, z);
         close(discMap(mesh[k]!, [z[0], -z[1]]), [there[0], -there[1]]);
       }

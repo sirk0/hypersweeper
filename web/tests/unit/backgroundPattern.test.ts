@@ -96,8 +96,7 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("cubebrickrings")).toBe(patternKey("brickrings"));
     expect(patternKey("tetrahedron")).toBe("tri");
     expect(patternKey("tetraframe")).toBe("tri");
-    const group = (key: string): string[] =>
-      SOLID_GROUPS.find((g) => g.key === key)?.modes ?? [];
+    const group = (key: string): string[] => SOLID_GROUPS.find((g) => g.key === key)?.modes ?? [];
     for (const mode of group("sphere")) expect(patternKey(mode)).toBe("circles");
     // ...and the hyperbolic boards, whose tiles close up only in the
     // hyperbolic plane, so no flat repeat of them exists
@@ -344,8 +343,7 @@ describe("the ink follows the colour scheme", () => {
   // scheme's dark slate over a near-black page is not faint, it is absent: it
   // shifts a pixel by about four values in 255. The dark scheme therefore gets
   // a *lighter* ink than its page, and the two tiles have to be two tiles.
-  const strokeOf = (svg: string): string =>
-    /stroke='(#[0-9a-f]{6})'/.exec(svg)?.[1] ?? "";
+  const strokeOf = (svg: string): string => /stroke='(#[0-9a-f]{6})'/.exec(svg)?.[1] ?? "";
   const alphaOf = (svg: string): number =>
     Number(/stroke-opacity='([\d.]+)'/.exec(svg)?.[1] ?? "0");
   const luma = (hex: string): number =>

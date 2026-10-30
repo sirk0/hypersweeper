@@ -1,14 +1,7 @@
 // Port of the regular flat lattice builders in minesweeper/boards/tilings.py
 // (square / triangle / trigrid / hex / hexhex). Integer lattice points, so
 // adjacency uses exact vertex keys — no quantization needed here.
-import {
-  buildLattice,
-  cid,
-  finalizeFlat,
-  type Board,
-  type CellId,
-  type Vertex,
-} from "./core";
+import { buildLattice, cid, finalizeFlat, type Board, type CellId, type Vertex } from "./core";
 
 const ROOT3 = Math.sqrt(3);
 const ROOT2 = Math.sqrt(2);
@@ -23,11 +16,7 @@ const HEX_VERTEX_OFFSETS: Vertex[] = [
   [-1, -1],
 ];
 
-export function squareBoard(
-  rows: number,
-  cols: number,
-  scale = 32,
-): Board {
+export function squareBoard(rows: number, cols: number, scale = 32): Board {
   const cells = new Map<CellId, Vertex[]>();
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -92,11 +81,7 @@ export function hextriBoard(side: number, scale = 52): Board {
   return buildLattice("hextri", cells, [scale / 2, (scale * ROOT3) / 2]);
 }
 
-export function triangleGridBoard(
-  rows: number,
-  rowWidth: number,
-  scale = 52,
-): Board {
+export function triangleGridBoard(rows: number, rowWidth: number, scale = 52): Board {
   const cells = new Map<CellId, Vertex[]>();
   for (let r = 0; r < rows; r++) {
     for (let i = 0; i < rowWidth; i++) {
@@ -106,11 +91,7 @@ export function triangleGridBoard(
   return buildLattice("trigrid", cells, [scale / 2, (scale * ROOT3) / 2]);
 }
 
-export function hexBoard(
-  rows: number,
-  cols: number,
-  scale = 20,
-): Board {
+export function hexBoard(rows: number, cols: number, scale = 20): Board {
   // Pointy-top hexagons in odd-r offset layout; scale = circumradius.
   const cells = new Map<CellId, Vertex[]>();
   for (let r = 0; r < rows; r++) {
@@ -425,7 +406,10 @@ interface WrapFrame {
  * Rebuilt from the template's own cells, so the tiles are exactly the flat
  * layout's; edge-to-edge templates only. Port of `_reframed` in
  * boards/tilings.py. */
-function reframed(t: ArchTemplate, { cut, quarter = false, axis = 0, glide = false }: WrapFrame): ArchTemplate {
+function reframed(
+  t: ArchTemplate,
+  { cut, quarter = false, axis = 0, glide = false }: WrapFrame,
+): ArchTemplate {
   if (t.straight.size) throw new Error("a template with T-vertices cannot be reframed");
   let width = t.width;
   let height = t.height;
@@ -538,7 +522,9 @@ function flipLevels(
 
   const [ax, ay] = tiles[0]!.centre;
   const levels: number[] = [];
-  for (const { centre: [cx, cy] } of tiles) {
+  for (const {
+    centre: [cx, cy],
+  } of tiles) {
     // the flip has to send the first tile onto this one, which fixes it up to
     // the half period between one flip level and the next
     for (const level of [(ay + cy) / 2, (ay + cy) / 2 + height / 2]) {
@@ -857,6 +843,7 @@ function trihexTemplate(): ArchTemplate {
     [cx - 0.5, cy - h],
     [cx + 0.5, cy - h],
   ];
+  // prettier-ignore
   const polygons: [string, Vertex[]][] = [
     ["hex0", hexagon(0, 0)],
     ["hex1", hexagon(1, ROOT3)],
@@ -895,6 +882,7 @@ function truncsquareTemplate(): ArchTemplate {
   ];
   // no horizontal line runs through this tiling, so the Mobius band is cut
   // midway between the octagon and square courses.
+  // prettier-ignore
   return template([4, 8, 8], a, a, [["oct", octagon], ["sq", square]], { cut: a / 4 });
 }
 
@@ -902,6 +890,7 @@ function elongatedTemplate(): ArchTemplate {
   // Elongated triangular (3.3.3.4.4): rows of squares separated by rows of
   // triangles, consecutive square rows offset by half a square.
   const h = ROOT3 / 2;
+  // prettier-ignore
   const polygons: [string, Vertex[]][] = [
     ["sq0", [[0, -0.5], [1, -0.5], [1, 0.5], [0, 0.5]]],
     ["tri0", [[0, 0.5], [1, 0.5], [0.5, 0.5 + h]]],
@@ -985,6 +974,7 @@ function snubhexTemplate(): ArchTemplate {
       if (inDomain(points)) polygons.push([`t${row},${i}`, points]);
     }
   }
+  // prettier-ignore
   const ring: [number, number][] = [[2, 0], [1, 1], [-1, 1], [-2, 0], [-1, -1], [1, -1]];
   for (let m = -3; m < 4; m++) {
     for (let n = -3; n < 4; n++) {
@@ -1021,6 +1011,7 @@ function trunchexPolygons(): [string, Vertex[]][] {
       const ang = (15 + 30 * k) * DEG;
       dodecagon.push([cx + r * Math.cos(ang), cy + r * Math.sin(ang)]);
     }
+    // prettier-ignore
     return [
       ["dod" + suffix, dodecagon],
       ["up" + suffix, [[cx + a / 2, cy + 0.5], [cx + a - e, cy + e], [cx + e, cy + e]]],
@@ -1094,6 +1085,7 @@ function rhombitrihexPolygons(
       const vy = cy + Math.sin((30 + 60 * k) * DEG);
       const u1: Vertex = [Math.cos(60 * k * DEG), Math.sin(60 * k * DEG)];
       const u2: Vertex = [Math.cos((60 * k + 60) * DEG), Math.sin((60 * k + 60) * DEG)];
+      // prettier-ignore
       out.push(["tri", [[vx, vy], [vx + u1[0], vy + u1[1]], [vx + u2[0], vy + u2[1]]]]);
     }
     return out;
@@ -1115,6 +1107,7 @@ function trunctrihexTemplate(): ArchTemplate {
     const m0 = Math.round((cx - (n0 * a) / 2) / a);
     const out: [string, Vertex[]][] = [];
     for (let k = 0; k < 6; k++) out.push(["sq", squareOnEdge(cx, cy, apothem, 60 * k)]);
+    // prettier-ignore
     const cornerSets: [number, number][][] = [
       [[0, 0], [1, 0], [0, 1]],
       [[1, 0], [0, 1], [1, 1]],
@@ -1136,9 +1129,15 @@ function trunctrihexTemplate(): ArchTemplate {
   // courses of dodecagon+square, hexagon, square, hexagon, ... and no
   // horizontal line; the Mobius band is cut midway between the square course
   // and the hexagon course above it.
-  return template([4, 6, 12], width, height, hexLatticePolygons(centreAt, dodecagonAt, decorate, width, height), {
-    cut: (7 * height) / 24,
-  });
+  return template(
+    [4, 6, 12],
+    width,
+    height,
+    hexLatticePolygons(centreAt, dodecagonAt, decorate, width, height),
+    {
+      cut: (7 * height) / 24,
+    },
+  );
 }
 
 // -- Laves (dual / Catalan) tilings ------------------------------------------
@@ -1324,6 +1323,7 @@ function offsetsquareTemplate(): ArchTemplate {
   // template midline is a mirror line. A row's own top edge runs straight
   // across the tiling, so the Mobius band is cut there rather than along the
   // midline, which would leave a square centre on the seam.
+  // prettier-ignore
   return template([4, 4, 4], 1, 2, [
     ["sq0", [[0, -0.5], [1, -0.5], [1, 0.5], [0, 0.5]]],
     ["sq1", [[-0.5, 0.5], [0.5, 0.5], [0.5, 1.5], [-0.5, 1.5]]],
@@ -1337,6 +1337,7 @@ function staggeredtriTemplate(): ArchTemplate {
   // neighbouring strip's edge (60 + 60 + 60 + 180). The strip mirror is a
   // glide (reflect plus half a period).
   const h = ROOT3 / 2;
+  // prettier-ignore
   return template([3, 3, 3, 3], 1, 2 * h, [
     ["up0", [[0, 0], [1, 0], [0.5, h]]],
     ["down0", [[-0.5, h], [0.5, h], [0, 0]]],
@@ -1355,8 +1356,14 @@ function pythagoreanTemplate(ratio = 0.5): ArchTemplate {
   // p4 has no reflection at all.
   const r = ratio;
   const side = (1 + r * r) / r;
+  // prettier-ignore
   const big: Vertex[] = [[0, 0], [1, 0], [1, 1], [0, 1]];
-  const small: Vertex[] = [[1 - r, 1], [1, 1], [1, 1 + r], [1 - r, 1 + r]];
+  const small: Vertex[] = [
+    [1 - r, 1],
+    [1, 1],
+    [1, 1 + r],
+    [1 - r, 1 + r],
+  ];
   const polygons = periodicDomain([1, r], [-r, 1], side, side, [
     ["big", big],
     ["small", small],
@@ -1429,6 +1436,7 @@ function rotatedtriTemplate(hexagon = 0.5): ArchTemplate {
     // along the hexagon's edge and out past the next corner
     const a = polar(120 + 60 * k);
     const b = polar(60 + 60 * k);
+    // prettier-ignore
     polygons.push(["tri", [[vx, vy], [vx + a[0], vy + a[1]], [vx + b[0], vy + b[1]]]]);
   });
   const c1: Vertex = [1.5 * h - 0.5, (ROOT3 / 2) * (1 + h)];
@@ -1463,7 +1471,11 @@ function threescaletriTemplate(ratio = 0.5): ArchTemplate {
   // and a big corner against the big edge running through (60 + 60 + 60 + 180).
   const t = ratio;
   const bigSide = 1 + t;
-  const corners: Vertex[] = [[0, 0], [1, 0], [0.5, ROOT3 / 2]];
+  const corners: Vertex[] = [
+    [0, 0],
+    [1, 0],
+    [0.5, ROOT3 / 2],
+  ];
   const polygons: [string, Vertex[]][] = [["med", corners]];
   for (let i = 0; i < 3; i++) {
     const [px, py] = corners[i]!;
@@ -1474,10 +1486,12 @@ function threescaletriTemplate(ratio = 0.5): ArchTemplate {
     // the big triangle outside this edge, running from p past q
     const b1 = polar(out, bigSide);
     const b2 = polar(out - 60, bigSide);
+    // prettier-ignore
     polygons.push(["big", [[px, py], [px + b1[0], py + b1[1]], [px + b2[0], py + b2[1]]]]);
     // the small triangle in the wedge at q, between those two big ones
     const s1 = polar(out, t);
     const s2 = polar(on - 60, t);
+    // prettier-ignore
     polygons.push(["small", [[qx, qy], [qx + s1[0], qy + s1[1]], [qx + s2[0], qy + s2[1]]]]);
   }
   // The translation to the medium triangle on the big triangle's next edge
@@ -1510,7 +1524,12 @@ function threescaletriTemplate(ratio = 0.5): ArchTemplate {
 
 /** The rectangle with its lower-left corner at (x, y). */
 function brick(x: number, y: number, length: number, height: number): Vertex[] {
-  return [[x, y], [x + length, y], [x + length, y + height], [x, y + height]];
+  return [
+    [x, y],
+    [x + length, y],
+    [x + length, y + height],
+    [x, y + height],
+  ];
 }
 
 function stackedbondTemplate(ratio = 0.5): ArchTemplate {
@@ -1530,6 +1549,7 @@ function runningbondTemplate(ratio = 0.5): ArchTemplate {
   // Cut on a course's top edge, as the offset square tiling is: the Mobius
   // band wants a straight rim, and the midline runs through a brick.
   const r = ratio;
+  // prettier-ignore
   return template([4], 1, 2 * r, [
     ["brick0", brick(0, -r / 2, 1, r)],
     ["brick1", brick(-0.5, r / 2, 1, r)],
@@ -1719,6 +1739,7 @@ function trominoTemplate(): ArchTemplate {
   // use here at all: it lands *on* the reflex corner, outside the tile, and a
   // glyph sized by its distance to the nearest edge comes out at zero.
   const anchor: Vertex = [0.5, 0.5];
+  // prettier-ignore
   return template([6], 3, 2, [
     ["chair", outline],
     ["turned", turned],
@@ -1869,7 +1890,10 @@ function trirhombitrihexTemplate(): ArchTemplate {
       polygons.push([name, polygon]);
     }
   }
-  return withTorus(template([3, 4], width, height, polygons, { centre: [0, 0], cut: height / 7 }), "quarter");
+  return withTorus(
+    template([3, 4], width, height, polygons, { centre: [0, 0], cut: height / 7 }),
+    "quarter",
+  );
 }
 
 /** [3².4.3.4; 3.4.6.4]: truncated hexagonal with every dodecagon cut into a
@@ -1988,7 +2012,8 @@ function cellTemplate(
     SIDE_NAMES[sides]!,
     unitPolygon(sides, steps(walk), heading),
   ]);
-  const points = typeof centre === "number" ? polygons[centre]![1] : centre.map((walk) => steps(walk));
+  const points =
+    typeof centre === "number" ? polygons[centre]![1] : centre.map((walk) => steps(walk));
   let ox = 0;
   let oy = 0;
   for (const [x, y] of points) {
@@ -2015,6 +2040,7 @@ function cellTemplate(
  * never touch — each is ringed by triangles, its corners 3⁴.6 — and the two
  * vertices a cell holds that touch no hexagon are 3⁶. */
 function studdedtriTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 6], [8, 8, 8], [10, 10, 10], [[-1, 1], [-1, -1]], [
     [6, [0], 0], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6],
     [3, [10], 0], [3, [4], 0], [3, [6], 8], [3, [10], 10], [3, [0], 10], [3, [2], 2],
@@ -2026,6 +2052,7 @@ function studdedtriTemplate(): ArchTemplate {
  * mirror. (Snub hexagonal is the √7 one, close enough to leave no 3⁶
  * vertex at all.) */
 function studdedtri2Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 6], [6, 8, 8, 8], [8, 10, 10, 10], [[-1, 0], [1, -2]], [
     [6, [10], 6], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6],
     [3, [10], 0], [3, [0], 2], [3, [4], 0], [3, [4], 6], [3, [8], 4], [3, [10], 10],
@@ -2039,6 +2066,7 @@ function studdedtri2Template(): ArchTemplate {
  * two triangle courses is 3⁶, and the square courses line up, so the repeat
  * is one square wide. */
 function elongated2Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4], [0], [8, 9, 10], [[1, 0], [0, -1]], [
     [4, [4], 0], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6],
   ], { centre: [[]], cut: 1 / 3, torus: "quarter" });
@@ -2052,6 +2080,7 @@ function elongated2Template(): ArchTemplate {
  * rows step by one edge rather than by a whole band of four courses — the one
  * layout with an easy board of the classic size on both open surfaces. */
 function elongated3Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4], [0], [8, 8, 9, 10], [[1, 0], [-1, -2]], [
     [4, [10], 6], [3, [], 4], [3, [], 2], [3, [], 8], [3, [], 6], [3, [4], 0],
     [3, [4], 2],
@@ -2064,6 +2093,7 @@ function elongated3Template(): ArchTemplate {
  * centres, so each rim is dodecagons with a square between each two -- see
  * `_tritrunctrihex_template` for why. */
 function tritrunctrihexTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4, 12], [7, 8, 8, 8, 9], [9, 10, 10, 10, 11], [[-1, 1], [-1, -1]], [
     [12, [4], 3], [4, [10], 11], [4, [4], 0], [4, [6], 7], [3, [], 2], [3, [], 4],
     [3, [], 8], [3, [], 10], [3, [], 0], [3, [], 6], [3, [10, 11], 0], [3, [3, 4], 0],
@@ -2075,6 +2105,7 @@ function tritrunctrihexTemplate(): ArchTemplate {
  * triangles — the ones on the √3-coarser lattice, so no two cut ones
  * touch and every corner keeps two hexagons and gains two triangles. */
 function fannedhexTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 6], [8, 8, 8], [10, 10, 10], [[-1, 1], [-1, -1]], [
     [6, [10], 10], [6, [0], 0], [3, [], 2], [3, [], 4], [3, [], 8], [3, [], 10],
     [3, [], 0], [3, [], 6],
@@ -2086,6 +2117,7 @@ function fannedhexTemplate(): ArchTemplate {
  * Where two hexagons meet is 3².6²; a hexagon's top and bottom corners are
  * 3⁴.6. */
 function hexbandsTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 6], [1, 11], [7, 9, 9], [[1, 0], [-1, -2]], [
     [6, [], 7], [3, [], 3], [3, [], 5], [3, [], 11], [3, [], 1],
   ], { centre: 0, cut: 1 / 3 });
@@ -2098,6 +2130,7 @@ function hexbandsTemplate(): ArchTemplate {
  * domain up, which is all a Möbius seam needs: the wrap layout moves it to
  * y = 0 and glues through it as snub square's does (see `reframed`). */
 function snubelongatedTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4], [7, 8], [10, 10, 11, 11], [[-1, 0], [0, -1]], [
     [4, [], 10], [4, [], 1], [4, [4], 5], [4, [10], 8], [3, [], 4], [3, [], 8],
     [3, [], 6], [3, [10], 6], [3, [4], 1], [3, [10], 11], [3, [4], 3], [3, [1, 10], 9],
@@ -2108,6 +2141,7 @@ function snubelongatedTemplate(): ArchTemplate {
  * square's four-fold arrangement, some squares paired along an edge and some
  * alone. */
 function snubelongated2Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4], [6, 7, 8, 9], [0, 9, 10, 11], [[-1, 1], [-1, -1]], [
     [4, [], 9], [4, [], 0], [4, [5], 1], [4, [9], 5], [4, [5], 6], [4, [9, 10], 6],
     [3, [], 3], [3, [], 5], [3, [], 7], [3, [9], 10], [3, [0], 9], [3, [0], 1],
@@ -2121,6 +2155,7 @@ function snubelongated2Template(): ArchTemplate {
  * another dodecagon. Two squares meet across each of those edges, and their
  * corners read 3³.4². */
 function dissectedtrunchex2Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4, 6], [7, 8, 8, 9], [9, 10, 10, 11], [[-2, 1], [0, -1]], [
     [6, [4], 1], [4, [], 10], [4, [], 1], [4, [4], 5], [4, [10], 6], [4, [6], 5],
     [4, [8], 6], [3, [], 4], [3, [], 8], [3, [], 6], [3, [6], 8], [3, [1], 10],
@@ -2133,6 +2168,7 @@ function dissectedtrunchex2Template(): ArchTemplate {
  * two square courses is 4⁴, and each triangle course moves the squares on
  * by half a square. */
 function squarerows2Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4], [0], [8, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [3, [], 8], [3, [], 6],
   ], { centre: [[3]], cut: 1 / 5 });
@@ -2141,6 +2177,7 @@ function squarerows2Template(): ArchTemplate {
 /** [3³.4²; 4⁴]₂, cmm: three courses of squares between the triangle
  * courses. Both lines inside a band are 4⁴, mirror images of each other. */
 function squarerows3Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4], [0], [8, 9, 9, 9], [[1, 0], [-1, -2]], [
     [4, [], 3], [4, [10], 6], [4, [3], 3], [3, [], 10], [3, [], 8],
   ], { centre: 2, cut: 2 / 3 });
@@ -2151,6 +2188,7 @@ function squarerows3Template(): ArchTemplate {
  * bow tie of triangles in each gap. Where two hexagons in a row meet is
  * 3².6²; a hexagon's top and bottom corners are 3.6.3.6. */
 function hexrowsTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 6], [1, 11], [9, 9], [[1, 0], [0, -1]], [
     [6, [], 5], [3, [], 3], [3, [], 1],
   ], { centre: [[], [3]], cut: 1 / 3 });
@@ -2161,6 +2199,7 @@ function hexrowsTemplate(): ArchTemplate {
  * square with a triangle on every side. A dodecagon's corners where two
  * dodecagons meet are 3.12², the ones beside a gap 3.4.3.12. */
 function dodecasquareTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4, 12], [8, 9, 9, 10], [0, 0, 1, 11], [[0, 1], [-1, 0]], [
     [12, [], 5], [4, [], 0], [3, [], 3], [3, [], 10], [3, [0], 1], [3, [3], 0],
   ], { centre: [[2, 3], [2, 3, 3]], cut: 2 / 3 });
@@ -2171,6 +2210,7 @@ function dodecasquareTemplate(): ArchTemplate {
  * edge. Where two squares of a row meet is 3.4².6, every other corner
  * 3.4.6.4. */
 function hexringsTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4, 6], [7, 8, 8, 8, 9], [0, 8, 9, 10, 10, 11], [[-1, 1], [-1, -1]], [
     [6, [], 4], [6, [11], 8], [6, [2], 11], [4, [], 11], [4, [], 8], [4, [4], 0],
     [4, [8], 8], [4, [4], 3], [4, [2, 11], 10], [4, [6, 8], 4], [4, [6, 8], 7],
@@ -2183,6 +2223,7 @@ function hexringsTemplate(): ArchTemplate {
  * trihexagonal one hexagon deep, the hexagons of every band in line with the
  * next band's. The band's edges are 3.4².6, its middle 3.6.3.6. */
 function squaretrihexTemplate(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4, 6], [0, 2, 10], [8, 9, 10], [[1, 0], [0, -1]], [
     [6, [], 4], [4, [4], 0], [4, [4], 3], [3, [], 2], [3, [], 8],
   ], { centre: [[]], cut: 2 / 3 });
@@ -2191,6 +2232,7 @@ function squaretrihexTemplate(): ArchTemplate {
 /** [3.4².6; 3.6.3.6]₂, cmm: the same with each band half a hexagon
  * along from the last. */
 function squaretrihex2Template(): ArchTemplate {
+  // prettier-ignore
   return cellTemplate([3, 4, 6], [0, 2, 10], [8, 8, 9], [[1, 0], [-1, -2]], [
     [6, [], 4], [4, [10], 6], [4, [4], 0], [3, [], 2], [3, [], 8],
   ], { centre: [[]], cut: 2 / 5 });
@@ -2224,6 +2266,7 @@ export interface ArchTiling {
 // Euclidean uniform tilings" uses, so the menu's Uniform page reads the same
 // way; the Laves block repeats it, each dual next to the position its uniform
 // tiling holds above. Mirrors ARCH_TILINGS in boards/tilings.py.
+// prettier-ignore
 export const ARCH_TILINGS: ArchTiling[] = [
   { key: "snubhex", label: "Snub hexagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: snubhexTemplate, family: "uniform", halfTurn: true },
   { key: "elongated", label: "Elongated triangular", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: elongatedTemplate, family: "uniform", halfTurn: true },

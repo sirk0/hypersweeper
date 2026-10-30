@@ -27,9 +27,9 @@ describe("the Docker e2e runner tracks the Playwright pin", () => {
   });
 
   it(`names playwright:v${pin}-noble in Dockerfile.e2e`, () => {
-    const tags = [...read("../../Dockerfile.e2e").matchAll(/mcr\.microsoft\.com\/playwright:(\S+)/g)].map(
-      (m) => m[1],
-    );
+    const tags = [
+      ...read("../../Dockerfile.e2e").matchAll(/mcr\.microsoft\.com\/playwright:(\S+)/g),
+    ].map((m) => m[1]);
     expect(tags.length).toBeGreaterThan(0);
     for (const tag of tags) expect(tag).toBe(`v${pin}-noble`);
   });

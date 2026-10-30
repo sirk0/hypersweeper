@@ -28,7 +28,10 @@ export const MAX_DIGIT_GLYPH = 26;
 // Slot order in the atlas grid. Index 0 (empty) is intentionally blank.
 const SLOTS: Glyph[] = [
   ...Array.from({ length: MAX_DIGIT_GLYPH + 1 }, (_, n) => n as Glyph),
-  "flag", "mine", "wrongFlag", "cross",
+  "flag",
+  "mine",
+  "wrongFlag",
+  "cross",
 ];
 const COLS = 6;
 const ROWS = 6; // 6x6 = 36 slots; the last five are spare
@@ -182,12 +185,7 @@ export function makeGlyphAtlas(cellPx = 256, options: GlyphOptions = {}): GlyphA
  * device, and nothing at all under the headless browser the visual baselines
  * are shot in.
  */
-function drawFlag(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  s: number,
-): void {
+function drawFlag(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
   // A 24-unit grid at u = s * 0.96 / 24 — the same grid the old flat flag used,
   // grown ~4% (the glyph's extremes are x 20.4 / y 20.6, 0.34*s from centre,
   // well inside the 0.5*s slot the linear-filtered atlas needs).
@@ -244,12 +242,7 @@ function drawFlag(
  * fuse into one silhouette with no seam to alias at small sizes, and there are
  * exactly two colours in the whole glyph.
  */
-function drawFlatMine(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  s: number,
-): void {
+function drawFlatMine(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
   // Sized as `drawMine` is, and for the same reason: the spikes have to stay
   // inside the slot, since the atlas samples with a linear filter and anything
   // over the edge bleeds into the neighbouring glyph.
@@ -279,12 +272,7 @@ function drawFlatMine(
 
 /** A dark X across the cell — drawn over a flag to mark it as misplaced when
  * the board is revealed on loss (matches gui.py's `draw_flag(wrong=True)`). */
-function drawCross(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  s: number,
-): void {
+function drawCross(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
   const r = s * 0.36;
   ctx.strokeStyle = "#222428"; // MINE_COLOR
   ctx.lineWidth = s * 0.08;
@@ -307,12 +295,7 @@ function drawCross(
  * shipped font carries 💣, so it would render differently on every device and
  * not at all headless.
  */
-function drawMine(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  s: number,
-): void {
+function drawMine(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
   // Sized so the horns and the mooring ring stay inside the slot — the atlas
   // samples with a linear filter, and anything over the edge bleeds into the
   // neighbouring glyph.
@@ -347,14 +330,7 @@ function drawMine(
   ctx.stroke();
 
   // casing: lit from the upper left, darkening to a rim at the lower right
-  const shell = ctx.createRadialGradient(
-    bx - r * 0.35,
-    by - r * 0.4,
-    r * 0.1,
-    bx,
-    by,
-    r * 1.15,
-  );
+  const shell = ctx.createRadialGradient(bx - r * 0.35, by - r * 0.4, r * 0.1, bx, by, r * 1.15);
   shell.addColorStop(0, MINE_COLORS.casingLit);
   shell.addColorStop(0.5, MINE_COLORS.casing);
   shell.addColorStop(1, MINE_COLORS.casingShade);

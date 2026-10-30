@@ -117,21 +117,17 @@ async function addWordmark(page: Page): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const outFile = path.resolve(
-    process.cwd(),
-    process.argv[2] ?? path.join(WEB, "public/og.png"),
-  );
+  const outFile = path.resolve(process.cwd(), process.argv[2] ?? path.join(WEB, "public/og.png"));
   mkdirSync(path.dirname(outFile), { recursive: true });
 
   // `vite preview` serves dist/ from disk, so a stale build is a stale picture.
   const build = spawnSync("npx", ["vite", "build"], { cwd: WEB, stdio: "inherit" });
   if (build.status !== 0) throw new Error("vite build failed");
 
-  const preview = spawn(
-    "npx",
-    ["vite", "preview", "--port", String(PORT), "--strictPort"],
-    { cwd: WEB, stdio: "ignore" },
-  );
+  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
+    cwd: WEB,
+    stdio: "ignore",
+  });
   try {
     await waitForServer(BASE);
     const browser = await chromium.launch({

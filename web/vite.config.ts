@@ -67,8 +67,7 @@ const siteUrl = (process.env.VITE_SITE_URL ?? "https://hypersweeper.pages.dev/")
   "/",
 );
 
-const SOCIAL_DESCRIPTION =
-  "Minesweeper over exotic boards — flat tilings and 3D surfaces.";
+const SOCIAL_DESCRIPTION = "Minesweeper over exotic boards — flat tilings and 3D surfaces.";
 
 /** Inject the link-preview tags into `index.html` at build time.
  *
@@ -164,7 +163,11 @@ const versionStamp: Plugin = {
 
 function serveStamp(
   req: { url?: string | undefined },
-  res: { statusCode: number; setHeader(name: string, value: string): void; end(body?: string): void },
+  res: {
+    statusCode: number;
+    setHeader(name: string, value: string): void;
+    end(body?: string): void;
+  },
   next: () => void,
 ): void {
   if (!(req.url ?? "").split("?")[0]?.endsWith(`/${STAMP_FILE}`)) {
@@ -279,77 +282,82 @@ export default defineConfig({
   server: {
     fs: { allow: [".", fileURLToPath(new URL("../data", import.meta.url))] },
   },
-  plugins: packaged ? [] : [
-    socialMeta,
-    tallyStub,
-    versionStamp,
-    securityHeaders,
-    // Dropped, and the web manifest with it, when VITE_NO_SW=1 — see the flag
-    // above. The other two plugins stay: a preview build is the deployed build
-    // minus the worker, not the packaged one.
-    ...(noServiceWorker ? [] : [VitePWA({
-      registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon.png"],
-      manifest: {
-        name: "Hypersweeper",
-        short_name: "Hypersweeper",
-        description:
-          "Minesweeper over exotic boards — flat tilings and 3D surfaces.",
-        theme_color: "#f2f2f7",
-        background_color: "#f2f2f7",
-        display: "standalone",
-        orientation: "any",
-        icons: [
-          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png" },
-          {
-            src: "icons/maskable-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,woff2,json}"],
-        // The one file the worker must not hold a copy of: it names the build
-        // the *server* is on, and a stamp served out of the precache could only
-        // ever name the build that installed the worker — the update check
-        // would then confirm this build to itself for ever. (The check's
-        // cache-busting query misses the precache route anyway; this makes it a
-        // property of the worker rather than of the URL the caller happens to
-        // build.) Keeping workbox's own default beside it, which naming this
-        // option would otherwise drop.
-        //
-        // And the link-preview card, which is not part of the app shell at all:
-        // `og.png` is named only in the `og:image` meta tag, so the one thing
-        // that ever fetches it is a crawler on the open network. A copy in the
-        // precache is bytes every visitor downloads and no visitor uses — and
-        // since the card is rendered from the Realistic theme, whose page is
-        // full-frame turbulence, it is very nearly a megabyte of them.
-        //
-        // And the 404 page, for a subtler reason: the worker's navigation
-        // fallback answers every navigation from the precache with index.html,
-        // so an installed visitor never reaches Cloudflare's 404 handling at
-        // all. The page is there for the callers that have no worker — crawlers,
-        // scanners, first visits — which are exactly the ones that never read
-        // the precache. Caching it would serve nobody.
-        globIgnores: ["**/node_modules/**/*", "version.json", "og.png", "404.html"],
-        // The Pages Function under /api/ is the one path that is not part of
-        // the app shell. A POST is not a navigation request, so today's config
-        // already leaves it alone; this says so, and keeps it true if the
-        // navigation fallback is ever widened.
-        //
-        // And the privacy policy (public/privacy.html), which App Store Connect
-        // links to and which must be the policy, never the game, for a visitor
-        // with the worker installed. The precache answers /privacy already
-        // (Workbox's `cleanURLs` tries /privacy.html), so this only matters if
-        // that ever stops matching: the request then goes to the network, which
-        // serves the page, rather than to the app shell.
-        navigateFallbackDenylist: [/^\/api\//, /^\/privacy(\.html)?$/],
-      },
-    })]),
-  ],
+  plugins: packaged
+    ? []
+    : [
+        socialMeta,
+        tallyStub,
+        versionStamp,
+        securityHeaders,
+        // Dropped, and the web manifest with it, when VITE_NO_SW=1 — see the flag
+        // above. The other two plugins stay: a preview build is the deployed build
+        // minus the worker, not the packaged one.
+        ...(noServiceWorker
+          ? []
+          : [
+              VitePWA({
+                registerType: "autoUpdate",
+                includeAssets: ["favicon.svg", "apple-touch-icon.png"],
+                manifest: {
+                  name: "Hypersweeper",
+                  short_name: "Hypersweeper",
+                  description: "Minesweeper over exotic boards — flat tilings and 3D surfaces.",
+                  theme_color: "#f2f2f7",
+                  background_color: "#f2f2f7",
+                  display: "standalone",
+                  orientation: "any",
+                  icons: [
+                    { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },
+                    { src: "icons/icon-512.png", sizes: "512x512", type: "image/png" },
+                    {
+                      src: "icons/maskable-512.png",
+                      sizes: "512x512",
+                      type: "image/png",
+                      purpose: "maskable",
+                    },
+                  ],
+                },
+                workbox: {
+                  globPatterns: ["**/*.{js,css,html,svg,png,woff2,json}"],
+                  // The one file the worker must not hold a copy of: it names the build
+                  // the *server* is on, and a stamp served out of the precache could only
+                  // ever name the build that installed the worker — the update check
+                  // would then confirm this build to itself for ever. (The check's
+                  // cache-busting query misses the precache route anyway; this makes it a
+                  // property of the worker rather than of the URL the caller happens to
+                  // build.) Keeping workbox's own default beside it, which naming this
+                  // option would otherwise drop.
+                  //
+                  // And the link-preview card, which is not part of the app shell at all:
+                  // `og.png` is named only in the `og:image` meta tag, so the one thing
+                  // that ever fetches it is a crawler on the open network. A copy in the
+                  // precache is bytes every visitor downloads and no visitor uses — and
+                  // since the card is rendered from the Realistic theme, whose page is
+                  // full-frame turbulence, it is very nearly a megabyte of them.
+                  //
+                  // And the 404 page, for a subtler reason: the worker's navigation
+                  // fallback answers every navigation from the precache with index.html,
+                  // so an installed visitor never reaches Cloudflare's 404 handling at
+                  // all. The page is there for the callers that have no worker — crawlers,
+                  // scanners, first visits — which are exactly the ones that never read
+                  // the precache. Caching it would serve nobody.
+                  globIgnores: ["**/node_modules/**/*", "version.json", "og.png", "404.html"],
+                  // The Pages Function under /api/ is the one path that is not part of
+                  // the app shell. A POST is not a navigation request, so today's config
+                  // already leaves it alone; this says so, and keeps it true if the
+                  // navigation fallback is ever widened.
+                  //
+                  // And the privacy policy (public/privacy.html), which App Store Connect
+                  // links to and which must be the policy, never the game, for a visitor
+                  // with the worker installed. The precache answers /privacy already
+                  // (Workbox's `cleanURLs` tries /privacy.html), so this only matters if
+                  // that ever stops matching: the request then goes to the network, which
+                  // serves the page, rather than to the app shell.
+                  navigateFallbackDenylist: [/^\/api\//, /^\/privacy(\.html)?$/],
+                },
+              }),
+            ]),
+      ],
   build: {
     target: "es2022",
     sourcemap: false,

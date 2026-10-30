@@ -25,7 +25,10 @@ function playableBoards(): number {
     JSON.parse(readFileSync(path.join(ROOT, "data", file), "utf8")) as Record<string, unknown>;
   const modes = Object.keys(json("catalog.json")["modeInfo"] as Record<string, unknown>);
   const difficulties = json("catalog.json")["difficulties"] as string[];
-  const unfair = json("difficulty.json")["unfair"] as Record<string, Record<string, { level: string }>>;
+  const unfair = json("difficulty.json")["unfair"] as Record<
+    string,
+    Record<string, { level: string }>
+  >;
   const blocked = (mode: string): boolean =>
     difficulties.every((d) => unfair[mode]?.[d]?.level === "blocked");
   return modes.filter((m) => !blocked(m)).length;
@@ -45,7 +48,8 @@ describe("the App Store listing", () => {
     for (const file of ["promotional-text.txt", "description.txt"]) {
       const claims = [...read(file).matchAll(/more than (\d+) boards/gi)].map((m) => Number(m[1]));
       expect(claims.length, file).toBeGreaterThan(0);
-      for (const n of claims) expect(n, `${file}: ${playable} playable boards`).toBeLessThan(playable);
+      for (const n of claims)
+        expect(n, `${file}: ${playable} playable boards`).toBeLessThan(playable);
     }
   });
 });

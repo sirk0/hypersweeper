@@ -62,10 +62,7 @@ function checkInvariants(board: AnyBoard): void {
  * different board, which the `modes` rows above (all seed 0) would never see.
  * Pinning seeds rather than raw variants covers the shared window list in
  * data/windows.json as well as the builders' own arithmetic. */
-const SEED_STATS = conformance.seeds as Record<
-  string,
-  Record<string, Record<string, BoardStats>>
->;
+const SEED_STATS = conformance.seeds as Record<string, Record<string, Record<string, BoardStats>>>;
 
 /** Every mode at one difficulty, as its own `describe` block. */
 export function describeConformance(difficulty: string): void {

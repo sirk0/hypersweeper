@@ -84,9 +84,7 @@ function isNative(): boolean {
 }
 
 function canVibrate(): boolean {
-  return (
-    typeof navigator !== "undefined" && typeof navigator.vibrate === "function"
-  );
+  return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
 }
 
 /** A browser on a phone or tablet — the only kind whose `navigator.vibrate`
@@ -97,8 +95,7 @@ function canVibrate(): boolean {
  * the fallback for everything else. */
 function isMobileBrowser(): boolean {
   if (typeof navigator === "undefined") return false;
-  const hints = (navigator as Navigator & { userAgentData?: { mobile?: boolean } })
-    .userAgentData;
+  const hints = (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData;
   if (typeof hints?.mobile === "boolean") return hints.mobile;
   return /Android|Mobile|iPhone|iPad|iPod/i.test(navigator.userAgent ?? "");
 }

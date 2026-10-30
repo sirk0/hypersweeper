@@ -231,10 +231,7 @@ function tri(
     normals ??
     (() => {
       const n = normalize(
-        cross(
-          [q[0] - p[0], q[1] - p[1], q[2] - p[2]],
-          [r[0] - p[0], r[1] - p[1], r[2] - p[2]],
-        ),
+        cross([q[0] - p[0], q[1] - p[1], q[2] - p[2]], [r[0] - p[0], r[1] - p[1], r[2] - p[2]]),
       );
       return [n, n, n] as [Vec3, Vec3, Vec3];
     })();
@@ -313,11 +310,7 @@ function sphere(
   const glows: number[] = [];
   for (let ring = 0; ring <= SPHERE_RINGS; ring++) {
     const t = ring / SPHERE_RINGS;
-    tones.push(
-      t <= 0.5
-        ? lit.clone().lerp(mid, t * 2)
-        : mid.clone().lerp(shade, (t - 0.5) * 2),
-    );
+    tones.push(t <= 0.5 ? lit.clone().lerp(mid, t * 2) : mid.clone().lerp(shade, (t - 0.5) * 2));
     glows.push(f.glow * (1 - (1 - GLOW_UNDERSIDE) * t));
   }
   const at = (ring: number, seg: number): Local => {
@@ -452,18 +445,14 @@ function buildModel(kind: Marker): MarkerModel {
   };
   if (kind === "pin" || kind === "deadPin") {
     const dead = kind === "deadPin";
-    const [lit, mid, shade] = dead
-      ? [DEAD_LIT, DEAD, DEAD_SHADE]
-      : [HEAD_LIT, HEAD, HEAD_SHADE];
+    const [lit, mid, shade] = dead ? [DEAD_LIT, DEAD, DEAD_SHADE] : [HEAD_LIT, HEAD, HEAD_SHADE];
     f.glow = dead ? GLOW_DEAD : GLOW_STEM;
     drum(f, 0, STEM_H, STEM_R0, STEM_R1, STEM_SIDES, dead ? FOOT : STEM, 1, true);
     f.glow = dead ? GLOW_DEAD : GLOW_HEAD;
     sphere(f, STEM_H + HEAD_R * 0.62, HEAD_R, 1, lit, mid, shade);
   } else {
     const hot = kind === "bombHot";
-    const [lit, mid, shade] = hot
-      ? [HOT_LIT, HOT, HOT_SHADE]
-      : [CASING_LIT, CASING, CASING_SHADE];
+    const [lit, mid, shade] = hot ? [HOT_LIT, HOT, HOT_SHADE] : [CASING_LIT, CASING, CASING_SHADE];
     // The casing is centred **on** the cell's top face rather than resting on
     // it: a mine is a thing half buried where it was laid, not a marker someone
     // planted. It used to be what made one bomb enough on a two-sided surface,
@@ -547,16 +536,26 @@ export function writeMarker(
   const [rx, ry, rz] = ex;
   const [ux, uy, uz] = ey;
   const [fx, fy, fz] = ez;
-  const sxx = rx * scale, sxy = ry * scale, sxz = rz * scale;
-  const syx = ux * scale, syy = uy * scale, syz = uz * scale;
-  const szx = fx * scale, szy = fy * scale, szz = fz * scale;
+  const sxx = rx * scale,
+    sxy = ry * scale,
+    sxz = rz * scale;
+  const syx = ux * scale,
+    syy = uy * scale,
+    syz = uz * scale;
+  const szx = fx * scale,
+    szy = fy * scale,
+    szz = fz * scale;
   const { pos: mp, nrm: mn } = m;
   for (let j = 0, end = m.verts * 3; j < end; j += 3) {
-    const px = mp[j]!, py = mp[j + 1]!, pz = mp[j + 2]!;
+    const px = mp[j]!,
+      py = mp[j + 1]!,
+      pz = mp[j + 2]!;
     out.pos[base + j] = ox + sxx * px + syx * py + szx * pz;
     out.pos[base + j + 1] = oy + sxy * px + syy * py + szy * pz;
     out.pos[base + j + 2] = oz + sxz * px + syz * py + szz * pz;
-    const nx = mn[j]!, ny = mn[j + 1]!, nz = mn[j + 2]!;
+    const nx = mn[j]!,
+      ny = mn[j + 1]!,
+      nz = mn[j + 2]!;
     out.nrm[base + j] = rx * nx + ux * ny + fx * nz;
     out.nrm[base + j + 1] = ry * nx + uy * ny + fy * nz;
     out.nrm[base + j + 2] = rz * nx + uz * ny + fz * nz;

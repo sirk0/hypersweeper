@@ -58,7 +58,9 @@ test.describe("M3 surfaces", () => {
     });
   }
 
-  test("Klein scroll walks a revealed cell to a new position, game state intact", async ({ page }) => {
+  test("Klein scroll walks a revealed cell to a new position, game state intact", async ({
+    page,
+  }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     const { target, state } = await revealedTarget(page);
@@ -115,7 +117,9 @@ test.describe("M3 surfaces", () => {
     await row.click();
     await expect(page.locator(".board-name")).toContainText("⚠");
     await expect(page.locator(".board-name")).toHaveAttribute("title", /Self-intersecting/);
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
     const target = await page.evaluate(() => {
       const ms = window.__ms!;
       for (const cell of ms.cells()) {
@@ -143,7 +147,9 @@ test.describe("M3 surfaces", () => {
     await page.locator('.menu-entry[data-group="manifolds"]').click();
     await page.locator('.menu-entry[data-surface="projective"]').click();
     await page.locator('.menu-entry[data-mode="projectivehex"]').click();
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
     const seen = await page.evaluate(() => {
       const ms = window.__ms!;
       const cells = ms.cells();
@@ -152,7 +158,12 @@ test.describe("M3 surfaces", () => {
         const xy = ms.cellScreenXY(c)!;
         return ms.cellAtScreenXY(xy.x, xy.y) === c;
       });
-      return { mode: ms.state().mode, cells: cells.length, shown: shown.length, picked: picked.length };
+      return {
+        mode: ms.state().mode,
+        cells: cells.length,
+        shown: shown.length,
+        picked: picked.length,
+      };
     });
     expect(seen.mode).toBe("projectivehex");
     expect(seen.shown / seen.cells).toBeGreaterThan(0.7);
@@ -160,7 +171,9 @@ test.describe("M3 surfaces", () => {
 
     await page.goto("/?mode=c180&difficulty=easy&seed=1");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
     const sphere = await page.evaluate(() => {
       const ms = window.__ms!;
       const cells = ms.cells();
@@ -288,9 +301,7 @@ test.describe("M3 surfaces", () => {
     expect(front, "no front-facing cell").not.toBeNull();
     await page.keyboard.press("]");
     const after = await page.evaluate((c) => window.__ms!.cellScreenXY(c), front!.cell);
-    const moved =
-      after == null ||
-      Math.hypot(after.x - front!.xy.x, after.y - front!.xy.y) > 3;
+    const moved = after == null || Math.hypot(after.x - front!.xy.x, after.y - front!.xy.y) > 3;
     expect(moved, "the ring key did not move the contents").toBe(true);
   });
 

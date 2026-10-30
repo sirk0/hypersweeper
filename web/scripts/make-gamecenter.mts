@@ -95,13 +95,18 @@ function encodePng(rgba: Buffer, width: number, height: number): Buffer {
 
 /** `menuIcon`'s markup as a standalone SVG document an <img> can load. */
 function standalone(svg: string): string {
-  return svg.replace("<svg ", `<svg xmlns="http://www.w3.org/2000/svg" width="${BADGE_PX}" height="${BADGE_PX}" `);
+  return svg.replace(
+    "<svg ",
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${BADGE_PX}" height="${BADGE_PX}" `,
+  );
 }
 
 const manifest = buildManifest();
 mkdirSync(path.join(GAME_CENTER_DIR, "images"), { recursive: true });
 writeFileSync(MANIFEST_PATH, manifestJson());
-console.log(`${path.relative(process.cwd(), MANIFEST_PATH)}: ${manifest.count} achievements, ${manifest.points} points`);
+console.log(
+  `${path.relative(process.cwd(), MANIFEST_PATH)}: ${manifest.count} achievements, ${manifest.points} points`,
+);
 
 if (!process.env.MANIFEST_ONLY) {
   setIconPalette(theme(DEFAULT_THEME).icons);
@@ -155,7 +160,9 @@ if (!process.env.MANIFEST_ONLY) {
   }
 
   // An image no achievement names any more would only be confusing.
-  const wanted = new Set(manifest.achievements.map((a) => path.basename(imagePath(a.vendorIdentifier))));
+  const wanted = new Set(
+    manifest.achievements.map((a) => path.basename(imagePath(a.vendorIdentifier))),
+  );
   const dir = path.join(GAME_CENTER_DIR, "images");
   for (const file of readdirSync(dir)) {
     if (!wanted.has(file) && existsSync(path.join(dir, file))) rmSync(path.join(dir, file));

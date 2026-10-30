@@ -52,14 +52,7 @@ import { RIPPLE_PER_CELL } from "./animations";
 export const MOTION_CHANNELS = 4;
 
 export type MotionKind =
-  | "open"
-  | "bounce"
-  | "dip"
-  | "wiggle"
-  | "shock"
-  | "reveal"
-  | "hop"
-  | "build";
+  "open" | "bounce" | "dip" | "wiggle" | "shock" | "reveal" | "hop" | "build";
 
 export interface Track {
   kind: MotionKind;
@@ -287,7 +280,9 @@ export class CellMotion {
 
   /** Whether anything still needs frames. */
   pending(): boolean {
-    return this.tracks.size > 0 || this.press.size > 0 || this.hover.size > 0 || this.dirty.size > 0;
+    return (
+      this.tracks.size > 0 || this.press.size > 0 || this.hover.size > 0 || this.dirty.size > 0
+    );
   }
 
   /** Drop everything and stand the board at identity. */

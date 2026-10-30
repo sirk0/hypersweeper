@@ -27,7 +27,12 @@ describe("halfPlaneDrag", () => {
 
   it("is an isometry of the half-plane, and keeps the ideal line where it is", () => {
     const move = halfPlaneDrag([-30, -95], [25, -20], LINE, 2, 64)!;
-    const points: [number, number][] = [[0, -50], [80, -99], [-60, 30], [5, 200]];
+    const points: [number, number][] = [
+      [0, -50],
+      [80, -99],
+      [-60, 30],
+      [5, 200],
+    ];
     for (const p of points) {
       for (const q of points) {
         if (p === q) continue;
