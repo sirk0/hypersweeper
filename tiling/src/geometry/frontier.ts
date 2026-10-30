@@ -205,6 +205,38 @@ export class Frontier {
     return new Frontier(ring, [...[...open.values()].flat(), ...added]);
   }
 
+  /** Which of `verts` lie on the frontier — on one of its vertices or
+   * part-way along one of its edges: every point where a tile placed there
+   * meets what is already down or the region's rim. */
+  touching(verts: Cyc[]): Cyc[] {
+    const { ring } = this;
+    return verts.filter((v) => {
+      const k = ring.key(v);
+      const [x, y] = ring.toXY(v);
+      return this.edges.some((e) => {
+        if (e.ak === k || e.bk === k) return true;
+        const box = edgeBox(e);
+        if (x < box.x0 - EPS || x > box.x1 + EPS || y < box.y0 - EPS || y > box.y1 + EPS) return false;
+        return strictlyBetween(ring, e.a, e.b, v);
+      });
+    });
+  }
+
+  /** `verts` meets the frontier edge to edge: none of its corners part-way
+   * along a frontier edge, and no frontier vertex part-way along one of its
+   * sides. */
+  edgeToEdge(verts: Cyc[]): boolean {
+    const { ring } = this;
+    const sides = loopToEdges(ring, verts);
+    const box = boxOf(verts.map((v) => ring.toXY(v)));
+    const near = this.edges.filter((e) => overlaps(edgeBox(e), box));
+    for (const e of near) {
+      for (const v of verts) if (strictlyBetween(ring, e.a, e.b, v)) return false;
+      for (const s of sides) if (strictlyBetween(ring, s.a, s.b, e.a)) return false;
+    }
+    return true;
+  }
+
   /** `poly` (counter-clockwise) lies inside the uncovered area: it overlaps no
    * covered tile and does not leave the region. Touching along edges and at
    * points is fine. */
@@ -249,14 +281,27 @@ export class Frontier {
    * corner meeting a side part-way (a T-junction) still fits; it just has to be
    * reached from one of the tile's other vertices. Placements are returned as
    * posed vertex lists, each once.
+   *
+   * `turns`, when given, are the only rotations ζᵏ the shape may be turned by
+   * (k mod n) — the player has already turned it, so it lands as it is held or
+   * not at all; pass `selfTurns(shape)` for that. Unset, any rotation goes.
+   * `accept`, when given, is asked about each fitting placement as well — a
+   * level's own rule.
    */
-  placements(shape: Shape, near: XY, reach: number, mirror: boolean): Cyc[][] {
+  placements(
+    shape: Shape,
+    near: XY,
+    reach: number,
+    mirror: boolean,
+    turns?: readonly number[],
+    accept?: (verts: Cyc[]) => boolean,
+  ): Cyc[][] {
     const { ring } = this;
     const found = new Map<string, Cyc[]>();
     const tryPose = (verts: Cyc[]): void => {
       const k = verts.map((v) => ring.key(v)).sort().join("|");
       if (found.has(k)) return;
-      found.set(k, this.fits(verts) ? verts : []);
+      found.set(k, this.fits(verts) && (!accept || accept(verts)) ? verts : []);
     };
     const flips = mirror ? [false, true] : [false];
     const r2 = reach * reach;
@@ -276,6 +321,7 @@ export class Frontier {
               ? ring.sub(base[(i + 1) % m]!, base[i]!)
               : ring.sub(base[i]!, base[(i - 1 + m) % m]!);
             const k = guessTurn(ring, along, d);
+            if (turns && !turns.includes(((k % ring.n) + ring.n) % ring.n)) continue;
             const z = ring.zeta(k);
             if (!sameDirection(ring, d, ring.mul(z, along))) continue;
             const t = ring.sub(v, ring.mul(z, base[i]!));
@@ -288,14 +334,21 @@ export class Frontier {
   }
 
   /** The fitting placement whose centroid is nearest `centre`, if one is
-   * within `reach` of it. */
-  nearest(shape: Shape, centre: XY, reach: number, mirror: boolean): Cyc[] | null {
+   * within `reach` of it. `turns` and `accept` as for `placements`. */
+  nearest(
+    shape: Shape,
+    centre: XY,
+    reach: number,
+    mirror: boolean,
+    turns?: readonly number[],
+    accept?: (verts: Cyc[]) => boolean,
+  ): Cyc[] | null {
     const { ring } = this;
     const xy = shape.verts.map((v) => ring.toXY(v));
     const radius = Math.max(...xy.map((p) => Math.hypot(p[0] - xy[0]![0], p[1] - xy[0]![1])));
     let best: Cyc[] | null = null;
     let bestD = reach;
-    for (const verts of this.placements(shape, centre, radius + reach, mirror)) {
+    for (const verts of this.placements(shape, centre, radius + reach, mirror, turns, accept)) {
       const c = centroid(verts.map((v) => ring.toXY(v)));
       const d = Math.hypot(c[0] - centre[0], c[1] - centre[1]);
       if (d < bestD) {

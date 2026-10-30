@@ -14,12 +14,21 @@
       <button type="button" id="delete" disabled title="Tap a placed tile to select it">Delete</button>
       <button type="button" id="restart">Restart</button>
     </header>
-    <main id="stage"></main>
+    <div class="play">
+      <main id="stage"></main>
+      <nav class="levels" aria-label="Levels">
+        <h2>Levels</h2>
+        <ol id="levels"></ol>
+      </nav>
+    </div>
     <div class="won" id="won" hidden>
       <div class="won-card">
-        <p class="won-title">Tiled!</p>
+        <p class="won-title">Tiled! <span class="star done">★</span></p>
         <p id="won-detail"></p>
-        <button type="button" id="again">Play again</button>
+        <div class="won-actions">
+          <button type="button" id="again">Play again</button>
+          <button type="button" id="next">Next level</button>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

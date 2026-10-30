@@ -104,3 +104,31 @@ export function winding(edges: Iterable<[XY, XY]>, p: XY): number {
 export function loopEdges(pts: XY[]): [XY, XY][] {
   return pts.map((p, i) => [p, pts[(i + 1) % pts.length]!]);
 }
+
+/** The turns k (0..n-1) for which ζᵏ·`shape` is a translate of the vertex
+ * set `verts` — how a tile of that shape sits in a given cell. Empty when the
+ * cell is not that shape at all. */
+export function turnsOnto(shape: Shape, verts: Cyc[]): number[] {
+  const { ring } = shape;
+  if (verts.length !== shape.verts.length) return [];
+  const keys = new Set(verts.map((v) => ring.key(v)));
+  const turns: number[] = [];
+  for (let k = 0; k < ring.n; k++) {
+    const turned = shape.verts.map((v) => ring.mul(ring.zeta(k), v));
+    // a translate maps some turned vertex onto verts[0]; try each
+    const fits = turned.some((p) => {
+      const t = ring.sub(verts[0]!, p);
+      return turned.every((q) => keys.has(ring.key(ring.add(q, t))));
+    });
+    if (fits) turns.push(k);
+  }
+  return turns;
+}
+
+/** The turns that carry `shape` onto a translate of itself — k = 0 always;
+ * 0, 4, 8 for a triangle in ℤ[ζ12]; every 2 for a hexagon there. Two
+ * orientations of a tile that differ by one of these are the same
+ * orientation. */
+export function selfTurns(shape: Shape): number[] {
+  return turnsOnto(shape, shape.verts);
+}

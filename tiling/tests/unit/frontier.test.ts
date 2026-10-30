@@ -70,6 +70,15 @@ describe("frontier", () => {
     expect(f.cover(at(square, 1, 1)).empty).toBe(true);
   });
 
+  it("names every corner a placement meets, part-way along an edge too", () => {
+    const f = Frontier.ofRegion(Z4, [box(3, 3)]).cover(at(square, 0, 0));
+    const keys = (vs: Cyc[]): string[] => vs.map((v) => v.join(",")).sort();
+    // next to the first: its two corners, and the rim part-way along the bottom
+    expect(keys(f.touching(at(square, 1, 0)))).toEqual(["1,0", "1,1", "2,0"]);
+    // the middle square meets the first one at a single point
+    expect(keys(f.touching(at(square, 1, 1)))).toEqual(["1,1"]);
+  });
+
   it("snaps triangles and hexagons in ℤ[ζ12]", () => {
     const tri = regular(Z12, 3);
     const hex = regular(Z12, 6);
