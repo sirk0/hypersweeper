@@ -1,0 +1,174 @@
+:root {
+  --page: #f4f1ea;
+  --ink: #2b2a27;
+  --muted: #6f6a60;
+  --region: #e3ddd0;
+  --region-edge: #8b8374;
+  --open: #c4572f;
+  --tile-0: #5b8db8;
+  --tile-0-edge: #2f5679;
+  --ghost: rgba(91, 141, 184, 0.35);
+  --ghost-edge: #2f5679;
+  --tray: rgba(0, 0, 0, 0.05);
+  --button: #fffdf8;
+  --button-edge: #cfc7b6;
+  --scrim: rgba(30, 28, 24, 0.45);
+  --card: #fffdf8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #1d1c1a;
+    --ink: #ece8df;
+    --muted: #a8a294;
+    --region: #2e2c28;
+    --region-edge: #8b8374;
+    --open: #e2774f;
+    --tile-0: #6e9fca;
+    --tile-0-edge: #b8d4ee;
+    --ghost: rgba(110, 159, 202, 0.35);
+    --ghost-edge: #b8d4ee;
+    --tray: rgba(255, 255, 255, 0.06);
+    --button: #2a2926;
+    --button-edge: #4a4740;
+    --scrim: rgba(0, 0, 0, 0.55);
+    --card: #2a2926;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--page);
+  color: var(--ink);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  flex-wrap: wrap;
+}
+
+.hud h1 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.hud .level {
+  color: var(--muted);
+}
+
+.hud .count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--button);
+  border: 1px solid var(--button-edge);
+  border-radius: 8px;
+  padding: 6px 14px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+#stage {
+  flex: 1;
+  min-height: 0;
+  padding: 0 16px 16px;
+}
+
+.board {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.region {
+  fill: var(--region);
+  stroke: var(--region-edge);
+  stroke-width: 0.06;
+  stroke-linejoin: round;
+}
+
+.open {
+  stroke: var(--open);
+  stroke-width: 0.05;
+  stroke-linecap: round;
+}
+
+.tile {
+  stroke-width: 0.04;
+  stroke-linejoin: round;
+  cursor: grab;
+}
+
+.tile.kind-0 {
+  fill: var(--tile-0);
+  stroke: var(--tile-0-edge);
+}
+
+.tray {
+  fill: var(--tray);
+}
+
+.floating {
+  opacity: 0.85;
+  pointer-events: none;
+  cursor: grabbing;
+}
+
+.ghost {
+  fill: var(--ghost);
+  stroke: var(--ghost-edge);
+  stroke-width: 0.05;
+  stroke-dasharray: 0.12 0.08;
+  pointer-events: none;
+}
+
+.won {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--scrim);
+}
+
+.won[hidden] {
+  display: none;
+}
+
+.won-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 20px 28px;
+  text-align: center;
+  max-width: calc(100vw - 32px);
+}
+
+.won-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}

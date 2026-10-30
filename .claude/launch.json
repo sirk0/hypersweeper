@@ -4,8 +4,22 @@
     {
       "name": "minesweeper",
       "runtimeExecutable": ".venv/bin/python",
-      "runtimeArgs": ["-m", "minesweeper"],
+      "runtimeArgs": [
+        "-m",
+        "minesweeper"
+      ],
       "port": null
+    },
+    {
+      "name": "tiling",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "tiling",
+        "run",
+        "dev"
+      ],
+      "port": 5174
     }
   ]
 }
