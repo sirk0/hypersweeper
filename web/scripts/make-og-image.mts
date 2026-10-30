@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium, type Page } from "@playwright/test";
 
-import type { CellId } from "../src/boards/core";
+import type { CellId } from "../src/boards";
 import type { MsHook } from "../src/testHook";
 
 declare global {

@@ -18,7 +18,7 @@ import {
   toddCoxeter,
 } from "../../src/boards/hurwitz";
 import { centralPolygon } from "../../src/boards/hyperbolic";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard } from "../../src/modes/presets";
 
 // The closed hyperbolic surfaces (boards/hurwitz.ts). The conformance oracle
 // holds the port to the Python builder's cell, edge and vertex counts and its
@@ -236,7 +236,7 @@ describe("the closed surfaces", () => {
       ["triplet", "zip"],
       ["triplet", "gc2"],
     ] as const) {
-      const board = hurwitzBoard(surface, op, 0, 1);
+      const board = hurwitzBoard(surface, op, 0);
       const { cx, cy, radius, cover } = board.disc!;
       expect(cover!.view).toBeCloseTo(coverView(surface), 12);
       const r = Math.tanh(cover!.view / 2);
@@ -258,19 +258,19 @@ describe("the closed surfaces", () => {
     // each corner adds the cells round it bar the two that share a side
     for (const surface of Object.keys(SURFACES)) {
       const op = TILING[surface]!;
-      const board = hurwitzBoard(surface, op, 0, 1);
+      const board = hurwitzBoard(surface, op, 0);
       for (const [cell, neighbours] of board.adjacency) {
         expect(neighbours.length).toBe(board.quotient!.get(cell)!.length * (valence(surface, op) - 2));
       }
       if (surface === "bolza") continue; // six octagons, each bordering the other five
       const { p, q } = CLOSED_SURFACES[surface]!;
-      const plain = hurwitzBoard(surface, "none", 0, 1);
+      const plain = hurwitzBoard(surface, "none", 0);
       expect(new Set([...plain.adjacency.values()].map((n) => n.length))).toEqual(new Set([p * (q - 2)]));
     }
   });
 
   it("draw every cell, named after its copy nearest the centre", () => {
-    const board = hurwitzBoard("quartic", "zip", 0, 1);
+    const board = hurwitzBoard("quartic", "zip", 0);
     const shown = new Map<string, number[]>();
     for (const [face, cell] of board.faces!) {
       const list = shown.get(cell) ?? [];
@@ -283,7 +283,7 @@ describe("the closed surfaces", () => {
   });
 
   it("draw what the adjacency says round every copy whole inside the patch", () => {
-    const board = hurwitzBoard("macbeath", "zip", 0, 1);
+    const board = hurwitzBoard("macbeath", "zip", 0);
     const at = new Map<string, Set<string>>();
     const key = ([x, y]: readonly number[]) => `${Math.round(x! * 1e4)},${Math.round(y! * 1e4)}`;
     for (const [face, poly] of board.polygons) {
@@ -316,7 +316,7 @@ describe("the closed surfaces", () => {
       ["triplet", "gc2"],
       ["bring", "gc3"],
     ] as [string, HurwitzOp][]) {
-      const board = hurwitzBoard(surface, op, 0, 1);
+      const board = hurwitzBoard(surface, op, 0);
       const steps = board.disc!.cover!.steps;
       expect(steps.length).toBe(CLOSED_SURFACES[surface]!.p);
       const centres = [...board.polygons.keys()].map((f) => [f, discCentre(board, f)] as const);
@@ -380,7 +380,7 @@ describe("the closed surfaces", () => {
     ];
     for (const [surface, op] of boards) {
       const corners = centralPolygon(CLOSED_SURFACES[surface]!.p, CLOSED_SURFACES[surface]!.q);
-      const board = hurwitzBoard(surface, op, 0, 1);
+      const board = hurwitzBoard(surface, op, 0);
       const { cx, cy, radius } = board.disc!;
       // only the faces the renderer draws: the ones it is told are never seen
       // must not be needed
@@ -429,7 +429,7 @@ describe("the closed surfaces", () => {
 
   it("keep the central p-gon's turn as a control", () => {
     for (const surface of Object.keys(SURFACES)) {
-      const board = hurwitzBoard(surface, TILING[surface]!, 0, 1);
+      const board = hurwitzBoard(surface, TILING[surface]!, 0);
       expect(board.symmetries.map((s) => s.id)).toContain("turn");
     }
   });

@@ -24,11 +24,11 @@ import {
   soundVolume,
   unlockAudio,
 } from "./audio/sound";
-import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "./boards/core";
-import { fairnessOf, modeFairness } from "./boards/fairness";
+import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "./boards";
+import { fairnessOf, modeFairness } from "./modes/fairness";
 import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
-import { hasMode } from "./boards/presets";
-import { isRandomKind, randomKindOf, randomMode } from "./boards/randomBoard";
+import { hasMode } from "./modes/presets";
+import { isRandomKind, randomKindOf, randomMode } from "./modes/randomBoard";
 import { hasDifficulty } from "./config/screens";
 import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
@@ -948,7 +948,7 @@ class App {
    * — flat deals flat, hyperbolic deals hyperbolic, anything off the plane
    * deals another manifold, sphere or polyhedron — at the difficulty being
    * played. The record
-   * window's "New board" is the same move (boards/randomBoard.ts, the home
+   * window's "New board" is the same move (modes/randomBoard.ts, the home
    * page's own pools and fairness weighting); this is it without having to win
    * first, which is what makes the catalogue something to wander through. Like
    * the smiley, it abandons the board in progress without asking. */

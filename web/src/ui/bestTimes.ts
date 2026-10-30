@@ -1,5 +1,5 @@
-import { fullModeLabel } from "../boards/catalog";
-import { MODES } from "../boards/presets";
+import { fullModeLabel } from "../modes/catalog";
+import { MODES } from "../modes/presets";
 import { screens } from "../config/screens";
 import { allBestTimes, boardKey, formatTime, type ScoreEntry } from "../leaderboard";
 

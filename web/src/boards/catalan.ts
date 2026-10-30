@@ -677,14 +677,13 @@ function catalanBoard(
   mode: string,
   base: string,
   op: Op,
-  mineCount: number,
   frequency: number,
 ): Board3D {
   const built = catalanFaces(new Base(base), op);
   const { faces, positions } = subdivide(built.faces, built.positions, frequency);
   let radius = 0;
   for (const p of positions.values()) radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
-  return convexBoard3d(mode, faces, positions, mineCount, radius);
+  return convexBoard3d(mode, faces, positions, radius);
 }
 
 // -- the thirteen boards ------------------------------------------------------
@@ -694,71 +693,71 @@ function catalanBoard(
 /** A triakis tetrahedron, dual of the truncated tetrahedron: a regular
  * tetrahedron with a pyramid raised on each of its four faces, so 12 isoceles
  * triangles, each cut into `frequency**2` cells. */
-export function triakisTetrahedronBoard(mineCount: number, frequency = 3): Board3D {
-  return catalanBoard("triakistetra", "tetra", "kis", mineCount, frequency);
+export function triakisTetrahedronBoard(frequency = 3): Board3D {
+  return catalanBoard("triakistetra", "tetra", "kis", frequency);
 }
 
 /** A rhombic dodecahedron, dual of the cuboctahedron: 12 rhombi, one per cube
  * edge, each cut into `frequency**2` smaller rhombi. */
-export function rhombicDodecahedronBoard(mineCount: number, frequency = 3): Board3D {
-  return catalanBoard("rhombicdodeca", "cube", "join", mineCount, frequency);
+export function rhombicDodecahedronBoard(frequency = 3): Board3D {
+  return catalanBoard("rhombicdodeca", "cube", "join", frequency);
 }
 
 /** A triakis octahedron, dual of the truncated cube: an octahedron with a
  * pyramid on each face, so 24 isoceles triangles. */
-export function triakisOctahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("triakisocta", "cube", "kisdual", mineCount, frequency);
+export function triakisOctahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("triakisocta", "cube", "kisdual", frequency);
 }
 
 /** A tetrakis hexahedron, dual of the truncated octahedron: a cube with a
  * pyramid on each face, so 24 isoceles triangles. */
-export function tetrakisHexahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("tetrakishexa", "cube", "kis", mineCount, frequency);
+export function tetrakisHexahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("tetrakishexa", "cube", "kis", frequency);
 }
 
 /** A deltoidal icositetrahedron, dual of the rhombicuboctahedron: 24 kites,
  * one per (cube face, corner) pair. */
-export function deltoidalIcositetrahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("deltoidalicositetra", "cube", "ortho", mineCount, frequency);
+export function deltoidalIcositetrahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("deltoidalicositetra", "cube", "ortho", frequency);
 }
 
 /** A pentagonal icositetrahedron, dual of the snub cube: 24 irregular
  * pentagons. Chiral — it has no mirror symmetry, and neither does its dual.
  * `frequency=0` keeps the bare pentagons; above that each is fanned into five
  * quadrilaterals and those are cut `frequency**2` ways. */
-export function pentagonalIcositetrahedronBoard(mineCount: number, frequency = 1): Board3D {
-  return catalanBoard("pentagonalicositetra", "cube", "gyro", mineCount, frequency);
+export function pentagonalIcositetrahedronBoard(frequency = 1): Board3D {
+  return catalanBoard("pentagonalicositetra", "cube", "gyro", frequency);
 }
 
 /** A disdyakis dodecahedron, dual of the truncated cuboctahedron: the cube's
  * barycentric subdivision, 48 scalene triangles — one per flag, which is the
  * full order of the octahedral symmetry group. */
-export function disdyakisDodecahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("disdyakisdodeca", "cube", "meta", mineCount, frequency);
+export function disdyakisDodecahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("disdyakisdodeca", "cube", "meta", frequency);
 }
 
 /** A rhombic triacontahedron, dual of the icosidodecahedron: 30 golden rhombi,
  * one per icosahedron edge. */
-export function rhombicTriacontahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("rhombictriaconta", "icosa", "join", mineCount, frequency);
+export function rhombicTriacontahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("rhombictriaconta", "icosa", "join", frequency);
 }
 
 /** A triakis icosahedron, dual of the truncated dodecahedron: an icosahedron
  * with a pyramid on each face, so 60 isoceles triangles. */
-export function triakisIcosahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("triakisicosa", "icosa", "kis", mineCount, frequency);
+export function triakisIcosahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("triakisicosa", "icosa", "kis", frequency);
 }
 
 /** A pentakis dodecahedron, dual of the truncated icosahedron (the football):
  * a dodecahedron with a pyramid on each pentagon, so 60 isoceles triangles. */
-export function pentakisDodecahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("pentakisdodeca", "icosa", "kisdual", mineCount, frequency);
+export function pentakisDodecahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("pentakisdodeca", "icosa", "kisdual", frequency);
 }
 
 /** A deltoidal hexecontahedron, dual of the rhombicosidodecahedron: 60 kites,
  * one per (icosahedron face, corner) pair. */
-export function deltoidalHexecontahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("deltoidalhexeconta", "icosa", "ortho", mineCount, frequency);
+export function deltoidalHexecontahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("deltoidalhexeconta", "icosa", "ortho", frequency);
 }
 
 /** A pentagonal hexecontahedron, dual of the snub dodecahedron: 60 irregular
@@ -769,14 +768,14 @@ export function deltoidalHexecontahedronBoard(mineCount: number, frequency = 2):
  * Keeps the mode name `sphere` from when it was drawn projected onto the unit
  * sphere: it is the board's address in a share link and in the best-times
  * table, so renaming it would lose both. */
-export function sphereBoard(mineCount: number, frequency = 0): Board3D {
-  return catalanBoard("sphere", "icosa", "gyro", mineCount, frequency);
+export function sphereBoard(frequency = 0): Board3D {
+  return catalanBoard("sphere", "icosa", "gyro", frequency);
 }
 
 /** A disdyakis triacontahedron, dual of the truncated icosidodecahedron: the
  * icosahedron's barycentric subdivision, 120 scalene triangles — one per flag,
  * the full order of the icosahedral symmetry group, and the most faces any
  * Catalan solid has. */
-export function disdyakisTriacontahedronBoard(mineCount: number, frequency = 2): Board3D {
-  return catalanBoard("disdyakistriaconta", "icosa", "meta", mineCount, frequency);
+export function disdyakisTriacontahedronBoard(frequency = 2): Board3D {
+  return catalanBoard("disdyakistriaconta", "icosa", "meta", frequency);
 }

@@ -58,14 +58,14 @@ function count(xs: number[], x: number): number {
 
 describe("solids", () => {
   it("sphere has sixty pentagons, each with seven neighbors", () => {
-    const board = sphereBoard(7);
+    const board = sphereBoard();
     expect(board.adjacency.size).toBe(60);
     expect(sizes(board).every((s) => s === 5)).toBe(true);
     for (const n of board.adjacency.values()) expect(n.length).toBe(7);
   });
 
   it("gp21 is Goldberg GP(2,1): 12 pentagons + 60 hexagons, each hexagon on one pentagon", () => {
-    const board = gp21Board(5);
+    const board = gp21Board();
     const s = sizes(board);
     expect(board.adjacency.size).toBe(72);
     expect(count(s, 5)).toBe(12);
@@ -81,7 +81,7 @@ describe("solids", () => {
 
   it("c180 is the class I Goldberg ladder GP(f, 0): 10 f^2 + 2 cells, 12 pentagons", () => {
     for (let f = 2; f <= 7; f++) {
-      const board = c180Board(5, f);
+      const board = c180Board(f);
       const s = sizes(board);
       expect(board.adjacency.size).toBe(10 * f * f + 2);
       expect(count(s, 5)).toBe(12);
@@ -92,7 +92,7 @@ describe("solids", () => {
 
   it("gp21 is the class III Goldberg ladder GP(h, k), gcd(h, k) > 1 included", () => {
     for (const [h, k] of [[2, 1], [3, 1], [3, 2], [4, 2], [5, 1], [4, 3], [6, 1], [5, 3], [6, 2]] as const) {
-      const board = gp21Board(5, h, k);
+      const board = gp21Board(h, k);
       const s = sizes(board);
       expect(board.adjacency.size).toBe(10 * (h * h + h * k + k * k) + 2);
       expect(count(s, 5)).toBe(12);
@@ -105,14 +105,14 @@ describe("solids", () => {
     }
     // a lattice triangle centred on an icosahedron edge is refused
     for (const [h, k] of [[1, 1], [2, 2], [4, 1]] as const) {
-      expect(() => gp21Board(5, h, k)).toThrow();
+      expect(() => gp21Board(h, k)).toThrow();
     }
   });
 
   it("the geodesic sphere is the icosahedron board drawn round, at every frequency", () => {
     for (let f = 1; f <= 5; f++) {
-      const board = sphereTriangleBoard(10, f);
-      const flat = icosahedronBoard(10, f);
+      const board = sphereTriangleBoard(f);
+      const flat = icosahedronBoard(f);
       expect(board.polygons.size).toBe(20 * f * f);
       expect(sizes(board).every((s) => s === 3)).toBe(true);
       expect(board.adjacency).toEqual(flat.adjacency);
@@ -121,8 +121,8 @@ describe("solids", () => {
 
   it("the spherical cube is the cube board drawn round, at every size", () => {
     for (let n = 1; n <= 6; n++) {
-      const board = sphereSquareBoard(10, n);
-      const flat = cubeBoard(n, 10);
+      const board = sphereSquareBoard(n);
+      const flat = cubeBoard(n);
       expect(board.polygons.size).toBe(6 * n * n);
       expect(sizes(board).every((s) => s === 4)).toBe(true);
       // the same lattice keys, so the same neighbours: name the cube's cells
@@ -149,9 +149,9 @@ describe("solids", () => {
 
   it("the icosahedral Archimedean solids uncut (frequency 0) are one cell per face", () => {
     const cases: [Board3D, Record<number, number>][] = [
-      [rhombicosidodecahedronSplitBoard(10, 0), { 3: 20, 4: 30, 5: 12 }],
-      [truncatedIcosidodecahedronSplitBoard(10, 0), { 4: 30, 6: 20, 10: 12 }],
-      [snubDodecahedronSplitBoard(10, 0), { 3: 80, 5: 12 }],
+      [rhombicosidodecahedronSplitBoard(0), { 3: 20, 4: 30, 5: 12 }],
+      [truncatedIcosidodecahedronSplitBoard(0), { 4: 30, 6: 20, 10: 12 }],
+      [snubDodecahedronSplitBoard(0), { 3: 80, 5: 12 }],
     ];
     for (const [board, mix] of cases) {
       const s = sizes(board);
@@ -164,7 +164,7 @@ describe("solids", () => {
 
   it("cube is six n x n square faces", () => {
     for (const n of [2, 4, 6]) {
-      const board = cubeBoard(n, 5);
+      const board = cubeBoard(n);
       expect(board.polygons.size).toBe(6 * n * n);
       expect(sizes(board).every((s) => s === 4)).toBe(true);
     }
@@ -172,42 +172,42 @@ describe("solids", () => {
 
   it("tetrahedron is four subdivided triangular faces", () => {
     for (const frequency of [1, 4, 6]) {
-      const board = tetrahedronBoard(3, frequency);
+      const board = tetrahedronBoard(frequency);
       expect(board.polygons.size).toBe(4 * frequency * frequency);
       expect(sizes(board).every((s) => s === 3)).toBe(true);
     }
   });
 
   it("tetrahedron frame is 16 * frequency^2 triangles", () => {
-    const board = tetrahedronFrameBoard(8, 2);
+    const board = tetrahedronFrameBoard(2);
     expect(board.polygons.size).toBe(16 * 4);
     expect(sizes(board).every((s) => s === 3)).toBe(true);
   });
 
   it("polycube surfaces are all quads", () => {
     for (const board of [
-      cubeFrameBoard(6, 2, 40),
-      steppedBipyramidBoard(6, 3, 20),
+      cubeFrameBoard(6, 2),
+      steppedBipyramidBoard(6, 3),
     ]) {
       expect(sizes(board).every((s) => s === 4)).toBe(true);
     }
   });
 
   it("polycube builders validate their arguments", () => {
-    expect(() => cubeFrameBoard(4, 2, 5)).toThrow();
-    expect(() => steppedBipyramidBoard(4, 1, 5)).toThrow();
+    expect(() => cubeFrameBoard(4, 2)).toThrow();
+    expect(() => steppedBipyramidBoard(4, 1)).toThrow();
   });
 
   it("solids are closed and one-sided, and carry their own point group", () => {
     // Measured off the polyhedron, so each gets its own: the pentagonal
     // hexecontahedron is chiral and has no mirror, the cube quarters about
     // three axes. See tests/unit/symmetries.test.ts for the whole catalogue.
-    for (const board of [sphereBoard(7), cubeBoard(4, 12)]) {
+    for (const board of [sphereBoard(), cubeBoard(4)]) {
       expect(board.twoSided).toBe(false);
       expect(board.symmetries.map((s) => s.id)).toContain("ring");
     }
-    expect(sphereBoard(7).symmetries.map((s) => s.id)).toEqual(["ring", "tube"]);
-    expect(cubeBoard(4, 12).symmetries.map((s) => s.id)).toEqual(["ring", "tube", "mirror-ring"]);
+    expect(sphereBoard().symmetries.map((s) => s.id)).toEqual(["ring", "tube"]);
+    expect(cubeBoard(4).symmetries.map((s) => s.id)).toEqual(["ring", "tube", "mirror-ring"]);
   });
 });
 
@@ -215,7 +215,7 @@ describe("solids", () => {
 // named for. Mirrors tests/test_boards.py::TestCatalanSolids — the properties
 // that tell a Catalan solid from something merely Catalan-shaped, none of
 // which survives a construction that is only topologically right.
-const CATALAN: [string, (m: number, f?: number) => Board3D, number, number][] = [
+const CATALAN: [string, (f?: number) => Board3D, number, number][] = [
   ["triakistetra", triakisTetrahedronBoard, 12, 3],
   ["rhombicdodeca", rhombicDodecahedronBoard, 12, 4],
   ["triakisocta", triakisOctahedronBoard, 24, 3],
@@ -239,7 +239,7 @@ function faceNormal(polygon: Vec3[]): Vec3 {
 
 describe("Catalan solids", () => {
   for (const [mode, build, faces, sides] of CATALAN) {
-    const bare = build(0, sides === 5 ? 0 : 1);
+    const bare = build(sides === 5 ? 0 : 1);
 
     it(`${mode} is ${faces} congruent planar ${sides}-gons on one insphere`, () => {
       expect(bare.polygons.size).toBe(faces);
@@ -276,7 +276,7 @@ describe("Catalan solids", () => {
       // still draw, and the cells either side of the seam would simply stop
       // being neighbours
       for (const frequency of [1, 2, 3]) {
-        const board = build(0, frequency);
+        const board = build(frequency);
         const perFace = sides === 5 ? 5 * frequency ** 2 : frequency ** 2;
         expect(board.polygons.size).toBe(faces * perFace);
         expect(eulerCharacteristic(board)).toBe(2);
@@ -289,7 +289,7 @@ describe("Catalan solids", () => {
     // `sphere` is the one Catalan solid that was already in the game, drawn
     // projected onto the unit sphere. Rebuilt flat-faced it is the same board
     // to the game, so a share link or a best time still addresses it.
-    const board = sphereBoard(10, 0);
+    const board = sphereBoard(0);
     expect(board.polygons.size).toBe(60);
     expect(new Set(sizes(board))).toEqual(new Set([5]));
     expect(new Set([...board.adjacency.values()].map((n) => n.length))).toEqual(new Set([7]));
@@ -303,7 +303,7 @@ describe("Catalan solids", () => {
 // triangle fans). Mirrors tests/test_boards.py::TestArchimedeanSolids.
 const ARCHIMEDEAN: [
   string,
-  (m: number, f?: number) => Board3D,
+  (f?: number) => Board3D,
   string,
   Op,
   Record<number, number>,
@@ -350,7 +350,7 @@ describe("Archimedean solids", () => {
       // different grids; if they disagreed the cells either side would
       // quietly stop being neighbours
       for (const frequency of base === "icosa" ? [1, 2] : [1, 2, 3, 4]) {
-        const board = build(0, frequency);
+        const board = build(frequency);
         expect(board.mode).toBe(mode);
         expect(board.polygons.size).toBe(perFace * frequency ** 2);
         expect(eulerCharacteristic(board)).toBe(2);

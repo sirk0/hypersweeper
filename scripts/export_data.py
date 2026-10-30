@@ -11,7 +11,10 @@ single generator:
     not for the menus — it is what lets the analytics collector name a board
     without importing the catalog. See docs/agents/metrics.md.
   * ``data/presets.json`` — the difficulty presets for the ported modes, as
-    ``{mode: {builder, args: {difficulty: [...]}}}``. Only modes that both
+    ``{mode: {builder, mineArg, args: {difficulty: [...]}}}``. ``mineArg`` is
+    the index of the mine count among the builder's positional args: the
+    Python builders take it, the TypeScript ones do not (their geometry knows
+    nothing of mines), so the web app splits it out. Only modes that both
     front-ends build live here; more move over as later milestones port them
     (the rest stay in ``presets.py`` until then). Python floats and JS numbers
     are both IEEE-754 doubles and JSON round-trips them exactly.
@@ -26,6 +29,7 @@ Usage: PYTHONPATH=. python scripts/export_data.py
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 
@@ -202,6 +206,13 @@ _ARCH_BUILDER_NAMES = {
 }
 
 
+def _mine_arg(builder: str) -> int:
+    """Where a builder's ``mine_count`` sits among its positional args."""
+    from minesweeper.boards.presets import _JSON_BUILDERS
+
+    return list(inspect.signature(_JSON_BUILDERS[builder]).parameters).index("mine_count")
+
+
 def build_presets() -> dict:
     # presets.py loads presets.json, so the regular/solid rows are their own
     # source of truth; the Archimedean/Laves rows are (re)generated from the
@@ -229,7 +240,11 @@ def build_presets() -> dict:
                     for difficulty, params in by_difficulty.items()
                 },
             }
-    committed["presets"] = presets
+    committed["presets"] = {
+        mode: {"builder": spec["builder"], "mineArg": _mine_arg(spec["builder"]),
+               "args": spec["args"]}
+        for mode, spec in presets.items()
+    }
     return committed
 
 

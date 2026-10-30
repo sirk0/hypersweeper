@@ -35,13 +35,13 @@ function neighbourhood(
 
 describe("the cube of cubes", () => {
   it.each([3, 4, 6])("is n**3 quads (n = %i)", (n) => {
-    const board = solidCubeBoard(n, 5);
+    const board = solidCubeBoard(n);
     expect(board.adjacency.size).toBe(n ** 3);
     for (const poly of board.polygons.values()) expect(poly.length).toBe(4);
   });
 
   it.each([3, 4, 5, 8])("is exactly the 26-neighbourhood (n = %i)", (n) => {
-    const board = solidCubeBoard(n, 5);
+    const board = solidCubeBoard(n);
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         for (let k = 0; k < n; k++) {
@@ -55,7 +55,7 @@ describe("the cube of cubes", () => {
   it.each([3, 4, 6, 8])("has the four kinds of position (n = %i)", (n) => {
     // a corner touches a 2x2x2 block (7 others), an edge a 2x2x3 (11), a face
     // a 2x3x3 (17) and an interior cell the full 3x3x3 (26)
-    const board = solidCubeBoard(n, 5);
+    const board = solidCubeBoard(n);
     const histogram = new Map<number, number>();
     for (const neighbors of board.adjacency.values()) {
       histogram.set(
@@ -75,7 +75,7 @@ describe("the cube of cubes", () => {
   it.each([3, 4, 6])("draws each slice as its own sheet (n = %i)", (n) => {
     // n disjoint square grids: chi = n and n boundary circles, which is also
     // what `twoSided` is telling the renderer
-    const board = solidCubeBoard(n, 5);
+    const board = solidCubeBoard(n);
     expect(board.twoSided).toBe(true);
     expect(eulerCharacteristic(board)).toBe(n);
     expect(boundaryComponents(board)).toBe(n);
@@ -87,7 +87,7 @@ describe("the cube of cubes", () => {
     (n) => {
       // the whole point of taking the cube apart: seen down the board's own z
       // axis no two cells overlap, or a slice would hide a slice
-      const board = solidCubeBoard(n, 5);
+      const board = solidCubeBoard(n);
       const seen = new Set<string>();
       for (const poly of board.polygons.values()) {
         const mid = [0, 1].map(
@@ -107,7 +107,7 @@ describe("the cube of cubes", () => {
       // a pair that does can never be told apart by any sequence of numbers, so a
       // mine landing alone in one forces a coin flip. Depth 2 is exactly that
       // board, which is why the builder refuses it.
-      const board = solidCubeBoard(n, 5);
+      const board = solidCubeBoard(n);
       const closed = new Set<string>();
       for (const [cell, neighbors] of board.adjacency) {
         closed.add([cell, ...neighbors].sort().join("|"));
@@ -117,7 +117,7 @@ describe("the cube of cubes", () => {
   );
 
   it("refuses a block two deep", () => {
-    expect(() => solidCubeBoard(2, 3)).toThrow();
+    expect(() => solidCubeBoard(2)).toThrow();
   });
 
   it.each([3, 4, 6, 8])("carries the cube's own motions (n = %i)", (n) => {
@@ -125,7 +125,7 @@ describe("the cube of cubes", () => {
     // leaves nothing of the cube's 48 motions in the geometry for
     // `solidSymmetries` to find. Two quarter turns and a mirror generate the
     // rest, which is what `keepSymmetries`'s redundancy pass leaves standing.
-    const board = solidCubeBoard(n, 5);
+    const board = solidCubeBoard(n);
     expect(board.symmetries.map((s) => s.id)).toEqual([
       "ring",
       "tube",
@@ -147,7 +147,7 @@ describe("the cube of cubes", () => {
   it("turns the contents through the stack, not just within a slice", () => {
     // `ring` and `tube` are the one move dragging cannot give: dragging turns
     // the drawing, and the drawing is the cube taken apart rather than the cube
-    const board = solidCubeBoard(4, 5);
+    const board = solidCubeBoard(4);
     const ring = board.symmetries.find((s) => s.id === "ring")!;
     const slice = (cell: string) => cell.split(",")[2];
     const moved = [...ring.cycle].filter(

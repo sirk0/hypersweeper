@@ -21,7 +21,9 @@ import {
   type Board3D,
   type CellId,
   type Vec3,
-} from "../boards/core";
+  pruneSolid,
+  type ClipPiece,
+} from "../boards";
 import {
   baseColorFor,
   glyphFor,
@@ -36,7 +38,6 @@ import {
   type CellVisual,
   type PickLayer,
 } from "./boardMesh";
-import { pruneSolid, type ClipPiece } from "../boards/clipSolid";
 import {
   clipTriangles,
   collarTriangles,

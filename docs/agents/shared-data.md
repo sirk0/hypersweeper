@@ -16,8 +16,12 @@ twice.
   the solids, the regular-tiling surface wraps, every Archimedean/Laves
   tiling × surface, the aperiodic tilings — penrose/kitedart/ammannbeenker/spectre —
   and the spirals — phyllotaxis/klaassen/pentaspiral5/6/7/brickrings), as
-  `{mode: {builder, args}}`. The Archimedean/Laves rows carry the tiling
-  key as their first arg. `presets.py` loads every row into `_PRESETS`
+  `{mode: {builder, mineArg, args}}`. The Archimedean/Laves rows carry the
+  tiling key as their first arg. The args are positional for the *Python*
+  builder, mine count included; `mineArg` — written by
+  `scripts/export_data.py` from the builder's signature — says which arg that
+  is, because the TypeScript builders take no mine count and
+  `web/src/modes/presets.ts` splits it out. `presets.py` loads every row into `_PRESETS`
   via `_JSON_BUILDERS`; `_PRESETS` starts empty and holds only any
   still-unported one-offs. The Archimedean rows are generated from the
   compact `ARCH_PRESETS` table by `scripts/export_data.py`, so that table
@@ -43,7 +47,7 @@ twice.
   not exported: `scripts/difficulty/distortion.py` writes it in a few seconds
   and `data-sync` does not re-run it, so re-run it by hand after changing a
   wrapped preset window or adding a wrapped tiling. The TypeScript app reads it
-  (`web/src/boards/distortion.ts`) to mark the menu row and to keep the board
+  (`web/src/modes/distortion.ts`) to mark the menu row and to keep the board
   out of the random pools at that difficulty.
 
 `scripts/export_data.py` and `scripts/export_conformance.py` regenerate
@@ -68,7 +72,7 @@ single source rather than hand-matched. `web/src/config/screens.ts` gives the TS
 compile-time types over it. The same shared-`data/` approach covers the board
 catalog and presets above.
 
-Shared does not mean identical. `web/src/boards/catalog.ts` is a faithful port of
+Shared does not mean identical. `web/src/modes/catalog.ts` is a faithful port of
 `minesweeper/boards/catalog.py` over `data/catalog.json` — and where the two
 menus deliberately differ (the promoted regular tilings, the shaped-board
 family's own label, the home page's random pools), the difference is *derived*

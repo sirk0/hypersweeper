@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { HYPERBOLIC_MODES, surfaceOf } from "../../src/boards/catalog";
+import { HYPERBOLIC_MODES, surfaceOf } from "../../src/modes/catalog";
 import { isBoard3D } from "../../src/boards/core";
-import { buildBoard, MODES } from "../../src/boards/presets";
+import { buildBoard, MODES } from "../../src/modes/presets";
 import { boardFacts, shapeFacts } from "../../src/ui/boardFacts";
 
 // What the info window says about a board (ui/boardFacts.ts). Everything there

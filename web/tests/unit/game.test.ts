@@ -6,7 +6,7 @@ import { squareBoard } from "../../src/boards/tilings";
 
 // Port of tests/test_game.py. Cells are "row,col" strings.
 function makeGame(mines: [number, number][] = [[0, 0]], rows = 4, cols = 4): Game {
-  const board = squareBoard(rows, cols, 1);
+  const board = squareBoard(rows, cols);
   return new Game(board.adjacency, {
     minePositions: mines.map(([r, c]) => cid(r, c)),
   });
@@ -15,7 +15,7 @@ const C = (r: number, c: number): CellId => cid(r, c);
 
 describe("construction", () => {
   it("valid game", () => {
-    const game = new Game(squareBoard(9, 9, 10).adjacency, { mineCount: 10 });
+    const game = new Game(squareBoard(9, 9).adjacency, { mineCount: 10 });
     expect(game.cells.length).toBe(81);
     expect(game.mineCount).toBe(10);
     expect(game.state).toBe("playing");
@@ -31,21 +31,21 @@ describe("construction", () => {
     expect(() => new Game(new Map([["a", ["b"]]]), { mineCount: 1 })).toThrow();
   });
   it("rejects zero mines", () => {
-    expect(() => new Game(squareBoard(5, 5, 1).adjacency, { mineCount: 0 })).toThrow();
+    expect(() => new Game(squareBoard(5, 5).adjacency, { mineCount: 0 })).toThrow();
   });
   it("rejects too many mines", () => {
-    expect(() => new Game(squareBoard(3, 3, 1).adjacency, { mineCount: 9 })).toThrow();
+    expect(() => new Game(squareBoard(3, 3).adjacency, { mineCount: 9 })).toThrow();
   });
   it("rejects mine positions off the board", () => {
     expect(
-      () => new Game(squareBoard(3, 3, 1).adjacency, { minePositions: [C(5, 5)] }),
+      () => new Game(squareBoard(3, 3).adjacency, { minePositions: [C(5, 5)] }),
     ).toThrow();
   });
 });
 
 describe("mine placement", () => {
   it("places exact mine count", () => {
-    const game = new Game(squareBoard(9, 9, 10).adjacency, {
+    const game = new Game(squareBoard(9, 9).adjacency, {
       mineCount: 10,
       rng: mulberry32(42),
     });
@@ -53,7 +53,7 @@ describe("mine placement", () => {
     expect(game.cells.filter((c) => game.isMine(c)).length).toBe(10);
   });
   it("first reveal opens a zero", () => {
-    const adjacency = squareBoard(9, 9, 1).adjacency;
+    const adjacency = squareBoard(9, 9).adjacency;
     for (let seed = 0; seed < 50; seed++) {
       const game = new Game(adjacency, { mineCount: 10, rng: mulberry32(seed) });
       game.reveal(C(4, 4));
@@ -63,7 +63,7 @@ describe("mine placement", () => {
     }
   });
   it("first reveal opens a zero on a board with no interior", () => {
-    const adjacency = squareBoard(1, 12, 1).adjacency;
+    const adjacency = squareBoard(1, 12).adjacency;
     for (let seed = 0; seed < 30; seed++) {
       const game = new Game(adjacency, { mineCount: 3, rng: mulberry32(seed) });
       game.reveal(C(0, 5));
@@ -72,7 +72,7 @@ describe("mine placement", () => {
   });
   it("too dense for a zero falls back to a safe first click", () => {
     // 25 cells and 24 mines leaves no room for an empty neighbourhood.
-    const adjacency = squareBoard(5, 5, 1).adjacency;
+    const adjacency = squareBoard(5, 5).adjacency;
     for (let seed = 0; seed < 50; seed++) {
       const game = new Game(adjacency, { mineCount: 24, rng: mulberry32(seed) });
       game.reveal(C(2, 3));

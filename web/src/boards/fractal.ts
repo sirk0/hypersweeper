@@ -443,7 +443,6 @@ function boardXy(tile: Substitution, p: LatticePoint): Vertex {
 function substitutionBoard(
   tile: Substitution,
   levels: number,
-  mineCount: number,
   scale: number,
 ): Board {
   const cells = new Map<CellId, string[]>();
@@ -467,7 +466,7 @@ function substitutionBoard(
   if (cells.size !== tile.children.length ** levels) {
     throw new Error("substitution produced overlapping placements");
   }
-  const board = finalizeFlat(tile.mode, cells, positions, mineCount, scale);
+  const board = finalizeFlat(tile.mode, cells, positions, scale);
   if (anchors.size === 0) return board;
   // Match finalizeFlat's own shift-then-scale exactly, off the same
   // `positions` it read (an anchor isn't one of the cells' own vertices, so
@@ -488,35 +487,35 @@ function substitutionBoard(
 
 /** The sphinx rep-tile, inflated `levels` times: 4**levels sphinxes filling one
  * sphinx-shaped patch. `scale` is pixels per unit triangle edge. */
-export function sphinxBoard(levels: number, mineCount: number, scale = 26): Board {
-  return substitutionBoard(SPHINX, levels, mineCount, scale);
+export function sphinxBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(SPHINX, levels, scale);
 }
 
 /** The chair (L-tromino) rep-tile, inflated `levels` times: 4**levels chairs
  * filling one L-shaped patch. `scale` is pixels per unit square edge. */
-export function chairBoard(levels: number, mineCount: number, scale = 26): Board {
-  return substitutionBoard(CHAIR, levels, mineCount, scale);
+export function chairBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(CHAIR, levels, scale);
 }
 
 /** The Sierpinski carpet, inflated `levels` times: 8**levels unit squares in a
  * 3**levels square patch (1, 8, 64, 512, 4096 tiles), the middle ninth of every
  * block left out at every scale. `scale` is pixels per unit square edge. */
-export function carpetBoard(levels: number, mineCount: number, scale = 26): Board {
-  return substitutionBoard(CARPET, levels, mineCount, scale);
+export function carpetBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(CARPET, levels, scale);
 }
 
 /** The pentaflake, inflated `levels` times: 6**levels regular pentagons in a
  * pentagon-shaped patch (1, 6, 36, 216, 1296 tiles), with a gnomon-shaped gap
  * left over per side at every scale. `scale` is pixels per unit pentagon
  * circumradius. */
-export function pentaflakeBoard(levels: number, mineCount: number, scale = 26): Board {
-  return substitutionBoard(PENTAFLAKE, levels, mineCount, scale);
+export function pentaflakeBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(PENTAFLAKE, levels, scale);
 }
 
 /** The Gosper island, inflated `levels` times: 7**levels regular hexagons
  * (1, 7, 49, 343, 2401 tiles) in a patch with no holes whose outline converges
  * on the Gosper island — and which is turned 19.106° further round with every
  * level. `scale` is pixels per unit hexagon circumradius. */
-export function gosperBoard(levels: number, mineCount: number, scale = 26): Board {
-  return substitutionBoard(GOSPER, levels, mineCount, scale);
+export function gosperBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(GOSPER, levels, scale);
 }

@@ -165,7 +165,7 @@ test.describe("M1 app", () => {
     // ever separate one: measured, they are won under one time in a hundred at
     // every difficulty. Their rows stay in the menu -- the catalogue should not
     // lie about which tilings are built -- but they are marked, dimmed, and say
-    // why instead of dealing a board (src/boards/fairness.ts).
+    // why instead of dealing a board (src/modes/fairness.ts).
     await page.locator('.menu-entry[data-group="flat"]').click();
     await page.locator('.menu-entry[data-submenu="dual"]').click();
     const row = page.locator('.menu-entry[data-mode="triakis"]');

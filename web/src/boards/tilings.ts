@@ -26,7 +26,6 @@ const HEX_VERTEX_OFFSETS: Vertex[] = [
 export function squareBoard(
   rows: number,
   cols: number,
-  mineCount: number,
   scale = 32,
 ): Board {
   const cells = new Map<CellId, Vertex[]>();
@@ -40,7 +39,7 @@ export function squareBoard(
       ]);
     }
   }
-  return buildLattice("square", cells, [scale, scale], mineCount);
+  return buildLattice("square", cells, [scale, scale]);
 }
 
 function triangleVertices(x: number, row: number, up: boolean): Vertex[] {
@@ -59,7 +58,7 @@ function triangleVertices(x: number, row: number, up: boolean): Vertex[] {
   ];
 }
 
-export function triangleBoard(size: number, mineCount: number, scale = 52): Board {
+export function triangleBoard(size: number, scale = 52): Board {
   // An equilateral triangle of side `size` split into size^2 unit triangles;
   // row r holds 2r+1 alternating up/down triangles.
   const cells = new Map<CellId, Vertex[]>();
@@ -69,10 +68,10 @@ export function triangleBoard(size: number, mineCount: number, scale = 52): Boar
       cells.set(cid(r, i), triangleVertices(xStart + i, r, i % 2 === 0));
     }
   }
-  return buildLattice("triangle", cells, [scale / 2, (scale * ROOT3) / 2], mineCount);
+  return buildLattice("triangle", cells, [scale / 2, (scale * ROOT3) / 2]);
 }
 
-export function hextriBoard(side: number, mineCount: number, scale = 52): Board {
+export function hextriBoard(side: number, scale = 52): Board {
   // A regular hexagon of side `side` cut into 6 * side^2 unit triangles: the
   // triangular tiling on a hexagonal board, as hexhexBoard is the hexagonal
   // one. Going down the 2 * side rows the top edge widens by a triangle side
@@ -90,13 +89,12 @@ export function hextriBoard(side: number, mineCount: number, scale = 52): Board 
       cells.set(cid(r, i), triangleVertices(xStart + i, r, (i % 2 === 0) === upper));
     }
   }
-  return buildLattice("hextri", cells, [scale / 2, (scale * ROOT3) / 2], mineCount);
+  return buildLattice("hextri", cells, [scale / 2, (scale * ROOT3) / 2]);
 }
 
 export function triangleGridBoard(
   rows: number,
   rowWidth: number,
-  mineCount: number,
   scale = 52,
 ): Board {
   const cells = new Map<CellId, Vertex[]>();
@@ -105,13 +103,12 @@ export function triangleGridBoard(
       cells.set(cid(r, i), triangleVertices(i, r, (r + i) % 2 === 0));
     }
   }
-  return buildLattice("trigrid", cells, [scale / 2, (scale * ROOT3) / 2], mineCount);
+  return buildLattice("trigrid", cells, [scale / 2, (scale * ROOT3) / 2]);
 }
 
 export function hexBoard(
   rows: number,
   cols: number,
-  mineCount: number,
   scale = 20,
 ): Board {
   // Pointy-top hexagons in odd-r offset layout; scale = circumradius.
@@ -126,10 +123,10 @@ export function hexBoard(
       );
     }
   }
-  return buildLattice("hex", cells, [(scale * ROOT3) / 2, scale / 2], mineCount);
+  return buildLattice("hex", cells, [(scale * ROOT3) / 2, scale / 2]);
 }
 
-export function hexhexBoard(radius: number, mineCount: number, scale = 20): Board {
+export function hexhexBoard(radius: number, scale = 20): Board {
   // A big hexagon of small hexagons: all axial (q, r) within `radius`.
   const cells = new Map<CellId, Vertex[]>();
   for (let qq = -radius; qq <= radius; qq++) {
@@ -144,10 +141,10 @@ export function hexhexBoard(radius: number, mineCount: number, scale = 20): Boar
       );
     }
   }
-  return buildLattice("hexhex", cells, [(scale * ROOT3) / 2, scale / 2], mineCount);
+  return buildLattice("hexhex", cells, [(scale * ROOT3) / 2, scale / 2]);
 }
 
-export function hextriangleBoard(size: number, mineCount: number, scale = 20): Board {
+export function hextriangleBoard(size: number, scale = 20): Board {
   // A big equilateral triangle of small hexagons: axial (q, r) with
   // q, r >= 0 and q + r <= size, giving (size+1)*(size+2)/2 cells -- the
   // hexagonal tiling on a triangular board, as hextriBoard is the
@@ -165,10 +162,10 @@ export function hextriangleBoard(size: number, mineCount: number, scale = 20): B
       );
     }
   }
-  return buildLattice("hextriangle", cells, [(scale * ROOT3) / 2, scale / 2], mineCount);
+  return buildLattice("hextriangle", cells, [(scale * ROOT3) / 2, scale / 2]);
 }
 
-export function squareDiamondBoard(radius: number, mineCount: number, scale = 32): Board {
+export function squareDiamondBoard(radius: number, scale = 32): Board {
   // The square tiling turned 45 degrees, on a square window: the diamonds
   // whose centres are the lattice points (u, v) with max(|u|, |v|) <= radius
   // and u == v (mod 2), 2r^2 + 2r + 1 of them. The same tiling as squareBoard,
@@ -192,7 +189,7 @@ export function squareDiamondBoard(radius: number, mineCount: number, scale = 32
     }
   }
   const unit = scale / ROOT2;
-  return buildLattice("squarediamond", cells, [unit, unit], mineCount);
+  return buildLattice("squarediamond", cells, [unit, unit]);
 }
 
 // -- Archimedean (semiregular) tilings + Laves duals -------------------------
@@ -2367,7 +2364,6 @@ export function archimedeanBoard(
   tiling: string,
   nx: number,
   ny: number,
-  mineCount: number,
   scale = 40,
   centre: Vertex | null = null,
 ): Board {
@@ -2483,7 +2479,7 @@ export function archimedeanBoard(
   // Every tile that fits stays, a near-twin on the rim included: the flat
   // board is a whole box of the tiling, calibrated as drawn. (The strips
   // still peel theirs -- see `archimedean_board`.)
-  const board = finalizeFlat(tiling, cells, positions, mineCount, scale);
+  const board = finalizeFlat(tiling, cells, positions, scale);
   if (!t.anchors) return board;
   // Match finalizeFlat's own shift-then-scale exactly, off the same
   // `positions` it read — an anchor is not one of the cell's vertices, so it

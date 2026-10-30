@@ -11,8 +11,8 @@ import {
   tilingOf,
   SURFACE_SPECS,
   TILING_SPECS,
-} from "../../src/boards/catalog";
-import { MODES } from "../../src/boards/presets";
+} from "../../src/modes/catalog";
+import { MODES } from "../../src/modes/presets";
 import { theme, themeVars, THEME_KEYS } from "../../src/ui/theme";
 import { themeSpec } from "../../src/config/screens";
 

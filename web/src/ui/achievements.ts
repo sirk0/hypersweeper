@@ -9,7 +9,7 @@ import {
   type Achievement,
   type AchievementGroup,
 } from "../achievements";
-import { fullModeLabel } from "../boards/catalog";
+import { fullModeLabel } from "../modes/catalog";
 import { menuIcon } from "./icons";
 
 // The achievements page: what the catalogue has given up so far, and what is
@@ -135,7 +135,7 @@ function summary(earned: number, total: number): HTMLElement {
 
 /** Why the completion counts stop short of the whole catalogue. The five
  * triakis boards cannot be played at all — their menu row opens an explanation
- * instead of a game (`boards/fairness.ts`) — so a set containing one could
+ * instead of a game (`modes/fairness.ts`) — so a set containing one could
  * never be finished, and they are left out rather than left unreachable. */
 function exclusionNote(): HTMLElement {
   const p = document.createElement("p");

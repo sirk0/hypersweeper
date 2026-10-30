@@ -189,7 +189,6 @@ function subdivideMixed(
 function archimedeanBoard(
   mode: string,
   op: Op,
-  mineCount: number,
   frequency: number,
   baseKind = "cube",
 ): Board3D {
@@ -214,7 +213,7 @@ function archimedeanBoard(
   for (const ring of sub.faces.values()) cells.set(cid("c", n++), ring);
   let radius = 0;
   for (const p of sub.positions.values()) radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
-  return convexBoard3d(mode, cells, sub.positions, mineCount, radius);
+  return convexBoard3d(mode, cells, sub.positions, radius);
 }
 
 // -- the boards ----------------------------------------------------------------
@@ -222,45 +221,45 @@ function archimedeanBoard(
 /** A cuboctahedron: 8 triangles and 6 squares (3.4.3.4), the rectified cube
  * and the dual of the rhombic dodecahedron. Every face is cut `frequency**2`
  * ways, so `14 * frequency**2` cells. */
-export function cuboctahedronBoard(mineCount: number, frequency = 4): Board3D {
-  return archimedeanBoard("cubocta", "join", mineCount, frequency);
+export function cuboctahedronBoard(frequency = 4): Board3D {
+  return archimedeanBoard("cubocta", "join", frequency);
 }
 
 /** A truncated octahedron: 6 squares and 8 hexagons (4.6.6), the dual of the
  * tetrakis hexahedron and the one Archimedean solid that fills space. Each
  * hexagon is cut into three rhombi, and every quadrilateral then
  * `frequency**2` ways: `30 * frequency**2` cells. */
-export function truncatedOctahedronBoard(mineCount: number, frequency = 3): Board3D {
-  return archimedeanBoard("truncocta", "kis", mineCount, frequency);
+export function truncatedOctahedronBoard(frequency = 3): Board3D {
+  return archimedeanBoard("truncocta", "kis", frequency);
 }
 
 /** A snub cube: 32 triangles and 6 squares (3.3.3.3.4), the dual of the
  * pentagonal icositetrahedron. Chiral — the octahedral rotations alone, no
  * mirror. Every face is cut `frequency**2` ways: `38 * frequency**2` cells. */
-export function snubCubeBoard(mineCount: number, frequency = 2): Board3D {
-  return archimedeanBoard("snubcube", "gyro", mineCount, frequency);
+export function snubCubeBoard(frequency = 2): Board3D {
+  return archimedeanBoard("snubcube", "gyro", frequency);
 }
 
 /** A rhombicosidodecahedron cut into a board: 20 triangles, 30 squares and 12
  * pentagons (3.4.5.4), each pentagon fanned into 5 triangles, then every face
  * cut `frequency**2` ways — `110 * frequency**2` cells, or the uncut solid's
  * 62 at `frequency = 0`. */
-export function rhombicosidodecahedronSplitBoard(mineCount: number, frequency = 2): Board3D {
-  return archimedeanBoard("rhombicosidodecasplit", "ortho", mineCount, frequency, "icosa");
+export function rhombicosidodecahedronSplitBoard(frequency = 2): Board3D {
+  return archimedeanBoard("rhombicosidodecasplit", "ortho", frequency, "icosa");
 }
 
 /** A truncated icosidodecahedron cut into a board: 30 squares, 20 hexagons and
  * 12 decagons (4.6.10), the hexagons fanned into 6 triangles and the decagons
  * into 10, then every face cut `frequency**2` ways — `270 * frequency**2`
  * cells, or the uncut solid's 62 at `frequency = 0`. */
-export function truncatedIcosidodecahedronSplitBoard(mineCount: number, frequency = 1): Board3D {
-  return archimedeanBoard("truncicosidodecasplit", "meta", mineCount, frequency, "icosa");
+export function truncatedIcosidodecahedronSplitBoard(frequency = 1): Board3D {
+  return archimedeanBoard("truncicosidodecasplit", "meta", frequency, "icosa");
 }
 
 /** A snub dodecahedron cut into a board: 80 triangles and 12 pentagons
  * (3.3.3.3.5), each pentagon fanned into 5 triangles, then every face cut
  * `frequency**2` ways — `140 * frequency**2` cells. Chiral, the icosahedral
  * rotations alone. `frequency = 0` is the uncut solid, 92 cells. */
-export function snubDodecahedronSplitBoard(mineCount: number, frequency = 2): Board3D {
-  return archimedeanBoard("snubdodecsplit", "gyro", mineCount, frequency, "icosa");
+export function snubDodecahedronSplitBoard(frequency = 2): Board3D {
+  return archimedeanBoard("snubdodecsplit", "gyro", frequency, "icosa");
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Color, SRGBColorSpace } from "three";
 import presets from "@data/presets.json";
 import { isBoard3D } from "../../src/boards/core";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard } from "../../src/modes/presets";
 import { doubleTorusBoard } from "../../src/boards/surfaces";
 import { COLORS } from "../../src/render/boardMesh";
 import {
@@ -242,7 +242,7 @@ describe("per-board shape classing", () => {
     // side of the top and share a z, so with both on the seam at one theta,
     // three corners of a cell land on one line. Unmasked that cell measures as
     // a triangle and paints red on a board of squares.
-    const straightened = doubleTorusBoard(22, 10, 20);
+    const straightened = doubleTorusBoard(22, 10);
     const bare = [...classifyShapes(straightened.polygons).values()];
     expect(bare.some((t) => t.sides === 3)).toBe(true);
     const masked = [...classifyShapes(straightened.polygons, straightened.cornerMask).values()];

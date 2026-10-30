@@ -836,7 +836,6 @@ export function gcDisc(p: number, q: number, n: number, shells: number, scale: n
       mode: `gc${n}`,
       polygons: drawing.polygons,
       adjacency: sharedVertexAdjacency(drawing.cells),
-      mineCount: 0,
       width: size,
       height: size,
       cornerMask: drawing.cornerMask,
@@ -1098,7 +1097,6 @@ export function hurwitzBoard(
   surface: string,
   op: HurwitzOp,
   margin: number,
-  mineCount: number,
   scale = 300,
   arc = ARC_SEGMENTS,
 ): Board {
@@ -1164,7 +1162,6 @@ export function hurwitzBoard(
     mode: SURFACE_MODES[surface]!,
     polygons,
     adjacency,
-    mineCount,
     width: size,
     height: size,
     cornerMask,

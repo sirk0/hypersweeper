@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import conformance from "@data/conformance.json";
-import { DIFFICULTIES } from "../../src/boards/catalog";
+import { DIFFICULTIES } from "../../src/modes/catalog";
 import {
   boundaryComponents,
   edgeCount,
@@ -9,7 +9,7 @@ import {
   vertexCount,
   type AnyBoard,
 } from "../../src/boards/core";
-import { buildBoard, MODES, windowFor } from "../../src/boards/presets";
+import { buildBoard, MODES, presetMineCount, windowFor } from "../../src/modes/presets";
 import { MAX_DIGIT_GLYPH } from "../../src/render/glyphAtlas";
 
 // The board conformance oracle: every ported mode × difficulty must reproduce
@@ -86,7 +86,7 @@ export function describeConformance(difficulty: string): void {
         const board = buildBoard(mode, difficulty);
         const want = MODE_STATS[mode]![difficulty]!;
         expect(board.adjacency.size).toBe(want.cellCount);
-        expect(board.mineCount).toBe(want.mineCount);
+        expect(presetMineCount(mode, difficulty)).toBe(want.mineCount);
         expect(eulerCharacteristic(board)).toBe(want.euler);
         expect(boundaryComponents(board)).toBe(want.boundaryComponents);
         expect(edgeCount(board)).toBe(want.edgeCount);
@@ -110,7 +110,7 @@ export function describeConformance(difficulty: string): void {
         for (const [seed, want] of Object.entries(wanted)) {
           const board = buildBoard(mode, difficulty, Number(seed));
           expect(board.adjacency.size).toBe(want.cellCount);
-          expect(board.mineCount).toBe(want.mineCount);
+          expect(presetMineCount(mode, difficulty)).toBe(want.mineCount);
           expect(eulerCharacteristic(board)).toBe(want.euler);
           expect(boundaryComponents(board)).toBe(want.boundaryComponents);
           expect(edgeCount(board)).toBe(want.edgeCount);

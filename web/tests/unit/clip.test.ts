@@ -63,7 +63,7 @@ describe("surface clip", () => {
   });
 
   it("takes a real Klein cell's enclosed patch off it, and only that", () => {
-    const board = kleinBoard(16, 8, 20);
+    const board = kleinBoard(16, 8);
     const { solid, collar, cells, occluder } = board.clip!;
     expect(cells.size).toBeGreaterThan(0);
     let holed = 0;
@@ -84,7 +84,7 @@ describe("surface clip", () => {
       expect(triangleCentroid(cut)).not.toBeNull();
     }
     expect(holed).toBeGreaterThan(0);
-    expect(torusBoard(12, 6, 9).clip).toBeNull();
+    expect(torusBoard(12, 6).clip).toBeNull();
   });
 });
 

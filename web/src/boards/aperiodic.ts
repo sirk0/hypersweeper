@@ -348,7 +348,6 @@ function windowRows(
  */
 export function penroseBoard(
   subdivisions: number,
-  mineCount: number,
   scale = 300,
   keep: number | null = null,
   variant = 0,
@@ -439,7 +438,7 @@ export function penroseBoard(
     });
     cellMap.set(cid(cell.color, cell.index), vertexIds[i]!);
   }
-  return finalizeFlat("penrose", cellMap, positions, mineCount, scale);
+  return finalizeFlat("penrose", cellMap, positions, scale);
 }
 
 // -- Penrose kites and darts (P2) --------------------------------------------
@@ -518,7 +517,6 @@ export function kiteDartTriangles(subdivisions: number): KiteDartTriangle[] {
  */
 export function kiteDartBoard(
   subdivisions: number,
-  mineCount: number,
   scale = 300,
   keep: number | null = null,
   variant = 0,
@@ -568,7 +566,7 @@ export function kiteDartBoard(
     });
     cellMap.set(cid(cell.color, cell.index), vertexIds[i]!);
   }
-  const board = finalizeFlat("kitedart", cellMap, positions, mineCount, scale);
+  const board = finalizeFlat("kitedart", cellMap, positions, scale);
   const glyphAnchor = new Map<CellId, Vertex>();
   for (const [cell, polygon] of board.polygons) {
     // a cell id is "color,index", as `cid` made it above
@@ -687,7 +685,6 @@ function phyllotaxisTiles(rings: number): PhyllotaxisTile[] {
  */
 export function phyllotaxisBoard(
   rings: number,
-  mineCount: number,
   keep: number | null = null,
   scale = 44,
 ): Board {
@@ -726,7 +723,7 @@ export function phyllotaxisBoard(
     });
     cellMap.set(cid(row.wedge, row.m, row.n), keys);
   }
-  return finalizeFlat("phyllotaxis", cellMap, positions, mineCount, scale);
+  return finalizeFlat("phyllotaxis", cellMap, positions, scale);
 }
 
 // -- Klaassen's spiral monotile -----------------------------------------------
@@ -841,7 +838,6 @@ export function klaassenTiles(turns: number): KlaassenTile[] {
  */
 export function klaassenBoard(
   turns: number,
-  mineCount: number,
   keep: number | null = null,
   scale = 30,
 ): Board {
@@ -872,7 +868,7 @@ export function klaassenBoard(
     });
     cellMap.set(cid(row.hub, row.k), keys);
   }
-  return finalizeFlat("klaassen", cellMap, positions, mineCount, scale);
+  return finalizeFlat("klaassen", cellMap, positions, scale);
 }
 
 /** The first `keep` of `rows` (in order) that can join edge to edge: each step
@@ -1178,7 +1174,6 @@ function cmpSortedZ12(A: Z12Point[], B: Z12Point[]): number {
  */
 export function spectreBoard(
   levels: number,
-  mineCount: number,
   keep: number | null = null,
   scale = 21,
   variant = 0,
@@ -1235,7 +1230,7 @@ export function spectreBoard(
     });
     cellMap.set(cid(rows[row]!.label, i), vertexIds[row]!);
   });
-  return finalizeFlat("spectre", cellMap, positions, mineCount, scale);
+  return finalizeFlat("spectre", cellMap, positions, scale);
 }
 
 // -- Ammann–Beenker: squares and 45° rhombi -----------------------------------
@@ -1435,7 +1430,6 @@ function abCells(levels: number): AbCell[] {
  */
 export function ammannBeenkerBoard(
   levels: number,
-  mineCount: number,
   scale = 30,
   keep: number | null = null,
   variant = 0,
@@ -1485,7 +1479,7 @@ export function ammannBeenkerBoard(
     });
     cellMap.set(cid(cell.kind, cell.index), vertexIds[i]!);
   }
-  return finalizeFlat("ammannbeenker", cellMap, positions, mineCount, scale);
+  return finalizeFlat("ammannbeenker", cellMap, positions, scale);
 }
 
 // -- the brick rings ---------------------------------------------------------
@@ -1538,7 +1532,6 @@ function brickOutline(brick: Brick, corners: ReadonlySet<string>): Vertex[] {
 function brickBoard(
   mode: string,
   bricks: readonly Brick[],
-  mineCount: number,
   scale: number,
 ): Board {
   const corners = new Set<string>();
@@ -1559,7 +1552,7 @@ function brickBoard(
     cellMap.set(cid(brick[0], brick[1], brick[2], brick[3]), keys);
   }
   if (cellMap.size !== bricks.length) throw new Error("two bricks share a place");
-  return finalizeFlat(mode, cellMap, positions, mineCount, scale);
+  return finalizeFlat(mode, cellMap, positions, scale);
 }
 
 /**
@@ -1592,8 +1585,8 @@ export function brickRingsTiles(rings: number): Brick[] {
  * 2×1 bricks in `rings` concentric square rings about a 2×2 core, filling the
  * 2`rings` × 2`rings` square. Every tile is a whole brick.
  */
-export function brickRingsBoard(rings: number, mineCount: number, scale = 30): Board {
-  return brickBoard("brickrings", brickRingsTiles(rings), mineCount, scale);
+export function brickRingsBoard(rings: number, scale = 30): Board {
+  return brickBoard("brickrings", brickRingsTiles(rings), scale);
 }
 
 // -- Klaassen's pentagonal spirals ---------------------------------------------
@@ -1706,7 +1699,6 @@ function pentaOutline(
 export function pentaSpiralBoard(
   fold: number,
   rings: number,
-  mineCount: number,
   keep: number | null = null,
   scale = 18,
 ): Board {
@@ -1754,26 +1746,23 @@ export function pentaSpiralBoard(
     });
     cellMap.set(cid(row.wedge, row.m, row.n, row.half), keys);
   }
-  return finalizeFlat(`pentaspiral${fold}`, cellMap, positions, mineCount, scale);
+  return finalizeFlat(`pentaspiral${fold}`, cellMap, positions, scale);
 }
 
 export const pentaSpiral5Board = (
   rings: number,
-  mineCount: number,
   keep: number | null = null,
   scale = 18,
-): Board => pentaSpiralBoard(5, rings, mineCount, keep, scale);
+): Board => pentaSpiralBoard(5, rings, keep, scale);
 
 export const pentaSpiral6Board = (
   rings: number,
-  mineCount: number,
   keep: number | null = null,
   scale = 18,
-): Board => pentaSpiralBoard(6, rings, mineCount, keep, scale);
+): Board => pentaSpiralBoard(6, rings, keep, scale);
 
 export const pentaSpiral7Board = (
   rings: number,
-  mineCount: number,
   keep: number | null = null,
   scale = 18,
-): Board => pentaSpiralBoard(7, rings, mineCount, keep, scale);
+): Board => pentaSpiralBoard(7, rings, keep, scale);

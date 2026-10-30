@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, windowFor } from "../../src/boards/presets";
+import { buildBoard, windowFor } from "../../src/modes/presets";
 
 // `buildBoard` hands back the board it built last for the same mode,
 // difficulty and window, so a restart does not rebuild it — see `BUILT` in
-// src/boards/presets.ts.
+// src/modes/presets.ts.
 describe("buildBoard", () => {
   it("hands a board just built back rather than building it again", () => {
     const board = buildBoard("hyperbolic64", "hard", 1);

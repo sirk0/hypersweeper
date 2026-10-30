@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard } from "../../src/boards/presets";
+import { buildBoard } from "../../src/modes/presets";
 import { squareBoard } from "../../src/boards/tilings";
 import { planeLie, symmetryIcon, symmetryPictures } from "../../src/ui/symmetryIcon";
 
@@ -70,7 +70,7 @@ describe("what a control's icon is drawn from", () => {
     // A landscape flat board is drawn a quarter round on a portrait viewport,
     // and what was a vertical plane is then a horizontal one on screen. No
     // shipped flat board is landscape any more, so the classic 30x16 is built.
-    const wide = (turned: boolean) => symmetryPictures(squareBoard(16, 30, 99), "square", turned);
+    const wide = (turned: boolean) => symmetryPictures(squareBoard(16, 30), "square", turned);
     expect(planeLie(wide(false).get("mirror-ring")!.normal)).toBe("vertical");
     expect(planeLie(wide(true).get("mirror-ring")!.normal)).toBe("horizontal");
   });

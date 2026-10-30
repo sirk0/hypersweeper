@@ -14,8 +14,8 @@ import {
   menuSubfamilyRows,
   menuTilingRows,
   threeDMenuModes,
-} from "../../src/boards/catalog";
-import { MODES, hasMode } from "../../src/boards/presets";
+} from "../../src/modes/catalog";
+import { MODES, hasMode } from "../../src/modes/presets";
 import { boardGroups, quickPlayEntries } from "../../src/ui/boardTree";
 
 // The web menu's own shape over the shared catalog (catalog.ts, "the web

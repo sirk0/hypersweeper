@@ -17,7 +17,7 @@ import {
   TWO_UNIFORM_ARCH,
   TILINGS_BY_KEY,
   UNIFORM_ARCH,
-} from "../src/boards/catalog";
+} from "../src/modes/catalog";
 
 // The solid pages come off the one shared table, so a new group (or a new
 // board in one) shows up here without an edit -- which is how the Catalan

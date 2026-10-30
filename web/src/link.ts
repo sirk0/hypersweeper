@@ -1,5 +1,5 @@
 import { hasDifficulty } from "./config/screens";
-import { hasMode } from "./boards/presets";
+import { hasMode } from "./modes/presets";
 
 // Shareable board links: `?mode=<mode>&difficulty=<key>` (plus an optional
 // `seed`), the form the address bar carries while a board is open so that

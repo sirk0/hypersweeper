@@ -568,7 +568,6 @@ function assemble(
   mode: string,
   cells: Cells,
   positions: Positions,
-  mineCount: number,
   {
     twoSided,
     radius,
@@ -600,7 +599,6 @@ function assemble(
     mode,
     polygons,
     adjacency,
-    mineCount,
     radius: r,
     twoSided,
     get symmetries(): BoardSymmetry[] {
@@ -995,7 +993,6 @@ function wrapLattice(
   mode: string,
   { cells: lattice, kxPeriod, kyPeriod, motions }: Lattice,
   point: (t: number, phi: number) => Vec3,
-  mineCount: number,
   opts: {
     radius: AssembleOpts["radius"];
     /** Builds the winding rule once the string-keyed cells exist, for an
@@ -1022,7 +1019,7 @@ function wrapLattice(
     (kx, ky) => [mod(kx, kxPeriod), mod(ky, kyPeriod)],
     motions,
   );
-  return assemble(mode, cells, positions, mineCount, {
+  return assemble(mode, cells, positions, {
     twoSided: false,
     radius: opts.radius,
     symmetries,
@@ -1035,12 +1032,10 @@ function wrapLattice(
 export function torusBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
   return wrapLattice("torus", squareLattice(ring, tube),
-                     (t, phi) => torusPoint(t, phi, tubeRadius), mineCount,
-                     { radius: 1 + tubeRadius });
+                     (t, phi) => torusPoint(t, phi, tubeRadius), { radius: 1 + tubeRadius });
 }
 
 /** A donut tiled with the regular triangular tiling, exactly as the cylinder
@@ -1050,12 +1045,10 @@ export function torusBoard(
 export function torusTriangleBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
   return wrapLattice("torustri", triangleLattice(ring, tube),
-                     (t, phi) => torusPoint(t, phi, tubeRadius), mineCount,
-                     { radius: 1 + tubeRadius });
+                     (t, phi) => torusPoint(t, phi, tubeRadius), { radius: 1 + tubeRadius });
 }
 
 /** A donut tiled entirely with hexagons (the torus has Euler characteristic
@@ -1064,12 +1057,10 @@ export function torusTriangleBoard(
 export function torusHexBoard(
   rows: number,
   cols: number,
-  mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
   return wrapLattice("torushex", hexLattice(rows, cols),
-                     (t, phi) => torusPoint(t, phi, tubeRadius), mineCount,
-                     { radius: 1 + tubeRadius });
+                     (t, phi) => torusPoint(t, phi, tubeRadius), { radius: 1 + tubeRadius });
 }
 
 // -- the trefoil knot ---------------------------------------------------------
@@ -1103,11 +1094,11 @@ function trefoilOrient(kxPeriod: number) {
  * another strand (`_trefoil_sag`) -- is the size search's, and is not ported:
  * this app only builds shipped presets, every one of which passed it, and
  * `TestTrefoil` checks each of them is embedded. */
-function trefoil(mode: string, lattice: Lattice, mineCount: number, tube: number): Board3D {
+function trefoil(mode: string, lattice: Lattice, tube: number): Board3D {
   if (!(tube > 0 && tube < 1)) {
     throw new Error(`tube ${tube} must be a fraction of the knot's reach in (0, 1)`);
   }
-  return wrapLattice(mode, lattice, (t, phi) => trefoilPoint(t, phi, tube), mineCount, {
+  return wrapLattice(mode, lattice, (t, phi) => trefoilPoint(t, phi, tube), {
     radius: maxRadius,
     orient: trefoilOrient(lattice.kxPeriod),
   });
@@ -1119,10 +1110,9 @@ function trefoil(mode: string, lattice: Lattice, mineCount: number, tube: number
 export function trefoilBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeFraction = 0.8,
 ): Board3D {
-  return trefoil("trefoil", squareLattice(ring, tube), mineCount, tubeFraction);
+  return trefoil("trefoil", squareLattice(ring, tube), tubeFraction);
 }
 
 /** The trefoil knot tiled with triangles, laid as the donut's are: `ring`
@@ -1130,10 +1120,9 @@ export function trefoilBoard(
 export function trefoilTriangleBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeFraction = 0.8,
 ): Board3D {
-  return trefoil("trefoiltri", triangleLattice(ring, tube), mineCount, tubeFraction);
+  return trefoil("trefoiltri", triangleLattice(ring, tube), tubeFraction);
 }
 
 /** The trefoil knot tiled with hexagons, laid as the donut's are: `rows` round
@@ -1141,10 +1130,9 @@ export function trefoilTriangleBoard(
 export function trefoilHexBoard(
   rows: number,
   cols: number,
-  mineCount: number,
   tubeFraction = 0.8,
 ): Board3D {
-  return trefoil("trefoilhex", hexLattice(rows, cols), mineCount, tubeFraction);
+  return trefoil("trefoilhex", hexLattice(rows, cols), tubeFraction);
 }
 
 // -- the double donut (genus 2) ----------------------------------------------
@@ -1298,7 +1286,6 @@ function doubleTorus(
   cells: LatticeCells,
   kxPeriod: number,
   kyPeriod: number,
-  mineCount: number,
   tubeRadius: number,
   separation: number,
   motions: readonly (readonly [SymmetryId, MergedMotion])[],
@@ -1398,7 +1385,7 @@ function doubleTorus(
     [...merged].map(([cell, keys]) => [cell, keys.map(() => true)]),
   );
 
-  return assemble(mode, merged, positions, mineCount, {
+  return assemble(mode, merged, positions, {
     twoSided: false,
     radius: maxRadius,
     orient,
@@ -1429,12 +1416,11 @@ function mergedMotions(
 export function doubleTorusBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeRadius = 0.38,
   separation = 1,
 ): Board3D {
   const { cells } = squareLattice(ring, tube);
-  return doubleTorus("doubletorus", cells, ring, tube, mineCount, tubeRadius,
+  return doubleTorus("doubletorus", cells, ring, tube, tubeRadius,
                      separation, mergedMotions());
 }
 
@@ -1445,14 +1431,13 @@ export function doubleTorusBoard(
 export function doubleTorusTriangleBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeRadius = 0.38,
   separation = 1,
 ): Board3D {
   const { cells } = triangleLattice(ring, tube);
   // up and down triangles alternate along a row and up the rows alike, so a
   // plain negation can land on the other kind -- offer the half-step variants
-  return doubleTorus("doubletorustri", cells, ring, tube, mineCount, tubeRadius,
+  return doubleTorus("doubletorustri", cells, ring, tube, tubeRadius,
                      separation, mergedMotions([
                        ["turn", (s, kx, ky) => [1 - s, 1 - kx, ky]],
                        ["mirror-ring", (s, kx, ky) => [s, 1 - kx, ky]],
@@ -1466,15 +1451,13 @@ export function doubleTorusTriangleBoard(
 export function doubleTorusHexBoard(
   rows: number,
   cols: number,
-  mineCount: number,
   tubeRadius = 0.38,
   separation = 1,
 ): Board3D {
   const { cells, kxPeriod, kyPeriod } = hexLattice(rows, cols);
   // the hex lattice's own mirror axis runs through a row of cell centres at
   // ky = 2, not through ky = 0 (as on the donut)
-  return doubleTorus("doubletorushex", cells, kxPeriod, kyPeriod, mineCount,
-                     tubeRadius, separation, mergedMotions([
+  return doubleTorus("doubletorushex", cells, kxPeriod, kyPeriod, tubeRadius, separation, mergedMotions([
                        ["turn", (s, kx, ky) => [1 - s, -kx, 4 - ky]],
                        ["turn", (s, kx, ky) => [1 - s, 1 - kx, 4 - ky]],
                        ["mirror-tube", (s, kx, ky) => [s, kx, 4 - ky]],
@@ -1593,7 +1576,6 @@ function projective(
   sphereCells: Cells,
   positions: Positions,
   flip: (key: string) => string,
-  mineCount: number,
 ): Board3D {
   const { faces, cells } = antipodalQuotient(mode, sphereCells, flip);
   const adjacency = sharedVertexAdjacency(cells);
@@ -1603,7 +1585,6 @@ function projective(
     mode,
     polygons,
     adjacency,
-    mineCount,
     radius: 1,
     twoSided: false,
     clip: null,
@@ -1625,9 +1606,9 @@ const negateKey = (key: string): string =>
  * `6 * n**2` squares — with antipodes identified, so `3 * n**2` cells, drawn as
  * the whole sphere (`cubedSphere`). The cube's eight 3-valent corners come
  * down to four: what a closed surface of squares needs, 4 · χ. */
-export function projectiveBoard(n: number, mineCount: number): Board3D {
+export function projectiveBoard(n: number): Board3D {
   const { sphereCells, positions } = cubedSphere(n);
-  return projective("projective", sphereCells, positions, negateKey, mineCount);
+  return projective("projective", sphereCells, positions, negateKey);
 }
 
 /** The real projective plane in triangles: a geodesic icosahedron of
@@ -1635,7 +1616,6 @@ export function projectiveBoard(n: number, mineCount: number): Board3D {
  * `10 * frequency**2` cells, drawn as the whole sphere. */
 export function projectiveTriangleBoard(
   frequency: number,
-  mineCount: number,
 ): Board3D {
   const antipode = icosahedronAntipodes();
   const { positions, triangles } = geodesic(frequency);
@@ -1647,7 +1627,6 @@ export function projectiveTriangleBoard(
     sphereCells,
     positions,
     (k) => flipGeodesicKey(k, antipode),
-    mineCount,
   );
 }
 
@@ -1657,7 +1636,6 @@ export function projectiveTriangleBoard(
  * cells, six of them pentagons. */
 export function projectiveHexBoard(
   frequency: number,
-  mineCount: number,
 ): Board3D {
   const antipode = icosahedronAntipodes();
   const { positions, triangles } = geodesic(frequency);
@@ -1691,7 +1669,7 @@ export function projectiveHexBoard(
       .map((k) => flipGeodesicKey(k, antipode))
       .sort()
       .join(";");
-  return projective("projectivehex", sphereCells, centres, flip, mineCount);
+  return projective("projectivehex", sphereCells, centres, flip);
 }
 
 // -- Boy's surface ------------------------------------------------------------
@@ -1754,7 +1732,7 @@ function diagonalUp([x, y, z]: Vec3): Vec3 {
  * three-fold turn about the axis is a motion of the drawing too; the rest move
  * the contents across the surface, which is what brings a cell out from under
  * a lobe. */
-export function boyBoard(n: number, mineCount: number): Board3D {
+export function boyBoard(n: number): Board3D {
   const { sphereCells, positions: sphere } = cubedSphere(n);
   const { faces, cells } = antipodalQuotient("boy", sphereCells, negateKey);
   const adjacency = sharedVertexAdjacency(cells);
@@ -1769,7 +1747,6 @@ export function boyBoard(n: number, mineCount: number): Board3D {
     mode: "boy",
     polygons,
     adjacency,
-    mineCount,
     radius: maxRadius(positions),
     twoSided: true,
     clip: null,
@@ -1790,7 +1767,7 @@ export function boyBoard(n: number, mineCount: number): Board3D {
 /** A Möbius strip tiled with quadrilaterals: `ring` segments around,
  * `widthCells` across. After a full loop the strip flips, so column `ring`
  * glues to column 0 upside down. */
-export function mobiusBoard(ring: number, widthCells: number, mineCount: number): Board3D {
+export function mobiusBoard(ring: number, widthCells: number): Board3D {
   const halfWidth = Math.min(0.7, (Math.PI * widthCells) / ring / 2);
   const cells: Cells = new Map();
   const positions: Positions = new Map();
@@ -1823,7 +1800,7 @@ export function mobiusBoard(ring: number, widthCells: number, mineCount: number)
       ["mirror-tube", (i, j) => [i, widthCells - j]],
     ],
   );
-  return assemble("mobius", cells, positions, mineCount, {
+  return assemble("mobius", cells, positions, {
     twoSided: true,
     radius: 1 + halfWidth,
     symmetries,
@@ -1838,7 +1815,6 @@ export function mobiusBoard(ring: number, widthCells: number, mineCount: number)
 export function mobiusTriangleBoard(
   ring: number,
   rows: number,
-  mineCount: number,
 ): Board3D {
   if ((ring - rows) % 2) {
     throw new Error("ring and rows must share a parity for the flipped seam");
@@ -1879,7 +1855,7 @@ export function mobiusTriangleBoard(
       ["mirror-tube", (kx, ky) => [kx, rows - ky]],
     ],
   );
-  return assemble("mobiustri", cells, positions, mineCount, {
+  return assemble("mobiustri", cells, positions, {
     twoSided: true,
     radius: 1 + halfWidth,
     symmetries,
@@ -1888,7 +1864,7 @@ export function mobiusTriangleBoard(
 
 /** A Möbius strip tiled with hexagons: `ring` columns of `rows` hexagons
  * glued end-to-start with a vertical flip. `rows` must be odd. */
-export function mobiusHexBoard(ring: number, rows: number, mineCount: number): Board3D {
+export function mobiusHexBoard(ring: number, rows: number): Board3D {
   if (rows % 2 === 0) throw new Error("rows must be odd so the lattice survives the flip");
   const kxPeriod = 2 * ring;
   const kyTop = 3 * rows + 1;
@@ -1929,7 +1905,7 @@ export function mobiusHexBoard(ring: number, rows: number, mineCount: number): B
       ["mirror-tube", (kx, ky) => [kx, kyTop - ky]],
     ],
   );
-  return assemble("mobiushex", cells, positions, mineCount, {
+  return assemble("mobiushex", cells, positions, {
     twoSided: true,
     radius: 1 + halfWidth,
     symmetries,
@@ -1950,7 +1926,6 @@ export function mobiusHexBoard(ring: number, rows: number, mineCount: number): B
 export function kleinBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeScale = 1,
 ): Board3D {
   if (tube % 2) throw new Error("tube must be even so the seam reflection lands on cells");
@@ -1994,7 +1969,7 @@ export function kleinBoard(
     ["mirror-tube", (i, j) => [i, half - 1 - j]],
     ["mirror-tube", (i, j) => [i, tube - 1 - j]],
   ]);
-  return assemble("klein", cells, positions, mineCount, {
+  return assemble("klein", cells, positions, {
     twoSided: true,
     radius: maxRadius,
     symmetries,
@@ -2014,7 +1989,6 @@ export function kleinBoard(
 export function kleinTriangleBoard(
   ring: number,
   tube: number,
-  mineCount: number,
   tubeScale = 1,
 ): Board3D {
   if (tube % 2) throw new Error("tube must be even so the seam reflection lands on cells");
@@ -2070,7 +2044,7 @@ export function kleinTriangleBoard(
     ["mirror-tube", (kx, ky) => [kx, flip - ky]],
     ["mirror-tube", (kx, ky) => [kx, flip + tube / 2 - ky]],
   ]);
-  return assemble("kleintri", cells, positions, mineCount, {
+  return assemble("kleintri", cells, positions, {
     twoSided: true,
     radius: maxRadius,
     symmetries,
@@ -2084,7 +2058,6 @@ export function kleinTriangleBoard(
 export function kleinHexBoard(
   ring: number,
   rows: number,
-  mineCount: number,
   tubeScale = 1,
 ): Board3D {
   if (rows % 2) throw new Error("rows must be even so the tube lattice wraps");
@@ -2143,7 +2116,7 @@ export function kleinHexBoard(
     ["mirror-tube", (kx, ky) => [kx, 4 - ky]],
     ["mirror-tube", (kx, ky) => [kx, 4 + kyPeriod / 2 - ky]],
   ]);
-  return assemble("kleinhex", cells, positions, mineCount, {
+  return assemble("kleinhex", cells, positions, {
     twoSided: true,
     radius: maxRadius,
     symmetries,
@@ -2155,7 +2128,7 @@ export function kleinHexBoard(
 
 /** The side surface of a cylinder tiled with quadrilaterals: `ring` segments
  * around, `rows` up the axis. Open ends, so the inside is visible. */
-export function cylinderBoard(ring: number, rows: number, mineCount: number): Board3D {
+export function cylinderBoard(ring: number, rows: number): Board3D {
   const rowHeight = (TWO_PI / ring) * 0.9; // near-square tiles
   const height = rows * rowHeight;
   const cells: Cells = new Map();
@@ -2185,7 +2158,7 @@ export function cylinderBoard(ring: number, rows: number, mineCount: number): Bo
       ["mirror-tube", (i, j) => [i, rows - j]],
     ],
   );
-  return assemble("cylinder", cells, positions, mineCount, {
+  return assemble("cylinder", cells, positions, {
     twoSided: true,
     radius: Math.hypot(1, height / 2),
     symmetries,
@@ -2194,7 +2167,7 @@ export function cylinderBoard(ring: number, rows: number, mineCount: number): Bo
 
 /** The side of a cylinder tiled with triangles: `ring` triangles around (must
  * be even so up/down triangles alternate across the seam), `rows` up. */
-export function cylinderTriangleBoard(ring: number, rows: number, mineCount: number): Board3D {
+export function cylinderTriangleBoard(ring: number, rows: number): Board3D {
   if (ring % 2) throw new Error("ring must be even for the triangle strip to wrap");
   const rowHeight = (TWO_PI / ring) * ROOT3 * 0.9;
   const height = rows * rowHeight;
@@ -2227,7 +2200,7 @@ export function cylinderTriangleBoard(ring: number, rows: number, mineCount: num
       ["mirror-tube", (kx, ky) => [kx, rows - ky]],
     ],
   );
-  return assemble("cyltri", cells, positions, mineCount, {
+  return assemble("cyltri", cells, positions, {
     twoSided: true,
     radius: Math.hypot(1, height / 2),
     symmetries,
@@ -2236,7 +2209,7 @@ export function cylinderTriangleBoard(ring: number, rows: number, mineCount: num
 
 /** The side of a cylinder tiled with hexagons: `ring` columns around, `rows`
  * up the axis. */
-export function cylinderHexBoard(ring: number, rows: number, mineCount: number): Board3D {
+export function cylinderHexBoard(ring: number, rows: number): Board3D {
   const kxPeriod = 2 * ring;
   const kyUnit = TWO_PI / kxPeriod / ROOT3;
   const height = (3 * rows + 1) * kyUnit;
@@ -2272,7 +2245,7 @@ export function cylinderHexBoard(ring: number, rows: number, mineCount: number):
       ["mirror-tube", (kx, ky) => [kx, 3 * rows + 1 - ky]],
     ],
   );
-  return assemble("cylhex", cells, positions, mineCount, {
+  return assemble("cylhex", cells, positions, {
     twoSided: true,
     radius: Math.hypot(1, height / 2),
     symmetries,
@@ -2358,7 +2331,6 @@ export function archTorusBoard(
   tiling: string,
   nx: number,
   ny: number,
-  mineCount: number,
   tubeRadius = 0.45,
 ): Board3D {
   const t = torusTemplate(tiling);
@@ -2410,7 +2382,7 @@ export function archTorusBoard(
       ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
     ],
   );
-  return assemble("torus" + tiling, cells, positions, mineCount, {
+  return assemble("torus" + tiling, cells, positions, {
     twoSided: false,
     radius: 1 + tubeRadius,
     symmetries,
@@ -2448,7 +2420,6 @@ export function archCylinderBoard(
   tiling: string,
   ring: number,
   rows: number,
-  mineCount: number,
 ): Board3D {
   const t = wrapTemplate(tiling);
   const W = t.width;
@@ -2527,7 +2498,7 @@ export function archCylinderBoard(
       ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
     ],
   );
-  return assemble("cyl" + tiling, cells, positions, mineCount, {
+  return assemble("cyl" + tiling, cells, positions, {
     twoSided: true,
     radius: maxRadius,
     symmetries,
@@ -2550,7 +2521,6 @@ export function archMobiusBoard(
   tiling: string,
   ring: number,
   rows: number,
-  mineCount: number,
 ): Board3D {
   const t = wrapTemplate(tiling);
   const mirror = t.mirror;
@@ -2653,7 +2623,7 @@ export function archMobiusBoard(
     ...templateYMirrors(t, centreLine).map((m) => ["mirror-tube", m] as const),
     ...templateXMirrors(t).map((m) => ["mirror-ring", m] as const),
   ]);
-  return assemble("mobius" + tiling, cells, positions, mineCount, {
+  return assemble("mobius" + tiling, cells, positions, {
     twoSided: true,
     radius: maxRadius,
     symmetries,
@@ -2670,7 +2640,6 @@ export function archKleinBoard(
   tiling: string,
   nx: number,
   ny: number,
-  mineCount: number,
   tubeScale = 1,
 ): Board3D {
   const t = wrapTemplate(tiling);
@@ -2761,7 +2730,7 @@ export function archKleinBoard(
   ]);
   const ring = symmetries.find((c) => c.id === "ring");
   if (!ring?.build()) throw new Error(`klein ring translation incomplete for ${tiling}`);
-  return assemble("klein" + tiling, cells, positions, mineCount, {
+  return assemble("klein" + tiling, cells, positions, {
     twoSided: true,
     radius: maxRadius,
     symmetries,

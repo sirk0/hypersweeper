@@ -13,7 +13,7 @@ import {
   surfaceOf,
   tilingOf,
   SOLID_MODES,
-} from "../../src/boards/catalog";
+} from "../../src/modes/catalog";
 import { familyKeyOf } from "../../src/ui/boardFacts";
 
 // The two oracles that keep a positional schema honest. Neither tests

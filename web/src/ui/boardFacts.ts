@@ -13,12 +13,18 @@ import {
   surfaceOf,
   TILINGS_BY_KEY,
   tilingOf,
-} from "../boards/catalog";
-import { isBoard3D, type AnyBoard, type CellId } from "../boards/core";
-import { hurwitzSurfaceLabel } from "../boards/hurwitz";
-import { distortionHint } from "../boards/distortion";
-import { fairnessHint, fairnessOf } from "../boards/fairness";
-import { ARCH_TILINGS, archTemplate, templateCells } from "../boards/tilings";
+} from "../modes/catalog";
+import {
+  isBoard3D,
+  type AnyBoard,
+  type CellId,
+  hurwitzSurfaceLabel,
+  ARCH_TILINGS,
+  archTemplate,
+  templateCells,
+} from "../boards";
+import { distortionHint } from "../modes/distortion";
+import { fairnessHint, fairnessOf } from "../modes/fairness";
 import { classifyShapes, corners, type ShapeTone } from "../render/shapePalette";
 
 // What the board on screen actually *is*, in words: the header's info button
@@ -73,7 +79,7 @@ export interface BoardFacts {
   /** Why this board is graded as harder than its difficulty, when it is. */
   warning: string | undefined;
   /** That its surface draws the tiles too far out of shape at this
-   * difficulty, when it does (boards/distortion.ts). */
+   * difficulty, when it does (modes/distortion.ts). */
   distortion: string | undefined;
   /** What its surface warns of, at every difficulty, when it does (catalog.ts
    * `surfaceCaution`: Boy's surface passes through itself). */

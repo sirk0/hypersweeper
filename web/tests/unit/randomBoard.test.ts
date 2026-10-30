@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { distortedDifficulties, isDistorted } from "../../src/boards/distortion";
-import { blockedModes, modeFairness } from "../../src/boards/fairness";
-import { hasMode } from "../../src/boards/presets";
+import { distortedDifficulties, isDistorted } from "../../src/modes/distortion";
+import { blockedModes, modeFairness } from "../../src/modes/fairness";
+import { hasMode } from "../../src/modes/presets";
 import {
   CUSTOM_ONLY,
   RANDOM_KINDS,
   randomKindOf,
   randomMode,
   randomPool,
-} from "../../src/boards/randomBoard";
-import { surfaceCaution, threeDMenuModes } from "../../src/boards/catalog";
+} from "../../src/modes/randomBoard";
+import { surfaceCaution, threeDMenuModes } from "../../src/modes/catalog";
 import { quickPlayEntries } from "../../src/ui/boardTree";
 import { isBoard3D } from "../../src/boards/core";
-import { buildBoard, MODES } from "../../src/boards/presets";
+import { buildBoard, MODES } from "../../src/modes/presets";
 
 // The pools the home page's Flat, 3D and Hyperbolic rows deal from, and the
-// record window's "New board" with them (boards/randomBoard.ts).
+// record window's "New board" with them (modes/randomBoard.ts).
 
 describe("random board pools", () => {
   it("deals only boards this build has got", () => {

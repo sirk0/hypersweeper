@@ -46,7 +46,7 @@ construction, and its tiles are not cut from a planar tiling to compare with.
 
 Run: ``PYTHONPATH=. python -m scripts.difficulty.distortion`` -- it writes
 ``data/distortion.json``, which the TypeScript app reads
-(``web/src/boards/distortion.ts``). Like ``data/difficulty.json`` it is
+(``web/src/modes/distortion.ts``). Like ``data/difficulty.json`` it is
 measured rather than exported, so ``data-sync`` does not regenerate it; re-run
 it after changing a preset window or adding a wrapped tiling.
 """

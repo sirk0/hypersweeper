@@ -30,7 +30,14 @@ separately (`two_sided` for the open sheets, and the symmetry controls, which
 `volume.ts` offers from the lattice because the layout has none to measure).
 
 `web/src/boards/` is a port of the same model, checked against it by the
-conformance oracle — see [`shared-data.md`](shared-data.md).
+conformance oracle — see [`shared-data.md`](shared-data.md). The port is
+**pure geometry**, kept apart so other games can be built on the same boards:
+its builders take no mine count (the Python ones still do, as `mine_count`),
+it imports nothing from outside its folder, and the rest of the app reaches it
+only through `web/src/boards/index.ts`. What *is* minesweeper — the presets
+(a board's size and its mine count), fairness, distortion, the menu catalogue,
+dealing a random board — lives beside it in `web/src/modes/`.
+`web/tests/unit/boardsBoundary.test.ts` holds that line.
 
 ## Package layout (`minesweeper/boards/`)
 
@@ -214,7 +221,7 @@ plane, the cylinder and the Möbius strip) and, on the plane only, **Other**, **
 **Fractals** and **Hyperbolic**.
 Every family is offered on every surface its members allow:
 `picker_families` in `catalog.py` (and its mirror in
-`web/src/boards/catalog.ts`) drops a family a surface has no enabled row of
+`web/src/modes/catalog.ts`) drops a family a surface has no enabled row of
 — the two one-off flat-only families, "Other" everywhere but the plane, and
 "2-uniform" everywhere but the plane, the cylinder and the Möbius strip — and everything else a surface refuses it refuses one row at a time, in
 `family_rows`, on chirality. **Congruent rectangles** was the last gap,
@@ -575,7 +582,7 @@ over 800 games a window, the 81-cell Penrose board runs from a 0.76 win rate to
 candidate at the preset's own mine count and keeps those within the
 calibration's tolerance of the centred window's rate — 13 to 79 of 96 per board
 — and the kept list is `data/windows.json`. `presets.window_for` (ported to
-`windowFor` in `web/src/boards/presets.ts`) is what turns a game seed into one
+`windowFor` in `web/src/modes/presets.ts`) is what turns a game seed into one
 of them, and the centred window is always first in the list. See
 [`difficulty.md`](difficulty.md).
 

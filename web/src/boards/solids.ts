@@ -187,7 +187,6 @@ export function convexBoard3d(
   mode: string,
   cells: Cells,
   positions: Positions,
-  mineCount: number,
   radius = 1,
 ): Board3D {
   const adjacency = sharedVertexAdjacency(cells);
@@ -200,7 +199,6 @@ export function convexBoard3d(
     mode,
     polygons,
     adjacency,
-    mineCount,
     radius,
     twoSided: false,
     clip: null,
@@ -386,7 +384,6 @@ function goldbergDual(
   mode: string,
   positions: Positions,
   triangles: string[][],
-  mineCount: number,
 ): Board3D {
   const centers: Positions = new Map();
   const around = new Map<string, string[]>();
@@ -410,7 +407,7 @@ function goldbergDual(
     ]);
     cells.set(key, tangentOrder(positions.get(key)!, ring));
   }
-  return bentRegular(convexBoard3d(mode, cells, centers, mineCount));
+  return bentRegular(convexBoard3d(mode, cells, centers));
 }
 
 /** The dual of a geodesic icosahedron, Goldberg GP(frequency, 0): always 12
@@ -418,18 +415,17 @@ function goldbergDual(
 function goldbergBoard(
   mode: string,
   frequency: number,
-  mineCount: number,
 ): Board3D {
   const { positions, triangles } = geodesic(frequency);
-  return goldbergDual(mode, positions, triangles, mineCount);
+  return goldbergDual(mode, positions, triangles);
 }
 
 /** The class I Goldberg polyhedron GP(frequency, 0), projected onto the unit
  * sphere: 12 pentagons and `10 * frequency**2 - 10` hexagons. The default is
  * GP(3,0), the C180 fullerene (92 cells) the mode is named after; `frequency`
  * is the board's size knob. */
-export function c180Board(mineCount: number, frequency = 3): Board3D {
-  return goldbergBoard("c180", frequency, mineCount);
+export function c180Board(frequency = 3): Board3D {
+  return goldbergBoard("c180", frequency);
 }
 
 /** The class III Goldberg polyhedron GP(h, k), projected onto the unit sphere:
@@ -439,20 +435,20 @@ export function c180Board(mineCount: number, frequency = 3): Board3D {
  * the 60 rotations only. The default is GP(2,1), the C140 fullerene (72 cells)
  * the mode is named after, whose 60 hexagons are a single orbit, each touching
  * one pentagon; `(h, k)` is the board's size knob. */
-export function gp21Board(mineCount: number, h = 2, k = 1): Board3D {
+export function gp21Board(h = 2, k = 1): Board3D {
   const { positions, triangles } = geodesicHK(h, k);
-  return goldbergDual("gp21", positions, triangles, mineCount);
+  return goldbergDual("gp21", positions, triangles);
 }
 
 /** A sphere tiled with triangles: a geodesic icosahedron with
  * `20 * frequency**2` triangular cells — `icosahedronBoard`'s subdivision
  * projected onto the unit sphere, so the same graph drawn round. `frequency`
  * is the board's size knob. */
-export function sphereTriangleBoard(mineCount: number, frequency = 2): Board3D {
+export function sphereTriangleBoard(frequency = 2): Board3D {
   const { positions, triangles } = geodesic(frequency);
   const cells: Cells = new Map();
   triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
-  return bentRegular(convexBoard3d("spheretri", cells, positions, mineCount));
+  return bentRegular(convexBoard3d("spheretri", cells, positions));
 }
 
 /** The cube of `n x n` faces a side, drawn round: `sphereCells` maps each of
@@ -502,9 +498,9 @@ export function cubedSphere(n: number): { sphereCells: Cells; positions: Positio
  * `cubeBoard`'s grid on the same lattice keys, put on the sphere by the
  * equiangular cube map (`cubedSphere`), so the same graph drawn round. `n`, the squares
  * along a cube edge, is the board's size knob. */
-export function sphereSquareBoard(mineCount: number, n = 4): Board3D {
+export function sphereSquareBoard(n = 4): Board3D {
   const { sphereCells, positions } = cubedSphere(n);
-  return bentRegular(convexBoard3d("spheresquare", sphereCells, positions, mineCount));
+  return bentRegular(convexBoard3d("spheresquare", sphereCells, positions));
 }
 
 /** One of a flag's three mirrors, named by the corner opposite it. */
@@ -565,7 +561,7 @@ export function wythoffPoint(
  * Vertices are integer points on `[-n, n]**3` (a surface vertex has one axis
  * at +-n; the grid lines step by 2), so cells on adjacent faces sharing a
  * cube edge or corner become neighbors automatically. */
-export function cubeBoard(n: number, mineCount: number): Board3D {
+export function cubeBoard(n: number): Board3D {
   const cells: Cells = new Map();
   const positions: Positions = new Map();
   for (let axis = 0; axis < 3; axis++) {
@@ -598,7 +594,7 @@ export function cubeBoard(n: number, mineCount: number): Board3D {
       }
     }
   }
-  return convexBoard3d("cube", cells, positions, mineCount, ROOT3);
+  return convexBoard3d("cube", cells, positions, ROOT3);
 }
 
 // -- brick-bond cubes -------------------------------------------------------
@@ -754,7 +750,6 @@ function splitAtLatticePoints(
 export function brickCubeBoard(
   bond: string,
   n: number,
-  mineCount: number,
 ): Board3D {
   if (bond !== BRICK_RINGS && !BRICK_BONDS[bond]) {
     throw new Error(`unknown brick bond: ${bond}`);
@@ -811,7 +806,7 @@ export function brickCubeBoard(
       }),
     );
   }
-  return convexBoard3d("cube" + bond, keyed, positions, mineCount, ROOT3);
+  return convexBoard3d("cube" + bond, keyed, positions, ROOT3);
 }
 
 /** The boundary of a polycube (a union of axis-aligned unit cubes), tiled by
@@ -829,7 +824,6 @@ function polycubeSurface(
   mode: string,
   solid: (i: number, j: number, k: number) => boolean,
   extent: [number, number, number],
-  mineCount: number,
 ): Board3D {
   const [nx, ny, nz] = extent;
   const center: Vec3 = [nx / 2, ny / 2, nz / 2];
@@ -913,7 +907,6 @@ function polycubeSurface(
     mode,
     polygons,
     adjacency,
-    mineCount,
     radius,
     twoSided: false,
     clip: null,
@@ -932,7 +925,6 @@ function polycubeSurface(
 export function cubeFrameBoard(
   n: number,
   thickness: number,
-  mineCount: number,
 ): Board3D {
   if (!(thickness >= 1 && 2 * thickness < n)) {
     throw new Error("thickness must be >= 1 and leave a non-empty hole");
@@ -940,7 +932,7 @@ export function cubeFrameBoard(
   const outer = (c: number): boolean => c < thickness || c >= n - thickness;
   const solid = (i: number, j: number, k: number): boolean =>
     Number(outer(i)) + Number(outer(j)) + Number(outer(k)) >= 2;
-  return polycubeSurface("cubeframe", solid, [n, n, n], mineCount);
+  return polycubeSurface("cubeframe", solid, [n, n, n]);
 }
 
 /** A stepped bipyramid: a stepped pyramid of square terraces stitched
@@ -956,7 +948,6 @@ export function cubeFrameBoard(
 export function steppedBipyramidBoard(
   base: number,
   levels: number,
-  mineCount: number,
 ): Board3D {
   if (!(levels >= 2 && base - 2 * (levels - 1) >= 1)) {
     throw new Error("need levels >= 2 and a positive apex square");
@@ -971,7 +962,6 @@ export function steppedBipyramidBoard(
     "steppedbipyramid",
     solid,
     [base, base, height],
-    mineCount,
   );
 }
 
@@ -985,7 +975,6 @@ export function steppedBipyramidBoard(
 export function steppedPyramidBoard(
   base: number,
   levels: number,
-  mineCount: number,
 ): Board3D {
   if (!(levels >= 2 && base - 2 * (levels - 1) >= 1)) {
     throw new Error("need levels >= 2 and a positive apex square");
@@ -994,12 +983,12 @@ export function steppedPyramidBoard(
     const margin = k; // each step up from the foundation shrinks by 1
     return margin <= i && i < base - margin && margin <= j && j < base - margin;
   };
-  return polycubeSurface("steppedpyramid", solid, [base, base, levels], mineCount);
+  return polycubeSurface("steppedpyramid", solid, [base, base, levels]);
 }
 
 /** A regular tetrahedron tiled with triangles: each of the 4 faces
  * subdivided into `frequency**2` cells, kept flat on the faces. */
-export function tetrahedronBoard(mineCount: number, frequency = 4): Board3D {
+export function tetrahedronBoard(frequency = 4): Board3D {
   const { positions, triangles } = geodesic(frequency, tetrahedron(), false);
   const cells: Cells = new Map();
   triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
@@ -1007,13 +996,13 @@ export function tetrahedronBoard(mineCount: number, frequency = 4): Board3D {
   for (const p of positions.values()) {
     radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
   }
-  return convexBoard3d("tetrahedron", cells, positions, mineCount, radius);
+  return convexBoard3d("tetrahedron", cells, positions, radius);
 }
 
 /** A regular octahedron tiled with triangles: each of the 8 faces
  * subdivided into `frequency**2` cells, kept flat on the faces (the same
  * flat, non-projected subdivision `tetrahedronBoard` uses). */
-export function octahedronBoard(mineCount: number, frequency = 3): Board3D {
+export function octahedronBoard(frequency = 3): Board3D {
   const { positions, triangles } = geodesic(frequency, octahedron(), false);
   const cells: Cells = new Map();
   triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
@@ -1021,7 +1010,7 @@ export function octahedronBoard(mineCount: number, frequency = 3): Board3D {
   for (const p of positions.values()) {
     radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
   }
-  return convexBoard3d("octahedron", cells, positions, mineCount, radius);
+  return convexBoard3d("octahedron", cells, positions, radius);
 }
 
 /** A regular icosahedron tiled with triangles: each of the 20 faces
@@ -1029,7 +1018,7 @@ export function octahedronBoard(mineCount: number, frequency = 3): Board3D {
  * `sphereTriangleBoard`, which projects the same subdivision onto the unit
  * sphere, this keeps the solid's flat facets (and their creased edges)
  * intact. */
-export function icosahedronBoard(mineCount: number, frequency = 2): Board3D {
+export function icosahedronBoard(frequency = 2): Board3D {
   const { positions, triangles } = geodesic(frequency, icosahedron(), false);
   const cells: Cells = new Map();
   triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
@@ -1037,7 +1026,7 @@ export function icosahedronBoard(mineCount: number, frequency = 2): Board3D {
   for (const p of positions.values()) {
     radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
   }
-  return convexBoard3d("icosahedron", cells, positions, mineCount, radius);
+  return convexBoard3d("icosahedron", cells, positions, radius);
 }
 
 /** A regular dodecahedron tiled with triangles: each of its 12 pentagonal
@@ -1048,7 +1037,7 @@ export function icosahedronBoard(mineCount: number, frequency = 2): Board3D {
  * solids use. A regular pentagon is not equilateral like the other Platonic
  * faces, so its wedges are the one facet here that stay a little off-square
  * (72-54-54 triangles) at any frequency. */
-export function dodecahedronBoard(mineCount: number, frequency = 1): Board3D {
+export function dodecahedronBoard(frequency = 1): Board3D {
   const { positions, triangles } = geodesic(frequency, dodecahedron(), false);
   const cells: Cells = new Map();
   triangles.forEach((triangle, n) => cells.set(cid("t", n), [...triangle]));
@@ -1056,7 +1045,7 @@ export function dodecahedronBoard(mineCount: number, frequency = 1): Board3D {
   for (const p of positions.values()) {
     radius = Math.max(radius, Math.hypot(p[0], p[1], p[2]));
   }
-  return convexBoard3d("dodecahedron", cells, positions, mineCount, radius);
+  return convexBoard3d("dodecahedron", cells, positions, radius);
 }
 
 /** A level-1 Sierpiński tetrahedron: midpoint-subdividing a regular
@@ -1070,7 +1059,6 @@ export function dodecahedronBoard(mineCount: number, frequency = 1): Board3D {
  * `tetrahedronBoard` each triangle is oriented outward from its own
  * sub-tetrahedron's centroid rather than the origin. */
 export function tetrahedronFrameBoard(
-  mineCount: number,
   frequency = 4,
 ): Board3D {
   const { vertices: base } = tetrahedron();
@@ -1140,7 +1128,6 @@ export function tetrahedronFrameBoard(
     mode: "tetraframe",
     polygons,
     adjacency,
-    mineCount,
     radius,
     twoSided: false,
     clip: null,

@@ -100,8 +100,15 @@ design rather than the rule itself.
   (the closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps,
   the Klein `cellCycle` and its self-intersection `clip`), `clipSolid.ts` (what
   that clip cuts against — the region the *drawn* neck encloses, exactly; see
-  "The Klein bottle's self-intersection" in [`docs/render.md`](docs/render.md)), `catalog.ts` /
-  `presets.ts` (read `data/*.json`).
+  "The Klein bottle's self-intersection" in [`docs/render.md`](docs/render.md)). **Pure
+  geometry**, so other games can reuse it: no mine counts, no imports from
+  outside the folder, and everything else imports it through `index.ts`
+  alone — `tests/unit/boardsBoundary.test.ts` holds all three. A new name the
+  app needs gets a line in `index.ts`.
+- `src/modes/` — the game's side of the boards: `presets.ts` (`buildBoard`,
+  and `presetMineCount` — a preset is a size *and* a mine count, read from
+  `data/presets.json`), `catalog.ts` (the menu catalogue, from
+  `data/catalog.json`), `fairness.ts`, `distortion.ts`, `randomBoard.ts`.
 - `src/render/` — one Three.js pipeline: `renderer.ts` (scene, ortho +
   perspective cameras, trackball rotation, resize, picking),
   `boardMesh.ts` (shared cell-visual vocabulary — the neutral palette, glyph

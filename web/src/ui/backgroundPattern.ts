@@ -60,7 +60,7 @@
 // encodes it. A tiling whose lattice is not rectangular goes through
 // `latticeDomain`, which finds a rectangle inside it.
 
-import type { Vertex } from "../boards/core";
+import { type Vertex, archTemplate, templateCells } from "../boards";
 import {
   APERIODIC_MODES,
   HYPERBOLIC_MODES,
@@ -68,9 +68,8 @@ import {
   SOLID_GROUPS,
   SPIRAL_MODES,
   tilingOf,
-} from "../boards/catalog";
-import { MODES } from "../boards/presets";
-import { archTemplate, templateCells } from "../boards/tilings";
+} from "../modes/catalog";
+import { MODES } from "../modes/presets";
 import type { Scheme } from "./theme";
 
 // -- the look ---------------------------------------------------------------

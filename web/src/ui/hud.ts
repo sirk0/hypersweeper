@@ -1,5 +1,5 @@
-import { surfaceOf } from "../boards/catalog";
-import type { BoardSymmetry } from "../boards/core";
+import { surfaceOf } from "../modes/catalog";
+import type { BoardSymmetry } from "../boards";
 import { screens, type HudSlot } from "../config/screens";
 
 // The game header, rendered from the shared UI-screen config
@@ -108,7 +108,7 @@ export const ICONS: Record<string, string> = {
   // the ? beside it, with the i's dot and stem on one centre line for the same
   // reason the question mark's are.
   // Another board, dealt at random from the half of the catalogue this one came
-  // from (boards/randomBoard.ts). A die, and deliberately not the shuffle
+  // from (modes/randomBoard.ts). A die, and deliberately not the shuffle
   // arrows: this board already has controls that reorder its contents (the
   // symmetry chevrons on the row below), and a shuffle glyph in the header
   // would read as one more of those rather than as a new board. Three pips on

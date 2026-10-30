@@ -44,7 +44,7 @@ export const SPREAD = 1.5;
  * a closed neighbourhood with the cell behind it, so no sequence of numbers can
  * ever tell the two apart and a mine landing in one of the pair forces a coin
  * flip. */
-export function solidCubeBoard(n: number, mineCount: number): Board3D {
+export function solidCubeBoard(n: number): Board3D {
   if (n < 3) throw new Error("a volume board needs at least 3 cells on a side");
 
   // The sheets are laid on a grid, not in a row: eight sheets in a row is a
@@ -125,7 +125,6 @@ export function solidCubeBoard(n: number, mineCount: number): Board3D {
     mode: "cube3d",
     polygons,
     adjacency,
-    mineCount,
     radius,
     // The sheets are open — they have rims — so with front-face culling the
     // whole board would vanish the moment it was turned past ninety degrees.

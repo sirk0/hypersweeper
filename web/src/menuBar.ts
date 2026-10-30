@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { MODE_LABELS } from "./boards/catalog";
+import { MODE_LABELS } from "./modes/catalog";
 import { screens } from "./config/screens";
 import { boardGroups, pickerFor, quickPlayEntries, type Group } from "./ui/boardTree";
 

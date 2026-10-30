@@ -1,4 +1,4 @@
-import { hasMode } from "./boards/presets";
+import { hasMode } from "./modes/presets";
 
 // The App Clip (ios/App/AppClip): the same bundle, run by a second native
 // target that opens one board and nothing else. The page cannot tell it is in

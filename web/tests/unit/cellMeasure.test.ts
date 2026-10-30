@@ -65,7 +65,7 @@ describe("a cell is measured by its corners, not by its vertex list", () => {
   // that edge, and the inradius is a `min` over the edges, so the distance to
   // that very edge is what wins.
   it.each(BONDS)("every brick of a %s cube fits the same glyph", (bond) => {
-    const board = brickCubeBoard(bond, 3, 0);
+    const board = brickCubeBoard(bond, 3);
     const fits = [...board.polygons.values()].map((poly) => {
       const shape = corners(poly) as Vec3[];
       return inradiusOf(shape, mean(shape));
@@ -84,7 +84,7 @@ describe("a cell is measured by its corners, not by its vertex list", () => {
       return inradiusOf(poly, mean(poly)) / inradiusOf(shape, mean(shape));
     };
     const ratios = (bond: string): number[] =>
-      [...brickCubeBoard(bond, 3, 0).polygons.values()].map(worst);
+      [...brickCubeBoard(bond, 3).polygons.values()].map(worst);
     expect(Math.min(...ratios("stackedbond"))).toBeCloseTo(0.8, 6);
     expect(Math.min(...ratios("basketweave"))).toBeCloseTo(0.8, 6);
     expect(Math.min(...ratios("basketweave3"))).toBeCloseTo(2 / 3, 6);
@@ -93,7 +93,7 @@ describe("a cell is measured by its corners, not by its vertex list", () => {
   it("the flat three-brick basket weave has the same two tile orbits", () => {
     // Not a brick cube at all: the same defect on the plane, which is why the
     // fix lives in both renderers rather than in the cube builder.
-    const board = archimedeanBoard("basketweave3", 3, 3, 0);
+    const board = archimedeanBoard("basketweave3", 3, 3);
     const fits = [...board.polygons.values()].map((poly) => {
       const flat = poly.map(([x, y]) => [x, y, 0] as Vec3);
       const shape = corners(flat) as Vec3[];
@@ -113,7 +113,7 @@ describe("a face normal survives collinear vertices", () => {
   // zero but rounding noise, so the face was culled or randomly shaded. A
   // quarter of a basket-weave cube's bricks went that way.
   it.each(BONDS)("%s cube: three-vertex normals degenerate, Newell's do not", (bond) => {
-    const polys = [...brickCubeBoard(bond, 3, 0).polygons.values()];
+    const polys = [...brickCubeBoard(bond, 3).polygons.values()];
     let degenerate = 0;
     for (const poly of polys) {
       const [a, b, c] = [poly[0]!, poly[1]!, poly[2]!];

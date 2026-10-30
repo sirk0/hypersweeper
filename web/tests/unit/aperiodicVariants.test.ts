@@ -11,7 +11,7 @@ import {
   type Board,
   type CellId,
 } from "../../src/boards/core";
-import { buildBoard, windowFor } from "../../src/boards/presets";
+import { buildBoard, windowFor } from "../../src/modes/presets";
 import windowsData from "@data/windows.json";
 
 // The aperiodic substitution boards are a *family* per preset: `variant`
@@ -25,18 +25,18 @@ import windowsData from "@data/windows.json";
 /** The preset arguments, so these cases exercise the boards the game deals
  * rather than a size nothing plays at. Kept in step with data/presets.json. */
 const CASES: [string, (variant: number) => Board, number][] = [
-  ["penrose easy", (v) => penroseBoard(5, 6, 437.727, 81, v), 81],
-  ["penrose medium", (v) => penroseBoard(6, 17, 500.0, 256, v), 256],
-  ["penrose hard", (v) => penroseBoard(7, 48, 769.119, 480, v), 480],
-  ["kitedart easy", (v) => kiteDartBoard(4, 6, 270.53, 81, v), 81],
-  ["kitedart medium", (v) => kiteDartBoard(6, 29, 500.0, 256, v), 256],
-  ["kitedart hard", (v) => kiteDartBoard(6, 73, 769.119, 450, v), 450],
-  ["ammannbeenker easy", (v) => ammannBeenkerBoard(3, 9, 35.891, 81, v), 81],
-  ["ammannbeenker medium", (v) => ammannBeenkerBoard(3, 28, 25.905, 280, v), 280],
-  ["ammannbeenker hard", (v) => ammannBeenkerBoard(4, 82, 25.319, 480, v), 480],
-  ["spectre easy", (v) => spectreBoard(3, 11, 81, 14.361, v), 81],
-  ["spectre medium", (v) => spectreBoard(4, 37, 256, 9.437, v), 256],
-  ["spectre hard", (v) => spectreBoard(4, 89, 480, 8.512, v), 480],
+  ["penrose easy", (v) => penroseBoard(5, 437.727, 81, v), 81],
+  ["penrose medium", (v) => penroseBoard(6, 500.0, 256, v), 256],
+  ["penrose hard", (v) => penroseBoard(7, 769.119, 480, v), 480],
+  ["kitedart easy", (v) => kiteDartBoard(4, 270.53, 81, v), 81],
+  ["kitedart medium", (v) => kiteDartBoard(6, 500.0, 256, v), 256],
+  ["kitedart hard", (v) => kiteDartBoard(6, 769.119, 450, v), 450],
+  ["ammannbeenker easy", (v) => ammannBeenkerBoard(3, 35.891, 81, v), 81],
+  ["ammannbeenker medium", (v) => ammannBeenkerBoard(3, 25.905, 280, v), 280],
+  ["ammannbeenker hard", (v) => ammannBeenkerBoard(4, 25.319, 480, v), 480],
+  ["spectre easy", (v) => spectreBoard(3, 81, 14.361, v), 81],
+  ["spectre medium", (v) => spectreBoard(4, 256, 9.437, v), 256],
+  ["spectre hard", (v) => spectreBoard(4, 480, 8.512, v), 480],
 ];
 
 const cells = (board: Board): string => [...board.polygons.keys()].sort().join(" ");
@@ -88,9 +88,9 @@ describe("aperiodic patch variants", () => {
     // The default argument and an explicit 0 are the same board, so a caller
     // that knows nothing about variants (the exporters, the pygame menu icons)
     // keeps the classic patch.
-    expect(cells(penroseBoard(5, 6, 437.727, 81))).toBe(cells(penroseBoard(5, 6, 437.727, 81, 0)));
-    expect(cells(spectreBoard(3, 11, 81, 14.361))).toBe(cells(spectreBoard(3, 11, 81, 14.361, 0)));
-    expect(cells(kiteDartBoard(4, 6, 270.53, 81))).toBe(cells(kiteDartBoard(4, 6, 270.53, 81, 0)));
+    expect(cells(penroseBoard(5, 437.727, 81))).toBe(cells(penroseBoard(5, 437.727, 81, 0)));
+    expect(cells(spectreBoard(3, 81, 14.361))).toBe(cells(spectreBoard(3, 81, 14.361, 0)));
+    expect(cells(kiteDartBoard(4, 270.53, 81))).toBe(cells(kiteDartBoard(4, 270.53, 81, 0)));
   });
 
   it("takes any integer, wrapping into the pool of windows", () => {
@@ -99,7 +99,7 @@ describe("aperiodic patch variants", () => {
     // negative one must not fall off the end of the pool either (JS `%` keeps
     // the sign; Python's does not).
     for (const variant of [2 ** 32 - 1, 2 ** 31, -7]) {
-      const board = penroseBoard(5, 6, 437.727, 81, variant);
+      const board = penroseBoard(5, 437.727, 81, variant);
       expect(board.polygons.size).toBe(81);
       expect(eulerCharacteristic(board)).toBe(1);
     }

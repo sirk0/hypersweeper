@@ -759,7 +759,7 @@ test.describe("shareable board links", () => {
     await page.locator('.menu-entry[data-submenu="dual"]').click();
     // A Laves tiling that is actually playable: the triakis boards are all
     // look-alike pairs, so their rows open the explanation rather than a game
-    // (src/boards/fairness.ts).
+    // (src/modes/fairness.ts).
     await page.locator('.menu-entry[data-mode="kleintetrakis"]').click();
 
     // Every ordinary game is dealt from a seed, and the link carries it — so

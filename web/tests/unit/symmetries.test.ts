@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HYPERBOLIC_MODES, SOLID_MODES, surfaceOf } from "../../src/boards/catalog";
+import { HYPERBOLIC_MODES, SOLID_MODES, surfaceOf } from "../../src/modes/catalog";
 import {
   isAutomorphism,
   isBoard3D,
@@ -10,7 +10,7 @@ import {
   type CellId,
   type SymmetryId,
 } from "../../src/boards/core";
-import { buildBoard, MODES } from "../../src/boards/presets";
+import { buildBoard, MODES } from "../../src/modes/presets";
 import { squareBoard } from "../../src/boards/tilings";
 import { screens } from "../../src/config/screens";
 import { symmetryMoves } from "../../src/session";
@@ -426,7 +426,7 @@ describe("board symmetries", () => {
     expect(quarter.cycle.get("0,0")).toBeDefined();
     expect(quarter.cycle.get(quarter.cycle.get("0,0")!)).not.toBe("0,0");
 
-    const wide = squareBoard(16, 30, 99);
+    const wide = squareBoard(16, 30);
     const half = wide.symmetries.find((s) => s.id === "turn")!;
     expect(half).toBeDefined();
     expect(half.involution).toBe(true);
