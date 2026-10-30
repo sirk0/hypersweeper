@@ -52,8 +52,7 @@ async function seedNoAchievementsLeft(page: Page): Promise<void> {
  * the board cannot use them — it would not know what was under it. */
 async function winFixtureBoard(page: Page, dealt = false): Promise<void> {
   await page.evaluate(
-    (dealtAtRandom) =>
-      window.__ms?.startBoard("square", "easy", { mines: ["0,0"], dealtAtRandom }),
+    (dealtAtRandom) => window.__ms?.startBoard("square", "easy", { mines: ["0,0"], dealtAtRandom }),
     dealt,
   );
   const xy = await page.evaluate(() => window.__ms?.cellScreenXY("8,8"));
@@ -359,7 +358,7 @@ test.describe("record window", () => {
     await expect(dialog(page)).toHaveCount(0); // still waiting
 
     await page.locator('.hud-btn[data-slot="back"]').click();
-    await expect(page.locator('.menu-sidebar')).toBeVisible();
+    await expect(page.locator(".menu-sidebar")).toBeVisible();
     await page.waitForTimeout(1500); // past the delay the window would have used
     await expect(dialog(page)).toHaveCount(0);
     // The time was still filed — only the announcement was dropped.
@@ -411,7 +410,6 @@ test.describe("best times page", () => {
       "No times yet",
     );
   });
-
 });
 
 test.describe("best times page, fresh install", () => {

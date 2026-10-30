@@ -1,12 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  APP_ICONS,
-  DEFAULT_APP_ICON,
-  appIconUrls,
-  resolveAppIcon,
-} from "../../src/appIcon";
+import { APP_ICONS, DEFAULT_APP_ICON, appIconUrls, resolveAppIcon } from "../../src/appIcon";
 
 // The app icon list is stated once (src/appIcon.ts) and three other places have
 // to agree with it, none of which the type checker can see: the Icon Composer

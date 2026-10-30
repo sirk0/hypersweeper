@@ -86,9 +86,9 @@ const win = (mode: string, over: Partial<Win> = {}): Win => ({
 /** Every board the random pools reach — the whole catalogue, as the menu
  * sees it. */
 function everyBuiltMode(): string[] {
-  return [
-    ...new Set([...flatMenuModes(), ...hyperbolicMenuModes(), ...threeDMenuModes()]),
-  ].filter(hasMode);
+  return [...new Set([...flatMenuModes(), ...hyperbolicMenuModes(), ...threeDMenuModes()])].filter(
+    hasMode,
+  );
 }
 
 /** A progress record that has won each of `modes` once. */
@@ -160,8 +160,10 @@ describe("the declared shape list", () => {
     ] as const) {
       for (const difficulty of ["easy", "medium", "hard"]) {
         const board = buildBoard(mode, difficulty);
-        expect(new Set(cellSides(board.polygons, board.cornerMask).values()), `${mode} ${difficulty}`)
-          .toEqual(new Set(typeof sides === "number" ? [sides] : sides));
+        expect(
+          new Set(cellSides(board.polygons, board.cornerMask).values()),
+          `${mode} ${difficulty}`,
+        ).toEqual(new Set(typeof sides === "number" ? [sides] : sides));
       }
     }
   });
@@ -301,7 +303,9 @@ describe("group membership", () => {
   // partition the whole of it. Between them every board is counted at most
   // twice, once each way, and never twice the same way.
   const solids = new Set(SOLID_MODES);
-  const unawarded = new Set(SURFACE_SPECS.flatMap((s) => familyRows("other", s.key).map((r) => r.mode)));
+  const unawarded = new Set(
+    SURFACE_SPECS.flatMap((s) => familyRows("other", s.key).map((r) => r.mode)),
+  );
   const tiled = playable.filter((mode) => !solids.has(mode) && !unawarded.has(mode));
 
   it("leaves the Other family's boards out of every tiling family", () => {
@@ -338,14 +342,22 @@ describe("group membership", () => {
     const finished = measureOf(everything, havingWon(playable));
     expect(finished.have).toBe(finished.need);
     for (const mode of EXCLUDED_MODES) {
-      for (const id of [...allIds("tiling-all:"), ...allIds("surface-all:"), ...allIds("solid-all:")]) {
+      for (const id of [
+        ...allIds("tiling-all:"),
+        ...allIds("surface-all:"),
+        ...allIds("solid-all:"),
+      ]) {
         expect(membersOf(id), id).not.toContain(mode);
       }
     }
   });
 
   it("asks a group for exactly its own boards, and never for none", () => {
-    for (const id of [...allIds("tiling-all:"), ...allIds("surface-all:"), ...allIds("solid-all:")]) {
+    for (const id of [
+      ...allIds("tiling-all:"),
+      ...allIds("surface-all:"),
+      ...allIds("solid-all:"),
+    ]) {
       const members = membersOf(id);
       expect(members.length, id).toBeGreaterThan(0);
       expect(measureOf(ACHIEVEMENTS_BY_ID.get(id)!, emptyProgress()).need).toBe(members.length);
@@ -356,7 +368,11 @@ describe("group membership", () => {
     const progress = havingWon(playable);
     const ids = new Set(earned(progress));
     expect(ids.has("all-boards")).toBe(true);
-    for (const id of [...allIds("tiling-all:"), ...allIds("surface-all:"), ...allIds("solid-all:")]) {
+    for (const id of [
+      ...allIds("tiling-all:"),
+      ...allIds("surface-all:"),
+      ...allIds("solid-all:"),
+    ]) {
       expect(ids.has(id), id).toBe(true);
     }
   });

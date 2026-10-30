@@ -77,7 +77,9 @@ export const ARCH_TILING_SPECS: TilingSpec[] = ARCH_TILINGS.map((t) => ({
   chiral: wrapTemplate(t.key).mirror === null,
   reversesY: wrapTemplate(t.key).flips.length > 0,
   modeOverrides: {},
-  ...(ARCH_FAMILY_SURFACES[t.family] !== undefined ? { surfaces: ARCH_FAMILY_SURFACES[t.family] } : {}),
+  ...(ARCH_FAMILY_SURFACES[t.family] !== undefined
+    ? { surfaces: ARCH_FAMILY_SURFACES[t.family] }
+    : {}),
   ...(TILING_NOTATIONS[t.key] !== undefined ? { notation: TILING_NOTATIONS[t.key] } : {}),
 }));
 

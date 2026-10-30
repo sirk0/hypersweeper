@@ -55,7 +55,9 @@ const TAXONOMIES: readonly (readonly [string, ReadonlySet<string>])[] = [
   ["family", new Set(Object.values(modeInfo).map((board) => board.family))],
 ];
 
-const files = readdirSync(DIR).filter((name) => name.endsWith(".json")).sort();
+const files = readdirSync(DIR)
+  .filter((name) => name.endsWith(".json"))
+  .sort();
 
 const dashboards = files.map((file) => ({
   file,
@@ -73,7 +75,8 @@ function queriesOf(doc: Dashboard): { where: string; sql: string }[] {
   const found: { where: string; sql: string }[] = [];
   for (const panel of flatten(doc.panels)) {
     for (const target of panel.targets ?? []) {
-      if (target.query) found.push({ where: `${panel.title} [${target.refId}]`, sql: target.query });
+      if (target.query)
+        found.push({ where: `${panel.title} [${target.refId}]`, sql: target.query });
     }
   }
   return found;
@@ -106,7 +109,11 @@ it("opens on one window, short enough that retention covers it", () => {
 
 describe("the raw-events dashboard reads the whole schema", () => {
   const raw = dashboards.find((d) => d.file === "hypersweeper-events.json");
-  const sql = raw ? queriesOf(raw.doc).map((q) => q.sql).join("\n") : "";
+  const sql = raw
+    ? queriesOf(raw.doc)
+        .map((q) => q.sql)
+        .join("\n")
+    : "";
 
   it("exists", () => {
     expect(raw, "grafana/hypersweeper-events.json").toBeDefined();

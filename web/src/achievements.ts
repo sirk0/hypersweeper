@@ -195,13 +195,15 @@ const UNAWARDED_FAMILIES = new Set(["other"]);
  * already reports in the info window. The menu's own promotion of those three
  * rows to the top of a picker is a menu decision, not a fact about the tiling. */
 function tilingGroups(): Group[] {
-  return pickerFamilies("flat").filter((family) => !UNAWARDED_FAMILIES.has(family)).map((family) => {
-    const modes: string[] = [];
-    for (const surface of SURFACE_SPECS) {
-      for (const row of familyRows(family, surface.key)) modes.push(row.mode);
-    }
-    return { key: family, label: FAMILY_LABELS[family] ?? family, modes: playable(modes) };
-  });
+  return pickerFamilies("flat")
+    .filter((family) => !UNAWARDED_FAMILIES.has(family))
+    .map((family) => {
+      const modes: string[] = [];
+      for (const surface of SURFACE_SPECS) {
+        for (const row of familyRows(family, surface.key)) modes.push(row.mode);
+      }
+      return { key: family, label: FAMILY_LABELS[family] ?? family, modes: playable(modes) };
+    });
 }
 
 function surfaceGroups(): Group[] {
@@ -243,10 +245,12 @@ function done(modes: string[], won: ReadonlySet<string>): number {
 }
 
 /** "Win all of these" — a count, so the page can show how far along it is. */
-const allOf = (modes: string[]) => (_p: Progress, won: ReadonlySet<string>): Measure => ({
-  have: done(modes, won),
-  need: modes.length,
-});
+const allOf =
+  (modes: string[]) =>
+  (_p: Progress, won: ReadonlySet<string>): Measure => ({
+    have: done(modes, won),
+    need: modes.length,
+  });
 
 const yesNo = (ok: boolean): Measure => ({ have: ok ? 1 : 0, need: 1 });
 
@@ -587,9 +591,8 @@ export function parseStored(rec: Record<string, unknown>): Stored {
   return {
     progress: {
       wins: parseWins(rec["wins"]),
-      flagless: typeof count === "number" && Number.isFinite(count) && count > 0
-        ? Math.floor(count)
-        : 0,
+      flagless:
+        typeof count === "number" && Number.isFinite(count) && count > 0 ? Math.floor(count) : 0,
       shapes: parseNumbers(rec["shapes"]),
     },
     unlocked: parseCounts(rec["unlocked"]),
@@ -603,7 +606,12 @@ function write(next: Stored): void {
   try {
     store.setItem(
       KEY,
-      JSON.stringify({ ...rec, version: SCHEMA_VERSION, ...next.progress, unlocked: next.unlocked }),
+      JSON.stringify({
+        ...rec,
+        version: SCHEMA_VERSION,
+        ...next.progress,
+        unlocked: next.unlocked,
+      }),
     );
   } catch {
     /* quota exceeded, or storage disabled mid-session */

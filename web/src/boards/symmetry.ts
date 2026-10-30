@@ -371,10 +371,7 @@ class PointIndex {
 
 /** The closest two cells that share a vertex come, which sets how far a moved
  * point may miss its target and still be counted as landing on it. */
-function closestGap(
-  centres: Map<CellId, Point>,
-  adjacency: Map<CellId, CellId[]>,
-): number {
+function closestGap(centres: Map<CellId, Point>, adjacency: Map<CellId, CellId[]>): number {
   let gap = Infinity;
   for (const [cell, c] of centres) {
     for (const other of adjacency.get(cell) ?? []) {
@@ -571,7 +568,7 @@ function compactRotations(symmetries: BoardSymmetry[]): BoardSymmetry[] {
 /** How far a mirror axis is from `want`, mod π (an axis and its opposite are
  * the same line). */
 function axisGap(angle: number, want: number): number {
-  const d = ((angle - want) % Math.PI + Math.PI) % Math.PI;
+  const d = (((angle - want) % Math.PI) + Math.PI) % Math.PI;
   return d > Math.PI / 2 ? d - Math.PI : d;
 }
 
@@ -608,9 +605,15 @@ function axisRotation(axis: Vec3, angle: number): Mat3 {
   const s = Math.sin(angle);
   const t = 1 - c;
   return [
-    t * x * x + c, t * x * y - s * z, t * x * z + s * y,
-    t * x * y + s * z, t * y * y + c, t * y * z - s * x,
-    t * x * z - s * y, t * y * z + s * x, t * z * z + c,
+    t * x * x + c,
+    t * x * y - s * z,
+    t * x * z + s * y,
+    t * x * y + s * z,
+    t * y * y + c,
+    t * y * z - s * x,
+    t * x * z - s * y,
+    t * y * z + s * x,
+    t * z * z + c,
   ];
 }
 
@@ -618,9 +621,15 @@ function axisRotation(axis: Vec3, angle: number): Mat3 {
 function planeReflection(n: Vec3): Mat3 {
   const [x, y, z] = n;
   return [
-    1 - 2 * x * x, -2 * x * y, -2 * x * z,
-    -2 * x * y, 1 - 2 * y * y, -2 * y * z,
-    -2 * x * z, -2 * y * z, 1 - 2 * z * z,
+    1 - 2 * x * x,
+    -2 * x * y,
+    -2 * x * z,
+    -2 * x * y,
+    1 - 2 * y * y,
+    -2 * y * z,
+    -2 * x * z,
+    -2 * y * z,
+    1 - 2 * z * z,
   ];
 }
 
@@ -686,11 +695,7 @@ function dot(a: Vec3, b: Vec3): number {
 }
 
 function cross(a: Vec3, b: Vec3): Vec3 {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0],
-  ];
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 }
 
 /** A direction as a stable key, with the two ends of an axis reading the same:
@@ -757,7 +762,8 @@ export function solidSymmetries(
   for (const [cell, polygon] of polygons) {
     centred.set(cell, atCentre(centres.get(cell)!));
     shapes.set(cell, polygon.map(atCentre));
-    for (const p of shapes.get(cell)!) extent = Math.max(extent, Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2]));
+    for (const p of shapes.get(cell)!)
+      extent = Math.max(extent, Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2]));
   }
   if (extent === 0) return [];
   // A solid's cells sit on a *shell*, not through a volume, so their density is
@@ -853,7 +859,8 @@ export function solidSymmetries(
   }
   // a mirror's normal may also lie along a two-fold axis (a cube's three face
   // planes are exactly those), so every axis direction is a candidate too
-  for (const [key, v] of axisDirections) if (!normalDirections.has(key)) normalDirections.set(key, v);
+  for (const [key, v] of axisDirections)
+    if (!normalDirections.has(key)) normalDirections.set(key, v);
 
   const turns = (axis: Vec3, order: number) => axisRotation(axis, (2 * Math.PI) / order);
   /** The largest order of rotation this axis carries, or 1 for none. A rotation
@@ -882,7 +889,8 @@ export function solidSymmetries(
     if (fits(planeReflection(normal))) normals.push(normal);
   }
   for (let i = 0; i < normals.length; i++) {
-    for (let j = i + 1; j < normals.length; j++) offer(axisDirections, cross(normals[i]!, normals[j]!));
+    for (let j = i + 1; j < normals.length; j++)
+      offer(axisDirections, cross(normals[i]!, normals[j]!));
   }
   const found: { axis: Vec3; order: number }[] = [];
   for (const key of [...axisDirections.keys()].sort()) {

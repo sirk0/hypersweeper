@@ -192,9 +192,24 @@ export class ParticleField extends Points {
   /** A mine going off: a hot flash, sparks thrown wide, and a little smoke. */
   blast(at: Vector3, unit: number, up: Vector3, right: Vector3, out: Vector3): void {
     this.spawn({
-      x: at.x, y: at.y, z: at.z, vx: 0, vy: 0, vz: 0, gravity: 0, drag: 1,
-      size: unit * 7, grow: 1.6, r: 1, g: 0.86, b: 0.55,
-      life: 360, age: 0, spin: 0, spinRate: 0, shape: 2,
+      x: at.x,
+      y: at.y,
+      z: at.z,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      gravity: 0,
+      drag: 1,
+      size: unit * 7,
+      grow: 1.6,
+      r: 1,
+      g: 0.86,
+      b: 0.55,
+      life: 360,
+      age: 0,
+      spin: 0,
+      spinRate: 0,
+      shape: 2,
     });
     for (let k = 0; k < 46; k++) {
       const a = rand(0, Math.PI * 2);

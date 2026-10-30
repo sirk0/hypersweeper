@@ -1,5 +1,12 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from "@capacitor/core";
-import { ACHIEVEMENTS, gameCenterId, loadProgress, measureOf, wonModes, type Progress } from "./achievements";
+import {
+  ACHIEVEMENTS,
+  gameCenterId,
+  loadProgress,
+  measureOf,
+  wonModes,
+  type Progress,
+} from "./achievements";
 
 // Game Center, where the App Store builds show achievements.
 //

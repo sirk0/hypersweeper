@@ -38,7 +38,10 @@ function withStorage(storage: Storage): Storage {
 }
 
 /** A store already holding `boards`, as a build with records would leave it. */
-function seeded(boards: Record<string, ScoreEntry[]>, extra: Record<string, unknown> = {}): Storage {
+function seeded(
+  boards: Record<string, ScoreEntry[]>,
+  extra: Record<string, unknown> = {},
+): Storage {
   return withStorage(
     fakeStorage({ [KEY]: JSON.stringify({ version: SCHEMA_VERSION, boards, ...extra }) }),
   );
@@ -77,7 +80,9 @@ describe("recording times", () => {
   });
 
   it("writes nothing when the time does not place", () => {
-    const store = seeded({ [boardKey("square", "easy")]: [10, 20, 30].map((s) => ({ ms: ms(s), at: 1 })) });
+    const store = seeded({
+      [boardKey("square", "easy")]: [10, 20, 30].map((s) => ({ ms: ms(s), at: 1 })),
+    });
     const before = store.getItem(KEY);
     expect(recordTime("square", "easy", ms(40))).toBeNull();
     expect(store.getItem(KEY)).toBe(before);

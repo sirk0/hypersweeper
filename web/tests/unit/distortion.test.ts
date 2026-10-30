@@ -14,9 +14,11 @@ import { hasMode } from "../../src/modes/presets";
 // its contents beyond a couple of anchors -- a re-measure moves the list, and
 // pinning all of it would only make that look like a regression.
 
-const DISTORTED = (raw as {
-  distorted: Record<string, Record<string, { shapeP90: number; crosses: boolean }>>;
-}).distorted;
+const DISTORTED = (
+  raw as {
+    distorted: Record<string, Record<string, { shapeP90: number; crosses: boolean }>>;
+  }
+).distorted;
 
 describe("the distorted-board list", () => {
   it("names only real 3D modes and real difficulties", () => {

@@ -19,9 +19,11 @@ import { MODES, hasMode } from "../../src/modes/presets";
 // moves whenever the calibration is re-run, and pinning its contents would only
 // make a re-run look like a regression.
 
-const UNFAIR = (raw as {
-  unfair: Record<string, Record<string, { level: string; winRate: number }>>;
-}).unfair;
+const UNFAIR = (
+  raw as {
+    unfair: Record<string, Record<string, { level: string; winRate: number }>>;
+  }
+).unfair;
 
 describe("the graded-board list", () => {
   it("names only real modes and only known grades", () => {

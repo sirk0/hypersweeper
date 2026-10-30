@@ -212,9 +212,7 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
   // picked on one patch and applied to another, and `startBoard` rejects the
   // ids it is handed ("mine position not on the board"). Every other mode
   // ignores the seed, so this only pins the one that does not.
-  const query = shot.mode
-    ? `?mode=${shot.mode}&difficulty=${difficulty}&seed=0`
-    : "";
+  const query = shot.mode ? `?mode=${shot.mode}&difficulty=${difficulty}&seed=0` : "";
   await page.goto(BASE + query);
   await page.waitForSelector("body[data-ready]");
   await settle(page);
@@ -246,11 +244,10 @@ async function main(): Promise<void> {
   const build = spawnSync("npx", ["vite", "build"], { cwd: WEB, stdio: "inherit" });
   if (build.status !== 0) throw new Error("vite build failed");
 
-  const preview = spawn(
-    "npx",
-    ["vite", "preview", "--port", String(PORT), "--strictPort"],
-    { cwd: WEB, stdio: "ignore" },
-  );
+  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
+    cwd: WEB,
+    stdio: "ignore",
+  });
   try {
     await waitForServer(BASE);
     const browser = await chromium.launch({

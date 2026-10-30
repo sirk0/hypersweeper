@@ -206,7 +206,8 @@ describe("the closed surfaces", () => {
         const board = buildBoard(SURFACE_MODES[surface]!, difficulty) as Board;
         expect(board.adjacency.size, `${surface} ${difficulty}`).toBe(counts[i]);
         let faces = 0;
-        for (const cell of board.adjacency.keys()) if (board.quotient!.get(cell)!.length === p) faces++;
+        for (const cell of board.adjacency.keys())
+          if (board.quotient!.get(cell)!.length === p) faces++;
         expect(faces, `${surface} ${difficulty}`).toBe(SURFACES[surface]![1]);
       });
     }
@@ -218,7 +219,9 @@ describe("the closed surfaces", () => {
       expect(cellCount(surface, "none")).toBe(faces);
       expect(cellCount(surface, "zip")).toBe(faces + vertices);
       expect(cellCount(surface, "expand")).toBe(faces + vertices + edges);
-      expect(hurwitzCells(surface, TILING[surface]!).size).toBe(cellCount(surface, TILING[surface]!));
+      expect(hurwitzCells(surface, TILING[surface]!).size).toBe(
+        cellCount(surface, TILING[surface]!),
+      );
     }
   });
 
@@ -260,12 +263,16 @@ describe("the closed surfaces", () => {
       const op = TILING[surface]!;
       const board = hurwitzBoard(surface, op, 0);
       for (const [cell, neighbours] of board.adjacency) {
-        expect(neighbours.length).toBe(board.quotient!.get(cell)!.length * (valence(surface, op) - 2));
+        expect(neighbours.length).toBe(
+          board.quotient!.get(cell)!.length * (valence(surface, op) - 2),
+        );
       }
       if (surface === "bolza") continue; // six octagons, each bordering the other five
       const { p, q } = CLOSED_SURFACES[surface]!;
       const plain = hurwitzBoard(surface, "none", 0);
-      expect(new Set([...plain.adjacency.values()].map((n) => n.length))).toEqual(new Set([p * (q - 2)]));
+      expect(new Set([...plain.adjacency.values()].map((n) => n.length))).toEqual(
+        new Set([p * (q - 2)]),
+      );
     }
   });
 
@@ -299,7 +306,9 @@ describe("the closed surfaces", () => {
       const points = poly.filter((_, i) => board.cornerMask!.get(face)![i]).map(key);
       if (points.some((p) => at.get(p)!.size !== 3)) continue;
       const cell = board.faces!.get(face)!;
-      const around = new Set(points.flatMap((p) => [...at.get(p)!].map((g) => board.faces!.get(g)!)));
+      const around = new Set(
+        points.flatMap((p) => [...at.get(p)!].map((g) => board.faces!.get(g)!)),
+      );
       around.delete(cell);
       expect(around).toEqual(new Set(board.adjacency.get(cell)));
       checked++;
@@ -414,16 +423,22 @@ describe("the closed surfaces", () => {
     // `gcDisc` is GC(3,0) of {7,3} with no surface behind it -- what the card
     // shows instead of building the board -- so its cells are the board's shapes
     const card = gcDisc(7, 3, 3, 30, 1);
-    const sides = [...card.polygons.keys()].map((f) => card.cornerMask!.get(f)!.filter(Boolean).length);
+    const sides = [...card.polygons.keys()].map(
+      (f) => card.cornerMask!.get(f)!.filter(Boolean).length,
+    );
     expect(new Set(sides)).toEqual(new Set([6, 7]));
     expect(card.polygons.size).toBeGreaterThan(100);
     // and the Bolza surface's card, octagons ringed by hexagons; a square
     // subdivision of {5,4} draws pentagons among squares
     const bolza = gcDisc(8, 3, 3, 24, 1);
-    const octagons = [...bolza.polygons.keys()].map((f) => bolza.cornerMask!.get(f)!.filter(Boolean).length);
+    const octagons = [...bolza.polygons.keys()].map(
+      (f) => bolza.cornerMask!.get(f)!.filter(Boolean).length,
+    );
     expect(new Set(octagons)).toEqual(new Set([6, 8]));
     const square = gcDisc(5, 4, 3, 20, 1);
-    const pentagons = [...square.polygons.keys()].map((f) => square.cornerMask!.get(f)!.filter(Boolean).length);
+    const pentagons = [...square.polygons.keys()].map(
+      (f) => square.cornerMask!.get(f)!.filter(Boolean).length,
+    );
     expect(new Set(pentagons)).toEqual(new Set([4, 5]));
   });
 

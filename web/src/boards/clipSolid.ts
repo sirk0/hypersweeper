@@ -208,10 +208,7 @@ function planeThrough(a: Vec3, b: Vec3, c: Vec3, inside: Vec3): ClipPlane | null
 
 /** Cut `tris` down to the part of them outside `solid`, exactly. Passes the
  * geometry through untouched when there is nothing to subtract. */
-export function subtractSolid(
-  tris: readonly Tri[],
-  solid: readonly ClipPiece[] | null,
-): Tri[] {
+export function subtractSolid(tris: readonly Tri[], solid: readonly ClipPiece[] | null): Tri[] {
   if (!solid || !solid.length) return tris as Tri[];
   const out: Tri[] = [];
   for (const tri of tris) {
@@ -347,9 +344,12 @@ export function crossingSegments(a: readonly Tri[], b: readonly Tri[]): [Vec3, V
     for (let j = 0; j < b.length; j++) {
       const bb = boxes[j]!;
       if (
-        box.max[0] < bb.min[0] || box.min[0] > bb.max[0] ||
-        box.max[1] < bb.min[1] || box.min[1] > bb.max[1] ||
-        box.max[2] < bb.min[2] || box.min[2] > bb.max[2]
+        box.max[0] < bb.min[0] ||
+        box.min[0] > bb.max[0] ||
+        box.max[1] < bb.min[1] ||
+        box.min[1] > bb.max[1] ||
+        box.max[2] < bb.min[2] ||
+        box.min[2] > bb.max[2]
       ) {
         continue;
       }
@@ -501,7 +501,12 @@ export function crossingPolylines(
 ): Vec3[][] {
   const scale = Math.max(
     1,
-    ...segments.flatMap(([a, b]) => [Math.abs(a[0]), Math.abs(a[1]), Math.abs(a[2]), Math.abs(b[0])]),
+    ...segments.flatMap(([a, b]) => [
+      Math.abs(a[0]),
+      Math.abs(a[1]),
+      Math.abs(a[2]),
+      Math.abs(b[0]),
+    ]),
   );
   const eps = 1e-7 * scale;
   const same = (p: Vec3, q: Vec3) =>
@@ -701,9 +706,12 @@ export function solidDepth(solid: readonly ClipPiece[], p: Vec3): number {
   for (let i = firstPiece(solid, p[1]); i < solid.length && solid[i]!.min[1] <= p[1]; i++) {
     const piece = solid[i]!;
     if (
-      p[0] < piece.min[0] || p[0] > piece.max[0] ||
-      p[1] < piece.min[1] || p[1] > piece.max[1] ||
-      p[2] < piece.min[2] || p[2] > piece.max[2]
+      p[0] < piece.min[0] ||
+      p[0] > piece.max[0] ||
+      p[1] < piece.min[1] ||
+      p[1] > piece.max[1] ||
+      p[2] < piece.min[2] ||
+      p[2] > piece.max[2]
     ) {
       continue;
     }
@@ -813,11 +821,7 @@ function sliceTriangle(t: Tri, y: number): [Vec3, Vec3] | null {
 function normalOf(a: Vec3, b: Vec3, c: Vec3): Vec3 | null {
   const u: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
   const v: Vec3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-  const n: Vec3 = [
-    u[1] * v[2] - u[2] * v[1],
-    u[2] * v[0] - u[0] * v[2],
-    u[0] * v[1] - u[1] * v[0],
-  ];
+  const n: Vec3 = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
   const len = Math.hypot(n[0], n[1], n[2]);
   if (!(len > 0)) return null;
   return [n[0] / len, n[1] / len, n[2] / len];

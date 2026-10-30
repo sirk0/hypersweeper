@@ -43,11 +43,7 @@ export function anchoredPan(
  * half-extent of `halfBoard` world units and a view half-extent of `halfView`,
  * there is exactly their difference of slack (and none at all — the board stays
  * centred — while the view is the larger of the two). */
-export function clampPan(
-  pan: number,
-  halfBoard: number,
-  halfView: number,
-): number {
+export function clampPan(pan: number, halfBoard: number, halfView: number): number {
   const limit = Math.max(0, halfBoard - halfView);
   return Math.min(limit, Math.max(-limit, pan));
 }

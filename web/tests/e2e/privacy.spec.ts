@@ -50,7 +50,9 @@ test.describe("privacy policy", () => {
     expect(response?.headers()["content-type"]).toContain("text/html");
     expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
     await expectPolicy(page);
-    await expect(page.locator("a[href='https://github.com/sirk0/hypersweeper/issues']")).toBeVisible();
+    await expect(
+      page.locator("a[href='https://github.com/sirk0/hypersweeper/issues']"),
+    ).toBeVisible();
     // The page's own fonts are the site's, loaded from this origin.
     await page.evaluate(() => document.fonts.ready);
     expect(await page.evaluate(() => document.fonts.check('16px "Space Grotesk"'))).toBe(true);

@@ -48,9 +48,7 @@ test.describe("a tap that wanders within the threshold", () => {
     await page.setViewportSize({ width: 900, height: 700 });
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    await page.evaluate(() =>
-      window.__ms!.startBoard("square", "medium", { mines: ["4,4"] }),
-    );
+    await page.evaluate(() => window.__ms!.startBoard("square", "medium", { mines: ["4,4"] }));
 
     // A point 3px inside "4,5", and one 3px past the edge it shares with its
     // neighbour: 6px apart, under the 8px threshold, but different cells.

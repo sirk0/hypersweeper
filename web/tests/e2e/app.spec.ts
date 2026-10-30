@@ -13,9 +13,7 @@ test.describe("M1 app", () => {
     // pane each have their own `.menu-title`, and the phone header's (hidden
     // at this width) is still in the DOM — only the app title, visible, is
     // meant to be pinned here.
-    await expect(
-      page.locator(".menu-title:visible", { hasText: "Hypersweeper" }),
-    ).toBeVisible();
+    await expect(page.locator(".menu-title:visible", { hasText: "Hypersweeper" })).toBeVisible();
     await expect(page.locator(".hud")).toBeHidden();
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("menu");
@@ -158,9 +156,7 @@ test.describe("M1 app", () => {
     expect(state?.cellCount).toBeLessThan(105);
   });
 
-  test("a board that cannot be won opens an explanation, not a game", async ({
-    page,
-  }) => {
+  test("a board that cannot be won opens an explanation, not a game", async ({ page }) => {
     // The triakis tilings put every cell in a look-alike pair, so no number can
     // ever separate one: measured, they are won under one time in a hundred at
     // every difficulty. Their rows stay in the menu -- the catalogue should not
@@ -200,9 +196,7 @@ test.describe("M1 legacy paths", () => {
   // The app was deployed under /next/ while the pygame build held the site
   // root; that page (web/public/next/index.html) is now a redirect, and a
   // shared link from back then must still open its board.
-  test("the legacy /next/ path redirects to the app, parameters and all", async ({
-    page,
-  }) => {
+  test("the legacy /next/ path redirects to the app, parameters and all", async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 700 });
     await page.goto("/next/?mode=hex&difficulty=easy&seed=7");
     await expect(page.locator("body[data-ready]")).toBeVisible();

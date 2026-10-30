@@ -34,7 +34,10 @@ async function reach(page: Page, x: number, y: number): Promise<number> {
 
 /** The cell drawn nearest the point a fraction `f` of the way from the
  * board's centre to its right-hand rim. */
-async function cellOut(page: Page, f: number): Promise<{ cell: string; centre: { x: number; y: number } }> {
+async function cellOut(
+  page: Page,
+  f: number,
+): Promise<{ cell: string; centre: { x: number; y: number } }> {
   return page.evaluate((frac) => {
     const ms = window.__ms!;
     const cells = ms.cells();
@@ -45,7 +48,8 @@ async function cellOut(page: Page, f: number): Promise<{ cell: string; centre: {
     let best = 0;
     pts.forEach((p, i) => {
       const q = pts[best]!;
-      if (Math.hypot(p.x - cx - frac * rim, p.y - cy) < Math.hypot(q.x - cx - frac * rim, q.y - cy)) best = i;
+      if (Math.hypot(p.x - cx - frac * rim, p.y - cy) < Math.hypot(q.x - cx - frac * rim, q.y - cy))
+        best = i;
     });
     return { cell: cells[best]!, centre: { x: cx, y: cy } };
   }, f);
@@ -78,7 +82,8 @@ async function drag(
           }),
         );
       send("pointerdown", a.x, a.y, 1);
-      for (let i = 1; i <= n; i++) send("pointermove", a.x + ((b.x - a.x) * i) / n, a.y + ((b.y - a.y) * i) / n, 1);
+      for (let i = 1; i <= n; i++)
+        send("pointermove", a.x + ((b.x - a.x) * i) / n, a.y + ((b.y - a.y) * i) / n, 1);
       send("pointerup", b.x, b.y, 0);
     },
     { a: from, b: to, n: steps },
@@ -155,7 +160,12 @@ test.describe("hyperbolic panning", () => {
     // Throw the board left, further than it can go (each stroke carries it
     // about 2.8 of hyperbolic distance; the hold stops it at about 3.4).
     for (let k = 0; k < 4; k++) {
-      await drag(page, { x: centre.x + radius * 0.6, y: centre.y }, { x: centre.x - radius * 0.6, y: centre.y }, 10);
+      await drag(
+        page,
+        { x: centre.x + radius * 0.6, y: centre.y },
+        { x: centre.x - radius * 0.6, y: centre.y },
+        10,
+      );
     }
     // Still board under the middle of the view, and most of the way out on
     // the side it was thrown from: no half screen of nothing. (A probe can
@@ -163,9 +173,13 @@ test.describe("hyperbolic panning", () => {
     const board = (x: number, y: number) =>
       page.evaluate(
         ([px, py]) =>
-          [[0, 0], [4, 0], [-4, 0], [0, 4], [0, -4]].some(
-            ([dx, dy]) => window.__ms!.cellAtScreenXY(px! + dx!, py! + dy!) !== null,
-          ),
+          [
+            [0, 0],
+            [4, 0],
+            [-4, 0],
+            [0, 4],
+            [0, -4],
+          ].some(([dx, dy]) => window.__ms!.cellAtScreenXY(px! + dx!, py! + dy!) !== null),
         [x, y],
       );
     expect(await board(centre.x, centre.y)).toBe(true);
@@ -193,7 +207,9 @@ test.describe("hyperbolic panning", () => {
     const { cell, centre } = await cellOut(page, 0.6);
     const start = await at(page, cell);
     await drag(page, start, centre);
-    expect(Math.hypot((await at(page, cell)).x - start.x, (await at(page, cell)).y - start.y)).toBeGreaterThan(20);
+    expect(
+      Math.hypot((await at(page, cell)).x - start.x, (await at(page, cell)).y - start.y),
+    ).toBeGreaterThan(20);
     await page.keyboard.press("0");
     await frame(page);
     const back = await at(page, cell);
@@ -206,12 +222,19 @@ test.describe("hyperbolic panning", () => {
     // that hides the extra controls (off out of the box) keeps them.
     const shown = () =>
       page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
-        nodes.filter((n) => !(n as HTMLElement).hidden).map((n) => (n as HTMLElement).dataset["slot"]),
+        nodes
+          .filter((n) => !(n as HTMLElement).hidden)
+          .map((n) => (n as HTMLElement).dataset["slot"]),
       );
     expect(await shown()).toEqual(["pan-left", "pan-right", "pan-up", "pan-down"]);
 
     const { cell } = await cellOut(page, 0);
-    const moves = { "pan-left": [-1, 0], "pan-right": [1, 0], "pan-up": [0, -1], "pan-down": [0, 1] };
+    const moves = {
+      "pan-left": [-1, 0],
+      "pan-right": [1, 0],
+      "pan-up": [0, -1],
+      "pan-down": [0, 1],
+    };
     for (const [slot, [dx, dy]] of Object.entries(moves)) {
       const start = await at(page, cell);
       await page.locator(`.board-bar-btn[data-slot="${slot}"]`).click();
@@ -290,16 +313,21 @@ test.describe("a closed surface's pan", () => {
     page,
   }) => {
     const centre = (await at(page, "0"))!;
-    const radius = await page.evaluate(() => {
-      const ms = window.__ms!;
-      return Math.max(...ms.cells().map((c) => ms.cellScreenXY(c)!.x));
-    }) - centre.x;
+    const radius =
+      (await page.evaluate(() => {
+        const ms = window.__ms!;
+        return Math.max(...ms.cells().map((c) => ms.cellScreenXY(c)!.x));
+      })) - centre.x;
     const board = (x: number, y: number) =>
       page.evaluate(
         ([px, py]) =>
-          [[0, 0], [4, 0], [-4, 0], [0, 4], [0, -4]].some(
-            ([dx, dy]) => window.__ms!.cellAtScreenXY(px! + dx!, py! + dy!) !== null,
-          ),
+          [
+            [0, 0],
+            [4, 0],
+            [-4, 0],
+            [0, 4],
+            [0, -4],
+          ].some(([dx, dy]) => window.__ms!.cellAtScreenXY(px! + dx!, py! + dy!) !== null),
         [x, y],
       );
     // Twice as far as a disc board's hold lets one go, and round a corner.
@@ -311,12 +339,23 @@ test.describe("a closed surface's pan", () => {
         { x: centre.x - dx * radius * 0.6, y: centre.y - dy * radius * 0.6 },
         10,
       );
-      for (const [px, py] of [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.6]]) {
-        expect(await board(centre.x + px! * radius, centre.y + py! * radius), `stroke ${k}`).toBe(true);
+      for (const [px, py] of [
+        [0, 0],
+        [0.6, 0],
+        [-0.6, 0],
+        [0, 0.6],
+        [0, -0.6],
+      ]) {
+        expect(await board(centre.x + px! * radius, centre.y + py! * radius), `stroke ${k}`).toBe(
+          true,
+        );
       }
     }
     expect(await page.evaluate(() => window.__ms!.state().revealed)).toBe(0);
-    const cell = await page.evaluate(([x, y]) => window.__ms!.cellAtScreenXY(x!, y!), [centre.x, centre.y]);
+    const cell = await page.evaluate(
+      ([x, y]) => window.__ms!.cellAtScreenXY(x!, y!),
+      [centre.x, centre.y],
+    );
     expect(cell).not.toBeNull();
     await page.mouse.click(centre.x, centre.y);
     const after = await page.evaluate((c) => {

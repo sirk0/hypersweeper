@@ -28,9 +28,7 @@ const browser = await chromium.launch({
 });
 
 const settle = (page) =>
-  page.evaluate(
-    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-  );
+  page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
 async function open(mode) {
   const ctx = await browser.newContext({

@@ -27,8 +27,8 @@ interface DistortedRow {
   crosses: boolean;
 }
 
-const DISTORTED = (raw as { distorted?: Record<string, Record<string, DistortedRow>> })
-  .distorted ?? {};
+const DISTORTED =
+  (raw as { distorted?: Record<string, Record<string, DistortedRow>> }).distorted ?? {};
 
 const ORDER = ["easy", "medium", "hard"];
 
@@ -68,6 +68,8 @@ export function distortionHint(mode: string, difficulty: string): string | undef
     return "Distorted — this surface stretches the tiles well out of shape";
   }
   const good = ORDER.filter((d) => !bad.includes(d)).map(label);
-  return `Distorted on ${bad.map(label).join(" and ")} — `
-    + `${good.join(" and ")} draw${good.length === 1 ? "s" : ""} the tiles truer`;
+  return (
+    `Distorted on ${bad.map(label).join(" and ")} — ` +
+    `${good.join(" and ")} draw${good.length === 1 ? "s" : ""} the tiles truer`
+  );
 }

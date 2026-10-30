@@ -92,11 +92,7 @@ export function solidCubeBoard(n: number): Board3D {
       if (p[a]! > hi[a]!) hi[a] = p[a]!;
     }
   }
-  const center: Vec3 = [
-    (lo[0] + hi[0]) / 2,
-    (lo[1] + hi[1]) / 2,
-    (lo[2] + hi[2]) / 2,
-  ];
+  const center: Vec3 = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
   const extent = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
   const scale = 2 / extent;
   const positions = new Map<string, Vec3>();

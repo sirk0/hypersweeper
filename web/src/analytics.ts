@@ -1,8 +1,4 @@
-import {
-  payloadFor,
-  type DeviceClass,
-  type GameFacts,
-} from "./analyticsEvent";
+import { payloadFor, type DeviceClass, type GameFacts } from "./analyticsEvent";
 import { deviceClass, shellKind } from "./device";
 
 // Anonymous play counts: which boards get opened, and how often they get won.

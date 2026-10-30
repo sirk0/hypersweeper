@@ -97,7 +97,12 @@ const matMul = (m: Mat, n: Mat): Mat => {
   ];
 };
 
-const viewMat = (v: DiscView): Mat => [v.rot, mul(v.rot, [-v.c[0], -v.c[1]]), [-v.c[0], v.c[1]], [1, 0]];
+const viewMat = (v: DiscView): Mat => [
+  v.rot,
+  mul(v.rot, [-v.c[0], -v.c[1]]),
+  [-v.c[0], v.c[1]],
+  [1, 0],
+];
 
 /** The disc translation z -> (z + p) / (1 + conj(p) z), taking 0 to p. */
 const shift = (p: Cx): Mat => [[1, 0], p, conj(p), [1, 0]];

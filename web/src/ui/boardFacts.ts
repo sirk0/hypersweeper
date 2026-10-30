@@ -303,7 +303,14 @@ function sameKind(a: ShapeKind | null | undefined, b: ShapeKind): boolean {
 /** The fallback when a class's tiles do not agree on what they are: the shape
  * claims nothing beyond its side count. */
 function anyShape(sides: number): ShapeKind {
-  return { sides, equalSides: false, equalAngles: false, isosceles: false, kite: false, dart: false };
+  return {
+    sides,
+    equalSides: false,
+    equalAngles: false,
+    isosceles: false,
+    kite: false,
+    dart: false,
+  };
 }
 
 /** A regular tiling's tile is the regular polygon it is named for. */
@@ -490,11 +497,7 @@ export function familyKeyOf(mode: string): string | null {
 function familyOf(mode: string): string | null {
   const key = familyKeyOf(mode);
   if (key === null) return null;
-  return (
-    FAMILY_LABELS[key] ??
-    SOLID_GROUPS.find((g) => g.key === key)?.label ??
-    null
-  );
+  return FAMILY_LABELS[key] ?? SOLID_GROUPS.find((g) => g.key === key)?.label ?? null;
 }
 
 /** The regular tiling a shaped flat board (the triangle, the hex-hex) is cut

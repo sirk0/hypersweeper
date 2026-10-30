@@ -55,7 +55,11 @@ describe("reading", () => {
       KEY,
       JSON.stringify({
         version: 1,
-        modes: { cube: { on: true, at: 30 }, hex: { on: true, at: 10 }, tri: { on: false, at: 20 } },
+        modes: {
+          cube: { on: true, at: 30 },
+          hex: { on: true, at: 10 },
+          tri: { on: false, at: 20 },
+        },
       }),
     );
     expect(favourites()).toEqual(["hex", "cube"]);
@@ -86,7 +90,11 @@ describe("writing", () => {
 describe("merging two devices", () => {
   it("takes the later change to each board", () => {
     const phone = { hex: { on: true, at: 10 }, cube: { on: true, at: 10 } };
-    const mac = { hex: { on: false, at: 20 }, cube: { on: false, at: 5 }, tri: { on: true, at: 1 } };
+    const mac = {
+      hex: { on: false, at: 20 },
+      cube: { on: false, at: 5 },
+      tri: { on: true, at: 1 },
+    };
     const merged = mergeStars(phone, mac);
     expect(merged).toEqual({
       hex: { on: false, at: 20 }, // unstarred later on the Mac

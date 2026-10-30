@@ -249,7 +249,8 @@ describe("loading the deployed build", () => {
     try {
       const reload = vi.fn();
       const done = loadDeployedBuild({
-        registration: () => Promise.resolve(fakeRegistration({ installing: fakeWorker("installing") })),
+        registration: () =>
+          Promise.resolve(fakeRegistration({ installing: fakeWorker("installing") })),
         reload,
         timeoutMs: 1000,
       });

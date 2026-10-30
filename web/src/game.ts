@@ -32,10 +32,7 @@ export class Game {
   private revealedCount = 0;
   private endTally: FlagTally | null = null;
 
-  constructor(
-    adjacency: Map<CellId, Iterable<CellId>>,
-    options: GameOptions = {},
-  ) {
+  constructor(adjacency: Map<CellId, Iterable<CellId>>, options: GameOptions = {}) {
     this.adjacency = new Map();
     for (const [cell, neighbors] of adjacency) {
       this.adjacency.set(cell, [...neighbors]);
@@ -50,9 +47,7 @@ export class Game {
     }
 
     let mineCount = options.mineCount;
-    const explicit = options.minePositions
-      ? new Set(options.minePositions)
-      : null;
+    const explicit = options.minePositions ? new Set(options.minePositions) : null;
     if (explicit) {
       for (const m of explicit) {
         if (!this.adjacency.has(m)) {

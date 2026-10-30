@@ -38,8 +38,7 @@ interface UnfairRow {
   reason: string;
 }
 
-const UNFAIR = (raw as { unfair?: Record<string, Record<string, UnfairRow>> })
-  .unfair ?? {};
+const UNFAIR = (raw as { unfair?: Record<string, Record<string, UnfairRow>> }).unfair ?? {};
 
 /** How much less often a warned board is dealt by the random launchers. */
 export const WARNED_RANDOM_WEIGHT = 0.25;
@@ -81,12 +80,16 @@ export function blockedModes(): string[] {
  * is knowing the tiling is against them. */
 export function fairnessHint(level: Fairness): string | undefined {
   if (level === "blocked") {
-    return "Not playable — every cell of this tiling has a look-alike twin, "
-      + "so the mines can never be located, only guessed at";
+    return (
+      "Not playable — every cell of this tiling has a look-alike twin, " +
+      "so the mines can never be located, only guessed at"
+    );
   }
   if (level === "warn") {
-    return "Harder than it looks — this tiling's endgames can leave a guess "
-      + "no amount of care avoids";
+    return (
+      "Harder than it looks — this tiling's endgames can leave a guess " +
+      "no amount of care avoids"
+    );
   }
   return undefined;
 }
@@ -98,13 +101,13 @@ export function blockedExplanation(mode: string, difficulty: string): string {
   const cells = row?.cells ?? 0;
   const share = cells > 0 ? ` (${twins} of its ${cells} cells)` : "";
   return (
-    `This tiling puts every cell in a look-alike pair${share}: the two share `
-    + "exactly the same neighbours, so no number anywhere on the board can "
-    + "ever tell them apart. When a mine lands alone in a pair the only way "
-    + "to finish is to toss a coin, and with one toss per mine the board is "
-    + "lost long before it is solved — measured, it is won under one time in "
-    + "a hundred. It is kept here because the tiling is worth looking at, but "
-    + "it is not a puzzle, so it does not deal."
+    `This tiling puts every cell in a look-alike pair${share}: the two share ` +
+    "exactly the same neighbours, so no number anywhere on the board can " +
+    "ever tell them apart. When a mine lands alone in a pair the only way " +
+    "to finish is to toss a coin, and with one toss per mine the board is " +
+    "lost long before it is solved — measured, it is won under one time in " +
+    "a hundred. It is kept here because the tiling is worth looking at, but " +
+    "it is not a puzzle, so it does not deal."
   );
 }
 

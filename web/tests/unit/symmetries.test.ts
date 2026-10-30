@@ -70,7 +70,10 @@ function reaches(symmetries: readonly BoardSymmetry[], target: Map<CellId, CellI
 }
 
 function signature(cycle: Map<CellId, CellId>): string {
-  return [...cycle.keys()].sort().map((cell) => cycle.get(cell)!).join(",");
+  return [...cycle.keys()]
+    .sort()
+    .map((cell) => cycle.get(cell)!)
+    .join(",");
 }
 
 /** Every permutation the controls can compose, keyed by signature. */
@@ -100,7 +103,11 @@ function closure(symmetries: readonly BoardSymmetry[]): Set<string> {
 function ringPowers(ring: Map<CellId, CellId>): Map<CellId, CellId>[] {
   const identity = new Map([...ring.keys()].map((cell) => [cell, cell]));
   const powers = [identity];
-  for (let power = new Map(ring); ; power = new Map([...power].map(([c, i]) => [c, ring.get(i)!]))) {
+  for (
+    let power = new Map(ring);
+    ;
+    power = new Map([...power].map(([c, i]) => [c, ring.get(i)!]))
+  ) {
     if ([...power].every(([cell, image]) => cell === image)) return powers;
     powers.push(power);
   }
@@ -122,10 +129,9 @@ describe("board symmetries", () => {
           isAutomorphism(board.adjacency, symmetry.cycle),
           `${mode}: ${symmetry.id} is not an automorphism`,
         ).toBe(true);
-        expect(
-          symmetry.involution,
-          `${mode}: ${symmetry.id} involution flag`,
-        ).toBe(measuredInvolution(symmetry.cycle));
+        expect(symmetry.involution, `${mode}: ${symmetry.id} involution flag`).toBe(
+          measuredInvolution(symmetry.cycle),
+        );
         // a symmetry that moves nothing is a button that does nothing
         expect([...symmetry.cycle].some(([c, image]) => c !== image)).toBe(true);
       }
@@ -194,8 +200,9 @@ describe("board symmetries", () => {
       const tube = board.symmetries.find((s) => s.id === "tube");
       if (!tube) continue;
       const ring = board.symmetries.find((s) => s.id === "ring")!.cycle;
-      expect(ringPowers(ring), `${mode}: tube twice is a further tube move`)
-        .toContainEqual(squared(tube.cycle));
+      expect(ringPowers(ring), `${mode}: tube twice is a further tube move`).toContainEqual(
+        squared(tube.cycle),
+      );
       checked++;
     }
     expect(checked).toBeGreaterThan(10);
@@ -432,10 +439,7 @@ describe("board symmetries", () => {
     expect(half.involution).toBe(true);
     // a rectangle has both mirrors, but the second is the first after the half
     // turn, so only one is offered
-    expect(wide.symmetries.map((s) => s.id)).toEqual([
-      "turn",
-      "mirror-ring",
-    ]);
+    expect(wide.symmetries.map((s) => s.id)).toEqual(["turn", "mirror-ring"]);
   });
 
   it("a chiral flat board has rotations and no mirror", () => {
@@ -452,11 +456,15 @@ describe("the board bar's symmetry controls", () => {
 
   it("offers a control for every symmetry there is, and a back one per translation", () => {
     for (const id of SYMMETRY_IDS) {
-      expect(slots.some((s) => s.action === `symmetry:${id}:1`), id).toBe(true);
+      expect(
+        slots.some((s) => s.action === `symmetry:${id}:1`),
+        id,
+      ).toBe(true);
       // a mirror is its own undo and gets no second button
-      expect(slots.some((s) => s.action === `symmetry:${id}:-1`), id).toBe(
-        !id.startsWith("mirror-"),
-      );
+      expect(
+        slots.some((s) => s.action === `symmetry:${id}:-1`),
+        id,
+      ).toBe(!id.startsWith("mirror-"));
     }
   });
 
@@ -489,14 +497,23 @@ describe("the board bar's symmetry controls", () => {
 
   it("gives a disc board four pan arrows, one each way, and no other board any", () => {
     const pans = slots.filter((s) => s.action!.startsWith("pan:"));
-    expect(pans.map((s) => s.action).sort()).toEqual(["pan:-1:0", "pan:0:-1", "pan:0:1", "pan:1:0"]);
+    expect(pans.map((s) => s.action).sort()).toEqual([
+      "pan:-1:0",
+      "pan:0:-1",
+      "pan:0:1",
+      "pan:1:0",
+    ]);
     for (const slot of pans) {
       expect(slot.icon && ICONS[slot.icon], slot.slot).toBeTruthy();
       expect(slot.label, slot.slot).toBeTruthy();
       expect(slot.visibleWhen).toBe("disc");
     }
     // Every other slot is a symmetry control.
-    expect(slots.filter((s) => !s.action!.startsWith("pan:")).every((s) => s.action!.startsWith("symmetry:"))).toBe(true);
+    expect(
+      slots
+        .filter((s) => !s.action!.startsWith("pan:"))
+        .every((s) => s.action!.startsWith("symmetry:")),
+    ).toBe(true);
     const shown = (conditions: Set<string>) =>
       slots.filter((s) => slotVisible(s.visibleWhen, conditions)).map((s) => s.slot);
     expect(shown(boardConditions([], "hyperbolic73", true))).toEqual([

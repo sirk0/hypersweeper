@@ -22,7 +22,12 @@ function shellsByPlace(
   shells: number,
 ): string[][] {
   const place = (f: number): string =>
-    grown.faces[f]!.map((v) => grown.pos.get(v)!.map((x) => x.toFixed(9)).join(",")).join(" ");
+    grown.faces[f]!.map((v) =>
+      grown.pos
+        .get(v)!
+        .map((x) => x.toFixed(9))
+        .join(","),
+    ).join(" ");
   return grown.groups.slice(0, shells).map((group) => group.map(place).sort());
 }
 
@@ -115,7 +120,10 @@ describe("the hyperbolic boards", () => {
       for (let cell = 0; cell < q; cell++) {
         const hit = board.polygons
           .get(String(cell))!
-          .some(([x, y]) => Math.abs(x - board.width / 2) < 1e-9 && Math.abs(y - board.height / 2) < 1e-9);
+          .some(
+            ([x, y]) =>
+              Math.abs(x - board.width / 2) < 1e-9 && Math.abs(y - board.height / 2) < 1e-9,
+          );
         expect(hit, `{3,${q}} cell ${cell}`).toBe(true);
       }
     }
@@ -126,8 +134,10 @@ describe("the hyperbolic boards", () => {
     for (const [p, q] of TILINGS) {
       for (const shells of [3, 12, 30]) {
         const grown = ringsFor(p, q, shells);
-        expect(shellsByPlace(ringsFor(p, q, shells, grown.rings + 1), shells), `{${p},${q}} ${shells}`)
-          .toEqual(shellsByPlace(grown, shells));
+        expect(
+          shellsByPlace(ringsFor(p, q, shells, grown.rings + 1), shells),
+          `{${p},${q}} ${shells}`,
+        ).toEqual(shellsByPlace(grown, shells));
       }
     }
     // ...and stops as soon as it can: the hard {6,4} board's 475 cells are cut
@@ -207,8 +217,9 @@ describe("the uniform hyperbolic boards", () => {
       for (const shells of [3, 20, 40]) {
         const grown = wythoffRingsFor(p, q, op, shells);
         const further = wythoffRingsFor(p, q, op, shells, grown.rings + 1);
-        expect(shellsByPlace(further, shells), `${config} ${shells}`)
-          .toEqual(shellsByPlace(grown, shells));
+        expect(shellsByPlace(further, shells), `${config} ${shells}`).toEqual(
+          shellsByPlace(grown, shells),
+        );
       }
     }
   });
@@ -218,8 +229,13 @@ describe("the uniform hyperbolic boards", () => {
       const board = hyperbolicUniformBoard(p, q, op, 20);
       const tones = classifyShapes(board.polygons, board.cornerMask, board.curved);
       const sides = new Set([...tones.values()].map((t) => t.sides));
-      expect([...sides].sort((a, b) => a - b), config).toEqual(Object.keys(degrees(config)).map(Number));
-      expect(new Set([...tones.values()].map((t) => JSON.stringify(t))).size, config).toBe(sides.size);
+      expect(
+        [...sides].sort((a, b) => a - b),
+        config,
+      ).toEqual(Object.keys(degrees(config)).map(Number));
+      expect(new Set([...tones.values()].map((t) => JSON.stringify(t))).size, config).toBe(
+        sides.size,
+      );
       // the face on the central p-gon: the p-gon itself, or bevel's and
       // truncate's 2p-gon
       const centre = corners(board.polygons.get("0")!, board.cornerMask!.get("0")!);
@@ -269,7 +285,9 @@ describe("the binary tiling", () => {
       // the parent, and its neighbour on this tile's own side
       const above = others.filter((o) => Number(o.split(",")[0]) === row - 1);
       const side = j % 2 === 0 ? -1 : 1;
-      expect(new Set(above)).toEqual(new Set([`${row - 1},${j >> 1}`, `${row - 1},${(j >> 1) + side}`]));
+      expect(new Set(above)).toEqual(
+        new Set([`${row - 1},${j >> 1}`, `${row - 1},${(j >> 1) + side}`]),
+      );
       checked++;
     }
     expect(checked).toBeGreaterThan(50);

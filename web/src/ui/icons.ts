@@ -267,7 +267,13 @@ function holed(
   )}" stroke-width="${n(sw(Math.max(2, width - 1)))}" stroke-linejoin="round"/>`;
 }
 
-function line(a: P, b: P, variant: IconVariant = DARK, width = 3, tone: ShapeTone | null = null): string {
+function line(
+  a: P,
+  b: P,
+  variant: IconVariant = DARK,
+  width = 3,
+  tone: ShapeTone | null = null,
+): string {
   return `<path d="M${n(a[0])} ${n(a[1])}L${n(b[0])} ${n(b[1])}" stroke="${tint(
     variant,
     tone,
@@ -437,9 +443,7 @@ function tileRing(key: string): Tile[] {
     if (better > 0) hub = tile;
   }
   const corners = new Set(hub.pts.map(vkey));
-  const ring = tiles.filter(
-    (tile) => tile !== hub && tile.pts.some((p) => corners.has(vkey(p))),
-  );
+  const ring = tiles.filter((tile) => tile !== hub && tile.pts.some((p) => corners.has(vkey(p))));
   ring.sort(
     (a, b) =>
       Math.atan2(a.centre[1] - hub.centre[1], a.centre[0] - hub.centre[0]) -
@@ -512,7 +516,9 @@ function discPatch(key: string): Tile[] {
   const t = archTemplate(key);
   const hub: P = t.centre ? [t.centre[0], t.centre[1]] : tileRing(key)[0]!.centre;
   const radius = DISC_RADIUS[key] ?? 2;
-  return tiles.filter((tile) => Math.hypot(tile.centre[0] - hub[0], tile.centre[1] - hub[1]) <= radius);
+  return tiles.filter(
+    (tile) => Math.hypot(tile.centre[0] - hub[0], tile.centre[1] - hub[1]) <= radius,
+  );
 }
 
 /** Scale a patch into the icon box (y flipped — tilings are y-up, SVG y-down). */
@@ -1601,9 +1607,7 @@ function draw(rawKey: string): string[] {
     ];
     for (let k = 0; k < 8; k++) {
       parts.push(shape([at(), at(k), at(k, k + 1), at(k + 1)], LIGHT, 3));
-      parts.push(
-        shape([at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)], BASE, 3),
-      );
+      parts.push(shape([at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)], BASE, 3));
     }
   } else if (key === "spectre") {
     // The Spectre's menu icon keeps the nicer silhouette of its removed
@@ -1806,7 +1810,8 @@ function draw(rawKey: string): string[] {
         const sunk: P[] = hole.map((p) => [p[0] + (C - fx) * 0.75, p[1] + (C - fy) * 0.75]);
         const area = (pts: P[]): number =>
           pts.reduce(
-            (s, p, i) => s + (p[0] * pts[(i + 1) % pts.length]![1] - pts[(i + 1) % pts.length]![0] * p[1]),
+            (s, p, i) =>
+              s + (p[0] * pts[(i + 1) % pts.length]![1] - pts[(i + 1) % pts.length]![0] * p[1]),
             0,
           );
         const skin = tint(fill, cell ?? null);

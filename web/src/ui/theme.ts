@@ -1,4 +1,8 @@
-import { hasTheme as hasPalette, themeSpec as paletteSpec, type ThemeSpec } from "../config/screens";
+import {
+  hasTheme as hasPalette,
+  themeSpec as paletteSpec,
+  type ThemeSpec,
+} from "../config/screens";
 import { SMILEY_INK, smileyHex } from "../render/shapePalette";
 import { patternLayer } from "./backgroundPattern";
 import type { IconPalette } from "./icons";
@@ -424,9 +428,7 @@ export function applyTheme(key: string, pref: SchemePref, mode?: string | null):
   // may as well not be drawn (ui/backgroundPattern.ts).
   const pattern = patternLayer(mode, scheme) ?? undefined;
   const root = document.documentElement;
-  for (const [name, value] of Object.entries(
-    themeVars(palette, spec.texture?.[scheme], pattern),
-  )) {
+  for (const [name, value] of Object.entries(themeVars(palette, spec.texture?.[scheme], pattern))) {
     root.style.setProperty(name, value);
   }
   root.dataset["theme"] = resolved;

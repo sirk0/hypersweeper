@@ -152,7 +152,7 @@ function thin(cells: readonly CellSound[], max: number): CellSound[] {
 function swingOf(ring: number): number {
   if (ring <= 0) return 0;
   const x = ring * 0.6180339887498949;
-  return (x - Math.floor(x)) - 0.5;
+  return x - Math.floor(x) - 0.5;
 }
 
 function openVoice(preset: SoundPreset, cell: CellSound, ring: number): Voice {
@@ -209,8 +209,7 @@ export function voicesFor(event: SoundEvent, preset: SoundPreset): Voice[] {
       // A chord is the one move that opens cells from an already-open one;
       // give it a low grain at the chorded cell so it does not sound like an
       // ordinary click that happened to cascade.
-      const origin =
-        event.cells.find((c) => c.ring === 0) ?? event.cells[0]!;
+      const origin = event.cells.find((c) => c.ring === 0) ?? event.cells[0]!;
       if (event.chord) {
         // An octave below the *deepest* shape the move opened, not below the
         // chorded cell's: on a board of several shapes the chorded cell need
@@ -446,8 +445,7 @@ function audioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   const Ctor =
     window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctor) return null;
   try {
     ctx = new Ctor();
@@ -515,7 +513,13 @@ function wave(c: AudioContext, preset: SoundPreset, partials: number): PeriodicW
 }
 
 /** Render one grain onto the graph, starting at `t0 + voice.delay`. */
-function playVoice(c: AudioContext, out: GainNode, v: Voice, t0: number, preset: SoundPreset): void {
+function playVoice(
+  c: AudioContext,
+  out: GainNode,
+  v: Voice,
+  t0: number,
+  preset: SoundPreset,
+): void {
   const start = t0 + v.delay;
   const end = start + v.duration;
   const env = c.createGain();

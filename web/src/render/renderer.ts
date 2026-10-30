@@ -238,9 +238,7 @@ export class BoardRenderer {
 
   /** The camera matching the current board's view kind. */
   get camera(): OrthographicCamera | PerspectiveCamera {
-    return this.board?.view.kind === "solid"
-      ? this.perspCamera
-      : this.orthoCamera;
+    return this.board?.view.kind === "solid" ? this.perspCamera : this.orthoCamera;
   }
 
   setBoard(board: BoardMesh): void {
@@ -301,9 +299,7 @@ export class BoardRenderer {
     if (!this.board || this.board.view.kind !== "solid") return;
     const turn = new Quaternion()
       .setFromAxisAngle(X_AXIS, dyPx * ROTATE_SPEED)
-      .multiply(
-        new Quaternion().setFromAxisAngle(Y_AXIS, dxPx * ROTATE_SPEED),
-      );
+      .multiply(new Quaternion().setFromAxisAngle(Y_AXIS, dxPx * ROTATE_SPEED));
     this.board.quaternion.premultiply(turn);
     // The silhouette changed as it turned, so re-fit — but follow the new fit
     // rather than jump to it (see `SolidFrame`), and not at all mid-drag.
@@ -386,8 +382,7 @@ export class BoardRenderer {
     const halfH = ((rotated ? view.width : view.height) * FLAT_MARGIN) / 2;
     // World units per CSS pixel: the fit that shows the whole board in the
     // region both ways, magnified by the current zoom.
-    const wpp =
-      Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.zoomLevel;
+    const wpp = Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.zoomLevel;
     // Zoomed in, the board is larger than the region and can be panned by the
     // overhang; fitted (or smaller), it stays centred.
     this.panX = clampPan(this.panX, halfW, (wpp * w) / 2);
@@ -407,12 +402,7 @@ export class BoardRenderer {
   /** Remember the screen->world scale and the pixel the view is centred on
    * (the centre of the region below the header — the same point for both
    * cameras), which is all `zoomBy`/`panBy` need. */
-  private cacheViewMetrics(
-    wpp: number,
-    w: number,
-    top: number,
-    usableH: number,
-  ): void {
+  private cacheViewMetrics(wpp: number, w: number, top: number, usableH: number): void {
     this.wpp = wpp;
     this.centerX = w / 2;
     this.centerY = top + usableH / 2;
@@ -504,8 +494,11 @@ export class BoardRenderer {
     if (board.halfPlane) {
       const toX = x ?? this.centerX + dxPx;
       const toY = y ?? this.centerY + dyPx;
-      this.dragHalfPlane(board.halfPlane, this.boardPoint(toX - dxPx, toY - dyPx),
-        this.boardPoint(toX, toY));
+      this.dragHalfPlane(
+        board.halfPlane,
+        this.boardPoint(toX - dxPx, toY - dyPx),
+        this.boardPoint(toX, toY),
+      );
       return;
     }
     this.panX -= dxPx * this.wpp;
@@ -599,9 +592,7 @@ export class BoardRenderer {
     const tanUsableY = (tanY * usableH) / h;
     // The loose bound: the unit sphere just touching the narrower axis. No
     // orientation can need more room than this.
-    const sphereDist =
-      SOLID_MARGIN /
-      Math.sin(Math.min(Math.atan(tanX), Math.atan(tanUsableY)));
+    const sphereDist = SOLID_MARGIN / Math.sin(Math.min(Math.atan(tanX), Math.atan(tanUsableY)));
     const clampDist = (d: number): number =>
       Math.max(sphereDist / MAX_SOLID_ZOOM, Math.min(sphereDist, d));
     const shown = this.shownFrame;
@@ -644,11 +635,7 @@ export class BoardRenderer {
     const fitPerPx = (2 * dist * tanY) / h;
     const worldPerPx = fitPerPx / this.zoomLevel;
     this.panX = clampPan(this.panX, (fitPerPx * w) / 2, (worldPerPx * w) / 2);
-    this.panY = clampPan(
-      this.panY,
-      (fitPerPx * usableH) / 2,
-      (worldPerPx * usableH) / 2,
-    );
+    this.panY = clampPan(this.panY, (fitPerPx * usableH) / 2, (worldPerPx * usableH) / 2);
     this.cacheViewMetrics(worldPerPx, w, top, usableH);
     // The bottom of the region below the header, in the board's plane — the
     // lowest the shadow may sit and still be seen.
@@ -759,7 +746,9 @@ export class BoardRenderer {
     const shown = this.shownFrame;
     const target = this.targetFrame;
     if (!shown || !target || this.board?.view.kind !== "solid") return false;
-    const d = Math.abs(shown.dist - target.dist) + Math.abs(shown.cx - target.cx) +
+    const d =
+      Math.abs(shown.dist - target.dist) +
+      Math.abs(shown.cx - target.cx) +
       Math.abs(shown.cy - target.cy);
     if (d === 0) return false;
     if (d < 1e-4) {
@@ -984,9 +973,7 @@ export class BoardRenderer {
 }
 
 /** The per-mode starting orientation (port of GameScreen3D._initial_rotation). */
-const CATALAN_MODES = new Set(
-  SOLID_GROUPS.find((g) => g.key === "catalan")?.modes ?? [],
-);
+const CATALAN_MODES = new Set(SOLID_GROUPS.find((g) => g.key === "catalan")?.modes ?? []);
 
 export function initialOrientation(mode: string): Quaternion {
   const qx = (a: number) => new Quaternion().setFromAxisAngle(X_AXIS, a);

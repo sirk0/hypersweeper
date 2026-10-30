@@ -1,8 +1,4 @@
-import {
-  DATASET_BLOBS,
-  DATASET_DOUBLES,
-  parseEvent,
-} from "../../src/analyticsEvent";
+import { DATASET_BLOBS, DATASET_DOUBLES, parseEvent } from "../../src/analyticsEvent";
 
 // The collector's actual logic, in standard web types only — a `Request` in, a
 // `Response` out, and one hand-written interface for the Analytics Engine
@@ -39,11 +35,7 @@ import {
  * here so this file needs no Worker types, and so the shape the collector
  * depends on is stated rather than inherited. */
 export interface AnalyticsDataset {
-  writeDataPoint(point: {
-    indexes?: string[];
-    blobs?: string[];
-    doubles?: number[];
-  }): void;
+  writeDataPoint(point: { indexes?: string[]; blobs?: string[]; doubles?: number[] }): void;
 }
 
 /** Longest body worth reading. The widest real `end` event is about 210

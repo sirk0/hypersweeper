@@ -144,10 +144,7 @@ describe("the board's finish, and the extra controls", () => {
     expect(loadSettings().extraControls).toBe(true);
 
     // ...and anything that is not a boolean is not a choice.
-    store.setItem(
-      KEY,
-      JSON.stringify({ version: 4, gloss: "no", pins: 0, extraControls: null }),
-    );
+    store.setItem(KEY, JSON.stringify({ version: 4, gloss: "no", pins: 0, extraControls: null }));
     expect(loadSettings().gloss).toBe(true);
     expect(loadSettings().pins).toBe(true);
     expect(loadSettings().extraControls).toBe(false);
@@ -509,14 +506,14 @@ describe("cross-tab sync", () => {
         scheme: DEFAULT_SETTINGS.scheme,
         difficulty: "easy",
         animations: null,
-          sound: DEFAULT_SETTINGS.sound,
+        sound: DEFAULT_SETTINGS.sound,
         volume: DEFAULT_SETTINGS.volume,
         haptics: DEFAULT_SETTINGS.haptics,
-      holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
-      backgrounds: DEFAULT_SETTINGS.backgrounds,
-      gloss: DEFAULT_SETTINGS.gloss,
-      pins: DEFAULT_SETTINGS.pins,
-      extraControls: DEFAULT_SETTINGS.extraControls,
+        holdToFlagMs: DEFAULT_SETTINGS.holdToFlagMs,
+        backgrounds: DEFAULT_SETTINGS.backgrounds,
+        gloss: DEFAULT_SETTINGS.gloss,
+        pins: DEFAULT_SETTINGS.pins,
+        extraControls: DEFAULT_SETTINGS.extraControls,
         analytics: DEFAULT_SETTINGS.analytics,
         seenHint: DEFAULT_SETTINGS.seenHint,
         quality: DEFAULT_SETTINGS.quality,

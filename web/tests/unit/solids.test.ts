@@ -91,7 +91,17 @@ describe("solids", () => {
   });
 
   it("gp21 is the class III Goldberg ladder GP(h, k), gcd(h, k) > 1 included", () => {
-    for (const [h, k] of [[2, 1], [3, 1], [3, 2], [4, 2], [5, 1], [4, 3], [6, 1], [5, 3], [6, 2]] as const) {
+    for (const [h, k] of [
+      [2, 1],
+      [3, 1],
+      [3, 2],
+      [4, 2],
+      [5, 1],
+      [4, 3],
+      [6, 1],
+      [5, 3],
+      [6, 2],
+    ] as const) {
       const board = gp21Board(h, k);
       const s = sizes(board);
       expect(board.adjacency.size).toBe(10 * (h * h + h * k + k * k) + 2);
@@ -104,7 +114,11 @@ describe("solids", () => {
       }
     }
     // a lattice triangle centred on an icosahedron edge is refused
-    for (const [h, k] of [[1, 1], [2, 2], [4, 1]] as const) {
+    for (const [h, k] of [
+      [1, 1],
+      [2, 2],
+      [4, 1],
+    ] as const) {
       expect(() => gp21Board(h, k)).toThrow();
     }
   });
@@ -137,7 +151,10 @@ describe("solids", () => {
         ]),
       );
       const renamed = new Map(
-        [...flat.adjacency].map(([cell, ns]) => [name.get(cell)!, ns.map((d) => name.get(d)!).sort()]),
+        [...flat.adjacency].map(([cell, ns]) => [
+          name.get(cell)!,
+          ns.map((d) => name.get(d)!).sort(),
+        ]),
       );
       const sorted = new Map([...board.adjacency].map(([cell, ns]) => [cell, [...ns].sort()]));
       expect(sorted).toEqual(renamed);
@@ -185,10 +202,7 @@ describe("solids", () => {
   });
 
   it("polycube surfaces are all quads", () => {
-    for (const board of [
-      cubeFrameBoard(6, 2),
-      steppedBipyramidBoard(6, 3),
-    ]) {
+    for (const board of [cubeFrameBoard(6, 2), steppedBipyramidBoard(6, 3)]) {
       expect(sizes(board).every((s) => s === 4)).toBe(true);
     }
   });
@@ -301,21 +315,29 @@ describe("Catalan solids", () => {
 // face mix, and the cells per frequency**2 once the big faces are cut (the
 // truncated octahedron's hexagons into rhombi, the icosahedral ones' faces into
 // triangle fans). Mirrors tests/test_boards.py::TestArchimedeanSolids.
-const ARCHIMEDEAN: [
-  string,
-  (f?: number) => Board3D,
-  string,
-  Op,
-  Record<number, number>,
-  number,
-][] = [
-  ["cubocta", cuboctahedronBoard, "cube", "join", { 3: 8, 4: 6 }, 14],
-  ["truncocta", truncatedOctahedronBoard, "cube", "kis", { 4: 6, 6: 8 }, 30],
-  ["snubcube", snubCubeBoard, "cube", "gyro", { 3: 32, 4: 6 }, 38],
-  ["rhombicosidodecasplit", rhombicosidodecahedronSplitBoard, "icosa", "ortho", { 3: 20, 4: 30, 5: 12 }, 110],
-  ["truncicosidodecasplit", truncatedIcosidodecahedronSplitBoard, "icosa", "meta", { 4: 30, 6: 20, 10: 12 }, 270],
-  ["snubdodecsplit", snubDodecahedronSplitBoard, "icosa", "gyro", { 3: 80, 5: 12 }, 140],
-];
+const ARCHIMEDEAN: [string, (f?: number) => Board3D, string, Op, Record<number, number>, number][] =
+  [
+    ["cubocta", cuboctahedronBoard, "cube", "join", { 3: 8, 4: 6 }, 14],
+    ["truncocta", truncatedOctahedronBoard, "cube", "kis", { 4: 6, 6: 8 }, 30],
+    ["snubcube", snubCubeBoard, "cube", "gyro", { 3: 32, 4: 6 }, 38],
+    [
+      "rhombicosidodecasplit",
+      rhombicosidodecahedronSplitBoard,
+      "icosa",
+      "ortho",
+      { 3: 20, 4: 30, 5: 12 },
+      110,
+    ],
+    [
+      "truncicosidodecasplit",
+      truncatedIcosidodecahedronSplitBoard,
+      "icosa",
+      "meta",
+      { 4: 30, 6: 20, 10: 12 },
+      270,
+    ],
+    ["snubdodecsplit", snubDodecahedronSplitBoard, "icosa", "gyro", { 3: 80, 5: 12 }, 140],
+  ];
 
 describe("Archimedean solids", () => {
   for (const [mode, build, base, op, mix, perFace] of ARCHIMEDEAN) {
@@ -326,14 +348,14 @@ describe("Archimedean solids", () => {
       for (const ring of faces.values()) {
         counts[ring.length] = (counts[ring.length] ?? 0) + 1;
         const points = ring.map((k) => positions.get(k)!);
-        const centre = [0, 1, 2].map(
-          (a) => points.reduce((s, p) => s + p[a]!, 0) / points.length,
-        );
+        const centre = [0, 1, 2].map((a) => points.reduce((s, p) => s + p[a]!, 0) / points.length);
         const sides = points.map((p, i) => {
           const q = points[(i + 1) % points.length]!;
           return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
         });
-        const spokes = points.map((p) => Math.hypot(p[0] - centre[0]!, p[1] - centre[1]!, p[2] - centre[2]!));
+        const spokes = points.map((p) =>
+          Math.hypot(p[0] - centre[0]!, p[1] - centre[1]!, p[2] - centre[2]!),
+        );
         expect(Math.max(...sides) - Math.min(...sides)).toBeLessThan(1e-12);
         expect(Math.max(...spokes) - Math.min(...spokes)).toBeLessThan(1e-12);
         for (const side of sides) lengths.add(Math.round(side * 1e12) / 1e12);

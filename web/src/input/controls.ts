@@ -100,10 +100,7 @@ interface GestureEventLike extends Event {
   clientY: number;
 }
 
-export function attachControls(
-  canvas: HTMLCanvasElement,
-  handlers: ControlHandlers,
-): () => void {
+export function attachControls(canvas: HTMLCanvasElement, handlers: ControlHandlers): () => void {
   let pressed = false;
   let downCell: CellId | null = null;
   let downX = 0;
@@ -123,10 +120,7 @@ export function attachControls(
   // state is the two-finger span and midpoint from the previous move. `stale`
   // marks a touch the browser's touch list has since said is no longer down,
   // whose own lift has not (yet) arrived.
-  const points = new Map<
-    number,
-    { x: number; y: number; type: string; stale?: boolean }
-  >();
+  const points = new Map<number, { x: number; y: number; type: string; stale?: boolean }>();
   let pinchSpan = 0;
   let pinchX = 0;
   let pinchY = 0;
@@ -221,9 +215,7 @@ export function attachControls(
     // one of its type, and a touch the touch list has seen leave is gone.
     // Whatever the record still holds is a lift that never arrived.
     forget(
-      (p) =>
-        p.type === e.pointerType &&
-        (e.isPrimary || (p.type === "touch" && p.stale === true)),
+      (p) => p.type === e.pointerType && (e.isPrimary || (p.type === "touch" && p.stale === true)),
     );
     points.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
     if (points.size >= 2) {
@@ -287,18 +279,14 @@ export function attachControls(
       return;
     }
     if (pressed && !longFired) {
-      if (
-        !moved &&
-        Math.hypot(e.clientX - downX, e.clientY - downY) > MOVE_THRESHOLD
-      ) {
+      if (!moved && Math.hypot(e.clientX - downX, e.clientY - downY) > MOVE_THRESHOLD) {
         moved = true;
         clearLong();
         handlers.onPress?.(null);
         if (handlers.rotates()) {
           rotating = true;
           handlers.onRotateStart?.();
-        }
-        else if (handlers.pans()) panning = true;
+        } else if (handlers.pans()) panning = true;
       }
       if (rotating) {
         handlers.onRotate(e.clientX - lastX, e.clientY - lastY);
@@ -307,8 +295,7 @@ export function attachControls(
         velX = velX * 0.6 + ((e.clientX - lastX) / dt) * 0.4;
         velY = velY * 0.6 + ((e.clientY - lastY) / dt) * 0.4;
         lastT = e.timeStamp;
-      }
-      else if (panning) {
+      } else if (panning) {
         const at = local(e.clientX, e.clientY);
         handlers.onPan(e.clientX - lastX, e.clientY - lastY, at.x, at.y);
       }
@@ -577,8 +564,7 @@ export function blockBrowserZoom(target: Document = document): () => void {
   const stop = (e: Event) => e.preventDefault();
   const onTouchEnd = (e: Event) => {
     const now = Date.now();
-    const onButton =
-      e.target instanceof Element && e.target.closest("button") != null;
+    const onButton = e.target instanceof Element && e.target.closest("button") != null;
     if (!onButton && now - lastTouchEnd < DOUBLE_TAP_MS) e.preventDefault();
     lastTouchEnd = now;
   };

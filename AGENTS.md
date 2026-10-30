@@ -43,7 +43,7 @@ carries over.
 ## Build and run
 
 `make help` lists every target. CI runs `make test`, `make lint`, the
-`data-sync` exporters, `web-checks` (typecheck, unit tests, the packaged-bundle
+`data-sync` exporters, `web-checks` (typecheck, Prettier, unit tests, the packaged-bundle
 and iOS-sync guards) and `web-e2e`, which shards the Playwright suite across
 four runners. The two web jobs are independent and run at the same time. That is the full
 run; locally, run only what a change touches — see "Verifying a change" below.
@@ -57,6 +57,7 @@ cd web
 npm install                            # first time, and after a dependency change
 npm run dev                            # dev server at http://localhost:5173
 npm run typecheck                      # tsc --noEmit (strict), app then functions/
+npm run format                         # Prettier, in place (format:check is what CI runs)
 npm run test                           # vitest unit tests
 npm run build                          # typecheck + production bundle into web/dist
 npm run preview                        # serve that bundle at http://localhost:4173
@@ -110,6 +111,7 @@ budget, and leave the full run to CI:
 | Change touches | Run locally |
 |---|---|
 | Docs, comments, `README`s only | nothing (check any link you added resolves) |
+| `web/**` | `npm run format` — Prettier, the config is `web/.prettierrc.json`; Claude sessions format each edit through a hook |
 | `web/src/**`, `web/functions/**` | `npm run typecheck` (seconds — always), then `npx vitest related --run <changed files>` (the unit tests that import them) |
 | UI, rendering, input behaviour | the e2e spec(s) that cover it — `npx playwright test hud.spec.ts`, narrowed with `-g "<title>"`. The topic docs name the spec that pins each behaviour |
 | A visual baseline | only that slice — `npx playwright test gallery.spec.ts -g <board>` — then run it once more to confirm determinism |

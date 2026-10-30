@@ -37,9 +37,7 @@ describe("construction", () => {
     expect(() => new Game(squareBoard(3, 3).adjacency, { mineCount: 9 })).toThrow();
   });
   it("rejects mine positions off the board", () => {
-    expect(
-      () => new Game(squareBoard(3, 3).adjacency, { minePositions: [C(5, 5)] }),
-    ).toThrow();
+    expect(() => new Game(squareBoard(3, 3).adjacency, { minePositions: [C(5, 5)] })).toThrow();
   });
 });
 
@@ -58,8 +56,7 @@ describe("mine placement", () => {
       const game = new Game(adjacency, { mineCount: 10, rng: mulberry32(seed) });
       game.reveal(C(4, 4));
       expect(game.adjacentMines(C(4, 4))).toBe(0);
-      expect(game.cells.filter((c) => game.cellState(c) === "revealed").length)
-        .toBeGreaterThan(1);
+      expect(game.cells.filter((c) => game.cellState(c) === "revealed").length).toBeGreaterThan(1);
     }
   });
   it("first reveal opens a zero on a board with no interior", () => {
@@ -81,7 +78,10 @@ describe("mine placement", () => {
     }
   });
   it("explicit mine positions are used", () => {
-    const game = makeGame([[1, 1], [2, 2]]);
+    const game = makeGame([
+      [1, 1],
+      [2, 2],
+    ]);
     expect(game.isMine(C(1, 1))).toBe(true);
     expect(game.isMine(C(2, 2))).toBe(true);
     expect(game.isMine(C(0, 0))).toBe(false);
@@ -90,7 +90,11 @@ describe("mine placement", () => {
 
 describe("adjacency", () => {
   it("counts adjacent mines", () => {
-    const game = makeGame([[0, 0], [0, 1], [1, 0]]);
+    const game = makeGame([
+      [0, 0],
+      [0, 1],
+      [1, 0],
+    ]);
     expect(game.adjacentMines(C(1, 1))).toBe(3);
     expect(game.adjacentMines(C(0, 2))).toBe(1);
     expect(game.adjacentMines(C(3, 3))).toBe(0);
@@ -105,13 +109,19 @@ describe("adjacency", () => {
 
 describe("reveal", () => {
   it("reveal safe cell", () => {
-    const game = makeGame([[0, 0], [0, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [0, 2],
+    ]);
     game.reveal(C(0, 1));
     expect(game.cellState(C(0, 1))).toBe("revealed");
     expect(game.state).toBe("playing");
   });
   it("reveal mine loses", () => {
-    const game = makeGame([[0, 0], [3, 3]]);
+    const game = makeGame([
+      [0, 0],
+      [3, 3],
+    ]);
     game.reveal(C(1, 1));
     game.reveal(C(0, 0));
     expect(game.state).toBe("lost");
@@ -125,7 +135,12 @@ describe("reveal", () => {
     expect(game.cellState(C(0, 0))).not.toBe("revealed");
   });
   it("flood fill stops at numbers", () => {
-    const game = makeGame([[2, 0], [2, 1], [2, 2], [2, 3]]);
+    const game = makeGame([
+      [2, 0],
+      [2, 1],
+      [2, 2],
+      [2, 3],
+    ]);
     game.reveal(C(0, 0));
     expect(game.cellState(C(0, 0))).toBe("revealed");
     expect(game.cellState(C(1, 1))).toBe("revealed");
@@ -171,7 +186,10 @@ describe("flag", () => {
     expect(game.cellState(C(3, 3))).toBe("revealed");
   });
   it("flags remaining counter", () => {
-    const game = makeGame([[0, 0], [1, 1]]);
+    const game = makeGame([
+      [0, 0],
+      [1, 1],
+    ]);
     expect(game.flagsRemaining).toBe(2);
     game.toggleFlag(C(0, 0));
     expect(game.flagsRemaining).toBe(1);
@@ -189,20 +207,30 @@ describe("win", () => {
     expect(game.state).toBe("won");
   });
   it("win on last individual reveal", () => {
-    const game = makeGame([[2, 0], [2, 1], [3, 1]]);
+    const game = makeGame([
+      [2, 0],
+      [2, 1],
+      [3, 1],
+    ]);
     game.reveal(C(0, 3));
     expect(game.state).toBe("playing");
     game.reveal(C(3, 0));
     expect(game.state).toBe("won");
   });
   it("no win while safe cells remain", () => {
-    const game = makeGame([[0, 0], [2, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [2, 2],
+    ]);
     game.reveal(C(0, 1));
     expect(game.state).toBe("playing");
   });
   it("win auto-flags mines and zeroes counter", () => {
     const mines = new Set([C(0, 0), C(2, 2)]);
-    const game = makeGame([[0, 0], [2, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [2, 2],
+    ]);
     expect(game.flagsRemaining).toBe(2);
     for (const cell of game.cells) if (!mines.has(cell)) game.reveal(cell);
     expect(game.state).toBe("won");
@@ -217,7 +245,10 @@ describe("the end-of-game flag tally", () => {
   // double5/double6 — see docs/agents/metrics.md). It has to be a snapshot
   // taken as the game ends, and this is why.
   it("is null while the game is still being played", () => {
-    const game = makeGame([[0, 0], [2, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [2, 2],
+    ]);
     expect(game.endFlags).toBeNull();
     game.toggleFlag(C(0, 0));
     expect(game.endFlags).toBeNull();
@@ -228,7 +259,10 @@ describe("the end-of-game flag tally", () => {
     // a count taken *after* the state flips says every win was flagged
     // perfectly, whatever the player actually did.
     const mines = new Set([C(0, 0), C(2, 2)]);
-    const game = makeGame([[0, 0], [2, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [2, 2],
+    ]);
     game.toggleFlag(C(0, 0)); // one of the two, correctly
     for (const cell of game.cells) if (!mines.has(cell)) game.reveal(cell);
     expect(game.state).toBe("won");
@@ -238,7 +272,10 @@ describe("the end-of-game flag tally", () => {
   });
 
   it("separates a right flag from a wrong one on a loss", () => {
-    const game = makeGame([[0, 0], [2, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [2, 2],
+    ]);
     game.toggleFlag(C(0, 0));
     game.toggleFlag(C(1, 1));
     game.toggleFlag(C(3, 3));
@@ -248,7 +285,10 @@ describe("the end-of-game flag tally", () => {
   });
 
   it("forgets a flag the player took back", () => {
-    const game = makeGame([[0, 0], [2, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [2, 2],
+    ]);
     game.toggleFlag(C(1, 1));
     game.toggleFlag(C(1, 1));
     game.reveal(C(0, 0));
@@ -258,7 +298,10 @@ describe("the end-of-game flag tally", () => {
   it("does not count the mine a loss stepped on as opened", () => {
     // `revealed` is the opened-cells metric, and it stays the count of *safe*
     // cells — which is the honest measure of how far a lost game got.
-    const game = makeGame([[0, 0], [2, 2]]);
+    const game = makeGame([
+      [0, 0],
+      [2, 2],
+    ]);
     game.reveal(C(3, 0));
     const opened = game.revealed;
     game.reveal(C(2, 2));

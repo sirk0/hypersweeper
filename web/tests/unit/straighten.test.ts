@@ -15,9 +15,7 @@ const boards = fixture.boards as Record<string, number[][]>;
 
 describe("straightened T-vertices", () => {
   it("only the tilings with a bounded run of them carry a rule", () => {
-    const withRule = fixture.tilings.filter(
-      (key) => archTemplate(key).straight.size > 0,
-    );
+    const withRule = fixture.tilings.filter((key) => archTemplate(key).straight.size > 0);
     // a running bond's mortar line never reaches a corner, so it has no chord
     // to lie on and its vertices stay on the surface; the sphinx pairs and the
     // tromino are flat-only, so their rules are never applied
@@ -68,10 +66,7 @@ describe("straightened T-vertices", () => {
       for (let i = 0; i < got.length; i++) {
         expect(got[i]!.length, `${mode} cell ${i}`).toBe(expected[i]!.length);
         for (let j = 0; j < got[i]!.length; j++) {
-          expect(got[i]![j]!, `${mode} cell ${i} coord ${j}`).toBeCloseTo(
-            expected[i]![j]!,
-            6,
-          );
+          expect(got[i]![j]!, `${mode} cell ${i} coord ${j}`).toBeCloseTo(expected[i]![j]!, 6);
         }
       }
     }

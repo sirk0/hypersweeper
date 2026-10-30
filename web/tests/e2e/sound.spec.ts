@@ -23,8 +23,7 @@ async function countOscillators(page: Page): Promise<void> {
     window.__oscillators = 0;
     const Ctor =
       window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return;
     const original = Ctor.prototype.createOscillator;
     Ctor.prototype.createOscillator = function (this: AudioContext) {
@@ -75,17 +74,13 @@ test.describe("sound settings", () => {
 
     // Back lands on settings, with the row reporting the new preset.
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-settings-group="sound"]')).toContainText(
-      "Arcade",
-    );
+    await expect(page.locator('.menu-entry[data-settings-group="sound"]')).toContainText("Arcade");
 
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(await page.evaluate(() => window.__ms?.state().sound)).toBe("arcade");
     await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await expect(page.locator('.menu-entry[data-settings-group="sound"]')).toContainText(
-      "Arcade",
-    );
+    await expect(page.locator('.menu-entry[data-settings-group="sound"]')).toContainText("Arcade");
   });
 
   test("the volume slider caps the engine and survives a reload", async ({ page }) => {
@@ -98,7 +93,7 @@ test.describe("sound settings", () => {
     // release do — the first feeds the engine live, the second persists.
     await slider.fill("40");
     expect(await page.evaluate(() => window.__ms?.state().volume)).toBeCloseTo(0.4, 5);
-    await expect(page.locator('.menu-entry.settings-volume')).toContainText("40%");
+    await expect(page.locator(".menu-entry.settings-volume")).toContainText("40%");
 
     // The settings row above reports both halves of the setting.
     await page.locator('.menu-entry[data-action="back"]').click();
@@ -131,9 +126,7 @@ test.describe("sound settings", () => {
     await page.locator('.menu-entry[data-settings-group="sound"]').click();
     await page.locator('.menu-entry[data-sound="off"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-settings-group="sound"]')).toContainText(
-      "Off",
-    );
+    await expect(page.locator('.menu-entry[data-settings-group="sound"]')).toContainText("Off");
 
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();

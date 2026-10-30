@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  anchoredPan,
-  clampPan,
-  clampZoom,
-  MAX_ZOOM,
-  MIN_ZOOM,
-} from "../../src/render/zoom";
+import { anchoredPan, clampPan, clampZoom, MAX_ZOOM, MIN_ZOOM } from "../../src/render/zoom";
 
 describe("clampZoom", () => {
   it("keeps the framed board as the floor", () => {
@@ -30,10 +24,7 @@ describe("anchoredPan", () => {
     const wppAfter = 1; // 2x zoom
     const offset = 120; // px right of the view centre
     const pan = anchoredPan(5, wppBefore, wppAfter, offset);
-    expect(world(pan, wppAfter, offset)).toBeCloseTo(
-      world(5, wppBefore, offset),
-      10,
-    );
+    expect(world(pan, wppAfter, offset)).toBeCloseTo(world(5, wppBefore, offset), 10);
   });
 
   it("holds it while zooming back out too", () => {

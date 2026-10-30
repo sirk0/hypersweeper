@@ -314,8 +314,7 @@ describe("per-board shape classing", () => {
     // wash, far from the gamut edge, and the one on screen while playing —
     // it gets it. The closed tone is already at the edge for its hue, so there
     // the request is clamped and the size shows in lightness alone.
-    const opened = (size: number): number =>
-      oklch(cellPalette(tone(size, 3), "flat").revealed).c;
+    const opened = (size: number): number => oklch(cellPalette(tone(size, 3), "flat").revealed).c;
     expect(opened(0)).toBeGreaterThan(opened(2));
 
     // Nothing is pushed *above* the shape's own tone: the biggest tile is drawn
@@ -355,8 +354,7 @@ describe("shape colours", () => {
   });
 
   it("gives a diamond a colour nearer a square's than a triangle's", () => {
-    const dist = (a: Color, b: Color): number =>
-      Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
+    const dist = (a: Color, b: Color): number => Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
     const square = cellPalette({ sides: 4, regularity: 1 }, "flat").hidden;
     const diamond = cellPalette({ sides: 4, regularity: 0.6 }, "flat").hidden;
     const triangle = cellPalette({ sides: 3, regularity: 1 }, "flat").hidden;

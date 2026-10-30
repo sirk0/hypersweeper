@@ -3,17 +3,8 @@ import { fileURLToPath, URL } from "node:url";
 import { describe, expect, it } from "vitest";
 import catalog from "@data/catalog.json";
 import presets from "@data/presets.json";
-import {
-  DATASET_BLOBS,
-  DATASET_DOUBLES,
-  boardInfo,
-} from "../../src/analyticsEvent";
-import {
-  fullModeLabel,
-  surfaceOf,
-  tilingOf,
-  SOLID_MODES,
-} from "../../src/modes/catalog";
+import { DATASET_BLOBS, DATASET_DOUBLES, boardInfo } from "../../src/analyticsEvent";
+import { fullModeLabel, surfaceOf, tilingOf, SOLID_MODES } from "../../src/modes/catalog";
 import { familyKeyOf } from "../../src/ui/boardFacts";
 
 // The two oracles that keep a positional schema honest. Neither tests
@@ -51,17 +42,13 @@ describe("the documented schema", () => {
   // is what a dashboard is built from, so the doc is what this pins.
   it("lists every blob, in order, under the name the code gives it", () => {
     const documented = docColumns("blob");
-    expect(documented.map((c) => c.index)).toEqual(
-      DATASET_BLOBS.map((_, i) => i + 1),
-    );
+    expect(documented.map((c) => c.index)).toEqual(DATASET_BLOBS.map((_, i) => i + 1));
     expect(documented.map((c) => c.name)).toEqual(DATASET_BLOBS.map((c) => c.name));
   });
 
   it("lists every double, in order, under the name the code gives it", () => {
     const documented = docColumns("double");
-    expect(documented.map((c) => c.index)).toEqual(
-      DATASET_DOUBLES.map((_, i) => i + 1),
-    );
+    expect(documented.map((c) => c.index)).toEqual(DATASET_DOUBLES.map((_, i) => i + 1));
     expect(documented.map((c) => c.name)).toEqual(DATASET_DOUBLES.map((c) => c.name));
   });
 

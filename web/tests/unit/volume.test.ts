@@ -12,12 +12,7 @@ import { solidCubeBoard } from "../../src/boards/volume";
 // cell/edge/vertex counts themselves are pinned against the Python export by
 // tests/unit/conformance.test.ts; what is here is the structure behind them.
 
-function neighbourhood(
-  n: number,
-  i: number,
-  j: number,
-  k: number,
-): Set<string> {
+function neighbourhood(n: number, i: number, j: number, k: number): Set<string> {
   const out = new Set<string>();
   for (const di of [-1, 0, 1]) {
     for (const dj of [-1, 0, 1]) {
@@ -58,10 +53,7 @@ describe("the cube of cubes", () => {
     const board = solidCubeBoard(n);
     const histogram = new Map<number, number>();
     for (const neighbors of board.adjacency.values()) {
-      histogram.set(
-        neighbors.length,
-        (histogram.get(neighbors.length) ?? 0) + 1,
-      );
+      histogram.set(neighbors.length, (histogram.get(neighbors.length) ?? 0) + 1);
     }
     const inner = n - 2;
     expect(Object.fromEntries(histogram)).toEqual({
@@ -82,39 +74,31 @@ describe("the cube of cubes", () => {
     expect(vertexCount(board)).toBe(n * (n + 1) ** 2);
   });
 
-  it.each([3, 4, 6])(
-    "lays the sheets out so none covers another (n = %i)",
-    (n) => {
-      // the whole point of taking the cube apart: seen down the board's own z
-      // axis no two cells overlap, or a slice would hide a slice
-      const board = solidCubeBoard(n);
-      const seen = new Set<string>();
-      for (const poly of board.polygons.values()) {
-        const mid = [0, 1].map(
-          (axis) =>
-            Math.round((poly.reduce((s, v) => s + v[axis]!, 0) / 4) * 1e6) /
-            1e6,
-        );
-        expect(seen.has(mid.join(","))).toBe(false);
-        seen.add(mid.join(","));
-      }
-    },
-  );
+  it.each([3, 4, 6])("lays the sheets out so none covers another (n = %i)", (n) => {
+    // the whole point of taking the cube apart: seen down the board's own z
+    // axis no two cells overlap, or a slice would hide a slice
+    const board = solidCubeBoard(n);
+    const seen = new Set<string>();
+    for (const poly of board.polygons.values()) {
+      const mid = [0, 1].map(
+        (axis) => Math.round((poly.reduce((s, v) => s + v[axis]!, 0) / 4) * 1e6) / 1e6,
+      );
+      expect(seen.has(mid.join(","))).toBe(false);
+      seen.add(mid.join(","));
+    }
+  });
 
-  it.each([3, 4, 5])(
-    "has no two cells with the same closed neighbourhood (n = %i)",
-    (n) => {
-      // a pair that does can never be told apart by any sequence of numbers, so a
-      // mine landing alone in one forces a coin flip. Depth 2 is exactly that
-      // board, which is why the builder refuses it.
-      const board = solidCubeBoard(n);
-      const closed = new Set<string>();
-      for (const [cell, neighbors] of board.adjacency) {
-        closed.add([cell, ...neighbors].sort().join("|"));
-      }
-      expect(closed.size).toBe(board.adjacency.size);
-    },
-  );
+  it.each([3, 4, 5])("has no two cells with the same closed neighbourhood (n = %i)", (n) => {
+    // a pair that does can never be told apart by any sequence of numbers, so a
+    // mine landing alone in one forces a coin flip. Depth 2 is exactly that
+    // board, which is why the builder refuses it.
+    const board = solidCubeBoard(n);
+    const closed = new Set<string>();
+    for (const [cell, neighbors] of board.adjacency) {
+      closed.add([cell, ...neighbors].sort().join("|"));
+    }
+    expect(closed.size).toBe(board.adjacency.size);
+  });
 
   it("refuses a block two deep", () => {
     expect(() => solidCubeBoard(2)).toThrow();
@@ -126,15 +110,9 @@ describe("the cube of cubes", () => {
     // `solidSymmetries` to find. Two quarter turns and a mirror generate the
     // rest, which is what `keepSymmetries`'s redundancy pass leaves standing.
     const board = solidCubeBoard(n);
-    expect(board.symmetries.map((s) => s.id)).toEqual([
-      "ring",
-      "tube",
-      "mirror-ring",
-    ]);
+    expect(board.symmetries.map((s) => s.id)).toEqual(["ring", "tube", "mirror-ring"]);
     for (const symmetry of board.symmetries) {
-      expect(isAutomorphism(board.adjacency, symmetry.cycle), symmetry.id).toBe(
-        true,
-      );
+      expect(isAutomorphism(board.adjacency, symmetry.cycle), symmetry.id).toBe(true);
     }
     // the two turns are quarter turns, so four of either is the identity and
     // neither is its own undo; the mirror is
@@ -150,9 +128,7 @@ describe("the cube of cubes", () => {
     const board = solidCubeBoard(4);
     const ring = board.symmetries.find((s) => s.id === "ring")!;
     const slice = (cell: string) => cell.split(",")[2];
-    const moved = [...ring.cycle].filter(
-      ([from, to]) => slice(from) !== slice(to),
-    );
+    const moved = [...ring.cycle].filter(([from, to]) => slice(from) !== slice(to));
     expect(moved.length).toBeGreaterThan(0);
   });
 });

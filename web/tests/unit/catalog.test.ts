@@ -34,9 +34,9 @@ describe("catalog families", () => {
     expect(DUAL_ARCH.length).toBe(8);
     expect(ISOGONAL_ARCH.length).toBe(6);
     expect(RECTANGLE_ARCH.length).toBe(5);
-    expect(
-      new Set([...UNIFORM_ARCH, ...DUAL_ARCH, ...ISOGONAL_ARCH, ...RECTANGLE_ARCH]).size,
-    ).toBe(27);
+    expect(new Set([...UNIFORM_ARCH, ...DUAL_ARCH, ...ISOGONAL_ARCH, ...RECTANGLE_ARCH]).size).toBe(
+      27,
+    );
   });
 
   it("wraps the isogonal tilings onto every surface their symmetry allows", () => {
@@ -50,9 +50,7 @@ describe("catalog families", () => {
       const tiling = TILINGS_BY_KEY.get(key)!;
       expect(tilingAllows(tiling, SURFACES.get("flat")!)).toBe(true);
       expect(tilingAllows(tiling, SURFACES.get("torus")!)).toBe(true);
-      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(
-        key !== "threescaletri",
-      );
+      expect(tilingAllows(tiling, SURFACES.get("cylinder")!)).toBe(key !== "threescaletri");
       const wantMirror = mirrored.has(key);
       expect(tilingAllows(tiling, SURFACES.get("mobius")!)).toBe(wantMirror);
       expect(tilingAllows(tiling, SURFACES.get("klein")!)).toBe(wantMirror);
@@ -103,7 +101,9 @@ describe("catalog families", () => {
       for (const surface of ["flat", "cylinder", "torus"]) {
         expect(tilingAllows(tiling, SURFACES.get(surface)!), `${key} on ${surface}`).toBe(true);
       }
-      expect(tilingAllows(tiling, SURFACES.get("mobius")!), `${key} on mobius`).toBe(!tiling.chiral);
+      expect(tilingAllows(tiling, SURFACES.get("mobius")!), `${key} on mobius`).toBe(
+        !tiling.chiral,
+      );
       expect(tilingAllows(tiling, SURFACES.get("klein")!), `${key} on klein`).toBe(false);
     }
     for (const surface of ["cylinder", "mobius", "torus"]) {
@@ -123,9 +123,7 @@ describe("catalog families", () => {
   });
 
   it("marks only the chiral tilings chiral (snub hexagonal + floret)", () => {
-    const chiral = [...UNIFORM_ARCH, ...DUAL_ARCH].filter(
-      (k) => TILINGS_BY_KEY.get(k)!.chiral,
-    );
+    const chiral = [...UNIFORM_ARCH, ...DUAL_ARCH].filter((k) => TILINGS_BY_KEY.get(k)!.chiral);
     expect(new Set(chiral)).toEqual(new Set(["snubhex", "floret"]));
   });
 

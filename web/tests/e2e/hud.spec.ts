@@ -193,9 +193,7 @@ test.describe("game header", () => {
     expect((smiley.left + smiley.right) / 2).toBeCloseTo(390 / 2, 1);
   });
 
-  test("the symmetry controls sit on the board bar, not in the header", async ({
-    page,
-  }) => {
+  test("the symmetry controls sit on the board bar, not in the header", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     // Every control this board has, which is what the row has to hold at its
     // worst — out of the box it shows the Klein bottle's two alone
@@ -226,15 +224,11 @@ test.describe("game header", () => {
     // those are moves whenever the calibration is re-run. The mark itself is
     // pinned in tests/unit/fairness.test.ts, where it does not depend on one
     // board's mine count.
-    await expect(page.locator(".board-name")).toContainText(
-      "Squares · Klein bottle",
-    );
+    await expect(page.locator(".board-name")).toContainText("Squares · Klein bottle");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   });
 
-  test("the gesture hint shows on the first board ever, and never again", async ({
-    page,
-  }) => {
+  test("the gesture hint shows on the first board ever, and never again", async ({ page }) => {
     // The app's only first-run affordance: long-press-to-flag is otherwise
     // documented on the how-to-play page and nowhere a new player will look.
     await page.setViewportSize({ width: 390, height: 844 });
@@ -261,9 +255,7 @@ test.describe("game header", () => {
     await expect(hint).toBeHidden();
   });
 
-  test("a board with no symmetries shows its name and no board-bar controls", async ({
-    page,
-  }) => {
+  test("a board with no symmetries shows its name and no board-bar controls", async ({ page }) => {
     // An aperiodic patch, trimmed to its centremost cells, is symmetric about
     // nothing — one of the few boards in the catalogue with no control at all.
     await page.setViewportSize({ width: 390, height: 844 });
@@ -288,8 +280,7 @@ test.describe("game header", () => {
       const name = document.querySelector<HTMLElement>(".board-name-layer")!;
       const canvas = document.getElementById("board")!;
       return {
-        beforeCanvas:
-          name.compareDocumentPosition(canvas) === Node.DOCUMENT_POSITION_FOLLOWING,
+        beforeCanvas: name.compareDocumentPosition(canvas) === Node.DOCUMENT_POSITION_FOLLOWING,
         inUi: document.getElementById("ui")!.contains(name),
         events: getComputedStyle(name).pointerEvents,
         top: name.getBoundingClientRect().top,
@@ -314,7 +305,9 @@ test.describe("game header", () => {
     await page.locator('.hud-btn[data-slot="info"]').click();
     const dialog = page.locator('.dialog-backdrop[data-dialog="info"]');
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator("#info-dialog-title")).toHaveText("Cairo pentagonal · Klein bottle");
+    await expect(dialog.locator("#info-dialog-title")).toHaveText(
+      "Cairo pentagonal · Klein bottle",
+    );
 
     // The family it comes from, the surface it is wrapped on, and its size.
     const facts = await dialog

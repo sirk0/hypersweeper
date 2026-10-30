@@ -98,21 +98,11 @@ const times =
 // ζ⁴ = ζ³ − ζ² + ζ − 1 and ζ⁵ = −1.
 
 /** Multiply by ζ: a 36° turn, so the rotation order is 10. */
-const pentaRotate = ([a, b, c, d]: LatticePoint): LatticePoint => [
-  -d!,
-  a! + d!,
-  b! - d!,
-  c! + d!,
-];
+const pentaRotate = ([a, b, c, d]: LatticePoint): LatticePoint => [-d!, a! + d!, b! - d!, c! + d!];
 
 /** Complex conjugation, ζ^k ↦ ζ^(10−k): the mirror in the real axis
  * (conj(ζ) = 1 − ζ + ζ² − ζ³). */
-const pentaMirror = ([a, b, c, d]: LatticePoint): LatticePoint => [
-  a! + b!,
-  -b!,
-  b! - d!,
-  -b! - c!,
-];
+const pentaMirror = ([a, b, c, d]: LatticePoint): LatticePoint => [a! + b!, -b!, b! - d!, -b! - c!];
 
 /** Multiply by φ² = 2 + ζ² − ζ³, the inflation factor. (φ = ζ + 1/ζ =
  * 2cos36° is real and lives in the ring, so the scaling stays exact where a
@@ -123,9 +113,10 @@ function pentaScale(p: LatticePoint): LatticePoint {
   return p.map((c, k) => 2 * c + r2[k]! - r3[k]!);
 }
 
-const ZETA10 = [0, 1, 2, 3].map(
-  (k): Vertex => [Math.cos((Math.PI * k) / 5), Math.sin((Math.PI * k) / 5)],
-);
+const ZETA10 = [0, 1, 2, 3].map((k): Vertex => [
+  Math.cos((Math.PI * k) / 5),
+  Math.sin((Math.PI * k) / 5),
+]);
 
 const pentaToXy = (p: LatticePoint): Vertex => [
   p.reduce((sum, c, k) => sum + c * ZETA10[k]![0], 0),
@@ -412,13 +403,11 @@ export function substitutionPlacements(tile: Substitution, levels: number): Plac
   if (levels < 0) throw new Error("levels must be >= 0");
   let placements: Placement[] = [[0, 0, origin(tile)]];
   for (let power = levels - 1; power >= 0; power--) {
-    const children = tile.children.map(
-      ([rot, mirrored, translation]): Placement => [
-        rot,
-        mirrored,
-        inflate(tile, translation, power),
-      ],
-    );
+    const children = tile.children.map(([rot, mirrored, translation]): Placement => [
+      rot,
+      mirrored,
+      inflate(tile, translation, power),
+    ]);
     const next: Placement[] = [];
     for (const parent of placements) {
       for (const child of children) next.push(compose(tile, parent, child));
@@ -440,11 +429,7 @@ function boardXy(tile: Substitution, p: LatticePoint): Vertex {
   return [x, -y];
 }
 
-function substitutionBoard(
-  tile: Substitution,
-  levels: number,
-  scale: number,
-): Board {
+function substitutionBoard(tile: Substitution, levels: number, scale: number): Board {
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
   const anchors = new Map<CellId, LatticePoint>();

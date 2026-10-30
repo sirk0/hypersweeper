@@ -24,10 +24,9 @@ const require_ = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 const NATIVE_BRIDGE = readFileSync(
-  require_.resolve("@capacitor/ios/package.json").replace(
-    /package\.json$/,
-    "Capacitor/Capacitor/assets/native-bridge.js",
-  ),
+  require_
+    .resolve("@capacitor/ios/package.json")
+    .replace(/package\.json$/, "Capacitor/Capacitor/assets/native-bridge.js"),
   "utf8",
 );
 
@@ -41,10 +40,12 @@ const GAME_CENTER_METHODS: { name: string; rtype?: string }[] = [
   { name: "removeAllListeners", rtype: "promise" },
   { name: "checkPermissions", rtype: "promise" },
   { name: "requestPermissions", rtype: "promise" },
-  ...[...readFileSync(
-    path.resolve(HERE, "../../../ios/App/App/GameCenterPlugin.swift"),
-    "utf8",
-  ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g)].map((m) => ({
+  ...[
+    ...readFileSync(
+      path.resolve(HERE, "../../../ios/App/App/GameCenterPlugin.swift"),
+      "utf8",
+    ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g),
+  ].map((m) => ({
     name: m[1] as string,
     rtype: "promise",
   })),
@@ -81,9 +82,11 @@ async function asNativeApp(page: Page, signedIn = true): Promise<void> {
             if (msg.pluginId !== "GameCenter") return;
             window.__gc?.push(msg);
             // Answer like the native side: asynchronously, through fromNative.
-            const cap = (window as unknown as {
-              Capacitor: { fromNative(result: unknown): void };
-            }).Capacitor;
+            const cap = (
+              window as unknown as {
+                Capacitor: { fromNative(result: unknown): void };
+              }
+            ).Capacitor;
             const reply = (data: unknown) =>
               setTimeout(() =>
                 cap.fromNative({
@@ -112,10 +115,7 @@ async function asNativeApp(page: Page, signedIn = true): Promise<void> {
 }
 
 function calls(page: Page, method: string): Promise<BridgeCall[]> {
-  return page.evaluate(
-    (name) => (window.__gc ?? []).filter((c) => c.methodName === name),
-    method,
-  );
+  return page.evaluate((name) => (window.__gc ?? []).filter((c) => c.methodName === name), method);
 }
 
 async function reports(page: Page): Promise<Report[]> {
@@ -194,9 +194,7 @@ test.describe("Game Center through the Capacitor bridge", () => {
     await winFixtureBoard(page);
     await expect.poll(() => reportedIds(page, true)).toContain("hs.first_win");
     const banners = await reportedIds(page, true);
-    expect(banners).toEqual(
-      expect.arrayContaining(["hs.flagless", "hs.shape.4"]),
-    );
+    expect(banners).toEqual(expect.arrayContaining(["hs.flagless", "hs.shape.4"]));
     // Progress that is not an unlock goes along quietly.
     const quiet = await reportedIds(page, false);
     expect(quiet).toContain("hs.wins.10");

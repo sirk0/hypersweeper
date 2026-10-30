@@ -207,27 +207,35 @@ test.describe("M6 animations", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "ms:settings",
-        JSON.stringify({ version: 5, theme: "bright", shape: "realistic", sound: "off", seenHint: true }),
+        JSON.stringify({
+          version: 5,
+          theme: "bright",
+          shape: "realistic",
+          sound: "off",
+          seenHint: true,
+        }),
       );
     });
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
-    return page.evaluate(() => {
-      const ms = window.__ms!;
-      ms.animations(true);
-      ms.startBoard("sphere", "easy"); // enumerate the cells first
-      const cells = ms.cells();
-      // Two mines, both far from the opener, so one reveal is a wide flood
-      // rather than the single numbered cell an ordinary easy board opens.
-      ms.startBoard("sphere", "easy", { mines: cells.slice(0, 2) });
-      for (const c of cells.slice(2, 8)) ms.flag(c);
-      return { opener: cells[cells.length - 1]!, mine: cells[0]! };
-    }).then(async (cells) => {
-      // Let the board finish assembling, so its frames are not what a glow
-      // measurement is racing.
-      await page.waitForTimeout(800);
-      return cells;
-    });
+    return page
+      .evaluate(() => {
+        const ms = window.__ms!;
+        ms.animations(true);
+        ms.startBoard("sphere", "easy"); // enumerate the cells first
+        const cells = ms.cells();
+        // Two mines, both far from the opener, so one reveal is a wide flood
+        // rather than the single numbered cell an ordinary easy board opens.
+        ms.startBoard("sphere", "easy", { mines: cells.slice(0, 2) });
+        for (const c of cells.slice(2, 8)) ms.flag(c);
+        return { opener: cells[cells.length - 1]!, mine: cells[0]! };
+      })
+      .then(async (cells) => {
+        // Let the board finish assembling, so its frames are not what a glow
+        // measurement is racing.
+        await page.waitForTimeout(800);
+        return cells;
+      });
   }
 
   /** Whether a run of frames read `late` ms after a click could show an
@@ -296,8 +304,7 @@ test.describe("M6 animations", () => {
     const PEAK_MIN = 0.14;
     const RISE = 80;
     const FALL = 320;
-    const floor = (late: number) =>
-      PEAK_MIN * Math.max(0, 1 - Math.max(0, late - RISE) / FALL);
+    const floor = (late: number) => PEAK_MIN * Math.max(0, 1 - Math.max(0, late - RISE) / FALL);
     expect(litAsEnvelopeAllows(at.seen, RISE + FALL, floor)).not.toBe(false);
     // ...and once it has finished opening they are back to the ember. This is
     // the "glow goes back to very low after the click's cells are open" rule,

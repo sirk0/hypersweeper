@@ -102,9 +102,7 @@ export function icosahedron(): VertexFaces {
  * 5*12 = 60 triangles. */
 function dodecahedron(): VertexFaces {
   const { vertices: icoVertices, faces: icoFaces } = icosahedron();
-  const corners = icoFaces.map((face) =>
-    normalize(centroidOf(face.map((i) => icoVertices[i]!))),
-  );
+  const corners = icoFaces.map((face) => normalize(centroidOf(face.map((i) => icoVertices[i]!))));
   const vertexFaces = new Map<number, number[]>();
   icoFaces.forEach((face, faceIndex) => {
     for (const v of face) {
@@ -292,10 +290,7 @@ export function geodesic(
  * cut `g` ways, and each of those points has a zero weight on the far corner
  * and the same two weights over the edge's ends from either face, so the two
  * faces name it alike. */
-export function geodesicHK(
-  h: number,
-  k: number,
-): { positions: Positions; triangles: string[][] } {
+export function geodesicHK(h: number, k: number): { positions: Positions; triangles: string[][] } {
   if (k <= 0 || (h - k) % 3 === 0) throw new Error(`geodesicHK(${h}, ${k})`);
   const { vertices, faces } = icosahedron();
   const total = h * h + h * k + k * k;
@@ -360,14 +355,20 @@ export function geodesicHK(
     for (let i = -reach; i <= 2 * reach; i++) {
       for (let j = -reach; j <= 2 * reach; j++) {
         const pair: [number, number][][] = [
-          [[i, j], [i + 1, j], [i, j + 1]],
-          [[i + 1, j], [i + 1, j + 1], [i, j + 1]],
+          [
+            [i, j],
+            [i + 1, j],
+            [i, j + 1],
+          ],
+          [
+            [i + 1, j],
+            [i + 1, j + 1],
+            [i, j + 1],
+          ],
         ];
         for (const tri of pair) {
           const cornerWeights = tri.map(([p, q]) => weightsAt(p, q));
-          const centre = [0, 1, 2].map((n) =>
-            cornerWeights.reduce((sum, cw) => sum + cw[n]!, 0),
-          );
+          const centre = [0, 1, 2].map((n) => cornerWeights.reduce((sum, cw) => sum + cw[n]!, 0));
           if (Math.min(...centre) > 0) {
             triangles.push(cornerWeights.map((cw) => key(face, cw)));
           }
@@ -380,19 +381,12 @@ export function geodesicHK(
 }
 
 /** One cell per geodesic vertex, made of the surrounding triangle centers. */
-function goldbergDual(
-  mode: string,
-  positions: Positions,
-  triangles: string[][],
-): Board3D {
+function goldbergDual(mode: string, positions: Positions, triangles: string[][]): Board3D {
   const centers: Positions = new Map();
   const around = new Map<string, string[]>();
   for (const triangle of triangles) {
     const triangleId = [...triangle].sort().join(";");
-    centers.set(
-      triangleId,
-      normalize(centroidOf(triangle.map((k) => positions.get(k)!))),
-    );
+    centers.set(triangleId, normalize(centroidOf(triangle.map((k) => positions.get(k)!))));
     for (const key of triangle) {
       let ids = around.get(key);
       if (!ids) around.set(key, (ids = []));
@@ -401,10 +395,7 @@ function goldbergDual(
   }
   const cells: Cells = new Map();
   for (const [key, triangleIds] of around) {
-    const ring: [string, Vec3][] = triangleIds.map((tid) => [
-      tid,
-      centers.get(tid)!,
-    ]);
+    const ring: [string, Vec3][] = triangleIds.map((tid) => [tid, centers.get(tid)!]);
     cells.set(key, tangentOrder(positions.get(key)!, ring));
   }
   return bentRegular(convexBoard3d(mode, cells, centers));
@@ -412,10 +403,7 @@ function goldbergDual(
 
 /** The dual of a geodesic icosahedron, Goldberg GP(frequency, 0): always 12
  * pentagons plus `10 * frequency**2 - 10` hexagons. */
-function goldbergBoard(
-  mode: string,
-  frequency: number,
-): Board3D {
+function goldbergBoard(mode: string, frequency: number): Board3D {
   const { positions, triangles } = geodesic(frequency);
   return goldbergDual(mode, positions, triangles);
 }
@@ -565,10 +553,7 @@ export function cubeBoard(n: number): Board3D {
   const cells: Cells = new Map();
   const positions: Positions = new Map();
   for (let axis = 0; axis < 3; axis++) {
-    const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [
-      number,
-      number,
-    ];
+    const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [number, number];
     for (const sign of [-1, 1]) {
       for (let i = 0; i < n; i++) {
         for (let j = 0; j < n; j++) {
@@ -626,10 +611,7 @@ export const BRICK_RINGS = "brickrings";
 
 /** One block's bricks as `[u0, v0, u1, v1]` in block-local units: `count`
  * courses laid across the block, or turned a quarter-turn. */
-function brickCourses(
-  count: number,
-  turned: boolean,
-): [number, number, number, number][] {
+function brickCourses(count: number, turned: boolean): [number, number, number, number][] {
   const step = BRICK_BLOCK / count;
   const out: [number, number, number, number][] = [];
   for (let k = 0; k < count; k++) {
@@ -692,9 +674,7 @@ function faceBricks(
  *
  * Vertices are integer triples and every brick edge is axis-aligned, so this is
  * exact integer arithmetic with no tolerance to get wrong. */
-function splitAtLatticePoints(
-  cells: Map<string, Vec3[]>,
-): Map<string, Vec3[]> {
+function splitAtLatticePoints(cells: Map<string, Vec3[]>): Map<string, Vec3[]> {
   const vertices = new Set<string>();
   for (const keys of cells.values()) {
     for (const key of keys) vertices.add(cid(...key));
@@ -710,11 +690,7 @@ function splitAtLatticePoints(
       const steps = Math.max(...delta.map(Math.abs));
       const unit = delta.map((d) => d / steps) as Vec3;
       for (let s = 1; s < steps; s++) {
-        const point: Vec3 = [
-          a[0] + unit[0] * s,
-          a[1] + unit[1] * s,
-          a[2] + unit[2] * s,
-        ];
+        const point: Vec3 = [a[0] + unit[0] * s, a[1] + unit[1] * s, a[2] + unit[2] * s];
         if (vertices.has(cid(...point))) split.push(point);
       }
     }
@@ -747,10 +723,7 @@ function splitAtLatticePoints(
  * face's outer ring cuts its row edges (along u) at even steps from the corner
  * and its side edges (along v) at odd ones, and the cyclic rule makes each cube
  * edge one face's u and the other face's v, so the two cuts never line up. */
-export function brickCubeBoard(
-  bond: string,
-  n: number,
-): Board3D {
+export function brickCubeBoard(bond: string, n: number): Board3D {
   if (bond !== BRICK_RINGS && !BRICK_BONDS[bond]) {
     throw new Error(`unknown brick bond: ${bond}`);
   }
@@ -853,10 +826,7 @@ function polycubeSurface(
             }
             const base = [i, j, k];
             if (sign > 0) base[axis]! += 1; // the far face of the cube
-            const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [
-              number,
-              number,
-            ];
+            const [uAxis, vAxis] = [0, 1, 2].filter((a) => a !== axis) as [number, number];
             let corners: number[][] = [];
             for (const [du, dv] of [
               [0, 0],
@@ -922,10 +892,7 @@ function polycubeSurface(
  *
  * A unit cube is kept when at least two of its three coordinates lie in the
  * outer band (within `thickness` of a face). */
-export function cubeFrameBoard(
-  n: number,
-  thickness: number,
-): Board3D {
+export function cubeFrameBoard(n: number, thickness: number): Board3D {
   if (!(thickness >= 1 && 2 * thickness < n)) {
     throw new Error("thickness must be >= 1 and leave a non-empty hole");
   }
@@ -945,10 +912,7 @@ export function cubeFrameBoard(
  * `levels` counts the terraces of one pyramid; the apex square has side
  * `base - 2*(levels - 1)` and the whole stack is `2*levels - 1` layers
  * tall. */
-export function steppedBipyramidBoard(
-  base: number,
-  levels: number,
-): Board3D {
+export function steppedBipyramidBoard(base: number, levels: number): Board3D {
   if (!(levels >= 2 && base - 2 * (levels - 1) >= 1)) {
     throw new Error("need levels >= 2 and a positive apex square");
   }
@@ -958,11 +922,7 @@ export function steppedBipyramidBoard(
     const margin = Math.abs(k - middle); // each step in shrinks by 1
     return margin <= i && i < base - margin && margin <= j && j < base - margin;
   };
-  return polycubeSurface(
-    "steppedbipyramid",
-    solid,
-    [base, base, height],
-  );
+  return polycubeSurface("steppedbipyramid", solid, [base, base, height]);
 }
 
 /** A single stepped pyramid (a Mesoamerican-style ziggurat): square terraces
@@ -972,10 +932,7 @@ export function steppedBipyramidBoard(
  * solid — there is nothing below layer 0 here, so the foundation is itself
  * on the boundary and, like every terrace step and side wall, a playable
  * cell. */
-export function steppedPyramidBoard(
-  base: number,
-  levels: number,
-): Board3D {
+export function steppedPyramidBoard(base: number, levels: number): Board3D {
   if (!(levels >= 2 && base - 2 * (levels - 1) >= 1)) {
     throw new Error("need levels >= 2 and a positive apex square");
   }
@@ -1058,9 +1015,7 @@ export function dodecahedronBoard(frequency = 1): Board3D {
  * Non-convex (the inward faces point toward the hollow centre), so unlike
  * `tetrahedronBoard` each triangle is oriented outward from its own
  * sub-tetrahedron's centroid rather than the origin. */
-export function tetrahedronFrameBoard(
-  frequency = 4,
-): Board3D {
+export function tetrahedronFrameBoard(frequency = 4): Board3D {
   const { vertices: base } = tetrahedron();
   // Ten shared points: the 4 original corners, then the 6 edge midpoints.
   // A single global vertex list keeps the midpoints' subdivision keys
@@ -1094,11 +1049,7 @@ export function tetrahedronFrameBoard(
       [tet[0]!, tet[1]!, tet[3]!],
       [tet[0]!, tet[1]!, tet[2]!],
     ];
-    const { positions: pos, triangles } = geodesic(
-      frequency,
-      { vertices: verts, faces },
-      false,
-    );
+    const { positions: pos, triangles } = geodesic(frequency, { vertices: verts, faces }, false);
     for (const [k, v] of pos) positions.set(k, v);
     triangles.forEach((triangle, n) => {
       const cell = cid(corner, n);

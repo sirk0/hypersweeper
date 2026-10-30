@@ -52,9 +52,7 @@ test.describe("3D markers stay cheap in bulk", () => {
 
   test("the board under test is one that builds models", async ({ page }) => {
     await page.evaluate(() => window.__ms!.startBoard("klein", "easy"));
-    expect(await page.evaluate(() => window.__ms!.state().cellStyle)).toBe(
-      "realistic/bright",
-    );
+    expect(await page.evaluate(() => window.__ms!.state().cellStyle)).toBe("realistic/bright");
     // The models themselves are the `pins` setting's, and it is left at its
     // default here — so this is the shipped configuration, not a special one.
     expect(await page.evaluate(() => window.__ms!.state().glow)).not.toBeNull();

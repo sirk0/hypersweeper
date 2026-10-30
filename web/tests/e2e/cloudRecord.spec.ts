@@ -19,10 +19,9 @@ const require_ = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 const NATIVE_BRIDGE = readFileSync(
-  require_.resolve("@capacitor/ios/package.json").replace(
-    /package\.json$/,
-    "Capacitor/Capacitor/assets/native-bridge.js",
-  ),
+  require_
+    .resolve("@capacitor/ios/package.json")
+    .replace(/package\.json$/, "Capacitor/Capacitor/assets/native-bridge.js"),
   "utf8",
 );
 
@@ -32,10 +31,12 @@ const CLOUD_METHODS: { name: string; rtype?: string }[] = [
   { name: "removeAllListeners", rtype: "promise" },
   { name: "checkPermissions", rtype: "promise" },
   { name: "requestPermissions", rtype: "promise" },
-  ...[...readFileSync(
-    path.resolve(HERE, "../../../ios/App/App/CloudRecordPlugin.swift"),
-    "utf8",
-  ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g)].map((m) => ({
+  ...[
+    ...readFileSync(
+      path.resolve(HERE, "../../../ios/App/App/CloudRecordPlugin.swift"),
+      "utf8",
+    ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g),
+  ].map((m) => ({
     name: m[1] as string,
     rtype: "promise",
   })),
@@ -68,9 +69,11 @@ async function asNativeApp(page: Page, store: Record<string, string> = {}): Prom
           postMessage: (msg: BridgeCall) => {
             if (msg.pluginId !== "CloudRecord") return;
             window.__icloudCalls?.push(msg);
-            const cap = (window as unknown as {
-              Capacitor: { fromNative(result: unknown): void };
-            }).Capacitor;
+            const cap = (
+              window as unknown as {
+                Capacitor: { fromNative(result: unknown): void };
+              }
+            ).Capacitor;
             const reply = (data: unknown) =>
               setTimeout(() =>
                 cap.fromNative({
@@ -154,7 +157,12 @@ function localTimes(page: Page, key: string): Promise<number[]> {
 const ANOTHER_DEVICE: Record<string, string> = {
   scores: JSON.stringify({
     v: 1,
-    boards: { "square|easy": [{ ms: 21_000, at: 1000 }, { ms: 34_000, at: 900 }] },
+    boards: {
+      "square|easy": [
+        { ms: 21_000, at: 1000 },
+        { ms: 34_000, at: 900 },
+      ],
+    },
   }),
   "wins.0123456789abcdef": JSON.stringify({
     v: 1,
@@ -189,10 +197,9 @@ test.describe("the iCloud record through the Capacitor bridge", () => {
     await boot(page);
     await expect.poll(async () => (await calls(page, "read")).length).toBe(1);
     await winFixtureBoard(page);
-    await expect.poll(() => cloudKeys(page)).toEqual([
-      "scores",
-      expect.stringMatching(/^wins\.[0-9a-f]{16}$/),
-    ]);
+    await expect
+      .poll(() => cloudKeys(page))
+      .toEqual(["scores", expect.stringMatching(/^wins\.[0-9a-f]{16}$/)]);
     const own = await page.evaluate(() => {
       const key = Object.keys(window.__icloud!).find((k) => k.startsWith("wins."))!;
       return JSON.parse(window.__icloud![key]!) as { wins: unknown };
@@ -227,9 +234,7 @@ test.describe("the iCloud record through the Capacitor bridge", () => {
 });
 
 test.describe("the iCloud record, with iCloud out of reach", () => {
-  test("the game plays and records as before, and syncs once iCloud is back", async ({
-    page,
-  }) => {
+  test("the game plays and records as before, and syncs once iCloud is back", async ({ page }) => {
     await asNativeApp(page);
     await page.addInitScript(() => {
       window.__icloudDown = true;
@@ -249,10 +254,9 @@ test.describe("the iCloud record, with iCloud out of reach", () => {
       window.__icloudDown = false;
     });
     await resume(page);
-    await expect.poll(() => cloudKeys(page)).toEqual([
-      "scores",
-      expect.stringMatching(/^wins\.[0-9a-f]{16}$/),
-    ]);
+    await expect
+      .poll(() => cloudKeys(page))
+      .toEqual(["scores", expect.stringMatching(/^wins\.[0-9a-f]{16}$/)]);
   });
 
   test("coming back to the app picks up what arrived meanwhile", async ({ page }) => {

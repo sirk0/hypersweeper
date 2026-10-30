@@ -652,7 +652,10 @@ export function classifyShapes<K>(
       }
       shapes.push({ value, count: c.length });
     }
-    classes.set(sides, shapes.map((s) => s.value));
+    classes.set(
+      sides,
+      shapes.map((s) => s.value),
+    );
   }
 
   // sides -> the representative span of each distinct size, ascending. Split
@@ -677,7 +680,10 @@ export function classifyShapes<K>(
       current.push(v);
     }
     if (current.length) groups.push(current);
-    sizes.set(sideCount, groups.map((g) => g[Math.floor(g.length / 2)]!));
+    sizes.set(
+      sideCount,
+      groups.map((g) => g[Math.floor(g.length / 2)]!),
+    );
   }
 
   const toned = new Map<K, ShapeTone>();

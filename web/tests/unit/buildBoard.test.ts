@@ -15,17 +15,22 @@ describe("buildBoard", () => {
 
   it("builds another window of an aperiodic patch afresh", () => {
     const seeds = [...Array(64).keys()];
-    const first = seeds.find((s) => windowFor("penrose", "easy", s) !== windowFor("penrose", "easy", 0))!;
+    const first = seeds.find(
+      (s) => windowFor("penrose", "easy", s) !== windowFor("penrose", "easy", 0),
+    )!;
     expect(first).toBeDefined();
     const board = buildBoard("penrose", "easy", 0);
     expect(buildBoard("penrose", "easy", first)).not.toBe(board);
-    const same = seeds.find((s) => s !== 0 && windowFor("penrose", "easy", s) === windowFor("penrose", "easy", 0))!;
+    const same = seeds.find(
+      (s) => s !== 0 && windowFor("penrose", "easy", s) === windowFor("penrose", "easy", 0),
+    )!;
     expect(buildBoard("penrose", "easy", same)).toBe(board);
   });
 
   it("keeps only the last few, and rebuilds the same board after", () => {
     const board = buildBoard("square", "easy");
-    for (const mode of ["hex", "triangle", "hyperbolic73", "hyperbolic83"]) buildBoard(mode, "easy");
+    for (const mode of ["hex", "triangle", "hyperbolic73", "hyperbolic83"])
+      buildBoard(mode, "easy");
     const again = buildBoard("square", "easy");
     expect(again).not.toBe(board);
     expect([...again.adjacency]).toEqual([...board.adjacency]);

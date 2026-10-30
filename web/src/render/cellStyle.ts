@@ -205,8 +205,10 @@ export interface CellStyle {
  * `digitFont` are the theme's. `albedo` sits on this side because it pays back
  * what the *lighting* takes, which is a fact about how a cut is shaded — but a
  * theme may override it, and one does (see `BOARD_LOOKS.classic`). */
-export interface BoardShape
-  extends Omit<CellStyle, "key" | "shape" | "theme" | "monochrome" | "boardTint" | "digitFont"> {
+export interface BoardShape extends Omit<
+  CellStyle,
+  "key" | "shape" | "theme" | "monochrome" | "boardTint" | "digitFont"
+> {
   key: string;
   label: string;
   /** The picker row's one-line description. */
@@ -256,16 +258,28 @@ const CLASSIC_SHAPE: BoardShape = {
   flatMine: true,
   flat: {
     gap: 0.04,
-    closed: [{ inset: 0, height: 0 }, { inset: 0.16, height: 0.24 }],
+    closed: [
+      { inset: 0, height: 0 },
+      { inset: 0.16, height: 0.24 },
+    ],
     // A thin rim (so the sunken face still reads full-size) dropping to a floor
     // below the board plane.
-    open: [{ inset: 0, height: 0 }, { inset: 0.07, height: -0.09 }],
+    open: [
+      { inset: 0, height: 0 },
+      { inset: 0.07, height: -0.09 },
+    ],
   },
   solid: {
     gap: 0.04,
-    closed: [{ inset: 0, height: 0 }, { inset: 0.16, height: 0.1 }],
+    closed: [
+      { inset: 0, height: 0 },
+      { inset: 0.16, height: 0.1 },
+    ],
     // Sunk almost to the grout, kept just above it so the two never z-fight.
-    open: [{ inset: 0, height: 0 }, { inset: 0.16, height: 0.02 }],
+    open: [
+      { inset: 0, height: 0 },
+      { inset: 0.16, height: 0.02 },
+    ],
   },
   material: { roughness: 0.65, metalness: 0 },
   // The classic board is *lit* — the bevel's highlight and shadow, and their
@@ -302,16 +316,28 @@ const FLAT_SHAPE: BoardShape = {
     gap: 0.1,
     // A hair of relief, not for the look but so the two states are never
     // coplanar with each other where a board wraps back on itself.
-    closed: [{ inset: 0, height: 0.004 }, { inset: 0.02, height: 0.004 }],
-    open: [{ inset: 0, height: 0 }, { inset: 0.02, height: 0 }],
+    closed: [
+      { inset: 0, height: 0.004 },
+      { inset: 0.02, height: 0.004 },
+    ],
+    open: [
+      { inset: 0, height: 0 },
+      { inset: 0.02, height: 0 },
+    ],
   },
   // A solid keeps its relief and its lighting (see `unlit`): all that carries
   // over is the wide gap, which there shows the grout.
   solid: {
     gap: 0.1,
-    closed: [{ inset: 0, height: 0 }, { inset: 0.04, height: 0.05 }],
+    closed: [
+      { inset: 0, height: 0 },
+      { inset: 0.04, height: 0.05 },
+    ],
     // Above the grout, or the two z-fight.
-    open: [{ inset: 0, height: 0 }, { inset: 0.04, height: 0.008 }],
+    open: [
+      { inset: 0, height: 0 },
+      { inset: 0.04, height: 0.008 },
+    ],
   },
   material: { roughness: 0.7, metalness: 0 },
   unlit: true,
@@ -747,8 +773,7 @@ export function vertexShade(
 ): number {
   // Loop 0 is the outermost (at the grout) and sits at `rim`; the centroid,
   // one step past the innermost loop, is `center`.
-  const at = (loop: number): number =>
-    shade.rim + (shade.center - shade.rim) * (loop / loops);
+  const at = (loop: number): number => shade.rim + (shade.center - shade.rim) * (loop / loops);
   if (v < 3 * n) return v % 3 === 0 ? shade.center : at(loops - 1);
   const w = v - 3 * n;
   const ring = Math.floor(w / (6 * n)); // the gap above loop `ring`

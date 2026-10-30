@@ -200,7 +200,10 @@ test.describe("picking a two-sided surface", () => {
       (band) => band.map((p) => window.__ms!.cellAtScreenXY(p.x, p.y)),
       band,
     );
-    expect(picked.filter((c) => c === null), "a point of the band picks nothing").toEqual([]);
+    expect(
+      picked.filter((c) => c === null),
+      "a point of the band picks nothing",
+    ).toEqual([]);
 
     // Hovering it lights it, right under the pointer.
     const p = band[Math.floor(band.length / 2)]!;
@@ -216,7 +219,10 @@ test.describe("picking a two-sided surface", () => {
     // mined, so a click that landed anywhere else would end the game lost (and
     // opening the one safe cell wins it).
     const cell = picked[Math.floor(band.length / 2)]!;
-    const mines = await page.evaluate((cell) => window.__ms!.cells().filter((c) => c !== cell), cell);
+    const mines = await page.evaluate(
+      (cell) => window.__ms!.cells().filter((c) => c !== cell),
+      cell,
+    );
     await frame(mines);
     await page.mouse.click(p.x, p.y);
     expect(await page.evaluate((cell) => window.__ms!.cellState(cell), cell)).toBe("revealed");
@@ -311,10 +317,7 @@ test.describe("picking a two-sided surface", () => {
 
     const strays: string[] = [];
     for (const p of points) {
-      const aimed = await page.evaluate(
-        ({ x, y }) => window.__ms!.cellAtScreenXY(x, y),
-        p,
-      );
+      const aimed = await page.evaluate(({ x, y }) => window.__ms!.cellAtScreenXY(x, y), p);
       await page.mouse.move(p.x, p.y);
       await page.mouse.click(p.x, p.y, { button: "right" });
       const flagged = await page.evaluate(() =>
@@ -331,9 +334,7 @@ test.describe("picking a two-sided surface", () => {
   // What the bug cost a player: the far sheet is the half of the board they
   // cannot see, so a click aimed at a safe tile in front lost the game on a
   // mine behind it.
-  test("cylinder: clicking along a grout line cannot detonate the far sheet", async ({
-    page,
-  }) => {
+  test("cylinder: clicking along a grout line cannot detonate the far sheet", async ({ page }) => {
     const seen = await visibleCells(page, "cylinder");
     // The widest seam on screen: the two tiles squarely facing the camera, so
     // the grout line between them is at its widest and the far sheet is

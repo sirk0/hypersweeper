@@ -113,9 +113,7 @@ function splitHexagons(
     }
     const centre = ["c", cell].join("|");
     const points = ring.map((k) => positions.get(k)!);
-    outPos.set(centre, [0, 1, 2].map(
-      (a) => points.reduce((sum, p) => sum + p[a]!, 0) / 6,
-    ) as Vec3);
+    outPos.set(centre, [0, 1, 2].map((a) => points.reduce((sum, p) => sum + p[a]!, 0) / 6) as Vec3);
     for (let r = 0; r < 3; r++) {
       const i = start + 2 * r;
       outCells.set(cid(cell, r), [centre, ring[i % 6]!, ring[(i + 1) % 6]!, ring[(i + 2) % 6]!]);
@@ -140,9 +138,10 @@ function fanFaces(faces: Cells, positions: Positions): { faces: Cells; positions
     }
     const centre = ["c", cell].join("|");
     const points = ring.map((k) => positions.get(k)!);
-    outPos.set(centre, [0, 1, 2].map(
-      (a) => points.reduce((sum, p) => sum + p[a]!, 0) / ring.length,
-    ) as Vec3);
+    outPos.set(
+      centre,
+      [0, 1, 2].map((a) => points.reduce((sum, p) => sum + p[a]!, 0) / ring.length) as Vec3,
+    );
     ring.forEach((key, i) => {
       outCells.set(cid(cell, i), [key, ring[(i + 1) % ring.length]!, centre]);
     });
@@ -174,7 +173,10 @@ function subdivideMixed(
   }
   const cells: Cells = new Map();
   const outPos: Positions = new Map();
-  for (const [sides, grid] of [[3, triGrid], [4, quadGrid]] as const) {
+  for (const [sides, grid] of [
+    [3, triGrid],
+    [4, quadGrid],
+  ] as const) {
     const group = bySides.get(sides);
     if (!group) continue;
     const sub = grid(group, positions, frequency);
@@ -186,12 +188,7 @@ function subdivideMixed(
   return { faces: cells, positions: outPos };
 }
 
-function archimedeanBoard(
-  mode: string,
-  op: Op,
-  frequency: number,
-  baseKind = "cube",
-): Board3D {
+function archimedeanBoard(mode: string, op: Op, frequency: number, baseKind = "cube"): Board3D {
   if (frequency < 0) throw new Error("frequency must be at least 0");
   const base = new Base(baseKind);
   let { faces, positions } = archimedeanFaces(base, op);

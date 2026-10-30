@@ -331,7 +331,9 @@ export class PolygonBoard extends Group implements BoardMesh {
     geometry.setAttribute("position", this.positionAttr);
     this.motion = new BoardMotion(this.order.length, false, FLAT_LIFT_SCALE);
     cellAttribute(geometry, vertexCount, this.geom);
-    this.geom.forEach((g, i) => this.motion.setCell(i, [g.center[0], g.center[1], 0], [0, 0, 1], g.radius));
+    this.geom.forEach((g, i) =>
+      this.motion.setCell(i, [g.center[0], g.center[1], 0], [0, 0, 1], g.radius),
+    );
     // RGB, or RGBA on a style whose opened cells let the page through: three.js
     // reads a per-vertex alpha only from a 4-component colour attribute, so the
     // channel is added exactly where it is used and every other style keeps the
@@ -432,8 +434,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     dropMesh.renderOrder = 2;
     this.add(dropMesh);
 
-    this.meanRadius =
-      this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
+    this.meanRadius = this.geom.reduce((s, g) => s + g.radius, 0) / (this.geom.length || 1);
     this.motion.setUnit(this.meanRadius);
     // How far an opened cell starts above its recess: the closed crown's height
     // over the open floor's, so it drops from where its button stood.
@@ -815,10 +816,7 @@ export class PolygonBoard extends Group implements BoardMesh {
     const now = performance.now();
     const dropIndex = this.anim.dropIndex();
     const dropAt = this.anim.dropProgress(now);
-    const extent =
-      this.view.kind === "flat"
-        ? Math.min(this.view.width, this.view.height)
-        : 1;
+    const extent = this.view.kind === "flat" ? Math.min(this.view.width, this.view.height) : 1;
     for (let i = 0; i < this.order.length; i++) {
       const glyph = glyphFor(this.states[i]!);
       if (glyph === null) continue;
@@ -838,18 +836,16 @@ export class PolygonBoard extends Group implements BoardMesh {
       // lands upright on screen.
       const at = (dx: number, dy: number, qz: number): [number, number, number] =>
         this.quarterTurn ? [cxp - dy, cyp + dx, qz] : [cxp + dx, cyp + dy, qz];
-      const quad = (
-        into: number[],
-        uvInto: number[],
-        half: number,
-        qz: number,
-        rise = 0,
-      ): void => {
+      const quad = (into: number[], uvInto: number[], half: number, qz: number, rise = 0): void => {
         const lo = rise - half;
         const hi = rise + half;
         into.push(
-          ...at(-half, lo, qz), ...at(half, lo, qz), ...at(half, hi, qz),
-          ...at(-half, lo, qz), ...at(half, hi, qz), ...at(-half, hi, qz),
+          ...at(-half, lo, qz),
+          ...at(half, lo, qz),
+          ...at(half, hi, qz),
+          ...at(-half, lo, qz),
+          ...at(half, hi, qz),
+          ...at(-half, hi, qz),
         );
         uvInto.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
       };

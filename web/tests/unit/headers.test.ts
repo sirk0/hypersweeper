@@ -11,8 +11,7 @@ import { describe, expect, it } from "vitest";
 // The e2e suite covers the other half: that the policy the file describes is
 // one the app can actually run under.
 
-const read = (rel: string): string =>
-  readFileSync(new URL(rel, import.meta.url), "utf8");
+const read = (rel: string): string => readFileSync(new URL(rel, import.meta.url), "utf8");
 
 const headers = read("../../public/_headers");
 const previewWorkflow = read("../../../.github/workflows/pr-preview.yml");
@@ -66,7 +65,9 @@ describe("public/_headers", () => {
     // that sed matches, the preview silently ships without the noindex — or,
     // in the version of this that actually happened, without the policy. The
     // job greps to catch it; this catches it a good deal earlier.
-    expect(previewWorkflow).toContain("sed -i 's#^/\\*$#/*\\n  X-Robots-Tag: noindex#' dist/_headers");
+    expect(previewWorkflow).toContain(
+      "sed -i 's#^/\\*$#/*\\n  X-Robots-Tag: noindex#' dist/_headers",
+    );
     expect(headers).toMatch(/^\/\*$/m);
   });
 });

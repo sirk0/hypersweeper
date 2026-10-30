@@ -38,11 +38,7 @@ import { shareBoard } from "./share";
 import { attachControls, blockBrowserZoom } from "./input/controls";
 import { effectsOn, type QualityPref } from "./render/quality";
 import { clampHoldMs } from "./input/hold";
-import {
-  BoardRenderer,
-  initialOrientation,
-  KEY_ROTATE_STEP,
-} from "./render/renderer";
+import { BoardRenderer, initialOrientation, KEY_ROTATE_STEP } from "./render/renderer";
 import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
 import { boardFacts } from "./ui/boardFacts";
 import { BoardInfo } from "./ui/boardInfo";
@@ -648,8 +644,7 @@ class App {
     // address bar and the share button both name *this* layout rather than
     // "another board of this kind". Re-rolling is the smiley (or Play again),
     // which comes back through here with no seed and so deals a new one.
-    const seed =
-      opts.mines ? undefined : (opts.seed ?? (Math.random() * 2 ** 32) >>> 0);
+    const seed = opts.mines ? undefined : (opts.seed ?? (Math.random() * 2 ** 32) >>> 0);
     this.session = new GameSession(mode, difficulty, {
       ...(seed !== undefined ? { seed } : {}),
       ...(opts.mines ? { minePositions: opts.mines } : {}),
@@ -798,9 +793,7 @@ class App {
     // version, so take the one that matches the orientation we are in.
     const { width, height } = window.screen;
     const screenH =
-      window.innerHeight >= window.innerWidth
-        ? Math.max(width, height)
-        : Math.min(width, height);
+      window.innerHeight >= window.innerWidth ? Math.max(width, height) : Math.min(width, height);
     return Math.abs(screenH - h - inset) <= 1 ? screenH : h;
   }
 
@@ -813,8 +806,7 @@ class App {
     // Measured off the caption's bottom rather than summed, so the column's own
     // spacing counts. The board's *name* is not in that column at all — it is
     // drawn behind the board, and reserves nothing.
-    const header =
-      this.screen === "game" && !this.hud.root.hidden ? this.hud.root : null;
+    const header = this.screen === "game" && !this.hud.root.hidden ? this.hud.root : null;
     // Measured from the top of the canvas, not of the layout viewport: with the
     // browser's chrome out the two are `--app-top` apart (see syncViewport), and
     // what the board is framed below is the header's distance down *its own*
@@ -857,11 +849,7 @@ class App {
   /** What each of this board's controls does, as the view has it. */
   private symmetryPictures() {
     if (!this.session) return new Map();
-    return symmetryPictures(
-      this.session.board,
-      this.session.mode,
-      this.renderer.quarterTurned,
-    );
+    return symmetryPictures(this.session.board, this.session.mode, this.renderer.quarterTurned);
   }
 
   private onAction(action: string): void {
@@ -976,12 +964,7 @@ class App {
       return;
     }
     this.infoDialog = openInfoDialog(this.ui, {
-      facts: boardFacts(
-        session.mode,
-        session.difficulty,
-        session.board,
-        session.game.mineCount,
-      ),
+      facts: boardFacts(session.mode, session.difficulty, session.board, session.game.mineCount),
       // A Classic board is gray whatever its tiles are, so it gets no swatches.
       coloured: !cellStyle(session.cellStyle).monochrome,
       animate: this.animationsEnabled,
@@ -1434,8 +1417,7 @@ class App {
           cellCount: s ? s.game.cells.length : 0,
           is3d: s?.is3d ?? false,
           dealtAtRandom: s ? this.dealtAtRandom : false,
-          cellStyle:
-            s?.cellStyle ?? boardStyleKey(this.settings.shape, this.settings.theme),
+          cellStyle: s?.cellStyle ?? boardStyleKey(this.settings.shape, this.settings.theme),
           sound: soundChoice(),
           volume: soundVolume(),
           glow: s?.mesh.markerGlowLevel?.() ?? null,

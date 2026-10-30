@@ -31,18 +31,14 @@ function fromPackage(pkg: string, path: string): string {
   );
 }
 
-const NATIVE_BRIDGE = fromPackage(
-  "@capacitor/ios",
-  "Capacitor/Capacitor/assets/native-bridge.js",
-);
+const NATIVE_BRIDGE = fromPackage("@capacitor/ios", "Capacitor/Capacitor/assets/native-bridge.js");
 
 /** The plugin's method list, read off its `pluginMethods` table in Swift —
  * the same source the native side builds the real headers from. */
 const HAPTICS_METHODS = [
-  ...fromPackage(
-    "@capacitor/haptics",
-    "ios/Sources/HapticsPlugin/HapticsPlugin.swift",
-  ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g),
+  ...fromPackage("@capacitor/haptics", "ios/Sources/HapticsPlugin/HapticsPlugin.swift").matchAll(
+    /CAPPluginMethod\(name: "(\w+)"/g,
+  ),
 ].map((m) => ({ name: m[1] as string, rtype: "promise" }));
 
 interface BridgeCall {
@@ -77,8 +73,7 @@ async function asNativeApp(page: Page): Promise<void> {
   // `registerPlugin` consults this list: a plugin missing from it is served by
   // its *web* implementation instead, native platform or not.
   await page.addInitScript((methods: { name: string; rtype: string }[]) => {
-    const cap = (window as unknown as { Capacitor: { PluginHeaders?: unknown } })
-      .Capacitor;
+    const cap = (window as unknown as { Capacitor: { PluginHeaders?: unknown } }).Capacitor;
     cap.PluginHeaders = [{ name: "Haptics", methods }];
   }, HAPTICS_METHODS);
 }
@@ -105,9 +100,8 @@ test.describe("iOS haptics through the Capacitor bridge", () => {
 
   test("the app knows it is running natively", async ({ page }) => {
     expect(
-      await page.evaluate(
-        () =>
-          (window as unknown as { Capacitor?: { getPlatform(): string } }).Capacitor?.getPlatform(),
+      await page.evaluate(() =>
+        (window as unknown as { Capacitor?: { getPlatform(): string } }).Capacitor?.getPlatform(),
       ),
     ).toBe("ios");
   });
@@ -199,9 +193,8 @@ test.describe("in a plain browser tab", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     expect(
-      await page.evaluate(
-        () =>
-          (window as unknown as { Capacitor?: { getPlatform(): string } }).Capacitor?.getPlatform(),
+      await page.evaluate(() =>
+        (window as unknown as { Capacitor?: { getPlatform(): string } }).Capacitor?.getPlatform(),
       ),
     ).toBe("web");
     // Chromium *defines* navigator.vibrate on this desktop runner, and it
@@ -224,9 +217,7 @@ test.describe("in a plain browser tab", () => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.menu-header-btn[data-action="settings"]').click();
-    await expect(page.locator('.menu-entry[data-setting="haptics"]')).toContainText(
-      "Haptics",
-    );
+    await expect(page.locator('.menu-entry[data-setting="haptics"]')).toContainText("Haptics");
     await context.close();
   });
 });

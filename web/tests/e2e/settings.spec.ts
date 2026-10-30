@@ -133,9 +133,7 @@ test.describe("settings", () => {
     // Back lands on settings, not the root menu, and the row has followed.
     await page.locator('.menu-entry[data-theme="classic"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-settings-group="theme"]')).toContainText(
-      "Classic",
-    );
+    await expect(page.locator('.menu-entry[data-settings-group="theme"]')).toContainText("Classic");
   });
 
   test("the board shape is its own row and its own page", async ({ page }) => {
@@ -149,16 +147,12 @@ test.describe("settings", () => {
     // Soft, Classic, Realistic, Flat — the four cuts, a literal for the same
     // reason the theme count above is one.
     await expect(page.locator(".menu-entry[data-shape]")).toHaveCount(4);
-    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText(
-      "Board shape",
-    );
+    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Board shape");
 
     // Back lands on settings, not the root menu, and the row has followed.
     await page.locator('.menu-entry[data-shape="flat"]').click();
     await page.locator('.menu-entry[data-action="back"]').click();
-    await expect(page.locator('.menu-entry[data-settings-group="shape"]')).toContainText(
-      "Flat",
-    );
+    await expect(page.locator('.menu-entry[data-settings-group="shape"]')).toContainText("Flat");
   });
 
   test("the colour scheme is its own row and its own page", async ({ page }) => {
@@ -173,9 +167,7 @@ test.describe("settings", () => {
 
     await row.click();
     await expect(page.locator(".menu-entry[data-scheme]")).toHaveCount(3);
-    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText(
-      "Colour scheme",
-    );
+    await expect(page.locator('.menu-entry[data-action="back"]')).toContainText("Colour scheme");
     await expect(page.locator('.menu-entry[data-scheme="auto"]')).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -184,9 +176,7 @@ test.describe("settings", () => {
 
   // In a browser tab the pick is what the page's icon links point at, and so
   // what Add to Home Screen takes (src/appIcon.ts).
-  test("the app icon is its own page, and points the icon links at the pick", async ({
-    page,
-  }) => {
+  test("the app icon is its own page, and points the icon links at the pick", async ({ page }) => {
     const links = () =>
       page.evaluate(() => [
         document.querySelector('link[rel="icon"]')?.getAttribute("href"),
@@ -234,10 +224,7 @@ test.describe("settings", () => {
     // ...and the theme is untouched by it: the axes are independent.
     await expect(page.locator("html")).toHaveAttribute("data-theme", "sand");
     // The browser chrome follows too.
-    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
-      "content",
-      "#191712",
-    );
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#191712");
 
     await page.reload();
     await expect(page.locator("body[data-ready]")).toBeVisible();
@@ -247,8 +234,7 @@ test.describe("settings", () => {
   test("auto follows the device, and an explicit choice does not", async ({ page }) => {
     // Polled, not read once: `emulateMedia` returns before the page's
     // `prefers-color-scheme` listener has run, so a bare read races the repaint.
-    const bg = (): ReturnType<typeof expect.poll> =>
-      expect.poll(() => cssVar(page, "--bg"));
+    const bg = (): ReturnType<typeof expect.poll> => expect.poll(() => cssVar(page, "--bg"));
 
     // The default is Auto, so a dark device gets the dark page with nothing
     // picked...
@@ -327,9 +313,7 @@ test.describe("settings", () => {
     }
   });
 
-  test("a board launched after picking a look is cut and painted by it", async ({
-    page,
-  }) => {
+  test("a board launched after picking a look is cut and painted by it", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-settings-group="theme"]').click();
     await page.locator('.menu-entry[data-theme="classic"]').click();
@@ -566,8 +550,9 @@ test.describe("settings", () => {
     await page.locator('.menu-entry[data-action="back"]').click();
 
     const shown = () =>
-      page.$$eval(".board-caption-controls .board-bar-btn", (nodes) =>
-        nodes.filter((n) => !(n as HTMLElement).hidden).length,
+      page.$$eval(
+        ".board-caption-controls .board-bar-btn",
+        (nodes) => nodes.filter((n) => !(n as HTMLElement).hidden).length,
       );
     await page.evaluate(() => window.__ms!.startBoard("torus", "easy"));
     expect(await shown()).toBe(0);
@@ -581,9 +566,10 @@ test.describe("settings", () => {
     await page.locator('.hud-btn[data-slot="back"]').click();
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-setting="extraControls"]').click();
-    await expect(
-      page.locator('.menu-entry[data-setting="extraControls"]'),
-    ).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator('.menu-entry[data-setting="extraControls"]')).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     await page.locator('.menu-entry[data-action="back"]').click();
     await page.evaluate(() => window.__ms!.startBoard("torus", "easy"));
     expect(await shown()).toBeGreaterThan(0);

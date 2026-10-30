@@ -683,11 +683,7 @@ function phyllotaxisTiles(rings: number): PhyllotaxisTile[] {
  * reads as a square block around the five-fold rosette instead of a
  * ten-pointed star. `null` keeps the whole patch; `scale` is pixels per edge.
  */
-export function phyllotaxisBoard(
-  rings: number,
-  keep: number | null = null,
-  scale = 44,
-): Board {
+export function phyllotaxisBoard(rings: number, keep: number | null = null, scale = 44): Board {
   const rows: PhyllotaxisRow[] = phyllotaxisTiles(rings).map((tile) => {
     let cx = 0;
     let cy = 0;
@@ -836,11 +832,7 @@ export function klaassenTiles(turns: number): KlaassenTile[] {
  * the rim follows the spiral's windings instead of leaving chevrons hanging off
  * it by one edge. `null` keeps the whole patch; `scale` is pixels per edge.
  */
-export function klaassenBoard(
-  turns: number,
-  keep: number | null = null,
-  scale = 30,
-): Board {
+export function klaassenBoard(turns: number, keep: number | null = null, scale = 30): Board {
   const rows = klaassenTiles(turns).map((tile) => {
     let cx = 0;
     let cy = 0;
@@ -1046,23 +1038,28 @@ function placeCompose(a: Placement, b: Placement): Placement {
 // Kaplan's t_rules: (turn in degrees, key corner of the tile just placed, key
 // corner of the tile being placed).
 const SPECTRE_T_RULES: [number, number, number][] = [
-  [60, 3, 1], [0, 2, 0], [60, 3, 1], [60, 3, 1],
-  [0, 2, 0], [60, 3, 1], [-120, 3, 3],
+  [60, 3, 1],
+  [0, 2, 0],
+  [60, 3, 1],
+  [60, 3, 1],
+  [0, 2, 0],
+  [60, 3, 1],
+  [-120, 3, 3],
 ];
 
 // Kaplan's super_rules: which cluster type each of the eight child slots takes,
 // per parent cluster type. Slot 2 is empty for the Mystic (Gamma), which is why
 // it expands to six Spectres where the others expand to seven.
 const SPECTRE_RULES: Record<string, (string | null)[]> = {
-  Gamma:  ["Pi",  "Delta", null,  "Theta", "Sigma", "Xi",  "Phi",    "Gamma"],
-  Delta:  ["Xi",  "Delta", "Xi",  "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
-  Theta:  ["Psi", "Delta", "Pi",  "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
-  Lambda: ["Psi", "Delta", "Xi",  "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
-  Xi:     ["Psi", "Delta", "Pi",  "Phi",   "Sigma", "Psi", "Phi",    "Gamma"],
-  Pi:     ["Psi", "Delta", "Xi",  "Phi",   "Sigma", "Psi", "Phi",    "Gamma"],
-  Sigma:  ["Xi",  "Delta", "Xi",  "Phi",   "Sigma", "Pi",  "Lambda", "Gamma"],
-  Phi:    ["Psi", "Delta", "Psi", "Phi",   "Sigma", "Pi",  "Phi",    "Gamma"],
-  Psi:    ["Psi", "Delta", "Psi", "Phi",   "Sigma", "Psi", "Phi",    "Gamma"],
+  Gamma: ["Pi", "Delta", null, "Theta", "Sigma", "Xi", "Phi", "Gamma"],
+  Delta: ["Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+  Theta: ["Psi", "Delta", "Pi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+  Lambda: ["Psi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+  Xi: ["Psi", "Delta", "Pi", "Phi", "Sigma", "Psi", "Phi", "Gamma"],
+  Pi: ["Psi", "Delta", "Xi", "Phi", "Sigma", "Psi", "Phi", "Gamma"],
+  Sigma: ["Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Lambda", "Gamma"],
+  Phi: ["Psi", "Delta", "Psi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+  Psi: ["Psi", "Delta", "Psi", "Phi", "Sigma", "Psi", "Phi", "Gamma"],
 };
 
 /** The Mystic's two tiles: one at rest and one rotated 30° about the tile's
@@ -1117,9 +1114,7 @@ function spectreLeaves(levels: number): [string, Placement][] {
   // levels comes out mirrored as a whole. Seeding the descent with that same
   // reflection cancels it, and every tile is then unmirrored at any level — the
   // reflection-free tiling this board is.
-  let clusters: [string, Placement][] = [
-    ["Delta", levels % 2 ? SPECTRE_REFLECT : PLACE_IDENT],
-  ];
+  let clusters: [string, Placement][] = [["Delta", levels % 2 ? SPECTRE_REFLECT : PLACE_IDENT]];
   for (let i = tables.length - 1; i >= 0; i--) {
     const placements = tables[i]!;
     const next: [string, Placement][] = [];
@@ -1310,8 +1305,17 @@ const z8Key = (p: Z8Point): string => p.join(",");
 
 /** The unit prototiles, counterclockwise: the rhombus on 1 and ζ, and the
  * half-square (O, P, Q) with its right angle at O and its marked diagonal P→Q. */
-const AB_RHOMB: Z8Point[] = [[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
-const AB_HALF: Z8Point[] = [[0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0]];
+const AB_RHOMB: Z8Point[] = [
+  [0, 0, 0, 0],
+  [1, 0, 0, 0],
+  [1, 1, 0, 0],
+  [0, 1, 0, 0],
+];
+const AB_HALF: Z8Point[] = [
+  [0, 0, 0, 0],
+  [1, 0, 0, 0],
+  [0, 0, 1, 0],
+];
 
 /** z ↦ ζ^rot·(mirrored ? conj z : z) + trans, as the Spectre's, over ℤ[ζ8]. */
 type AbPlacement = readonly [number, number, Z8Point];
@@ -1529,11 +1533,7 @@ function brickOutline(brick: Brick, corners: ReadonlySet<string>): Vertex[] {
 }
 
 /** Finish a list of axis-aligned bricks into a flat board. */
-function brickBoard(
-  mode: string,
-  bricks: readonly Brick[],
-  scale: number,
-): Board {
+function brickBoard(mode: string, bricks: readonly Brick[], scale: number): Board {
   const corners = new Set<string>();
   for (const [x, y, w, h] of bricks) {
     corners.add(brickKey(x, y));
@@ -1655,12 +1655,30 @@ export function pentaSpiralTiles(fold: number, rings: number): PentaSpiralTile[]
         const near = vecAdd(v1, unit(w1)); // the cut, 1 along v1–v2
         const far = vecAdd(v4, vecScale(unit(w1), -1)); // …to 1 short of v4
         tiles.push({
-          wedge, m, n, half: 0,
-          corners: [[v0, w0, 3], [v1, w1, 1], [near, 0, 0], [far, w1, -2], [v5, w2, -3]],
+          wedge,
+          m,
+          n,
+          half: 0,
+          corners: [
+            [v0, w0, 3],
+            [v1, w1, 1],
+            [near, 0, 0],
+            [far, w1, -2],
+            [v5, w2, -3],
+          ],
         });
         tiles.push({
-          wedge, m, n, half: 1,
-          corners: [[near, w1, 2], [v2, w2, 3], [v3, w0, -3], [v4, w1, -1], [far, 0, 0]],
+          wedge,
+          m,
+          n,
+          half: 1,
+          corners: [
+            [near, w1, 2],
+            [v2, w2, 3],
+            [v3, w0, -3],
+            [v4, w1, -1],
+            [far, 0, 0],
+          ],
         });
       }
     }
@@ -1749,20 +1767,11 @@ export function pentaSpiralBoard(
   return finalizeFlat(`pentaspiral${fold}`, cellMap, positions, scale);
 }
 
-export const pentaSpiral5Board = (
-  rings: number,
-  keep: number | null = null,
-  scale = 18,
-): Board => pentaSpiralBoard(5, rings, keep, scale);
+export const pentaSpiral5Board = (rings: number, keep: number | null = null, scale = 18): Board =>
+  pentaSpiralBoard(5, rings, keep, scale);
 
-export const pentaSpiral6Board = (
-  rings: number,
-  keep: number | null = null,
-  scale = 18,
-): Board => pentaSpiralBoard(6, rings, keep, scale);
+export const pentaSpiral6Board = (rings: number, keep: number | null = null, scale = 18): Board =>
+  pentaSpiralBoard(6, rings, keep, scale);
 
-export const pentaSpiral7Board = (
-  rings: number,
-  keep: number | null = null,
-  scale = 18,
-): Board => pentaSpiralBoard(7, rings, keep, scale);
+export const pentaSpiral7Board = (rings: number, keep: number | null = null, scale = 18): Board =>
+  pentaSpiralBoard(7, rings, keep, scale);

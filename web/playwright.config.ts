@@ -19,8 +19,7 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined;
  * The expect budget is the one that bites first: it is what `toHaveScreenshot`
  * has to capture, settle and compare a 700 KB shot inside, and 5 s is already
  * only about twice what that costs natively. */
-const budget = (name: string, fallback: number) =>
-  Number(process.env[name]) || fallback;
+const budget = (name: string, fallback: number) => Number(process.env[name]) || fallback;
 
 /** How many browsers to run at once, or 0 to leave Playwright its default of
  * half the logical cores.
