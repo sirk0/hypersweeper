@@ -26,6 +26,9 @@ Follow "Verifying a change" in [`AGENTS.md`](AGENTS.md): run only the checks
 your change touches, within about four minutes, and leave the full suite to CI,
 which runs all of it — the visual baselines included — on every push.
 
+Run `npm run format` in `web/` before committing: CI's `web-checks` fails on
+any file Prettier would change (Claude formats through a hook; Codex has none).
+
 `make web-e2e-docker` is still how a Mac runs the gallery slice a change
 touches, and the only way to regenerate its Linux baselines there. Give it a
 spec and a `-g` filter (`make web-e2e-docker ARGS="gallery.spec.ts -g sphere"`)

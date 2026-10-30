@@ -90,6 +90,10 @@ jobs:
         run: npm ci
       - name: Typecheck
         run: npm run typecheck
+      # Prettier, configured in web/.prettierrc.json. `npm run format` fixes it;
+      # Claude sessions format each edit through .claude/hooks/format.sh.
+      - name: Formatting
+        run: npm run format:check
       - name: Unit tests
         run: npm run test
       # The packaged apps (desktop/ for macOS, ios/ for the iPhone) ship the

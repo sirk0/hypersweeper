@@ -1,0 +1,17 @@
+# Build and test output (mirrors .gitignore)
+node_modules/
+dist/
+dev-dist/
+test-results/
+playwright-report/
+blob-report/
+all-blob-reports/
+.playwright/
+.vite/
+.wrangler/
+tests/e2e/*-snapshots/
+
+# Generated (straighten.fixture.json by scripts/export_straighten_fixture.py) or hand-aligned
+package-lock.json
+*.md
+tests/unit/straighten.fixture.json

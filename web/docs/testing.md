@@ -11,6 +11,8 @@ cd web
 npm install         # first time, and after a dependency change
 npm run dev         # dev server at http://localhost:5173, HMR
 npm run typecheck   # tsc --noEmit (strict), twice: the app, then functions/
+npm run format      # Prettier (web/.prettierrc.json), in place
+npm run format:check # …only report, as CI's web-checks does
 npm run test        # vitest unit tests
 npm run test:watch  # …the same, re-running on change
 npm run build       # typecheck + vite build (production bundle + PWA) into dist/

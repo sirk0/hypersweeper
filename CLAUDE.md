@@ -40,6 +40,14 @@ on a Mac uses: those baselines are `-chromium-linux` pixels, so
 `tests/e2e/gallery.spec.ts` skips itself on every other platform. Regenerate
 them in one of those three, then re-run the spec to confirm determinism.
 
+## Formatting
+
+`.claude/hooks/format.sh`, a `PostToolUse` hook on `Edit`/`Write`, runs
+Prettier on every `web/` file Claude changes, so an edit is formatted the
+moment it lands and CI's `format:check` step stays green. Code Prettier would
+explode — a hand-aligned table of polygon vertices — keeps its layout with a
+`// prettier-ignore` line above the statement, as in `web/src/boards/tilings.ts`.
+
 ## Verifying through CI
 
 Follow "Verifying a change" in [`AGENTS.md`](AGENTS.md): run only the impacted
