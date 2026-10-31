@@ -997,7 +997,8 @@ _ICON_ALIASES = {
     "tri": "trigrid",
     "aperiodic": "penrose",
     "spiral": "phyllotaxis",
-    "fractal": "sphinx",
+    "reptile": "sphinx",
+    "fractal": "pentaflake",
     "hyperbolic": "hyperbolic73",  # the family row: the game's namesake
     # the solid-group home rows borrow one of their own members' icons:
     # there is no board named "platonic", "archimedean" or "catalan" to draw
@@ -2861,8 +2862,8 @@ class MenuScreen:
         fam = rest[0]
         heading = f"{surface_label} · {FAMILY_LABELS[fam]}"
         if fam in FLAT_ONLY_FAMILIES:
-            # a family of one-off boards (aperiodic, fractal): its rows are
-            # modes, and every one of them exists on the plane
+            # a family of one-off boards (aperiodic, rep-tile, fractal): its
+            # rows are modes, and every one of them exists on the plane
             return heading, [(m, MODE_LABELS[m], True)
                              for m in FAMILY_MEMBERS[fam]]
         # a tiling the surface cannot carry (a chiral one on a mirror seam) is

@@ -1,15 +1,19 @@
-// Port of minesweeper/boards/fractal.py — the five self-similar (fractal) flat
-// boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the
-// Gosper island. Structure and cell ids mirror the Python source so the two stay
-// diffable; see it for the fuller commentary.
+// Port of minesweeper/boards/fractal.py — the self-similar flat boards, in two
+// menu families: the rep-tiles (the sphinx, the chair, the L-tetromino, the
+// P-pentomino, the trapezoid, the right trapezoid, the half trapezoid, the
+// stretched chair and the rhombic L) and the fractals (the Sierpinski carpet, the
+// pentaflake and the Gosper island). Structure and cell ids mirror the Python
+// source so the two stay diffable; see it for the fuller commentary.
 //
 // Each is one tile inflated `levels` times: the tile is scaled up by the
 // substitution's `factor` and refilled with copies of itself, so the patch grows
 // by `children.length` per level and its outline converges on a self-similar
-// shape — the tile again for the first four, the Gosper island for the fifth.
-// That outline is the board — unlike every other flat board these are
-// deliberately not a rectangular window, because trimming the patch to a square
-// block would throw away the only thing that makes them what they are.
+// shape — the tile again for all but the Gosper island. That outline is the
+// board — unlike every other flat board these are deliberately not a
+// rectangular window, because trimming the patch to a square block would throw
+// away the only thing that makes them what they are. A rep-tile's four children
+// fill the doubled tile exactly, so its patch is the tile again, with no hole
+// and a straight edge; the fractals leave holes or grow a rough edge.
 //
 //   * The **sphinx** is the pentagonal hexiamond (six unit triangles, sides
 //     3, 1, 1, 1, 2) on the triangular lattice. It is a *rep-tile*: four
@@ -17,6 +21,17 @@
 //   * The **chair** (L-tromino) is three unit squares, also a rep-4 rep-tile,
 //     dissected by the classic chair substitution: four quarter-turns, none
 //     reflected.
+//   * The **L-tetromino** and the **P-pentomino** are the next two polyomino
+//     rep-4 tiles (the T, S and Z tetrominoes are no rep-tiles at all); the
+//     **trapezoid** is the triamond, half a hexagon, on the triangular lattice.
+//   * The **right trapezoid** (a square and half a square) and the **half
+//     trapezoid** (a doubled triamond cut down its mirror line) are the two
+//     quadrilaterals, both chiral, each with a side that crosses the lattice's
+//     unit faces rather than running along them. The **stretched chair** (the
+//     chair drawn out into dominoes) and the **rhombic L** (the L-tetromino
+//     sheared into rhombi) are the last rep-4 polyforms an exhaustive search
+//     turns up, up to eleven squares and ten triangles. All four dissections
+//     are unique and all four reflect a child.
 //   * The **Sierpinski carpet** is no rep-tile: the unit square tripled and
 //     refilled with eight copies — the 3x3 block *minus its centre*. The
 //     children do not fill the inflated tile, and that missing middle ninth,
@@ -46,14 +61,14 @@
 // ever *multiplies* by the factor (`inflate`): the three integer lattices could
 // divide it out again, but φ² is irrational and Z[ζ10] is dense in the plane.
 //
-// The sphinx's and the chair's outlines carry a vertex at *every* lattice step
-// along their edges, not just at their corners: those two tilings are not edge
-// to edge, and the collinear ids are what let shared-vertex adjacency see a
-// neighbour that plants its corner mid-edge (the bargain the isogonal tilings
-// and the Spectre make). `shapeMetrics` drops them again, so the sphinx reads as
-// a pentagon and the chair as a hexagon. The carpet, the pentaflake and the
-// Gosper island need none of that: their tiles meet edge to edge, corner to
-// corner.
+// The rep-tiles' outlines, bar the trapezoid's, carry a vertex at *every*
+// lattice step along their edges, not just at their corners: those tilings are
+// not edge to edge, and the collinear ids are what let shared-vertex adjacency
+// see a neighbour that plants its corner mid-edge (the bargain the isogonal
+// tilings and the Spectre make). `shapeMetrics` drops them again, so the sphinx
+// reads as a pentagon and the chair as a hexagon. The trapezoid, the carpet, the
+// pentaflake and the Gosper island need none of that: their tiles meet edge to
+// edge, corner to corner.
 
 import { type Board, type CellId, cid, finalizeFlat, type Vertex } from "./core";
 
@@ -230,6 +245,274 @@ export const CHAIR: Substitution = {
   toXy: squareToXy,
 };
 
+// The L-tetromino: four unit squares, three in a row and one on the left end.
+const LTETROMINO_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [3, 0],
+  [3, 1],
+  [2, 1],
+  [1, 1],
+  [1, 2],
+  [0, 2],
+  [0, 1],
+];
+
+// The L has no symmetry of its own, so its four dissections are four different
+// ones; this is the only one with no child reflected — four quarter-turns, as
+// for the chair.
+const LTETROMINO_CHILDREN: Placement[] = [
+  [0, 0, [2, 0]],
+  [1, 0, [2, 0]],
+  [2, 0, [6, 2]],
+  [3, 0, [0, 4]],
+];
+
+export const LTETROMINO: Substitution = {
+  mode: "ltetromino",
+  outline: LTETROMINO_OUTLINE,
+  children: LTETROMINO_CHILDREN,
+  factor: 2,
+  order: 4,
+  // The centre of the corner square, the one touching both arms — as CHAIR
+  // does, and for the same reason: the centroid sits off towards the long arm
+  // and no square holds a bigger circle than another.
+  glyphAnchor: [0.5, 0.5],
+  rotate: squareRotate,
+  mirror: squareMirror,
+  scale: times(2),
+  toXy: squareToXy,
+};
+
+// The P-pentomino: a 2x2 block of unit squares with a fifth on top of its left
+// column.
+const PPENTOMINO_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [2, 1],
+  [2, 2],
+  [1, 2],
+  [1, 3],
+  [0, 3],
+  [0, 2],
+  [0, 1],
+];
+
+// The P has two dissections and neither is reflection-free; this one reflects
+// two of the four children.
+const PPENTOMINO_CHILDREN: Placement[] = [
+  [0, 0, [0, 0]],
+  [0, 1, [0, 6]],
+  [2, 1, [4, 0]],
+  [3, 0, [1, 4]],
+];
+
+export const PPENTOMINO: Substitution = {
+  mode: "ppentomino",
+  outline: PPENTOMINO_OUTLINE,
+  children: PPENTOMINO_CHILDREN,
+  factor: 2,
+  order: 4,
+  // The middle of the 2x2 block, which holds a circle a whole cell edge across;
+  // the centroid sits a little up and left of it, towards the fifth square.
+  glyphAnchor: [1, 1],
+  rotate: squareRotate,
+  mirror: squareMirror,
+  scale: times(2),
+  toXy: squareToXy,
+};
+
+// The trapezoid (the triamond, half a hexagon): three unit triangles, a long
+// base of 2 under a top of 1. Corners only: its substitution is edge to edge —
+// a long side only ever meets a long side — so there is no T-vertex to record.
+const TRAPEZOID_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [2, 0],
+  [1, 1],
+  [0, 1],
+];
+
+// Its dissection is unique: three children round the edge and one upside down
+// in the middle. The tile is mirror-symmetric, so each child can be written
+// reflected or not; this is the reflection-free way.
+const TRAPEZOID_CHILDREN: Placement[] = [
+  [0, 0, [1, 0]],
+  [2, 0, [4, 0]],
+  [3, 0, [2, 2]],
+  [4, 0, [0, 2]],
+];
+
+export const TRAPEZOID: Substitution = {
+  mode: "trapezoid",
+  outline: TRAPEZOID_OUTLINE,
+  children: TRAPEZOID_CHILDREN,
+  factor: 2,
+  order: 6,
+  rotate: triRotate,
+  mirror: triMirror,
+  scale: times(2),
+  toXy: triToXy,
+};
+
+// The right trapezoid: a unit square with half a square (cut along its
+// diagonal) under it — parallel sides 1 and 2, one slanted side at 45°. The one
+// rep-4 polyabolo that is not a triangle or a parallelogram, and chiral. The
+// slanted side runs corner to corner of a unit square, so it has no lattice
+// point in between to step through.
+const RIGHT_TRAPEZOID_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [1, 1],
+  [1, 2],
+  [0, 2],
+  [0, 1],
+];
+
+// Its dissection is unique, and one child of the four is reflected.
+const RIGHT_TRAPEZOID_CHILDREN: Placement[] = [
+  [0, 0, [0, 0]],
+  [0, 0, [1, 1]],
+  [0, 1, [0, 4]],
+  [3, 0, [0, 4]],
+];
+
+export const RIGHT_TRAPEZOID: Substitution = {
+  mode: "righttrapezoid",
+  outline: RIGHT_TRAPEZOID_OUTLINE,
+  children: RIGHT_TRAPEZOID_CHILDREN,
+  factor: 2,
+  order: 4,
+  // The centre of the whole square, which holds a circle a cell edge across;
+  // the corner mean sits down towards the half square, where it holds less.
+  glyphAnchor: [0.5, 1.5],
+  rotate: squareRotate,
+  mirror: squareMirror,
+  scale: times(2),
+  toXy: squareToXy,
+};
+
+// The half trapezoid: a triamond twice the size cut in two down its mirror line
+// — parallel sides 2 and 1, two right angles, a 60° corner and a 120° one. The
+// cut halves unit triangles, so it is no polyiamond, but every corner is still a
+// lattice point. Chiral, like the right trapezoid. The upright side has no
+// lattice point in between; the base and the slanted side carry theirs.
+const HALF_TRAPEZOID_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [1, 2],
+  [0, 2],
+  [0, 1],
+];
+
+// Its dissection is unique, and two children of the four are reflected.
+const HALF_TRAPEZOID_CHILDREN: Placement[] = [
+  [0, 0, [2, 0]],
+  [0, 1, [0, 4]],
+  [1, 1, [0, 0]],
+  [4, 0, [0, 4]],
+];
+
+/** The centre of the biggest circle the half trapezoid holds, in its lattice
+ * coordinates: it touches the base, the upright side and the slanted one, so
+ * its radius is √3 − 1 and its centre (3 − √3, √3 − 1) in the plane, which is
+ * 2 − 2/√3 along both lattice axes. */
+const HALF_TRAPEZOID_INCENTRE = 2 - 2 / ROOT3;
+
+export const HALF_TRAPEZOID: Substitution = {
+  mode: "halftrapezoid",
+  outline: HALF_TRAPEZOID_OUTLINE,
+  children: HALF_TRAPEZOID_CHILDREN,
+  factor: 2,
+  order: 6,
+  glyphAnchor: [HALF_TRAPEZOID_INCENTRE, HALF_TRAPEZOID_INCENTRE],
+  rotate: triRotate,
+  mirror: triMirror,
+  scale: times(2),
+  toXy: triToXy,
+};
+
+// The stretched chair: the chair with each square drawn out into an upright
+// domino — a 2x2 block with a column of two on its left. Being stretched it
+// cannot use the chair's quarter turns: its unique dissection turns one child a
+// half turn and reflects two.
+const STRETCHED_CHAIR_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [2, 1],
+  [2, 2],
+  [1, 2],
+  [1, 3],
+  [1, 4],
+  [0, 4],
+  [0, 3],
+  [0, 2],
+  [0, 1],
+];
+
+const STRETCHED_CHAIR_CHILDREN: Placement[] = [
+  [0, 0, [0, 0]],
+  [0, 0, [1, 2]],
+  [0, 1, [0, 8]],
+  [2, 1, [4, 0]],
+];
+
+export const STRETCHED_CHAIR: Substitution = {
+  mode: "stretchedchair",
+  outline: STRETCHED_CHAIR_OUTLINE,
+  children: STRETCHED_CHAIR_CHILDREN,
+  factor: 2,
+  order: 4,
+  // The middle of the 2x2 block, as for the P-pentomino: a circle a whole cell
+  // edge across, where the centroid sits up towards the column.
+  glyphAnchor: [1, 1],
+  rotate: squareRotate,
+  mirror: squareMirror,
+  scale: times(2),
+  toXy: squareToXy,
+};
+
+// The rhombic L: four 60° rhombi in the shape of the L-tetromino, three up a
+// column and one beside the top — the L sheared onto the triangular lattice,
+// eight unit triangles. Shearing kept no quarter turn, so it cannot reuse the
+// L's reflection-free dissection: its own is unique and reflects two children.
+const RHOMBIC_L_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [1, 2],
+  [2, 2],
+  [2, 3],
+  [1, 3],
+  [0, 3],
+  [0, 2],
+  [0, 1],
+];
+
+const RHOMBIC_L_CHILDREN: Placement[] = [
+  [0, 0, [0, 1]],
+  [1, 1, [1, 4]],
+  [3, 0, [2, 3]],
+  [4, 1, [3, 6]],
+];
+
+export const RHOMBIC_L: Substitution = {
+  mode: "rhombicl",
+  outline: RHOMBIC_L_OUTLINE,
+  children: RHOMBIC_L_CHILDREN,
+  factor: 2,
+  order: 6,
+  // The middle of the corner rhombus, the one touching both arms — as the
+  // L-tetromino anchors its corner square.
+  glyphAnchor: [0.5, 2.5],
+  rotate: triRotate,
+  mirror: triMirror,
+  scale: times(2),
+  toXy: triToXy,
+};
+
 // The Sierpinski carpet: the unit square, tripled and refilled with the eight
 // subsquares of the 3x3 block that are not its centre. The children leave the
 // middle ninth empty — the square is no rep-tile and this is no dissection —
@@ -351,6 +634,13 @@ export const GOSPER: Substitution = {
 export const SUBSTITUTIONS: Record<string, Substitution> = {
   sphinx: SPHINX,
   chair: CHAIR,
+  ltetromino: LTETROMINO,
+  ppentomino: PPENTOMINO,
+  trapezoid: TRAPEZOID,
+  righttrapezoid: RIGHT_TRAPEZOID,
+  halftrapezoid: HALF_TRAPEZOID,
+  stretchedchair: STRETCHED_CHAIR,
+  rhombicl: RHOMBIC_L,
   carpet: CARPET,
   pentaflake: PENTAFLAKE,
   gosper: GOSPER,
@@ -480,6 +770,53 @@ export function sphinxBoard(levels: number, scale = 26): Board {
  * filling one L-shaped patch. `scale` is pixels per unit square edge. */
 export function chairBoard(levels: number, scale = 26): Board {
   return substitutionBoard(CHAIR, levels, scale);
+}
+
+/** The L-tetromino rep-tile, inflated `levels` times: 4**levels Ls filling one
+ * L-shaped patch. `scale` is pixels per unit square edge. */
+export function ltetrominoBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(LTETROMINO, levels, scale);
+}
+
+/** The P-pentomino rep-tile, inflated `levels` times: 4**levels Ps filling one
+ * P-shaped patch. `scale` is pixels per unit square edge. */
+export function ppentominoBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(PPENTOMINO, levels, scale);
+}
+
+/** The trapezoid (triamond) rep-tile, inflated `levels` times: 4**levels
+ * trapezoids filling one trapezoid-shaped patch. `scale` is pixels per unit
+ * triangle edge. */
+export function trapezoidBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(TRAPEZOID, levels, scale);
+}
+
+/** The right trapezoid (a square and a half) rep-tile, inflated `levels` times:
+ * 4**levels trapezoids filling one trapezoid-shaped patch. `scale` is pixels
+ * per unit square edge. */
+export function rightTrapezoidBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(RIGHT_TRAPEZOID, levels, scale);
+}
+
+/** The half trapezoid (half a doubled triamond) rep-tile, inflated `levels`
+ * times: 4**levels of them filling one patch of the same shape. `scale` is
+ * pixels per unit triangle edge. */
+export function halfTrapezoidBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(HALF_TRAPEZOID, levels, scale);
+}
+
+/** The stretched chair (an L of three upright dominoes) rep-tile, inflated
+ * `levels` times: 4**levels of them filling one patch of the same shape.
+ * `scale` is pixels per unit square edge. */
+export function stretchedChairBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(STRETCHED_CHAIR, levels, scale);
+}
+
+/** The rhombic L (the L-tetromino sheared into four rhombi) rep-tile, inflated
+ * `levels` times: 4**levels of them filling one L-shaped patch. `scale` is
+ * pixels per unit triangle edge. */
+export function rhombicLBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(RHOMBIC_L, levels, scale);
 }
 
 /** The Sierpinski carpet, inflated `levels` times: 8**levels unit squares in a

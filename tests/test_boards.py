@@ -18,18 +18,26 @@ from minesweeper.boards import (
     DIFFICULTIES,
     FRACTAL_MODES,
     GOSPER,
+    HALF_TRAPEZOID,
     HYPERBOLIC_MODES,
+    LTETROMINO,
     MODE_LABELS,
     MODES_3D,
     PENTAFLAKE,
+    PPENTOMINO,
+    REPTILE_MODES,
+    RHOMBIC_L,
+    RIGHT_TRAPEZOID,
     ROOT3,
     SHAPED_MODES,
     SOLID_MODES,
     SPHINX,
     SPIRAL_MODES,
+    STRETCHED_CHAIR,
     SUBSTITUTIONS,
     SURFACE_LABELS,
     TILINGS,
+    TRAPEZOID,
     _arch_template,
     _brick_rings_tiles,
     _finalize_flat,
@@ -68,6 +76,7 @@ from minesweeper.boards import (
     double_torus_triangle_board,
     gosper_board,
     gp21_board,
+    half_trapezoid_board,
     hex_board,
     hexhex_board,
     hextriangle_board,
@@ -76,6 +85,7 @@ from minesweeper.boards import (
     klein_board,
     klein_hex_board,
     klein_triangle_board,
+    ltetromino_board,
     mobius_board,
     mobius_hex_board,
     mobius_triangle_board,
@@ -85,9 +95,12 @@ from minesweeper.boards import (
     pentaspiral_board,
     phyllotaxis_board,
     place_point,
+    ppentomino_board,
     projective_board,
     projective_hex_board,
     projective_triangle_board,
+    rhombic_l_board,
+    right_trapezoid_board,
     solid_cube_board,
     spectre_board,
     sphere_board,
@@ -97,6 +110,7 @@ from minesweeper.boards import (
     square_board,
     square_diamond_board,
     stepped_bipyramid_board,
+    stretched_chair_board,
     substitution_placements,
     surface_of,
     tetrahedron_board,
@@ -104,6 +118,7 @@ from minesweeper.boards import (
     torus_board,
     torus_hex_board,
     torus_triangle_board,
+    trapezoid_board,
     trefoil_board,
     trefoil_hex_board,
     trefoil_triangle_board,
@@ -232,6 +247,12 @@ _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
 # congruent polyform, in half-turned pairs) is not what the family says.
 _REPTILE = ["sphinxpairs", "tromino"]
 _TWO_UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "2-uniform"]
+_TWO_ISOHEDRAL = [t.key for t in ARCH_TILINGS if t.family == "2-isohedral"]
+# ...less the duals of the three 2-uniform tilings with dodecagons, whose
+# dodecagon centres become corners twelve slivers meet at (TestTwoIsohedral)
+_TWO_ISOHEDRAL_ROUND = [
+    t.key for t in ARCH_TILINGS if t.family == "2-isohedral"
+    and 12 not in next(p for p in ARCH_TILINGS if p.key == t.dual_of).config]
 # the tilings that declare a grain -- straight lines no tile of them crosses,
 # which archimedean_board ends its window on. See TestFlatGrain.
 _GRAINED = [t.key for t in ARCH_TILINGS if any(t.template().grain)]
@@ -1765,10 +1786,17 @@ class TestBrickRings:
         assert sum(map(len, corners_only.values())) < sum(map(len, full.values()))
 
 
+REPTILES = [SPHINX, CHAIR, LTETROMINO, PPENTOMINO, TRAPEZOID, RIGHT_TRAPEZOID,
+            HALF_TRAPEZOID, STRETCHED_CHAIR, RHOMBIC_L]
+
+
 class TestRepTiles:
-    """The two rep-4 fractal boards: the sphinx and the chair. (The third
-    fractal board, the Sierpinski carpet, inflates the same way but is no
-    rep-tile -- its substitution leaves a hole -- so it has its own class.)
+    """The nine rep-4 boards, the Rep-tiles family: the sphinx, the chair,
+    the L-tetromino, the P-pentomino, the trapezoid, the right and half
+    trapezoids, the stretched chair and the rhombic L. (The fractal boards
+    inflate the same way but are no rep-tiles -- the carpet's and the
+    pentaflake's substitutions leave holes, the Gosper island's supertile is
+    not a hexagon -- so each has its own class.)
 
     A rep-tile board is one tile inflated ``levels`` times, so what has to
     hold is that the dissection is real -- four half-size tiles filling the
@@ -1777,11 +1805,18 @@ class TestRepTiles:
     re-derive the hardcoded substitution tables from scratch (an exact cover
     of the size-2 tile by unit tiles), which is what pins them.
 
-    Everything runs on the lattice's unit faces -- the sphinx's six unit
-    triangles, the chair's three unit squares -- each held as the sorted
-    tuple of its corner ids, so a placement moves a face by integer
-    arithmetic and coverage is exact set algebra.
+    Everything runs on the lattice's unit faces -- the unit triangles of the
+    triangular-lattice tiles, the unit squares of the polyominoes -- each
+    held as the sorted tuple of its corner ids, so a placement moves a face
+    by exact arithmetic and coverage is exact set algebra. The two
+    trapezoids have a side that crosses unit faces (a square's diagonal, a
+    triangle's median), so theirs are finer: each square cut into four
+    triangles about its centre, each triangle into six about its centroid,
+    the new corners held as exact fractions.
     """
+
+    # The tiles whose sides cut across the lattice's unit faces.
+    _FINE = {RIGHT_TRAPEZOID.mode, HALF_TRAPEZOID.mode}
 
     @staticmethod
     def _inside(x, y, polygon):
@@ -1798,7 +1833,7 @@ class TestRepTiles:
         polygon = [tile.to_xy((x * size, y * size)) for x, y in tile.outline]
         faces = set()
         for a in range(-1, 4 * size + 1):
-            for b in range(-1, 3 * size + 1):
+            for b in range(-1, 4 * size + 1):
                 for corners in cls._unit_faces(tile, a, b):
                     points = [tile.to_xy(c) for c in corners]
                     cx = sum(x for x, _ in points) / len(points)
@@ -1807,14 +1842,31 @@ class TestRepTiles:
                         faces.add(tuple(sorted(corners)))
         return faces
 
-    @staticmethod
-    def _unit_faces(tile, a, b):
+    @classmethod
+    def _unit_faces(cls, tile, a, b):
         """The lattice's unit faces at cell (a, b): two triangles on the
-        triangular lattice, one square on the square lattice."""
-        if tile is SPHINX:
-            return ([(a, b), (a + 1, b), (a, b + 1)],
-                    [(a + 1, b), (a, b + 1), (a + 1, b + 1)])
-        return ([(a, b), (a + 1, b), (a + 1, b + 1), (a, b + 1)],)
+        triangular lattice, one square on the square lattice -- or, for a
+        tile in ``_FINE``, each of those cut into triangles about its
+        centre (four for a square, six for a triangle)."""
+        if tile.order == 6:
+            faces = ([(a, b), (a + 1, b), (a, b + 1)],
+                     [(a + 1, b), (a, b + 1), (a + 1, b + 1)])
+        else:
+            faces = ([(a, b), (a + 1, b), (a + 1, b + 1), (a, b + 1)],)
+        if tile.mode not in cls._FINE:
+            return faces
+        fine = []
+        for face in faces:
+            n = len(face)
+            centre = (Fraction(sum(x for x, _ in face), n),
+                      Fraction(sum(y for _, y in face), n))
+            for p, q in zip(face, face[1:] + face[:1]):
+                if n == 4:
+                    fine.append([p, q, centre])
+                else:
+                    middle = (Fraction(p[0] + q[0], 2), Fraction(p[1] + q[1], 2))
+                    fine += [[p, middle, centre], [middle, q, centre]]
+        return fine
 
     @classmethod
     def _placed(cls, tile, at):
@@ -1835,11 +1887,19 @@ class TestRepTiles:
         return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b
                        in zip(points, points[1:] + points[:1]))) / 2
 
-    @pytest.mark.parametrize("tile,faces", [(SPHINX, 6), (CHAIR, 3)])
-    def test_the_prototile_is_the_hexiamond_or_the_tromino(self, tile, faces):
+    @pytest.mark.parametrize("tile,faces", [(SPHINX, 6), (CHAIR, 3),
+                                            (LTETROMINO, 4), (PPENTOMINO, 5),
+                                            (TRAPEZOID, 3),
+                                            # a square and a half, in quarters
+                                            (RIGHT_TRAPEZOID, 6),
+                                            # six triangles, in sixths
+                                            (HALF_TRAPEZOID, 36),
+                                            (STRETCHED_CHAIR, 6),
+                                            (RHOMBIC_L, 8)])
+    def test_the_prototile_has_its_unit_faces(self, tile, faces):
         assert len(self._prototile(tile)) == faces
 
-    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    @pytest.mark.parametrize("tile", REPTILES)
     def test_the_substitution_table_is_an_exact_dissection(self, tile):
         # every child sits inside the size-2 parent, no two overlap, and
         # together they cover it: the rep-4 property itself
@@ -1853,13 +1913,19 @@ class TestRepTiles:
             covered |= placed
         assert covered == parent
 
-    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    @pytest.mark.parametrize("tile", REPTILES)
     def test_the_dissection_is_the_one_the_table_holds(self, tile):
         # an exact-cover search over every placement of the unit tile inside
-        # the size-2 tile. The sphinx's dissection is unique; the chair's
-        # tile is mirror-symmetric about its diagonal, so its comes back in
+        # the size-2 tile. The sphinx's dissection is unique. The chair and
+        # the trapezoid are mirror-symmetric, so each of theirs comes back in
         # several equivalent guises and the table holds the reflection-free
-        # one -- the classic chair substitution.
+        # one -- for the chair, the classic chair substitution. The L has four
+        # different dissections and the table holds its one reflection-free
+        # one; the P has two, and neither is reflection-free. The four
+        # newer tiles' dissections are each unique, and each reflects a
+        # child -- the two trapezoids are chiral, and the stretched chair
+        # and the rhombic L lost the quarter turns their unsheared
+        # originals dissect with.
         parent = self._region(tile, size=2)
         options = [(at, placed)
                    for rotation in range(tile.order)
@@ -1885,15 +1951,22 @@ class TestRepTiles:
         search(parent, [])
         assert all(len(found) == 4 for found in solutions)
         assert sorted(tile.children) in [sorted(found) for found in solutions]
-        if tile is SPHINX:
-            assert len(solutions) == 1  # the sphinx's dissection is unique
+        if tile in (SPHINX, RIGHT_TRAPEZOID, HALF_TRAPEZOID, STRETCHED_CHAIR,
+                    RHOMBIC_L):
+            assert len(solutions) == 1  # the dissection is unique
+            if tile is not SPHINX:
+                assert any(mirrored for _, mirrored, _ in tile.children)
+        elif tile is PPENTOMINO:
+            assert len(solutions) == 2
+            assert all(any(mirrored for _, mirrored, _ in found)
+                       for found in solutions)
         else:
             assert all(mirrored == 0 for _, mirrored, _ in tile.children)
 
-    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    @pytest.mark.parametrize("tile", REPTILES)
     def test_inflation_tiles_the_supertile_exactly(self, tile):
         # the level-3 patch covers the tile scaled by 8, with no gap and no
-        # overlap: the self-similar outline that makes these the fractal
+        # overlap: the self-similar outline that makes these the rep-tile
         # boards rather than a window cut out of a tiling
         placements = substitution_placements(tile, 3)
         assert len(placements) == 64
@@ -1906,16 +1979,31 @@ class TestRepTiles:
 
     def test_cell_counts_are_powers_of_four(self):
         for levels in range(5):
-            assert len(sphinx_board(levels, 1).adjacency) == 4 ** levels
-            assert len(chair_board(levels, 1).adjacency) == 4 ** levels
+            for builder in (sphinx_board, chair_board, ltetromino_board,
+                            ppentomino_board, trapezoid_board,
+                            right_trapezoid_board, half_trapezoid_board,
+                            stretched_chair_board, rhombic_l_board):
+                assert len(builder(levels, 1).adjacency) == 4 ** levels
 
     def test_every_tile_is_the_prototile(self):
         # each cell is a congruent copy of the tile -- the sphinx a pentagon
         # of sides 3, 1, 1, 1, 2 (six unit triangles), the chair an L of
-        # three unit squares -- once the collinear step vertices along its
-        # edges are dropped
-        for board, sides, area in ((sphinx_board(3, 10, scale=1), 5, 6 * ROOT3 / 4),
-                                   (chair_board(3, 10, scale=1), 6, 3)):
+        # three unit squares, the L-tetromino and the P-pentomino hexagons
+        # of four and five, the trapezoid three unit triangles, the right
+        # trapezoid a square and a half, the half trapezoid six unit
+        # triangles' worth (half a doubled triamond), the stretched chair an L of three
+        # dominoes and the rhombic L eight unit triangles -- once the
+        # collinear step vertices along its edges are dropped
+        for board, sides, area in (
+                (sphinx_board(3, 10, scale=1), 5, 6 * ROOT3 / 4),
+                (chair_board(3, 10, scale=1), 6, 3),
+                (ltetromino_board(3, 10, scale=1), 6, 4),
+                (ppentomino_board(3, 10, scale=1), 6, 5),
+                (trapezoid_board(3, 10, scale=1), 4, 3 * ROOT3 / 4),
+                (right_trapezoid_board(3, 10, scale=1), 4, 1.5),
+                (half_trapezoid_board(3, 10, scale=1), 4, 3 * ROOT3 / 2),
+                (stretched_chair_board(3, 10, scale=1), 6, 6),
+                (rhombic_l_board(3, 10, scale=1), 6, 2 * ROOT3)):
             shapes = set()
             for polygon in board.polygons.values():
                 corners = [p for p, _ in _corners(polygon, tol=1e-6)]
@@ -1927,7 +2015,7 @@ class TestRepTiles:
                                         for a in corners for b in corners)))
             assert len(shapes) == 1
 
-    @pytest.mark.parametrize("mode", ["sphinx", "chair"])
+    @pytest.mark.parametrize("mode", REPTILE_MODES)
     def test_the_patch_is_simply_connected(self, mode):
         # one boundary cycle and no interior hole: every edge is walked once
         # in each direction inside the patch, so nothing overlaps either
@@ -1941,10 +2029,10 @@ class TestRepTiles:
         assert _boundary_components(board) == 1
         assert _euler_characteristic(board) == 1
 
-    @pytest.mark.parametrize("tile", [SPHINX, CHAIR])
+    @pytest.mark.parametrize("tile", [t for t in REPTILES if t is not TRAPEZOID])
     def test_the_step_vertices_make_the_patch_a_mesh(self, tile):
-        # Neither tiling is edge to edge: a neighbour plants its corner in
-        # the middle of another tile's side. Carrying a vertex at every
+        # None of these tilings is edge to edge: a neighbour plants its
+        # corner in the middle of another tile's side. Carrying a vertex at every
         # lattice step along each edge records those T-vertices, which is
         # what keeps the patch a mesh -- drop them and the polygons no longer
         # share whole edges, so the topology invariants stop reading a disc.
@@ -1982,6 +2070,20 @@ class TestRepTiles:
                    corners_only[cell] == full[cell] for cell in full)
         assert sum(map(len, corners_only.values())) < sum(map(len, full.values()))
         assert min(len(n) for n in full.values()) >= 3
+
+    @pytest.mark.parametrize("levels", [1, 3, 5])
+    def test_the_trapezoid_is_edge_to_edge(self, levels):
+        # the one rep-tile here whose substitution never plants a corner
+        # mid-edge, which is why its outline carries no step vertex: every
+        # interior edge is shared whole by exactly two tiles
+        board = trapezoid_board(levels, 1, scale=1)
+        edges = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for a, b in zip(points, points[1:] + points[:1]):
+                edges[frozenset((a, b))] += 1
+        assert set(edges.values()) <= {1, 2}
+        assert (_euler_characteristic(board), _boundary_components(board)) == (1, 1)
 
 
 class TestSierpinskiCarpet:
@@ -4387,6 +4489,134 @@ class TestTwoUniform:
         assert len(cut.cells) == len(uniform.cells) - hexagons + 6 * hexagons
 
 
+class TestTwoIsohedral:
+    """The 2-isohedral tilings: the 2-uniform tilings' duals, two kinds of
+    tile edge to edge.
+
+    A dual tile sits round one of its primal's vertices with a corner at the
+    centre of each regular polygon met there, so the primal's vertex type is
+    the whole of the tile: as many tiles meet at a corner as that polygon has
+    sides, and the corner's angle is a full turn shared out among them. Both
+    halves are checked here against the primal's own vertex_types, which the
+    row carries -- the corner counts combinatorially, the angles geometrically
+    -- and the family's reason to be, near-regular tiles and a moderate number
+    of neighbours, is pinned for the seventeen that have them; the three duals
+    of tilings with dodecagons are the exception, and the measured rows say
+    what that costs (dodecasquaredual is all twins, so data/difficulty.json
+    blocks it and the random launchers never deal it)."""
+
+    @staticmethod
+    def _tiling(mode):
+        return next(t for t in ARCH_TILINGS if t.key == mode)
+
+    def test_one_dual_for_each_2_uniform_tiling(self):
+        primals = {self._tiling(m).dual_of for m in _TWO_ISOHEDRAL}
+        assert len(_TWO_ISOHEDRAL) == len(primals) == 20
+        assert primals == set(_TWO_UNIFORM)
+        assert len(_TWO_ISOHEDRAL_ROUND) == 17
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_row_derives_from_its_primal(self, mode):
+        tiling = self._tiling(mode)
+        primal = self._tiling(tiling.dual_of)
+        assert tiling.key == primal.key + "dual"
+        assert tiling.vertex_types == primal.vertex_types
+        assert tiling.notation == "V" + primal.notation
+        assert tiling.config == tuple(sorted({len(v) for v in primal.vertex_types}))
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_every_interior_tile_is_one_of_the_two_types(self, mode):
+        """Read round each tile whose corners all close, the number of tiles
+        at each corner is one of the primal's vertex types -- and both
+        types are there, plenty of each."""
+        from scripts.difficulty.metrics import _cyclic, vertex_fans
+
+        tiling = self._tiling(mode)
+        want = {_cyclic(v) for v in tiling.vertex_types}
+        assert len(want) == 2
+        template = _arch_template(mode)
+        board = archimedean_board(mode, math.ceil(16 / template.width),
+                                  math.ceil(16 / template.height), 5)
+        fans = vertex_fans(board)
+        seen = Counter()
+        for polygon in board.polygons.values():
+            corners = [fans[tuple(round(c, 6) for c in p)] for p in polygon]
+            if all(corners):
+                seen[_cyclic([len(fan) for fan in corners])] += 1
+        assert set(seen) == want, dict(seen)
+        assert min(seen.values()) > 10
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_each_corner_is_a_full_turn_shared_by_its_tiles(self, mode):
+        """A corner where n tiles meet is the centre of a regular n-gon of
+        the primal, which every tile there sees at 360/n degrees."""
+        board = archimedean_board(mode, 4, 4, 5)
+        count = Counter(tuple(round(c, 6) for c in p)
+                        for polygon in board.polygons.values() for p in polygon)
+        corners = defaultdict(list)
+        for polygon in board.polygons.values():
+            n = len(polygon)
+            for i, point in enumerate(polygon):
+                before, after = polygon[i - 1], polygon[(i + 1) % n]
+                v1 = (before[0] - point[0], before[1] - point[1])
+                v2 = (after[0] - point[0], after[1] - point[1])
+                angle = abs(math.atan2(v1[0] * v2[1] - v1[1] * v2[0],
+                                       v1[0] * v2[0] + v1[1] * v2[1]))
+                corners[tuple(round(c, 6) for c in point)].append(angle)
+        closed = 0
+        for key, angles in corners.items():
+            if abs(sum(angles) - 2 * math.pi) > 1e-6:
+                continue  # a rim corner
+            closed += 1
+            assert len(angles) == count[key] in (3, 4, 6, 12)
+            # vertex tags are rounded to 1e-6 of an edge, which moves an angle
+            # by about as much (see TestTwoUniform's tolerance); a corner that
+            # is not 360/n is off by degrees
+            assert all(abs(a - 2 * math.pi / len(angles)) < 1e-5 for a in angles)
+        assert closed > 20
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_domain_is_covered_exactly(self, mode):
+        """The dual's tiles fill the primal's domain: no gap, no overlap."""
+        template = _arch_template(mode)
+        area = 0.0
+        for _, refs in template.cells:
+            pts = [(tag[0] + dm * template.width, tag[1] + dn * template.height)
+                   for tag, dm, dn in refs]
+            area += abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                            in zip(pts, pts[1:] + pts[:1]))) / 2
+        assert area == pytest.approx(template.width * template.height)
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL_ROUND)
+    def test_tiles_are_near_regular_and_neighbours_moderate(self, mode):
+        """What sets the seventeen apart: no tile further from round than a
+        2:1 brick (its isoperimetric quotient at least 0.87 of the regular
+        polygon's with as many sides), and a hexagon's to a rhombille's
+        number of neighbours (6 to 10 on average, never more than 14). The
+        three dodecagon duals break both -- dodecasquare's tiles at 0.65 with
+        18 neighbours, triakis triangular's ground."""
+        board = archimedean_board(mode, 5, 5, 5)
+        for polygon in board.polygons.values():
+            n = len(polygon)
+            area = abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                           in zip(polygon, polygon[1:] + polygon[:1]))) / 2
+            perimeter = sum(math.dist(a, b) for a, b
+                            in zip(polygon, polygon[1:] + polygon[:1]))
+            regular = math.pi / (n * math.tan(math.pi / n))
+            assert 4 * math.pi * area / perimeter ** 2 / regular > 0.865
+        xs = [x for p in board.polygons.values() for x, _ in p]
+        ys = [y for p in board.polygons.values() for _, y in p]
+        mid = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
+        reach = min(max(xs) - min(xs), max(ys) - min(ys)) / 4
+        inner = [cell for cell, polygon in board.polygons.items()
+                 if math.dist(mid, (sum(x for x, _ in polygon) / len(polygon),
+                                    sum(y for _, y in polygon) / len(polygon)))
+                 < reach]
+        degrees = [len(board.adjacency[cell]) for cell in inner]
+        assert 6 <= statistics.mean(degrees) <= 10
+        assert max(degrees) <= 14
+
+
 class TestCubeFrame:
     """The cube-frame (level-1 Menger sponge) surface: a genus-5 polycube
     boundary tiled by unit squares."""
@@ -6006,8 +6236,8 @@ class TestPresets:
 
     def test_every_mode_appears_exactly_once_in_the_menu(self):
         # the one-off (non-periodic) modes, plus every periodic tiling x surface
-        modes = list(APERIODIC_MODES + SPIRAL_MODES + FRACTAL_MODES
-                     + HYPERBOLIC_MODES + SOLID_MODES)
+        modes = list(APERIODIC_MODES + SPIRAL_MODES + REPTILE_MODES
+                     + FRACTAL_MODES + HYPERBOLIC_MODES + SOLID_MODES)
         modes += [m for shaped in SHAPED_MODES.values() for m in shaped]
         modes += [m for _, surfaces in TILINGS.values() for m in surfaces.values()]
         assert sorted(modes) == sorted(MODE_LABELS)

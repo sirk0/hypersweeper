@@ -470,7 +470,7 @@ file is where it gets noticed.
 app version, its Achievement ID and its points can never change and it cannot
 be deleted (only archived). So an id or points change to an achievement already registered is never a
 plain regeneration: register a new achievement instead. Game Center allows 100
-points per achievement and 1000 across the game; today's 46 spend 655.
+points per achievement and 1000 across the game; today's 48 spend 685.
 
 **Registering a new achievement.** In App Store Connect → the app → Services
 → Game Center → Achievements, add one per new entry in `achievements.json`,

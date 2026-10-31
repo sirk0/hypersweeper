@@ -85,15 +85,17 @@ describe("picker pages", () => {
       "uniform",
       "dual",
       "2-uniform",
+      "2-isohedral",
       "isogonal",
       "rectangle",
       "other",
       "aperiodic",
       "spiral",
+      "reptile",
       "fractal",
     ]);
     // the Klein bottle carries four families: only the plane has shaped
-    // boards to fill a Regular page, and aperiodic/spiral/fractal boards
+    // boards to fill a Regular page, and aperiodic/spiral/rep-tile/fractal boards
     expect(menuFamilies("klein")).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
     // ...and the cylinder, Möbius strip and torus, which the 2-uniform tilings
     // wrap too
@@ -108,7 +110,7 @@ describe("picker pages", () => {
     }
   });
 
-  it("gives every 2-uniform row its vertex-type symbol, and no other row one", () => {
+  it("gives every 2-uniform and 2-isohedral row its symbol, and no other row one", () => {
     // The 2-uniform labels are words; the symbol the literature uses goes on
     // the line under them (menu.ts entryRow), straight from data/catalog.json.
     const twoUniform = menuFamilyRows("2-uniform", "flat");
@@ -117,7 +119,15 @@ describe("picker pages", () => {
     expect(twoUniform.find((r) => r.mode === "snubelongated2")?.notation).toBe(
       "[3³.4²; 3².4.3.4]₁",
     );
-    for (const family of menuFamilies("flat").filter((f) => f !== "2-uniform")) {
+    // ...and each dual its primal's, with the Laves V in front
+    const twoIsohedral = menuFamilyRows("2-isohedral", "flat");
+    expect(twoIsohedral).toHaveLength(20);
+    for (const row of twoIsohedral) {
+      const primal = twoUniform.find((r) => `${r.mode}dual` === row.mode);
+      expect(row.notation, row.mode).toBe(`V${primal?.notation}`);
+    }
+    const withSymbols = ["2-uniform", "2-isohedral"];
+    for (const family of menuFamilies("flat").filter((f) => !withSymbols.includes(f))) {
       for (const row of menuFamilyRows(family, "flat"))
         expect(row.notation, row.mode).toBeUndefined();
     }

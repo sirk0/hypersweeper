@@ -130,7 +130,10 @@ describe("per-board shape classing", () => {
   it("only ever gives one side count two colours on the boards made of two quadrilaterals", () => {
     // Penrose's rhombi, its kites and darts, and Ammann–Beenker's squares and
     // 45° rhombi are the boards in the catalog whose tiles genuinely share a
-    // side count. Anywhere else, two colours for one side count means the
+    // side count -- with three 2-isohedral duals, each of whose two tiles is a
+    // quadrilateral: a rhomb from the 3.6.3.6 vertex beside an isosceles
+    // trapezoid from 3².6² (hexrowsdual) or a right trapezoid from 3.4².6
+    // (squaretrihexdual and its staggered twin). Anywhere else, two colours for one side count means the
     // classer has mistaken a surface's distortion for a second tile shape —
     // which is what a torus of triangles, and 20 other wraps, used to do.
     const offenders: string[] = [];
@@ -153,8 +156,11 @@ describe("per-board shape classing", () => {
     }
     expect(offenders.sort()).toEqual([
       "ammannbeenker 4gon x2",
+      "hexrowsdual 4gon x2",
       "kitedart 4gon x2",
       "penrose 4gon x2",
+      "squaretrihex2dual 4gon x2",
+      "squaretrihexdual 4gon x2",
     ]);
   });
 

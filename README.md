@@ -72,13 +72,20 @@ Pick a surface, then a tiling:
   (regular polygons edge to edge with *two* kinds of corner — all twenty of
   them, named for how each is made from a uniform tiling, from *Studded
   triangular* [3⁶; 3⁴.6]₁ to *Studded rhombitrihexagonal* [3.4.6.4; 4.6.12]),
+  **2-isohedral** (those twenty's duals, two kinds of tile — pentagons
+  ringing hexagons, kites beside trapezoids; seventeen close to regular with
+  six to ten neighbours, and three, from the tilings with dodecagons, made of
+  slivers — one of them all twins and so marked unplayable),
   **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
   corner in the middle of its neighbour's edge), **Congruent rectangles**,
   **Other** (the sphinx and the L-tromino laid down in half-turned pairs
   rather than inflated, and regular pentagons with the rhombs that fill the
   gaps they leave, as Dürer drew it in 1525), **Aperiodic**, **Spirals**,
-  **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform and the last five also wraps the
+  **Rep-tiles** (the sphinx, the chair, the L-tetromino, the P-pentomino, the
+  trapezoid, the right and half trapezoids, the stretched chair and the
+  rhombic L, each split into four copies of itself level on level),
+  **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform, 2-isohedral and the last six also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — boards rounded onto the sphere, growing with the

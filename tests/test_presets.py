@@ -29,20 +29,21 @@ BAND = 0.15
 # Boards whose cell count is not ours to choose. It is a property of the
 # geometry rather than a preset someone forgot to tune, and it was checked by
 # enumerating what the builder can actually produce near the target rather
-# than assumed: a knob that steps over the target. The fractals move by whole
-# substitution steps (the carpet goes 64, 512, 4096); the polyhedra grow
+# than assumed: a knob that steps over the target. The rep-tiles and fractals
+# move by whole substitution steps (the carpet goes 64, 512, 4096); the polyhedra grow
 # quadratically, so `cube_board` offers 54 then 96 around an 81 target and
 # `tetrahedron_board` 64 then 100; `hextri_board` is 54 then 96.
 #
 # Anything else outside the band is a bug in the preset, not a new exception:
 # add it here only after checking the builder genuinely cannot land closer.
-# The fractals move by whole substitution steps; `cube3d` moves by whole
+# The rep-tiles and fractals move by whole substitution steps; `cube3d` moves by whole
 # *layers*, which is the same thing said about a volume: its only knob is
 # the side of the cube, so it offers 64 then 125 around an 81 target and 216
 # then 343 around 256. Hard (512 against 480) lands in the band on its own;
 # the mode is exempted whole because the reason is the geometry, not the row.
-COARSE_GEOMETRY = {"sphinx", "chair", "carpet", "pentaflake", "gosper",
-                   "cube3d"}
+COARSE_GEOMETRY = {"sphinx", "chair", "ltetromino", "ppentomino", "trapezoid",
+                   "righttrapezoid", "halftrapezoid", "stretchedchair",
+                   "rhombicl", "carpet", "pentaflake", "gosper", "cube3d"}
 # A closed hyperbolic surface's cell counts are fixed by its genus: the board
 # grows only by changing its tiling, and the rungs are {7,3}, 6.6.7 and the
 # Goldberg--Coxeter subdivisions -- 12(g - 1), 40(g - 1), then 54(g - 1),

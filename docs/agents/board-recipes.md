@@ -246,9 +246,9 @@ simply have no wrap builder or preset window yet, and the flat-only flag is
 what says so rather than a missing row somewhere. Being a grab-bag, the family
 claims nothing in `_FAMILY_TRAITS`; each member's own test class asserts what
 holds of it.
-The mode strings are `sphinxpairs`, `tromino`, `durer`; the fractal boards keep
-`sphinx`, `chair` and `pentaflake`, which is why the tilings could not reuse
-those keys.
+The mode strings are `sphinxpairs`, `tromino`, `durer`; the rep-tile and
+fractal boards keep `sphinx`, `chair` and `pentaflake`, which is why the
+tilings could not reuse those keys.
 
 Adding one, or adding a tiling to one:
 
@@ -607,6 +607,43 @@ Möbius strip glues through is what a Klein bottle would glue through too, so
 the same nineteen would reach it, and the torus's size arithmetic applies to
 it unchanged.
 
+## Recipe: add a 2-isohedral tiling
+
+The 2-isohedral family is the 2-uniform tilings' duals, one per 2-uniform
+tiling: `_TWO_ISOHEDRAL_PRIMALS` (`tilings.py`) is derived from the 2-uniform
+rows, and `TWO_ISOHEDRAL_PRIMALS` in `web/src/boards/tilings.ts` lists each
+primal with its dual's two tiles' side counts beside it (the TypeScript
+registry has no vertex types to derive them from), which is the one line a
+new 2-uniform tiling adds there. `_with_two_isohedral` / `withTwoIsohedral` build the row from the
+primal's — key and label with `dual` after them, `vertex_types`, `notation`
+with a V in front, edge directions — and place it in the 2-uniform order. Then:
+
+1. **Know which kind it is.** Every 2-uniform tiling's dual ships, so
+   `_TWO_ISOHEDRAL_PRIMALS` is derived rather than listed and a new 2-uniform
+   row brings its dual with it. Those without dodecagons are held to
+   `TestTwoIsohedral.test_tiles_are_near_regular_and_neighbours_moderate`
+   (isoperimetric quotient 0.865 of the regular polygon's or better, 6 to 10
+   neighbours on average, at most 14); a dual with dodecagon corners is not,
+   and whether it is playable at all is the calibration's call — a board of
+   twins lands in `data/difficulty.json` as blocked, which keeps it out of
+   every random deal with no further edit.
+2. **Presets** — a `"<key>dual"` block in `ARCH_PRESETS` with a `flat` row,
+   seeded from the primal's (the dual shares its domain), then the measured
+   pipeline: `resize.py --only`, `calibrate.py --only`, `apply.py`
+   ([`difficulty.md`](difficulty.md)), `scripts/export_data.py` and
+   `export_conformance.py`.
+3. **Achievements** — none to add (the family's `tiling-all:2-isohedral` grows
+   by itself), but run `npm run gamecenter` in `web/` if the family itself is
+   new: its badge is drawn from the family icon.
+
+`TestTwoIsohedral` covers the rest by itself: each interior tile's corner
+counts read round it are one of the primal's two vertex types (and both are
+present), every closed corner where n tiles meet shares the full turn as n
+angles of 360/n, the domain is covered exactly, and the row matches its
+primal. **Wrapping the family** is the 2-uniform recipe's wrap half: a `cut`
+on each dual (a second argument to `_dual_template`, as Cairo's is), the
+surfaces added to its `_FAMILY_SURFACES` entry, and the preset rows.
+
 ## Recipe: add a congruent-rectangle bond
 
 The fourth family in `ARCH_TILINGS` (`family="rectangle"`): the brick bonds,
@@ -696,21 +733,25 @@ periodic domain around a seam, and every wrap bar downstream reads it that way.
 A cube has no seam, and read as if it had, the bars threw out the 108-cell
 stacked-bond cube and left 192 against a target of 81.
 
-## Recipe: add a fractal (self-similar) board
+## Recipe: add a rep-tile or fractal (self-similar) board
 
-The **Fractals** family (`fractal.py`, `web/src/boards/fractal.ts`) holds the
-boards built by inflating one tile: the tile is scaled up by the substitution's
-`factor` and refilled with copies of itself, `levels` times, so the patch is
-`len(children)**levels` tiles and its outline converges on a self-similar shape.
-Five ship — the sphinx (pentagonal hexiamond, triangular lattice) and the chair
-(L-tromino, square lattice), both rep-4 *rep-tiles* whose children fill the tile
-exactly, the Sierpinski carpet, whose eight children leave the middle ninth of
-the tripled square empty, the pentaflake, whose six leave a golden gnomon over
-per side, and the Gosper island, whose seven hexagons fill their flower with no
-gap but do not make a hexagon — so its patch outline is the Gosper island rather
-than the tile, and its inflation turns (√7 at 19.106°, multiplication by the
-Eisenstein integer 2 + ζ) because no pure scaling by √7 stays on the lattice.
-Adding a sixth is one ``_Substitution`` record plus its wiring:
+The **Rep-tiles** and **Fractals** families (both in `fractal.py` and
+`web/src/boards/fractal.ts`) hold the boards built by inflating one tile: the
+tile is scaled up by the substitution's `factor` and refilled with copies of
+itself, `levels` times, so the patch is `len(children)**levels` tiles and its
+outline converges on a self-similar shape. The two families differ only in
+what the children do. A **rep-tile**'s children fill the scaled tile exactly,
+so the patch is the tile again: the sphinx, the trapezoid, the half
+trapezoid and the rhombic L (triangular lattice) and the chair, the stretched
+chair, the L-tetromino, the P-pentomino and the right trapezoid (square
+lattice), all rep-4. A **fractal**'s do not: the Sierpinski carpet's eight children
+leave the middle ninth of the tripled square empty, the pentaflake's six leave
+a golden gnomon over per side, and the Gosper island's seven hexagons fill
+their flower with no gap but do not make a hexagon — so its patch outline is
+the Gosper island rather than the tile, and its inflation turns (√7 at
+19.106°, multiplication by the Eisenstein integer 2 + ζ) because no pure
+scaling by √7 stays on the lattice. Adding a thirteenth is one ``_Substitution``
+record plus its wiring:
 
 1. **The tile** — a `_Substitution(mode, outline, children, factor, order,
    rotate, mirror, scale, to_xy)` in `fractal.py`. `outline` walks the unit tile
@@ -736,27 +777,45 @@ Adding a sixth is one ``_Substitution`` record plus its wiring:
    pentaflake's ℤ[ζ10] — so nothing in the machinery may index a coordinate by
    name. And the inflation only ever *multiplies* by the factor: an irrational
    one (φ², here) cannot be divided back out of a lattice point.
-2. **Menu + presets** — add the mode to `menu.fractal` and `soloLabels` in
+2. **Menu + presets** — add the mode to `menu.reptile` (children that fill
+   the tile) or `menu.fractal` (the rest) and to `soloLabels` in
    `data/catalog.json`, the builder to `_JSON_BUILDERS` in `presets.py`, and a
-   `{mode: {builder, args}}` row to `data/presets.json` (difficulty is a level of inflation --
-   3/4/5 for the chair, 64/256/1024 cells; one step lower for the sphinx,
-   whose tile is a long sliver that needs more room per cell. Check the top
-   difficulty really reads: past ~500 cells the glyphs stop being legible —
+   `{mode: {builder, args}}` row to `data/presets.json`, and the builder to
+   `SPEC` in `scripts/difficulty/resize.py` (difficulty is a level of
+   inflation -- 3/4/4 for the rep-4 tiles, 64/256/256 cells, medium and hard
+   told apart by mine count, because 1024 cells is past what reads. Check the
+   top difficulty really reads: past ~500 cells the glyphs stop being legible —
    which is why the carpet, growing ×8 a level, the pentaflake, growing ×6, and
    the Gosper island, growing ×7,
    each spend two of their three difficulties on the level-3 patch and separate
-   them by mine density instead). Re-run `scripts/export_data.py` and
+   them by mine density instead). Measure the mine counts with
+   `resize --only` and `calibrate --only` then `apply` (see
+   [`difficulty.md`](difficulty.md)), add the mode to `COARSE_GEOMETRY` in
+   `tests/test_presets.py`, and re-run `scripts/export_data.py` and
    `export_conformance.py`.
 3. **Port it to `web/src/boards/fractal.ts`** — the same record, verbatim, plus
    one `BUILDERS` row in `web/src/modes/presets.ts`. The conformance oracle compares the two
    boards immediately. Its menu icon is generated: `SUBSTITUTIONS` in
    `web/src/ui/icons.ts` (and `gui.py`'s `_render_icon`) draws the level-1
-   supertile — the substitution itself — from the board's own geometry.
+   supertile — the substitution itself — from the board's own geometry. Its
+   page background is not: add the tile, laid down periodically (a rep-tile
+   and its half turn always fill a parallelogram), to `DOMAINS` in
+   `web/src/ui/backgroundPattern.ts`, keeping the outline's step vertices so
+   no line is stroked twice.
 
-`TestRepTiles` then covers a new rep-tile automatically: the dissection is exact
-and unique-up-to-symmetry, inflation tiles the supertile with no gap or overlap,
+A tile need not be a union of the lattice's unit faces, only have its corners
+on the lattice: the right trapezoid's 45° side crosses unit squares
+diagonally and the half trapezoid's upright side cuts unit triangles down a
+median. Such a tile goes in `TestRepTiles._FINE`, which measures it on a finer
+grid of faces (quarter squares, sixths of triangles, the new corners held as
+exact `Fraction`s) so the exact-cover search still sees whole faces.
+
+`TestRepTiles` then covers a new rep-tile once it is in `REPTILES`: the dissection is exact
+and is one the exact-cover search finds (reflection-free where a reflection-free
+one exists), inflation tiles the supertile with no gap or overlap,
 every cell is congruent to the prototile, the patch is simply connected, and the
-step vertices are what keep it a mesh. A substitution with holes is not simply
+step vertices are what keep it a mesh -- or, for an edge-to-edge one like the
+trapezoid, that there is no T-vertex to keep. A substitution with holes is not simply
 connected and gets its own class instead, each checking the inflation against an
 independent derivation and pinning what the holes cost (Euler characteristic
 1 - holes, holes + 1 boundary circles, and a neighbour count the parent grid
@@ -771,9 +830,9 @@ seven children are a complete residue system mod 2 + ζ, which is what makes the
 6·3**n boundary edges to 7**n cells, six-fold symmetric and, past level 1,
 chiral.
 
-The family is flat only — an inflated patch is a shape, not a periodic window,
-so there is nothing to glue a seam with. That is one line: it is in
-`catalog.FLAT_ONLY_FAMILIES` (with `aperiodic` and `spiral`), which `family_rows`,
+Both families are flat only — an inflated patch is a shape, not a periodic window,
+so there is nothing to glue a seam with. That is one line each: `reptile` and `fractal` are in
+`catalog.FLAT_ONLY_FAMILIES` (with `aperiodic`, `spiral` and `hyperbolic`), which `family_rows`,
 `picker_families` and the TypeScript mirror all read.
 
 ## Recipe: add a hyperbolic {p,q} board

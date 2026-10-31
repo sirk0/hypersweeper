@@ -324,8 +324,8 @@ the canvas-hiding, `view`-preserving machinery they needed has no caller now.
 ### The info window (`src/ui/boardFacts.ts`, `src/ui/infoDialog.ts`)
 
 The header's ⓘ answers the question the name raises: *what is this?* The family
-the tiling comes from (Uniform, Laves, 2-uniform, Isogonal, Congruent rectangles, Other,
-Aperiodic, Spirals, Fractals, Hyperbolic, or the solid group), the surface it is wrapped on, how many cells there
+the tiling comes from (Uniform, Laves, 2-uniform, 2-isohedral, Isogonal, Congruent rectangles, Other,
+Aperiodic, Spirals, Rep-tiles, Fractals, Hyperbolic, or the solid group), the surface it is wrapped on, how many cells there
 are and how many mines, and then one row per kind of tile — its name, its count
 and the colour the board paints it in (`iconHex`, the menu icons' saturation;
 the board's own tint is faint by design and reads as off-white at 14px). A board
@@ -635,10 +635,11 @@ menu is in anyway.
   wants is the *tile* — and nearly every tile in the catalogue tiles the plane
   periodically by itself. The 30 `ARCH_TILINGS` come from `archTemplate`, whose
   fundamental domain *is* a seamless repeat tile; the three regular tilings have
-  no template, so their domains are written out in this module. The five
-  **fractal** boards do not repeat, but their tiles do — the Gosper island is
-  plain hexagons, two sphinxes or two chairs fill a parallelogram, and the
-  Sierpinski carpet is unit squares. The pentaflake takes two tiles rather than
+  no template, so their domains are written out in this module. The
+  **rep-tile** and **fractal** boards do not repeat, but their tiles do — the
+  Gosper island is plain hexagons, every rep-tile and its half turn fill a
+  parallelogram (two trapezoids a regular hexagon), and the Sierpinski carpet
+  is unit squares. The pentaflake takes two tiles rather than
   one: regular pentagons famously do not tile the plane (which is why that board
   has gnomon-shaped holes), but pentagons *and* 36° rhombs do. Three pentagons
   round a point leave 36°, the rhomb's sharp corner, and two leave 144°, its

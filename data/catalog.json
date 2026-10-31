@@ -182,6 +182,13 @@
     "brickrings": "Brick rings",
     "sphinx": "Sphinx",
     "chair": "Chair",
+    "ltetromino": "L-tetromino",
+    "ppentomino": "P-pentomino",
+    "trapezoid": "Trapezoid",
+    "righttrapezoid": "Right trapezoid",
+    "halftrapezoid": "Half trapezoid",
+    "stretchedchair": "Stretched chair",
+    "rhombicl": "Rhombic L",
     "carpet": "Sierpiński carpet",
     "pentaflake": "Pentaflake",
     "gosper": "Gosper island",
@@ -288,7 +295,27 @@
     "hexrings": "[3.4².6; 3.4.6.4]",
     "squaretrihex": "[3.4².6; 3.6.3.6]₁",
     "squaretrihex2": "[3.4².6; 3.6.3.6]₂",
-    "dodecarhombitrihex": "[3.4.6.4; 4.6.12]"
+    "dodecarhombitrihex": "[3.4.6.4; 4.6.12]",
+    "studdedtridual": "V[3⁶; 3⁴.6]₁",
+    "studdedtri2dual": "V[3⁶; 3⁴.6]₂",
+    "elongated2dual": "V[3⁶; 3³.4²]₁",
+    "elongated3dual": "V[3⁶; 3³.4²]₂",
+    "trirhombitrihexdual": "V[3⁶; 3².4.3.4]",
+    "tritrunctrihexdual": "V[3⁶; 3².4.12]",
+    "fannedhexdual": "V[3⁶; 3².6²]",
+    "hexbandsdual": "V[3⁴.6; 3².6²]",
+    "snubelongated2dual": "V[3³.4²; 3².4.3.4]₁",
+    "snubelongateddual": "V[3³.4²; 3².4.3.4]₂",
+    "dissectedtrunchex2dual": "V[3³.4²; 3.4.6.4]",
+    "squarerows2dual": "V[3³.4²; 4⁴]₁",
+    "squarerows3dual": "V[3³.4²; 4⁴]₂",
+    "dissectedtrunchexdual": "V[3².4.3.4; 3.4.6.4]",
+    "hexrowsdual": "V[3².6²; 3.6.3.6]",
+    "dodecasquaredual": "V[3.4.3.12; 3.12²]",
+    "hexringsdual": "V[3.4².6; 3.4.6.4]",
+    "squaretrihexdual": "V[3.4².6; 3.6.3.6]₁",
+    "squaretrihex2dual": "V[3.4².6; 3.6.3.6]₂",
+    "dodecarhombitrihexdual": "V[3.4.6.4; 4.6.12]"
   },
   "modeInfo": {
     "ammannbeenker": {
@@ -355,7 +382,7 @@
       "label": "Chair",
       "tiling": "",
       "surface": "flat",
-      "family": "fractal"
+      "family": "reptile"
     },
     "cube": {
       "label": "Cube",
@@ -741,6 +768,18 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "dissectedtrunchex2dual": {
+      "label": "Turned dissected truncated hexagonal dual",
+      "tiling": "dissectedtrunchex2dual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
+    "dissectedtrunchexdual": {
+      "label": "Dissected truncated hexagonal dual",
+      "tiling": "dissectedtrunchexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "dodecahedron": {
       "label": "Dodecahedron",
       "tiling": "",
@@ -753,11 +792,23 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "dodecarhombitrihexdual": {
+      "label": "Studded rhombitrihexagonal dual",
+      "tiling": "dodecarhombitrihexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "dodecasquare": {
       "label": "Square dodecagonal",
       "tiling": "dodecasquare",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "dodecasquaredual": {
+      "label": "Square dodecagonal dual",
+      "tiling": "dodecasquaredual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "doubletorus": {
       "label": "Squares · Double torus",
@@ -801,17 +852,35 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "elongated2dual": {
+      "label": "Half-elongated triangular dual",
+      "tiling": "elongated2dual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "elongated3": {
       "label": "Third-elongated triangular",
       "tiling": "elongated3",
       "surface": "flat",
       "family": "2-uniform"
     },
+    "elongated3dual": {
+      "label": "Third-elongated triangular dual",
+      "tiling": "elongated3dual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "fannedhex": {
       "label": "Fanned hexagonal",
       "tiling": "fannedhex",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "fannedhexdual": {
+      "label": "Fanned hexagonal dual",
+      "tiling": "fannedhexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "floret": {
       "label": "Floret pentagonal",
@@ -831,6 +900,12 @@
       "surface": "solid",
       "family": "sphere"
     },
+    "halftrapezoid": {
+      "label": "Half trapezoid",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "herringbone": {
       "label": "Herringbone",
       "tiling": "herringbone",
@@ -849,6 +924,12 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "hexbandsdual": {
+      "label": "Banded hexagonal dual",
+      "tiling": "hexbandsdual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "hexhex": {
       "label": "Hexagons - hexagonal board",
       "tiling": "hex",
@@ -861,11 +942,23 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "hexringsdual": {
+      "label": "Dissected truncated trihexagonal dual",
+      "tiling": "hexringsdual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "hexrows": {
       "label": "Bow-tie hexagonal",
       "tiling": "hexrows",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "hexrowsdual": {
+      "label": "Bow-tie hexagonal dual",
+      "tiling": "hexrowsdual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "hextri": {
       "label": "Triangles - hexagonal board",
@@ -1245,6 +1338,12 @@
       "surface": "klein",
       "family": "uniform"
     },
+    "ltetromino": {
+      "label": "L-tetromino",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "macbeath": {
       "label": "Macbeath surface",
       "tiling": "",
@@ -1563,6 +1662,12 @@
       "surface": "flat",
       "family": "spiral"
     },
+    "ppentomino": {
+      "label": "P-pentomino",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "prismaticpent": {
       "label": "Prismatic pentagonal",
       "tiling": "prismaticpent",
@@ -1605,6 +1710,12 @@
       "surface": "solid",
       "family": "catalan"
     },
+    "rhombicl": {
+      "label": "Rhombic L",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "rhombicosidodecasplit": {
       "label": "Rhombicosidodecahedron",
       "tiling": "",
@@ -1628,6 +1739,12 @@
       "tiling": "rhombitrihex",
       "surface": "flat",
       "family": "uniform"
+    },
+    "righttrapezoid": {
+      "label": "Right trapezoid",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
     },
     "rotatedhex": {
       "label": "Rotated hexagonal",
@@ -1671,6 +1788,18 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "snubelongated2dual": {
+      "label": "Pinwheel snub square dual",
+      "tiling": "snubelongated2dual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
+    "snubelongateddual": {
+      "label": "Zigzag snub square dual",
+      "tiling": "snubelongateddual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "snubhex": {
       "label": "Snub hexagonal",
       "tiling": "snubhex",
@@ -1711,7 +1840,7 @@
       "label": "Sphinx",
       "tiling": "",
       "surface": "flat",
-      "family": "fractal"
+      "family": "reptile"
     },
     "sphinxpairs": {
       "label": "Sphinx pairs",
@@ -1737,11 +1866,23 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "squarerows2dual": {
+      "label": "Doubly elongated triangular dual",
+      "tiling": "squarerows2dual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "squarerows3": {
       "label": "Triply elongated triangular",
       "tiling": "squarerows3",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "squarerows3dual": {
+      "label": "Triply elongated triangular dual",
+      "tiling": "squarerows3dual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "squaretrihex": {
       "label": "Elongated trihexagonal",
@@ -1754,6 +1895,18 @@
       "tiling": "squaretrihex2",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "squaretrihex2dual": {
+      "label": "Staggered elongated trihexagonal dual",
+      "tiling": "squaretrihex2dual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
+    "squaretrihexdual": {
+      "label": "Elongated trihexagonal dual",
+      "tiling": "squaretrihexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "stackedbond": {
       "label": "Stacked bond",
@@ -1779,6 +1932,12 @@
       "surface": "solid",
       "family": "polyhedra"
     },
+    "stretchedchair": {
+      "label": "Stretched chair",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "studdedtri": {
       "label": "Studded triangular",
       "tiling": "studdedtri",
@@ -1790,6 +1949,18 @@
       "tiling": "studdedtri2",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "studdedtri2dual": {
+      "label": "Twisted studded triangular dual",
+      "tiling": "studdedtri2dual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
+    "studdedtridual": {
+      "label": "Studded triangular dual",
+      "tiling": "studdedtridual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "tetraframe": {
       "label": "Tetrahedron frame",
@@ -2121,6 +2292,12 @@
       "surface": "torus",
       "family": "uniform"
     },
+    "trapezoid": {
+      "label": "Trapezoid",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "trefoil": {
       "label": "Squares · Trefoil knot",
       "tiling": "square",
@@ -2193,11 +2370,23 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "trirhombitrihexdual": {
+      "label": "Fanned rhombitrihexagonal dual",
+      "tiling": "trirhombitrihexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "tritrunctrihex": {
       "label": "Fanned truncated trihexagonal",
       "tiling": "tritrunctrihex",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "tritrunctrihexdual": {
+      "label": "Fanned truncated trihexagonal dual",
+      "tiling": "tritrunctrihexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "tromino": {
       "label": "L-tromino",
@@ -2292,9 +2481,18 @@
       "pentaspiral7",
       "brickrings"
     ],
-    "fractal": [
+    "reptile": [
       "sphinx",
       "chair",
+      "ltetromino",
+      "ppentomino",
+      "trapezoid",
+      "righttrapezoid",
+      "halftrapezoid",
+      "stretchedchair",
+      "rhombicl"
+    ],
+    "fractal": [
       "carpet",
       "pentaflake",
       "gosper"
@@ -2346,11 +2544,13 @@
       "uniform": "Uniform",
       "dual": "Laves",
       "2-uniform": "2-uniform",
+      "2-isohedral": "2-isohedral",
       "isogonal": "Isogonal",
       "rectangle": "Congruent rectangles",
       "other": "Other",
       "aperiodic": "Aperiodic",
       "spiral": "Spirals",
+      "reptile": "Rep-tiles",
       "fractal": "Fractals",
       "hyperbolic": "Hyperbolic"
     },

@@ -4,6 +4,7 @@ import {
   APERIODIC_MODES,
   FRACTAL_MODES,
   HYPERBOLIC_MODES,
+  REPTILE_MODES,
   SOLID_GROUPS,
   SPIRAL_MODES,
   modeFor,
@@ -62,7 +63,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(324);
+    expect(MODES.length).toBe(351);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -145,17 +146,18 @@ describe("which pattern a mode gets", () => {
     }
   });
 
-  it("lays the fractal boards' own tiles down periodically", () => {
+  it("lays the rep-tile and fractal boards' own tiles down periodically", () => {
     // Their patches do not repeat, but the tiles they are made of do — plain
-    // hexagons for the Gosper island, and the sphinx and the chair as
-    // themselves. Regular pentagons famously do not tile the plane, which is
+    // hexagons for the Gosper island, and every rep-tile as itself, in pairs. Regular pentagons famously do not tile the plane, which is
     // why the pentaflake has holes, but pentagons *and* 36° rhombs do — two of
     // the first to one of the second. The Sierpinski carpet is unit squares.
-    for (const mode of ["sphinx", "chair", "gosper", "pentaflake"]) {
+    for (const mode of [...REPTILE_MODES, "gosper", "pentaflake"]) {
       expect(patternKey(mode)).toBe(mode);
     }
     expect(patternKey("carpet")).toBe("square");
-    for (const mode of FRACTAL_MODES) expect(PERIODIC).toContain(patternKey(mode));
+    for (const mode of [...REPTILE_MODES, ...FRACTAL_MODES]) {
+      expect(PERIODIC).toContain(patternKey(mode));
+    }
   });
 
   it("shapes the flat boards after the tiling they are cut from", () => {

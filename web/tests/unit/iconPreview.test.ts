@@ -107,10 +107,11 @@ describe("card previews", () => {
       expect(preview.tiled, key).toBe(true);
       expect(paths(preview.svg), key).toBeGreaterThan(10);
     }
-    // ...and the two family rows resolve onto their board's drawing.
+    // ...and the family rows resolve onto their board's drawing.
     expect(previewIcon("aperiodic").svg).toBe(previewIcon("penrose").svg);
     expect(previewIcon("spiral").svg).toBe(previewIcon("phyllotaxis").svg);
-    expect(previewIcon("fractal").svg).toBe(previewIcon("sphinx").svg);
+    expect(previewIcon("reptile").svg).toBe(previewIcon("sphinx").svg);
+    expect(previewIcon("fractal").svg).toBe(previewIcon("pentaflake").svg);
   });
 
   it("fits the whole patch where the board's shape is the point", () => {
@@ -245,6 +246,7 @@ describe("card previews", () => {
       ["uniform", "rhombitrihex"],
       ["dual", "deltoidal"],
       ["2-uniform", "dodecarhombitrihex"],
+      ["2-isohedral", "elongated2dual"],
       ["isogonal", "rotatedhex"],
       ["rectangle", "herringbone"],
       ["other", "durer"],

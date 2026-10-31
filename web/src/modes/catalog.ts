@@ -64,10 +64,12 @@ const TILING_NOTATIONS = catalog.tilingNotations as Record<string, string>;
 // rather than by being kept out of the picker. "Other" is the plane alone (no
 // cut chosen); the 2-uniform tilings have cuts, and so a
 // cylinder and (all but the p6 studdedtri2) a Möbius strip, and a donut, which
-// needs no cut, but no Klein windows.
+// needs no cut, but no Klein windows. Their duals, the 2-isohedral tilings,
+// are the plane alone for now, as "Other" is: no cut chosen.
 // Mirrors _FAMILY_SURFACES in catalog.py.
 const ARCH_FAMILY_SURFACES: Record<string, readonly string[]> = {
   "2-uniform": ["flat", "cylinder", "mobius", "torus"],
+  "2-isohedral": ["flat"],
   other: ["flat"],
 };
 
@@ -97,6 +99,7 @@ const familyKeys = (family: string): string[] =>
 export const UNIFORM_ARCH = familyKeys("uniform");
 export const DUAL_ARCH = familyKeys("dual");
 export const TWO_UNIFORM_ARCH = familyKeys("2-uniform");
+export const TWO_ISOHEDRAL_ARCH = familyKeys("2-isohedral");
 export const ISOGONAL_ARCH = familyKeys("isogonal");
 export const RECTANGLE_ARCH = familyKeys("rectangle");
 export const OTHER_ARCH = familyKeys("other");
@@ -221,7 +224,8 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * fractal board is a self-similar shape rather than a window. Isogonal and
  * rectangle wrap every surface their member tilings' chirality allows, just
  * like uniform and dual. The 2-uniform tilings (the plane, the cylinder, the
- * Möbius strip and the donut), the rep-tiles and Dürer's tiling (the plane alone) are in this list too,
+ * Möbius strip and the donut), their 2-isohedral duals, the rep-tiles and
+ * Dürer's tiling (the plane alone) are in this list too,
  * being tilings: `pickerFamilies` drops a family a surface has no row of
  * rather than naming it in two places. */
 export const PICKER_FAMILIES = [
@@ -229,18 +233,25 @@ export const PICKER_FAMILIES = [
   "uniform",
   "dual",
   "2-uniform",
+  "2-isohedral",
   "isogonal",
   "rectangle",
   "other",
 ];
-export const FLAT_ONLY_FAMILIES = ["aperiodic", "spiral", "fractal", "hyperbolic"];
+export const FLAT_ONLY_FAMILIES = ["aperiodic", "spiral", "reptile", "fractal", "hyperbolic"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 // The spiral family: boards wound round a centre (the phyllotactic and Klaassen
 // spirals, the pentagonal spirals, the brick rings). One-off, plane-only modes
 // like the aperiodic ones, which they used to be filed under.
 export const SPIRAL_MODES = MENU.spiral as string[];
-// The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
-// outline is the tile itself, scaled. One-off modes like the aperiodic ones.
+// The rep-tile family: the sphinx, the chair, the L-tetromino, the P-pentomino,
+// the trapezoid, the right and half trapezoids, the stretched chair and the
+// rhombic L, each a patch whose outline is the tile itself, scaled —
+// four copies of the tile fill it doubled. One-off modes like the aperiodic ones.
+export const REPTILE_MODES = MENU.reptile as string[];
+// The fractal family: the boards inflated the same way whose patch is *not* the
+// tile again — the carpet and the pentaflake leave holes at every scale, the
+// Gosper island's edge roughens. One-off modes again.
 export const FRACTAL_MODES = MENU.fractal as string[];
 // The hyperbolic family: regular {p,q} tilings of the hyperbolic plane in the
 // Poincaré disc (boards/hyperbolic.ts). One-off modes again, on the plane only.
@@ -251,11 +262,13 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   uniform: UNIFORM_ARCH,
   dual: DUAL_ARCH,
   "2-uniform": TWO_UNIFORM_ARCH,
+  "2-isohedral": TWO_ISOHEDRAL_ARCH,
   isogonal: ISOGONAL_ARCH,
   rectangle: RECTANGLE_ARCH,
   other: OTHER_ARCH,
   aperiodic: APERIODIC_MODES,
   spiral: SPIRAL_MODES,
+  reptile: REPTILE_MODES,
   fractal: FRACTAL_MODES,
   hyperbolic: HYPERBOLIC_MODES,
 };
@@ -309,8 +322,9 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
  * is decided row by row in `familyRows`, by the three things that can stop a
  * tiling reaching it — a chiral tiling has no mirror to close a Möbius or
  * Klein seam with, a tiling whose family is held to some surfaces
- * (ARCH_FAMILY_SURFACES: "Other" to the plane, "2-uniform" to the plane,
- * the cylinder, the Möbius strip and the donut) has no windows elsewhere yet,
+ * (ARCH_FAMILY_SURFACES: "Other" and "2-isohedral" to the plane, "2-uniform"
+ * to the plane, the cylinder, the Möbius strip and the donut) has no windows
+ * elsewhere yet,
  * and a surface restricted to an
  * allow-list of tilings (the
  * double torus) refuses the rest — and a family left with no row at all is
@@ -483,6 +497,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   // Keyed `dual`; "Laves" is only its label (see `menu.familyLabels`).
   dual: "Their duals — one shape throughout",
   "2-uniform": "Regular shapes, two kinds of corner",
+  "2-isohedral": "Their duals — two shapes throughout",
   isogonal: "A corner meets the middle of an edge",
   rectangle: "Brick bonds, one rectangle throughout",
   // A grab-bag rather than a symmetry class, so the hint names its members
@@ -490,7 +505,8 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   other: "Two rep-tiles, and Dürer's pentagons",
   aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre",
   spiral: "Wound round a centre: sunflower, pentagons, brick rings",
-  fractal: "One tile grown into itself, or halved row on row",
+  reptile: "One tile split into four copies of itself",
+  fractal: "Holes, or a ragged edge, at every scale",
   hyperbolic: "Curved space: more round a corner than fit flat",
   "hyperbolic-regular": "One shape throughout: {p,q} is p sides, q to a corner",
   "hyperbolic-uniform": "Two or three shapes, same at every corner",

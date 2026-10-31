@@ -45,6 +45,32 @@
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       }
     },
+    "dodecasquaredual": {
+      "hard": {
+        "level": "blocked",
+        "winRate": 0.0,
+        "target": 0.509,
+        "indistinguishable": 288,
+        "cells": 544,
+        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
+      },
+      "medium": {
+        "level": "blocked",
+        "winRate": 0.0,
+        "target": 0.871,
+        "indistinguishable": 120,
+        "cells": 220,
+        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
+      },
+      "easy": {
+        "level": "blocked",
+        "winRate": 0.0375,
+        "target": 0.965,
+        "indistinguishable": 48,
+        "cells": 84,
+        "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
+      }
+    },
     "fannedhex": {
       "easy": {
         "level": "warn",
