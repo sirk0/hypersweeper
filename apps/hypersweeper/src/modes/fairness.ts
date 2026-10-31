@@ -25,7 +25,7 @@
 // dealt board can say so; and the random launchers, which never deal a blocked
 // board and deal a warned one less often.
 
-import raw from "@data/difficulty.json";
+import raw from "@tiling/data/difficulty.json";
 
 export type Fairness = "ok" | "warn" | "blocked";
 

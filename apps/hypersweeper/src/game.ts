@@ -1,6 +1,6 @@
 // Port of minesweeper/game.py — core minesweeper rules over an arbitrary cell
 // graph (adjacency map). Knows nothing about geometry or rendering.
-import type { CellId } from "./boards";
+import type { CellId } from "@tiling/geometry";
 import { mulberry32, sample, type Rng } from "./rng";
 
 export type CellState = "hidden" | "revealed" | "flagged";

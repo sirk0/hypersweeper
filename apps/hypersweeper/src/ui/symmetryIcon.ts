@@ -28,7 +28,7 @@ import {
   type BoardSymmetry,
   type CellId,
   type SymmetryId,
-} from "../boards";
+} from "@tiling/geometry";
 import { initialOrientation } from "../render/renderer";
 
 export type MotionKind = "step" | "turn" | "reflection";

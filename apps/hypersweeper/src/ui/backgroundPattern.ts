@@ -59,7 +59,7 @@
 // encodes it. A tiling whose lattice is not rectangular goes through
 // `latticeDomain`, which finds a rectangle inside it.
 
-import { type Vertex, archTemplate, templateCells } from "../boards";
+import { type Vertex, archTemplate, templateCells } from "@tiling/geometry";
 import {
   APERIODIC_MODES,
   HYPERBOLIC_MODES,

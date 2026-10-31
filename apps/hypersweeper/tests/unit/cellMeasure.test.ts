@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { brickCubeBoard } from "../../src/boards/solids";
-import { archimedeanBoard } from "../../src/boards/tilings";
-import { newellNormal, type Vec3 } from "../../src/boards/core";
+import { brickCubeBoard } from "@tiling/geometry/solids";
+import { archimedeanBoard } from "@tiling/geometry/tilings";
+import { newellNormal, type Vec3 } from "@tiling/geometry/core";
 import { corners } from "../../src/render/shapePalette";
 import { polygonInradius } from "../../src/render/boardMesh";
 

@@ -74,7 +74,7 @@ does not look at this folder.
 npm install          # at the repo root, first time and after a dependency change
 cd apps/reptiles
 npm run dev          # http://localhost:5174 (Hypersweeper's dev server is 5173)
-npm run typecheck    # tsc --noEmit, strict — also checks the apps/hypersweeper/src/boards files it imports
+npm run typecheck    # tsc --noEmit, strict — also checks the packages/geometry files it imports
 npm run test         # vitest unit tests (a few seconds)
 npm run format       # Prettier (the root .prettierrc.json), in place; CI runs format:check
 npm run difficulty   # re-measure every level into src/difficulty.json
@@ -163,8 +163,9 @@ finishes the board — the quick way to see the win state.
 - `src/input/drag.ts` — pointer drag and drop, rotate and flip, and the ✕
   remove mode.
 
-`@boards/*` is `../hypersweeper/src/boards/*` and `@data/*` is `../../data/*`, set in
-`vite.config.ts` (and through it `vitest.config.ts`) and `tsconfig.json`.
+The geometry is the `@tiling/geometry` workspace package (`packages/geometry`)
+and the shared data the `@tiling/data` one (`data/`) — both listed in
+`package.json`, so no alias sets them up.
 
 ## Rules
 
@@ -182,7 +183,10 @@ finishes the board — the quick way to see the win state.
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues.
-- Importing from `apps/hypersweeper/src/boards/` is fine; importing from the rest of `apps/hypersweeper/`
-  (renderer, UI, game rules) is not — that is Hypersweeper's own.
+- Import the geometry as `@tiling/geometry` (its index) and nothing from
+  `apps/hypersweeper/` (renderer, UI, game rules) — that is Hypersweeper's own.
+  A name the geometry has but does not export gets a line in
+  `packages/geometry/src/index.ts`. `packages/geometry/tests/boundaries.test.ts`
+  fails on a deep import or one game importing another.
 - Verify visual changes with a real screenshot (the `reptiles` entry in
   `.claude/launch.json` starts the dev server).

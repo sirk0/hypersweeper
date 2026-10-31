@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import raw from "@data/difficulty.json";
+import raw from "@tiling/data/difficulty.json";
 import {
   WARNED_RANDOM_WEIGHT,
   blockedExplanation,

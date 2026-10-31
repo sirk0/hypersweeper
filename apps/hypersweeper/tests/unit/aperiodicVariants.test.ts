@@ -4,15 +4,15 @@ import {
   kiteDartBoard,
   penroseBoard,
   spectreBoard,
-} from "../../src/boards/aperiodic";
+} from "@tiling/geometry/aperiodic";
 import {
   boundaryComponents,
   eulerCharacteristic,
   type Board,
   type CellId,
-} from "../../src/boards/core";
+} from "@tiling/geometry/core";
 import { buildBoard, windowFor } from "../../src/modes/presets";
-import windowsData from "@data/windows.json";
+import windowsData from "@tiling/data/windows.json";
 
 // The aperiodic substitution boards are a *family* per preset: `variant`
 // picks which window onto the grown patch the board is, so a finished game

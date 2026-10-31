@@ -1,4 +1,4 @@
-import { readObject, storage } from "./storage";
+import { readObject, storage } from "@tiling/platform";
 
 // Favourites: the boards a player has starred, listed on the menu's home page.
 //

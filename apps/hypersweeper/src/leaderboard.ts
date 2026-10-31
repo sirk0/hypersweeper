@@ -1,4 +1,4 @@
-import { readObject, storage } from "./storage";
+import { readObject, storage } from "@tiling/platform";
 
 // Best times: the fastest three wins on each board, at each difficulty, kept on
 // this device.

@@ -23,7 +23,7 @@ import {
   type Vec3,
   pruneSolid,
   type ClipPiece,
-} from "../boards";
+} from "@tiling/geometry";
 import {
   baseColorFor,
   glyphFor,

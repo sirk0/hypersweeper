@@ -7,8 +7,8 @@
 // lattice, as the Hypersweeper builder it mirrors, and its region is their
 // outline; the unit tests check the cells against that builder.
 
-import catalog from "@data/catalog.json";
-import { ARCH_TILINGS, archTemplate } from "@boards/tilings";
+import catalog from "@tiling/data/catalog.json";
+import { ARCH_TILINGS, archTemplate } from "@tiling/geometry";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // public/_headers is applied by Cloudflare and by the `securityHeaders` plugin
-// in vite.config.ts, and edited by the PR preview job on its way out. Nothing
+// (packages/vite-preset), and edited by the PR preview job on its way out. Nothing
 // typechecks it and a mistake in it is silent — the deployment serves fewer
 // headers and says nothing — so the invariants the other two pieces rely on are
 // asserted here, in the spirit of dockerE2e.test.ts pinning the Dockerfile

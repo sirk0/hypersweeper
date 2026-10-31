@@ -1,22 +1,27 @@
-import { fileURLToPath, URL } from "node:url";
+import { gameConfig } from "@tiling/vite-preset";
 import { defineConfig } from "vite";
 
-// The geometry is Hypersweeper's: `@boards` is apps/hypersweeper/src/boards,
-// read in place rather than copied, and `@data` the shared data/*.json some of
-// those modules import. Both live outside this package; the dev server may
-// serve them because Vite's default `server.fs.allow` is the npm workspace
-// root — the repo root, whose package.json lists apps/*.
-export const alias = {
-  "@boards": fileURLToPath(new URL("../hypersweeper/src/boards", import.meta.url)),
-  "@data": fileURLToPath(new URL("../../data", import.meta.url)),
-};
-
-export default defineConfig({
-  resolve: { alias },
-  server: {
-    // Hypersweeper's dev server is 5173; this one runs beside it.
-    port: 5174,
-    strictPort: true,
-  },
-  preview: { port: 4174, strictPort: true },
-});
+// The build every game shares is `@tiling/vite-preset` (packages/vite-preset):
+// the VITE_BASE / VITE_PACKAGED / VITE_NO_SW flags, `__APP_VERSION__` and the
+// rest, and the version stamp. Rep-tiles is not deployed yet, so it sets no
+// `site` (the link-preview tags) and no `pwa` (the service worker); both are
+// one option away.
+//
+// The geometry (`@tiling/geometry`, packages/geometry) and the shared data
+// (`@tiling/data`, data/) are npm workspace packages, so nothing here aliases
+// them; the dev server may serve their files because Vite's default
+// `server.fs.allow` is the workspace root — the repo root.
+export default defineConfig(
+  gameConfig({
+    configUrl: import.meta.url,
+    name: "Rep-tiles",
+    overrides: {
+      server: {
+        // Hypersweeper's dev server is 5173; this one runs beside it.
+        port: 5174,
+        strictPort: true,
+      },
+      preview: { port: 4174, strictPort: true },
+    },
+  }),
+);

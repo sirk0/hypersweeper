@@ -29,15 +29,15 @@ checks — is unaffected; the two things that do read the polygons are told
 separately (`two_sided` for the open sheets, and the symmetry controls, which
 `volume.ts` offers from the lattice because the layout has none to measure).
 
-`apps/hypersweeper/src/boards/` is a port of the same model, checked against it by the
+`packages/geometry/src/` is a port of the same model, checked against it by the
 conformance oracle — see [`shared-data.md`](shared-data.md). The port is
 **pure geometry**, kept apart so other games can be built on the same boards:
 its builders take no mine count (the Python ones still do, as `mine_count`),
 it imports nothing from outside its folder, and the rest of the app reaches it
-only through `apps/hypersweeper/src/boards/index.ts`. What *is* minesweeper — the presets
+only through `packages/geometry/src/index.ts` — the `@tiling/geometry` package. What *is* minesweeper — the presets
 (a board's size and its mine count), fairness, distortion, the menu catalogue,
 dealing a random board — lives beside it in `apps/hypersweeper/src/modes/`.
-`apps/hypersweeper/tests/unit/boardsBoundary.test.ts` holds that line.
+`packages/geometry/tests/boundaries.test.ts` holds that line.
 
 ## Package layout (`minesweeper/boards/`)
 
@@ -622,7 +622,7 @@ tiling repeats nowhere and each builder grows far more of a patch than a board
 keeps — the Penrose wheel is 430 rhombi where the easy board is 81, the
 Ammann–Beenker star 7784 tiles and the Spectre cluster 4401 where the hard board
 is 480. The `variant` argument (`aperiodic._window`, ported to
-`windowRows` in `apps/hypersweeper/src/boards/aperiodic.ts`, shared by all four) picks *which* window onto that
+`windowRows` in `packages/geometry/src/aperiodic.ts`, shared by all four) picks *which* window onto that
 patch the board is: 0 is the centred trim this game shipped with, and any other
 integer a block of the same size somewhere else in the same tiling, so a
 finished game followed by another is played on tiles that have never sat
@@ -825,7 +825,7 @@ tie (512/480 and 450/480 are reciprocals), broken towards the larger board.
 
 ## The hyperbolic boards
 
-The game's namesake. `hyperbolic.py` (ported to `apps/hypersweeper/src/boards/hyperbolic.ts`)
+The game's namesake. `hyperbolic.py` (ported to `packages/geometry/src/hyperbolic.ts`)
 builds the regular **{p,q}** tilings -- q regular p-gons round every corner --
 for which (p - 2)(q - 2) > 4, so the angles do not close up in the plane and the
 tiling lives in the hyperbolic plane instead. Eleven ship, as the flat-only

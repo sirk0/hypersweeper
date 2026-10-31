@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { klaassenTiles, z7ToXy } from "../../src/boards/aperiodic";
+import { klaassenTiles, z7ToXy } from "@tiling/geometry/aperiodic";
 import {
   insetMitres,
   labelPoint,

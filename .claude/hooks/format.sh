@@ -1,6 +1,7 @@
 #!/bin/bash
 # PostToolUse hook (Edit|Write): run Prettier on the file Claude just changed,
-# when it is inside one of the TypeScript apps (apps/*/), so an edit never
+# when it is inside one of the TypeScript apps or packages (apps/*/,
+# packages/*/), so an edit never
 # leaves it unformatted and CI's `npm run format:check` stays green. Always
 # exits 0 and prints nothing: formatting must never block an edit.
 
@@ -17,14 +18,16 @@ FILE=$(node -e '
   });
 ')
 case "$FILE" in
-  "$ROOT"/apps/*/*) ;;
+  "$ROOT"/apps/*/* | "$ROOT"/packages/*/*) ;;
   *) exit 0 ;;
 esac
 [ -f "$FILE" ] || exit 0
 
-# From the file's app folder (apps/<game>/), so that app's .prettierignore
-# applies; --ignore-unknown skips files Prettier has no parser for.
-APP="${FILE#"$ROOT"/apps/}"
-APP="$ROOT/apps/${APP%%/*}"
-cd "$APP" && "$PRETTIER" --write --ignore-unknown --log-level silent "$FILE" >/dev/null 2>&1
+# From the file's workspace folder (apps/<game>/ or packages/<name>/), so its
+# .prettierignore applies; --ignore-unknown skips files Prettier has no parser
+# for.
+REST="${FILE#"$ROOT"/}" # apps/<game>/… or packages/<name>/…
+KIND="${REST%%/*}"
+REST="${REST#*/}"
+cd "$ROOT/$KIND/${REST%%/*}" && "$PRETTIER" --write --ignore-unknown --log-level silent "$FILE" >/dev/null 2>&1
 exit 0

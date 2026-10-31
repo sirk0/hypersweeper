@@ -9,7 +9,9 @@ Three pieces, all aimed at the same thing: a board someone can hand to
 someone else.
 
 **The link preview.** `index.html` carries no social tags of its own — they are
-injected at build time by the `socialMeta` plugin in `vite.config.ts`, because
+injected at build time by the `socialMeta` plugin of `@tiling/vite-preset`
+(`packages/vite-preset`, which `vite.config.ts` calls with the site URL and
+description), because
 `og:image` and `og:url` have to be **absolute** (a crawler runs no JavaScript
 and will not resolve a relative one) and only the build knows where it is being
 published. That comes from **`VITE_SITE_URL`**, origin *and* base path with a
@@ -175,8 +177,8 @@ The file declares a single `/*` rule, and `tests/unit/headers.test.ts` asserts
 it stays that way — adding a second means reasoning about the intersection.
 
 Cloudflare applies it only at the edge, so neither `vite dev` nor
-`vite preview` would serve it on their own. The `securityHeaders` plugin in
-`vite.config.ts` parses *this same file* and applies it to both, which is what
+`vite preview` would serve it on their own. The `securityHeaders` plugin of
+`@tiling/vite-preset` (`packages/vite-preset`) parses *this same file* and applies it to both, which is what
 lets `tests/e2e/headers.spec.ts` assert that the app loads and plays with no
 violation. The one gap: a PR preview builds with `VITE_NO_SW=1`, so the policy
 meets the service worker locally and in production but never on a preview.

@@ -76,7 +76,10 @@ design rather than the rule itself.
 - **`VITE_PACKAGED=1` is the only thing this app knows about being packaged**,
   and it only *removes* (no service worker, no update check). Resist adding a
   second branch; if a shell needs different behaviour, the shell should provide
-  it.
+  it. The flag, and everything else the build shares with the other games (the
+  version stamp, the link-preview tags, the dev-server security headers, the
+  PWA wiring), lives in `@tiling/vite-preset` ([`packages/vite-preset`](../../packages/vite-preset));
+  `vite.config.ts` is a call to it plus what is Hypersweeper's own.
 - **The app must reference nothing remote** — no CDN, no web font, no remote
   image. `scripts/check-offline-assets.mjs` fails the build over any URL it does
   not recognise, and the deployed site's Content-Security-Policy
@@ -95,17 +98,20 @@ design rather than the rule itself.
 
 - `src/game.ts`, `src/rng.ts` — pure game rules (port of `game.py`) and a
   seedable RNG.
-- `src/boards/` — `core.ts` (Board/Board3D, adjacency, topology, vector
-  helpers), `tilings.ts` (the flat regular builders), `aperiodic.ts` /
-  `fractal.ts` (the aperiodic tilings and the self-similar boards), `solids.ts`
-  (the closed 3D boards), `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps,
-  the Klein `cellCycle` and its self-intersection `clip`), `clipSolid.ts` (what
-  that clip cuts against — the region the *drawn* neck encloses, exactly; see
-  "The Klein bottle's self-intersection" in [`docs/render.md`](docs/render.md)). **Pure
-  geometry**, so other games can reuse it: no mine counts, no imports from
-  outside the folder, and everything else imports it through `index.ts`
-  alone — `tests/unit/boardsBoundary.test.ts` holds all three. A new name the
-  app needs gets a line in `index.ts`.
+- **The geometry is not here** — it is the `@tiling/geometry` workspace
+  package, [`packages/geometry`](../../packages/geometry) (it was `src/boards/`):
+  `core.ts` (Board/Board3D, adjacency, topology, vector helpers), `tilings.ts`
+  (the flat regular builders), `aperiodic.ts` / `fractal.ts` (the aperiodic
+  tilings and the self-similar boards), `solids.ts` (the closed 3D boards),
+  `surfaces.ts` (the torus/cylinder/Möbius/Klein wraps, the Klein `cellCycle`
+  and its self-intersection `clip`), `clipSolid.ts` (what that clip cuts
+  against — the region the *drawn* neck encloses, exactly; see "The Klein
+  bottle's self-intersection" in [`docs/render.md`](docs/render.md)). **Pure
+  geometry**, shared with Rep-tiles: no mine counts, no imports from outside
+  the package, and this app imports it as `@tiling/geometry` — its `index.ts` —
+  alone; `packages/geometry/tests/boundaries.test.ts` holds all three. A new
+  name the app needs gets a line in that `index.ts`. Unit tests may reach a
+  module directly (`@tiling/geometry/tilings`).
 - `src/modes/` — the game's side of the boards: `presets.ts` (`buildBoard`,
   and `presetMineCount` — a preset is a size *and* a mine count, read from
   `data/presets.json`), `catalog.ts` (the menu catalogue, from

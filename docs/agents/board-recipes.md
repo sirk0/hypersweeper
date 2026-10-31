@@ -10,11 +10,11 @@ what already ships. Sizes and mine counts are **measured, never invented**: see
 [`difficulty.md`](difficulty.md). The `data/*.json` contract both front-ends
 read is in [`shared-data.md`](shared-data.md).
 
-Porting a builder to `apps/hypersweeper/src/boards/` drops its `mine_count` argument: the web
+Porting a builder to `packages/geometry/src/` drops its `mine_count` argument: the web
 geometry knows nothing of mines, and `apps/hypersweeper/src/modes/presets.ts` splits the mine
 count out of a preset's args (the `mineArg` that `scripts/export_data.py`
 writes beside each row). Export the new builder from
-`apps/hypersweeper/src/boards/index.ts` — the `BUILDERS` table in `presets.ts` imports from
+`packages/geometry/src/index.ts` — the `BUILDERS` table in `presets.ts` imports from
 there, like everything outside the folder.
 
 ## Recipe: add an Archimedean (periodic) tiling
@@ -214,7 +214,7 @@ Steps, for a new isogonal tiling `foo`:
    triangular, p3, is the one tiling here that reverses y at no height, so
    no strip of it ends in two rims that are the same curve. Re-run
    `scripts/export_data.py` and `export_conformance.py`.
-4. **Port it to `apps/hypersweeper/src/boards/tilings.ts`** — the same template, verbatim.
+4. **Port it to `packages/geometry/src/tilings.ts`** — the same template, verbatim.
    The conformance oracle compares the two boards cell for cell, so a
    divergence fails `tests/unit/conformance.test.ts` immediately.
 
@@ -294,7 +294,7 @@ Adding one, or adding a tiling to one:
    the measured pipeline: `resize.py --only`, `calibrate.py --only`, `apply.py`
    ([`difficulty.md`](difficulty.md)), then `scripts/export_data.py` and
    `export_conformance.py`.
-6. **Port it to `apps/hypersweeper/src/boards/tilings.ts`** — the same template verbatim; the
+6. **Port it to `packages/geometry/src/tilings.ts`** — the same template verbatim; the
    conformance oracle compares the two boards cell for cell.
 
 `TestRepTilePatterns` and `TestDurer` in `tests/test_boards.py` cover the
@@ -311,7 +311,7 @@ its notch (a third of the circle the tile can hold). Both declare an
 coordinates, `translatedAnchors` moving the base tile's point with each copy
 `periodicDomain` lays down — and `archimedeanBoard` turns it into the board's
 `glyphAnchor`. This is a TypeScript-side refinement, as
-`Substitution.glyphAnchor` in `apps/hypersweeper/src/boards/fractal.ts` already was: the two
+`Substitution.glyphAnchor` in `packages/geometry/src/fractal.ts` already was: the two
 rep-tile templates anchor the same points their fractal counterparts do, so
 the sphinx's two boards, and the chair's, number their tiles alike.
 
@@ -361,7 +361,7 @@ The choices that are easy to get wrong there:
   two-fold centre, so it pins the 3⁶ vertex `(0, 0)`.
 
 **The other seventeen are written down from one translation cell**
-(`_cell_template` in `tilings.py`, `cellTemplate` in `apps/hypersweeper/src/boards/tilings.ts`;
+(`_cell_template` in `tilings.py`, `cellTemplate` in `packages/geometry/src/tilings.ts`;
 the comment above `_steps` documents the format). Every vertex is a walk of unit
 steps at multiples of 30 degrees from one lattice point, so a factory is data:
 the translation lattice `v1`/`v2` (two walks), the rectangle the domain is (two
@@ -611,7 +611,7 @@ it unchanged.
 
 The 2-isohedral family is the 2-uniform tilings' duals, one per 2-uniform
 tiling: `_TWO_ISOHEDRAL_PRIMALS` (`tilings.py`) is derived from the 2-uniform
-rows, and `TWO_ISOHEDRAL_PRIMALS` in `apps/hypersweeper/src/boards/tilings.ts` lists each
+rows, and `TWO_ISOHEDRAL_PRIMALS` in `packages/geometry/src/tilings.ts` lists each
 primal with its dual's two tiles' side counts beside it (the TypeScript
 registry has no vertex types to derive them from), which is the one line a
 new 2-uniform tiling adds there. `_with_two_isohedral` / `withTwoIsohedral` build the row from the
@@ -811,7 +811,7 @@ for the running bond, a 2 x 2 block for the weaves and the herringbone), so
    (of the five, stacked bond, running bond and both basket weaves do;
    herringbone is glide-only and stays off them), then re-run
    `scripts/export_data.py` and `export_conformance.py`.
-5. **Port it to `apps/hypersweeper/src/boards/tilings.ts`** — the same template verbatim, one
+5. **Port it to `packages/geometry/src/tilings.ts`** — the same template verbatim, one
    more `ARCH_TILINGS` row. Its menu icon is generated: the `"domain"` patch
    style in `apps/hypersweeper/src/ui/icons.ts` draws whole periods of the bond, which is the
    only figure that shows a stagger (a vertex rosette is two or three bricks).
@@ -865,7 +865,7 @@ stacked-bond cube and left 192 against a target of 81.
 ## Recipe: add a rep-tile or fractal (self-similar) board
 
 The **Rep-tiles** and **Fractals** families (both in `fractal.py` and
-`apps/hypersweeper/src/boards/fractal.ts`) hold the boards built by inflating one tile: the
+`packages/geometry/src/fractal.ts`) hold the boards built by inflating one tile: the
 tile is scaled up by the substitution's `factor` and refilled with copies of
 itself, `levels` times, so the patch is `len(children)**levels` tiles and its
 outline converges on a self-similar shape. The two families differ only in
@@ -960,7 +960,7 @@ record plus its wiring:
    [`difficulty.md`](difficulty.md)), add the mode to `COARSE_GEOMETRY` in
    `tests/test_presets.py`, and re-run `scripts/export_data.py` and
    `export_conformance.py`.
-3. **Port it to `apps/hypersweeper/src/boards/fractal.ts`** — the same record, verbatim, plus
+3. **Port it to `packages/geometry/src/fractal.ts`** — the same record, verbatim, plus
    one `BUILDERS` row in `apps/hypersweeper/src/modes/presets.ts`. The conformance oracle compares the two
    boards immediately. Its menu icon is generated: `SUBSTITUTIONS` in
    `apps/hypersweeper/src/ui/icons.ts` (and `gui.py`'s `_render_icon`) draws the level-1
@@ -1004,7 +1004,7 @@ so there is nothing to glue a seam with. That is one line each: `reptile` and `f
 
 ## Recipe: add a hyperbolic {p,q} board
 
-The **Hyperbolic** family (`hyperbolic.py`, `apps/hypersweeper/src/boards/hyperbolic.ts`) is
+The **Hyperbolic** family (`hyperbolic.py`, `packages/geometry/src/hyperbolic.ts`) is
 one builder, `hyperbolic_board(p, q, shells, mine_count, scale)`, so a new
 {p,q} is data, not code -- provided the tiling is hyperbolic ((p - 2)(q - 2) >
 4). A face-centred {p,q} with `p >= 4` comes from the ring walk; a triangle
@@ -1065,7 +1065,7 @@ pinned in `resize.PINNED_ROWS` (4.8.12, 4.12.12 and 3.16.16 medium and
 3.14.14 hard are). See
 [`geometry.md`](geometry.md#the-uniform-hyperbolic-boards).
 
-**A closed hyperbolic surface** (`hurwitz.py`, `apps/hypersweeper/src/boards/hurwitz.ts`)
+**A closed hyperbolic surface** (`hurwitz.py`, `packages/geometry/src/hurwitz.ts`)
 is a surface rather than a trim, and a new one is a group, not a builder. Read
 [`geometry.md`](geometry.md#the-closed-hyperbolic-surfaces) first.
 
@@ -1182,7 +1182,7 @@ These are one-offs, not tiling×surface products.
 ## Recipe: add a volume board
 
 A **volume** is a solid block of cells rather than a surface of them, and it
-lives in `volume.py` / `apps/hypersweeper/src/boards/volume.ts`. One ships — `cube3d`, the
+lives in `volume.py` / `packages/geometry/src/volume.ts`. One ships — `cube3d`, the
 `n**3` cube of cubes — and the three things that make it different from a solid
 are all forced by the same fact: **you cannot see inside a solid.**
 

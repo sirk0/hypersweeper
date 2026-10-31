@@ -1,0 +1,22 @@
+{
+  "name": "@tiling/platform",
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "What a game needs from the browser it runs in, guarded so it works anywhere the game does: today, localStorage that may be missing or throw.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

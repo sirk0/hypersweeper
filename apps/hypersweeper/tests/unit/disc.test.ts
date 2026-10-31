@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/modes/presets";
-import type { Board } from "../../src/boards/core";
+import type { Board } from "@tiling/geometry/core";
 import { HYPERBOLIC_MODES } from "../../src/modes/catalog";
-import { CLOSED_SURFACES, viewShift } from "../../src/boards/hurwitz";
+import { CLOSED_SURFACES, viewShift } from "@tiling/geometry/hurwitz";
 import {
   DISC_IDENTITY,
   DRAG_SPEED,

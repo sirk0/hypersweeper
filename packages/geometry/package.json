@@ -1,0 +1,25 @@
+{
+  "name": "@tiling/geometry",
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "The boards every game in this repo is built on: flat, aperiodic, hyperbolic, fractal tilings, closed solids and surfaces — cells, vertices and adjacency, exact. Pure geometry: no DOM, no rendering, no game rules.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.0"
+  }
+}

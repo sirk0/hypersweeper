@@ -10,7 +10,7 @@ import { blockedModes, fairnessOf } from "./modes/fairness";
 import { hasMode } from "./modes/presets";
 import { screens } from "./config/screens";
 import { sideNoun } from "./ui/boardFacts";
-import { readObject, storage } from "./storage";
+import { readObject, storage } from "@tiling/platform";
 import { allBestTimes, splitBoardKey } from "./leaderboard";
 
 // Achievements: what a player has seen of the catalogue, and what is left.

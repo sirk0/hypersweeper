@@ -1,5 +1,5 @@
 import { Vector2 } from "three";
-import type { CellId, SymmetryId } from "../boards";
+import type { CellId, SymmetryId } from "@tiling/geometry";
 
 // Pointer/touch input. Emits high-level gestures; the app maps them onto game
 // actions. The gesture state machine disambiguates tap / long-press / drag:

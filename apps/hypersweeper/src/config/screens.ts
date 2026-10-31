@@ -2,7 +2,7 @@
 // (`data/ui/screens.json` at the repo root). The JSON is the single source
 // of truth for screen chrome so the Python and TypeScript front-ends stay in
 // sync; this module gives the TS app compile-time types over it.
-import raw from "@data/ui/screens.json";
+import raw from "@tiling/data/ui/screens.json";
 
 export type DifficultyKey = string;
 

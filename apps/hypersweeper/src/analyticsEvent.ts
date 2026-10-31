@@ -15,11 +15,12 @@
 // tests/unit/analytics.test.ts is the contract), and what lets the same file
 // compile for a Worker, which has no DOM at all.
 //
-// Relative imports rather than the `@data` alias every other module uses: this
-// file is bundled twice, once by Vite (which knows the alias) and once by
-// wrangler's esbuild (which does not).
-import catalogData from "../../../data/catalog.json";
-import presetsData from "../../../data/presets.json";
+// The shared data comes in as the `@tiling/data` workspace package, which both
+// bundlers resolve the ordinary node way: this file is bundled twice, once by
+// Vite and once by wrangler's esbuild for the Pages Function, so it must not
+// lean on a Vite-only alias.
+import catalogData from "@tiling/data/catalog.json";
+import presetsData from "@tiling/data/presets.json";
 
 /** Every board this build knows, as a set. A `Set` rather than `Object.hasOwn`
  * on the preset record, and emphatically not `in`: mode names arrive over the

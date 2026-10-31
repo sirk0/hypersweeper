@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Game } from "../../src/game";
 import { mulberry32 } from "../../src/rng";
-import { cid, type CellId } from "../../src/boards/core";
-import { squareBoard } from "../../src/boards/tilings";
+import { cid, type CellId } from "@tiling/geometry/core";
+import { squareBoard } from "@tiling/geometry/tilings";
 
 // Port of tests/test_game.py. Cells are "row,col" strings.
 function makeGame(mines: [number, number][] = [[0, 0]], rows = 4, cols = 4): Game {
