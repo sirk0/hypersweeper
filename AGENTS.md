@@ -4,7 +4,7 @@ A minesweeper clone with flat, hyperbolic and 3D boards (spherical polyhedra,
 cube, tetrahedron, donut, trefoil knot, double donut, Möbius strip, cylinder,
 Klein bottle, projective plane), in two implementations that share their
 configuration — and, beside it, a second game built on the same geometry:
-**Tiling Simulator** (`tiling/`), where you cover a region with tiles by drag
+**Rep-tiles** (`reptiles/`), where you cover a region with tiles by drag
 and drop.
 
 This file is the map. It is written for AI agents first: every extension point
@@ -21,8 +21,8 @@ it means, it means the TypeScript app** — change `web/` (and the shared
 when the request names it, or when a shared-`data/` edit necessarily
 carries over.
 
-A request about **Tiling Simulator** (tiles, levels, drag-and-drop tiling)
-means `tiling/` — see [`tiling/AGENTS.md`](tiling/AGENTS.md). It reads
+A request about **Rep-tiles** (tiles, levels, drag-and-drop tiling) means
+`reptiles/` — see [`reptiles/AGENTS.md`](reptiles/AGENTS.md). It reads
 Hypersweeper's geometry from `web/src/boards/` in place, so a change there can
 reach both games. It runs locally only for now: no CI job and no deploy cover
 it yet.
@@ -32,7 +32,7 @@ it yet.
 | Working on | Read |
 |---|---|
 | Anything in the TypeScript app (the deployed game) | [`web/AGENTS.md`](web/AGENTS.md) — itself a router into `web/docs/` |
-| The Tiling Simulator (`tiling/`) | [`tiling/AGENTS.md`](tiling/AGENTS.md) |
+| Rep-tiles, the tiling game (`reptiles/`) | [`reptiles/AGENTS.md`](reptiles/AGENTS.md) |
 | The board model, what ships, and why it is shaped that way | [`docs/agents/geometry.md`](docs/agents/geometry.md) |
 | Adding a tiling, a surface, a solid or a fractal board | [`docs/agents/board-recipes.md`](docs/agents/board-recipes.md) |
 | Picking a board's size and mine count | [`docs/agents/difficulty.md`](docs/agents/difficulty.md) |

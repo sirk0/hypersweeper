@@ -11,11 +11,11 @@
       "port": null
     },
     {
-      "name": "tiling",
+      "name": "reptiles",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "--prefix",
-        "tiling",
+        "reptiles",
         "run",
         "dev"
       ],

@@ -126,10 +126,10 @@ setInterval(() => {
 open(levelByKey(new URLSearchParams(location.search).get("level") ?? "") ?? LEVELS[0]!);
 
 // A seam for checking the game by hand or from a script, in dev builds only:
-// `__tiling.fill()` finishes the board (backtracking where it must).
+// `__reptiles.fill()` finishes the board (backtracking where it must).
 if (import.meta.env.DEV) {
   Object.assign(window, {
-    __tiling: {
+    __reptiles: {
       get puzzle() {
         return puzzle;
       },

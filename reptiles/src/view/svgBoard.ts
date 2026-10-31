@@ -48,11 +48,15 @@ function stepGlyph(
   dir: 1 | -1,
   step: number,
 ): { axis: XY; rays: string; arc: string; head: string } {
-  // The axis sits low, so the wedge above it fills the button.
+  // A step of up to a right angle is a wedge opening upward, so the axis sits
+  // low and the wedge fills the button. A wider one — the prismatic
+  // pentagonal's 180° — would swing its second ray out through the bottom; it
+  // turns about the button's own centre instead.
+  const wide = step > Math.PI / 2 + 1e-9;
   const cx = kx;
-  const cy = ky - KNOB * 0.4;
-  const ray = KNOB * 0.98;
-  const r = KNOB * 0.68;
+  const cy = wide ? ky : ky - KNOB * 0.4;
+  const ray = wide ? KNOB * 0.72 : KNOB * 0.98;
+  const r = wide ? KNOB * 0.5 : KNOB * 0.68;
   const from = Math.PI / 2;
   const sweep = dir * step;
   const at = (a: number, len: number): XY => [cx + len * Math.cos(a), cy + len * Math.sin(a)];

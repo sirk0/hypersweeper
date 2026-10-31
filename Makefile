@@ -9,7 +9,7 @@ WEB_OUT = $(WEB_STAGE)/build/web
         mac-app mac-app-dmg desktop-install desktop-build desktop-run \
         desktop-test desktop-smoke desktop-icon \
         ios-app ios-run ios-prepare ios-install ios-icon ios-stickers \
-        tiling-install tiling-run tiling-test
+        reptiles-install reptiles-run reptiles-test
 
 help:            ## list available targets
 	@grep -E '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ -/' | sort
@@ -138,14 +138,14 @@ ios-icon:        ## regenerate the app icons and launch image from the vector so
 ios-stickers:    ## render the iMessage sticker pack from the game's boards (SWIFTSHADER=1 with no GPU)
 	cd web && npm run stickers
 
-tiling-install:  ## install the Tiling Simulator's toolchain (it lives in tiling/)
-	cd tiling && npm install
+reptiles-install: ## install Rep-tiles' toolchain (it lives in reptiles/)
+	cd reptiles && npm install
 
-tiling-run:      ## run the Tiling Simulator at http://localhost:5174
-	cd tiling && npm run dev
+reptiles-run:    ## run Rep-tiles at http://localhost:5174
+	cd reptiles && npm run dev
 
-tiling-test:     ## typecheck and unit-test the Tiling Simulator
-	cd tiling && npm run typecheck && npm run test
+reptiles-test:   ## typecheck and unit-test Rep-tiles
+	cd reptiles && npm run typecheck && npm run test
 
 clean:           ## remove build artifacts
 	rm -rf build desktop/app ios/App/App/public

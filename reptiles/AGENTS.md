@@ -1,4 +1,4 @@
-# Tiling Simulator (`tiling/`)
+# Rep-tiles (`reptiles/`)
 
 The second game in this repo. The player gets a bounded flat region and a tray
 of tiles and must cover the region exactly, dragging tiles in. **Any exact
@@ -51,15 +51,15 @@ packaging — `ci.yml` and the Pages deploy do not look at this folder.
 ## Build and run
 
 ```sh
-cd tiling
+cd reptiles
 npm install          # first time, and after a dependency change
 npm run dev          # http://localhost:5174 (Hypersweeper's dev server is 5173)
 npm run typecheck    # tsc --noEmit, strict — also checks the web/src/boards files it imports
 npm run test         # vitest unit tests (well under a second)
 ```
 
-or from the root: `make tiling-install`, `make tiling-run`, `make tiling-test`.
-`?level=<key>` opens a level directly. In dev builds `window.__tiling.fill()`
+or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`.
+`?level=<key>` opens a level directly. In dev builds `window.__reptiles.fill()`
 finishes the board — the quick way to see the win state.
 
 ## Layout
@@ -159,5 +159,5 @@ finishes the board — the quick way to see the win state.
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues.
 - Importing from `web/src/boards/` is fine; importing from the rest of `web/`
   (renderer, UI, game rules) is not — that is Hypersweeper's own.
-- Verify visual changes with a real screenshot (the `tiling` entry in
+- Verify visual changes with a real screenshot (the `reptiles` entry in
   `.claude/launch.json` starts the dev server).

@@ -1,10 +1,10 @@
 {
-  "name": "tiling-simulator",
+  "name": "rep-tiles",
   "private": true,
   "version": "0.0.1",
   "license": "MIT",
   "type": "module",
-  "description": "Tiling Simulator: cover a region with tiles by drag and drop. Shares its geometry with Hypersweeper (../web/src/boards).",
+  "description": "Rep-tiles: cover a region with tiles by drag and drop. Shares its geometry with Hypersweeper (../web/src/boards).",
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
