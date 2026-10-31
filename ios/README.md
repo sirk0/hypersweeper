@@ -1,11 +1,11 @@
 # Hypersweeper for iPhone — the native iOS build
 
-The TypeScript game (`web/`) inside a Capacitor WKWebView, so it installs on a
+The TypeScript game (`apps/hypersweeper/`) inside a Capacitor WKWebView, so it installs on a
 phone, plays with no internet connection, and **buzzes through the Taptic
 Engine** — the one thing no web API on iOS can do.
 
 ```sh
-make ios-install   # install the Capacitor tooling (it lives in web/)
+make ios-install   # install the Capacitor tooling (it lives in apps/hypersweeper/)
 make ios-app       # build the game, sync it in, open Xcode  (macOS)
 make ios-run       # …or build straight onto a connected iPhone
 make ios-prepare   # build + sync only; works on any OS (what CI checks)
@@ -15,7 +15,7 @@ make ios-prepare   # build + sync only; works on any OS (what CI checks)
 Xcode's job and Xcode runs nowhere else. Everything up to that — the web build,
 the offline check, the sync — works anywhere.
 
-`scripts/build-ios-app.sh` drives it: build `web/` with `VITE_PACKAGED=1`,
+`scripts/build-ios-app.sh` drives it: build `apps/hypersweeper/` with `VITE_PACKAGED=1`,
 assert the bundle is self-contained (`scripts/check-offline-assets.mjs`), then
 `npx cap sync ios`.
 
@@ -26,7 +26,7 @@ app targets **iOS 18 or newer** (`IPHONEOS_DEPLOYMENT_TARGET` in the Xcode
 project and `platform :ios` in the `Podfile`; the Podfile's `post_install`
 raises the pods to match), so the phone has to be on iOS 18.
 
-1. `make ios-app`. It installs whatever `web/package-lock.json` calls for that
+1. `make ios-app`. It installs whatever `package-lock.json` calls for that
    your tree does not have yet (`scripts/ensure-web-deps.sh` — a checkout that
    predates a new dependency is otherwise a `tsc` error about a module it cannot
    resolve), builds the bundle, syncs it into `ios/App`, and opens
@@ -46,7 +46,7 @@ A **free** Apple ID signs an app for **7 days**; after that it refuses to launch
 until you press ⌘R again. A paid Apple Developer account ($99/yr) signs for a
 year and unlocks TestFlight. Nothing else about the build differs.
 
-The app's version has one source: `web/package.json`. `make ios-app` writes it
+The app's version has one source: `apps/hypersweeper/package.json`. `make ios-app` writes it
 as `MARKETING_VERSION`, with the git commit count as `CURRENT_PROJECT_VERSION`
 (the build number, which App Store Connect requires to grow with every upload),
 into `ios/App/Version.generated.xcconfig`. `Version.xcconfig` includes that
@@ -59,26 +59,26 @@ count is wrong; the script warns about this.
 
 | Path | What it is |
 |------|------------|
-| `web/capacitor.config.json` | The whole native configuration: app id, name, `webDir` (the Vite build), and `ios.path` pointing here. It lives in `web/` because that is the npm project Capacitor's CLI and pods resolve from — one `node_modules`, so the JS `@capacitor/haptics` and the pod that answers it can never drift apart. |
+| `apps/hypersweeper/capacitor.config.json` | The whole native configuration: app id, name, `webDir` (the Vite build), and `ios.path` pointing here. It lives in `apps/hypersweeper/` because that is the npm project Capacitor's CLI and pods resolve from — one `node_modules`, so the JS `@capacitor/haptics` and the pod that answers it can never drift apart. |
 | `ios/App/App.xcworkspace` | What Xcode opens: the app target plus the pods. |
-| `ios/App/App/public/` | The built game, copied in by `cap sync`. Not committed — it is a build artifact, like `desktop/app`. |
+| `ios/App/App/public/` | The built game, copied in by `cap sync`. Not committed — it is a build artifact, like `shells/desktop/app`. |
 | `ios/App/App/AppIcon.icon`, `AppIconHexagon.icon`, `AppIconOctagon.icon` | The app icons, as Icon Composer documents: the primary (pentagon) and the two alternates the App icon setting switches to. One document serves iPhone, iPad and the Mac app alike. See "The app icons" below. |
 | `ios/App/App/AppIconPlugin.swift` | The native half of the App icon setting: `setAlternateIconName`, as the Capacitor plugin `AppIcon`. Registered by `BridgeViewController`, which also tells the page whether the device can switch icons and which one it wears. |
-| `ios/App/App/Assets.xcassets` | The launch image, exported from the primary icon by `make ios-icon` (`web/scripts/make-icons.mts`). |
+| `ios/App/App/Assets.xcassets` | The launch image, exported from the primary icon by `make ios-icon` (`apps/hypersweeper/scripts/make-icons.mts`). |
 | `ios/App/App/App.entitlements` | **Mac only** (`CODE_SIGN_ENTITLEMENTS[sdk=macosx*]`). The App Sandbox, which the Mac App Store requires, plus `network.client`, and `game-center`. The game itself makes no network requests (Game Center's traffic is GameKit's); WKWebView's helper processes need `network.client` inside the sandbox anyway. Without it the web content process crash-loops and the game never appears. The file's comment has the measurement. |
 | `ios/App/App/PrivacyInfo.xcprivacy` | The app's privacy manifest: no tracking, no data collected. That holds because analytics is compiled out of packaged builds. Keep it in step with the App Store Connect privacy label ("Data Not Collected"). |
 | `ios/App/Version.xcconfig` | The project-level base configuration that carries the version numbers (above). |
-| `ios/App/Podfile` | Generated by Capacitor. Lists the pods for `@capacitor/ios` and each plugin, resolved out of `web/node_modules`. |
+| `ios/App/Podfile` | Generated by Capacitor. Lists the pods for `@capacitor/ios` and each plugin, resolved out of `node_modules`. |
 | `ios/App/App/AppDelegate.swift`, `ios/App/App/SceneDelegate.swift` | The UIScene lifecycle, which Capacitor 8 uses and recent iOS releases expect. `AppDelegate` hands each new scene the `SceneDelegate`; that creates the window with Capacitor's `CAPBridgeViewController`. The scene manifest (`UIApplicationSceneManifest`) in `Info.plist` names it. |
 | `ios/App/AppClip/` | The App Clip target: its own delegates, `ClipBridgeViewController`, `Info.plist` and entitlements. Everything else — the game, the icon, the launch screen, the privacy manifest, `BridgeViewController.swift` — it takes from `App/`. See "The App Clip" below. |
 | `ios/App/App/App-iOS.entitlements` | **iPhone and iPad only** (`CODE_SIGN_ENTITLEMENTS[sdk=iphone*]`): names the App Clip as this app's (`associated-appclip-app-identifiers`), and turns on Game Center and iCloud key-value storage. |
 | `ios/App/App/GameCenterPlugin.swift` | The `GameCenter` plugin: sign-in, reporting achievements, opening Game Center. App target only; see "Game Center" below. |
 | `ios/App/App/CloudRecordPlugin.swift` | The `CloudRecord` plugin: iCloud's key-value store, where the best times, the achievement record and the favourites are kept in step across devices and through a reinstall. App target only; see "iCloud" below. |
-| `ios/GameCenter/` | The Game Center achievement list (`achievements.json`) and one badge image per achievement, written by `web/scripts/make-gamecenter.mts`. Not part of the Xcode project: it is what App Store Connect is told. See "Game Center" below. |
+| `ios/GameCenter/` | The Game Center achievement list (`achievements.json`) and one badge image per achievement, written by `apps/hypersweeper/scripts/make-gamecenter.mts`. Not part of the Xcode project: it is what App Store Connect is told. See "Game Center" below. |
 | `ios/AppStore/` | The store listing: promotional text, description and App Review notes, as plain text to paste into App Store Connect. See "The store listing" below. |
-| `ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `web/scripts/make-stickers.mts`. See "The sticker pack" below. |
+| `ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `apps/hypersweeper/scripts/make-stickers.mts`. See "The sticker pack" below. |
 
-Nothing in `web/` is written for iOS beyond the haptics branch below, the
+Nothing in `apps/hypersweeper/` is written for iOS beyond the haptics branch below, the
 native plugins it feature-detects (the app icon, Game Center, iCloud), and one build
 flag, `VITE_PACKAGED=1`, which it shares with the macOS app: a bundle
 inside an app has no server to update from, so the build drops the service
@@ -86,7 +86,7 @@ worker and the settings page drops its "Check for updates" row.
 
 ### The haptics, which are the point
 
-`web/src/haptics.ts` is the single seam, and it picks its mechanism at call
+`apps/hypersweeper/src/haptics.ts` is the single seam, and it picks its mechanism at call
 time. Inside this app `Capacitor.isNativePlatform()` is true and, **on an
 iPhone**, the game events become real Taptic calls. The same app on an iPad or
 a Mac has no Taptic Engine. The page can't tell those apart from the user agent
@@ -114,12 +114,12 @@ is gated on the same check, a stored `haptics: true` carried over from a
 phone is inert everywhere else.
 
 The plugin is reached through Capacitor's normal bridge, so it needs three
-things to line up: the JS package (`@capacitor/haptics` in `web/package.json`),
+things to line up: the JS package (`@capacitor/haptics` in `apps/hypersweeper/package.json`),
 the pod (`CapacitorHaptics`, which `cap sync` writes into the Podfile), and the
 native side telling the page which plugins the binary carries. That last one is
 the trap — a plugin missing from Capacitor's `PluginHeaders` is silently served
 by its *web* implementation, so a build can look fine and quietly do nothing on
-the phone. `web/tests/e2e/haptics.spec.ts` pins the whole chain without a
+the phone. `apps/hypersweeper/tests/e2e/haptics.spec.ts` pins the whole chain without a
 device: it boots the page with Capacitor's real `native-bridge.js` over a fake
 `webkit.messageHandlers.bridge`, then plays a board and asserts what gets posted
 to the native side. If a `pod install` were ever missed, that spec is what says
@@ -127,12 +127,12 @@ so.
 
 ## Changing the app
 
-- **The game changed** → `make ios-app` again (or `npx cap sync ios` from `web/`
+- **The game changed** → `make ios-app` again (or `npx cap sync ios` from `apps/hypersweeper/`
   if the bundle is already built). Xcode does not need restarting.
 - **The icons or launch image** → see "The app icons" below.
-- **A new Capacitor plugin** → `npm install` it in `web/`, then `cap sync ios`
+- **A new Capacitor plugin** → `npm install -w apps/hypersweeper` it (from the repo root), then `cap sync ios`
   (a Mac, so the pod installs). Nothing here is hand-maintained.
-- **Regenerating the project from scratch** → `rm -rf ios` and, from `web/`,
+- **Regenerating the project from scratch** → `rm -rf ios` and, from `apps/hypersweeper/`,
   `npx cap add ios`. Everything in `ios/` is Capacitor's own template plus a
   few edits worth knowing about: the icon/launch assets,
   `ITSAppUsesNonExemptEncryption` in `Info.plist` (the game uses no encryption
@@ -145,10 +145,10 @@ so.
   in `Info.plist`: `INFOPLIST_KEY_*` build settings only apply when Xcode
   generates the plist, and this project ships its own.
 - **Upgrading Capacitor** → bump `@capacitor/core`, `/cli`, `/ios` and the
-  plugins together in `web/`, then `cap sync ios`. `cap sync` does not touch
+  plugins together in `apps/hypersweeper/`, then `cap sync ios`. `cap sync` does not touch
   the hand-owned native files (`AppDelegate.swift`, `SceneDelegate.swift`,
   `Info.plist`, the `.pbxproj`), so diff them against the new template
-  (`web/node_modules/@capacitor/cli/assets/ios-pods-template.tar.gz`) — that is
+  (`node_modules/@capacitor/cli/assets/ios-pods-template.tar.gz`) — that is
   how the scene setup arrived with Capacitor 8.
 
 ## The app icons
@@ -159,11 +159,11 @@ so the App Store app and the web app on the same Home Screen can be told apart
 (`.icon`, Xcode 26+), which Xcode compiles for every platform the target
 builds: there is no separate Mac Catalyst art any more, and the system draws
 the rounded square, the Liquid Glass edge and the dark, tinted and clear
-renditions itself. The list of icons lives in `web/src/appIcon.ts`;
+renditions itself. The list of icons lives in `apps/hypersweeper/src/appIcon.ts`;
 `tests/unit/appIcon.test.ts` holds the project to it.
 
 - **Redrawing the art** → `make ios-icon` (macOS, needs Xcode). The script
-  (`web/scripts/make-icons.mts`) writes each document's two layers,
+  (`apps/hypersweeper/scripts/make-icons.mts`) writes each document's two layers,
   `Assets/cell.svg` and `Assets/mine.svg`, then exports every non-Apple icon
   (the web's PNGs, the Electron icon, the launch image) from the documents with
   `ictool`, so all of them match. Commit what it writes.
@@ -200,7 +200,7 @@ that tracks `package.json`, and a build number that grows.
   the smiley; **Settings… ⌘,**; and **How to Play** under Help. It also removes
   menus that would do nothing in a canvas game (Format and the text-editing
   submenus). Each command reaches the page as a `hypersweeper:command` event
-  (`App.onCommand` in `web/src/main.ts`, pinned by `tests/e2e/commands.spec.ts`).
+  (`App.onCommand` in `apps/hypersweeper/src/main.ts`, pinned by `tests/e2e/commands.spec.ts`).
   Settings and How to Play are home-screen pages, so from a game they go home
   first, leaving the board as the header's back arrow does (without asking).
 - **The File menu picks the difficulty and the board.** Under New Game come
@@ -210,8 +210,8 @@ that tracks `package.json`, and a build number that grows.
   then a submenu for each group of the home menu: Flat, Flat manifolds (a
   submenu per surface), Sphere, the solid pages and Volumes. Each one holds
   the same tilings and families its home-menu page does. The page owns the
-  tree: `web/src/menuBar.ts` builds it from the home menu's own grouping
-  (`web/src/ui/boardTree.ts`) and hands it to `MenuBarPlugin.swift` at boot.
+  tree: `apps/hypersweeper/src/menuBar.ts` builds it from the home menu's own grouping
+  (`apps/hypersweeper/src/ui/boardTree.ts`) and hands it to `MenuBarPlugin.swift` at boot.
   The plugin stores it and asks UIKit to rebuild the menu bar, so nothing
   about the catalogue is written in Swift. Each item's command string comes
   back through `BridgeViewController.menuCommand` as a `hypersweeper:command`
@@ -245,7 +245,7 @@ that tracks `package.json`, and a build number that grows.
 
 **Privacy.** The privacy policy URL for App Store Connect (App Information →
 Privacy Policy URL) is <https://hypersweeper.pages.dev/privacy>, served from
-`web/public/privacy.html`. Under **App Privacy**, answer *No, we do not collect
+`apps/hypersweeper/public/privacy.html`. Under **App Privacy**, answer *No, we do not collect
 data from this app*, so the label reads **Data Not Collected**. That matches
 `PrivacyInfo.xcprivacy` and the policy page. All three rest on analytics being
 compiled out of packaged builds (`VITE_PACKAGED=1`), so if that ever changes,
@@ -283,7 +283,7 @@ one plain-text file per field, to paste as is:
 Every claim in them is the code's: the board count, the neighbour counts, the
 features. Change them in the same commit as the feature they describe, and the
 review notes whenever what the app talks to (Game Center, iCloud) changes,
-alongside the privacy page above. `web/tests/unit/storeListing.test.ts` checks
+alongside the privacy page above. `apps/hypersweeper/tests/unit/storeListing.test.ts` checks
 each file against its limit, and that "more than N boards" stays below the
 boards that can actually be played (the catalogue less those the difficulty
 calibration blocks at every difficulty).
@@ -316,7 +316,7 @@ What makes the game a clip is the shell, not the build. `ClipBridgeViewControlle
   in `AppClip/Info.plist` — **that key is the one place to change the board**.
   The page then opens it at once, hides the header's back and random buttons,
   records no achievements or best times, and puts no card up on a win ("The
-  App Clip" in [`web/docs/ui.md`](../web/docs/ui.md));
+  App Clip" in [`apps/hypersweeper/docs/ui.md`](../apps/hypersweeper/docs/ui.md));
 - offers the full game: the page posts `won` to the `hypersweeperClip` message
   handler when a board is won, and the clip shows Apple's App Clip
   `SKOverlay`; the next board posts `started`, which dismisses it.
@@ -367,11 +367,11 @@ App Store Connect requires an extension's version to match its app's.
 Everything in the catalog is rendered, not drawn:
 
 ```sh
-make ios-stickers                  # cd web && npm run stickers
+make ios-stickers                  # cd apps/hypersweeper && npm run stickers
 SWIFTSHADER=1 make ios-stickers    # on a machine with no GPU (a cloud session)
 ```
 
-`web/scripts/make-stickers.mts` boots the packaged bundle in Chromium, stages
+`apps/hypersweeper/scripts/make-stickers.mts` boots the packaged bundle in Chromium, stages
 each board the way the App Store art is staged (`scripts/shots-lib.ts`: a
 seeded mine layout, a central patch opened, a few flags), and shoots it on a
 transparent page with the chrome hidden. Then it trims the board to its
@@ -403,7 +403,7 @@ Center's: its banners announce an unlock, Settings' **Game Center** row opens
 its achievements page, and the game's own Achievements page and the unlock
 list on the win card are not shown. The website, the PWA, Android and the
 Electron Mac app keep the game's own list. "Where an unlock is said" in
-`web/docs/ui.md` has the page's side.
+`apps/hypersweeper/docs/ui.md` has the page's side.
 
 ### How it works
 
@@ -421,7 +421,7 @@ Electron Mac app keep the game's own list. "Where an unlock is said" in
 - **The entitlement** `com.apple.developer.game-center` is in both
   `App-iOS.entitlements` and the Mac `App.entitlements`. The App ID needs the
   Game Center capability; Xcode's automatic signing adds it.
-- **The record stays the game's** (`web/src/gameCenter.ts`). Every win is filed
+- **The record stays the game's** (`apps/hypersweeper/src/gameCenter.ts`). Every win is filed
   in the game's own record as before, and Game Center is told what that record
   earns. At launch, and again whenever the player signs in, the whole record is
   sent with no banners: that catches up wins from before this existed, or from
@@ -431,7 +431,7 @@ Electron Mac app keep the game's own list. "Where an unlock is said" in
   them, with the unlock sound and buzz (banners are silent).
 - **Signed out**, nothing is sent; the next sign-in's catch-up carries it,
   without banners.
-- **Testing without a device.** `web/tests/e2e/gameCenter.spec.ts` boots the page
+- **Testing without a device.** `apps/hypersweeper/tests/e2e/gameCenter.spec.ts` boots the page
   over Capacitor's real `native-bridge.js` with the plugin's header read from
   the Swift source, and checks what the page sends: the sign-in and quiet
   catch-up at launch, banners on a win, the card without unlocks, the
@@ -448,8 +448,8 @@ it is typed by hand:
   `vendorIdentifier` is the Achievement ID; `referenceName` is the game's own
   id; then the points, and per locale the display name, the pre-earned and
   earned descriptions, and the image. The ids, points and text come from
-  `GAME_CENTER_ACHIEVEMENTS` in `web/src/achievements.ts` (see "What Game
-  Center is told" in `web/docs/ui.md` for how they are chosen).
+  `GAME_CENTER_ACHIEVEMENTS` in `apps/hypersweeper/src/achievements.ts` (see "What Game
+  Center is told" in `apps/hypersweeper/docs/ui.md` for how they are chosen).
 - `images/<Achievement ID>.png`: 1024 px squares, RGB with no alpha, which is
   what App Store Connect accepts. Each is the achievement's in-game badge in the
   default theme, on the app icon's cream ground, kept inside the inscribed
@@ -459,9 +459,9 @@ it is typed by hand:
   the whole catalogue's ring is the theme's terracotta accent. The manifest's
   `ring` field says which each one has.
 
-Regenerate both with `npm run gamecenter` in `web/` (headless Chromium draws
+Regenerate both with `npm run gamecenter` in `apps/hypersweeper/` (headless Chromium draws
 the images; `MANIFEST_ONLY=1` writes just the list, with no browser). A unit
-test, `web/tests/unit/gameCenterManifest.test.ts`, regenerates the list and
+test, `apps/hypersweeper/tests/unit/gameCenterManifest.test.ts`, regenerates the list and
 fails on any difference, and checks every image is there at the right size.
 So when the catalogue grows an achievement, CI says so, and the regenerated
 file is where it gets noticed.
@@ -489,8 +489,8 @@ far inside (a few kilobytes per device, at most ~60 KB of best times).
 - **`CloudRecordPlugin.swift`** is a local Capacitor plugin, like the Game
   Center one, and only moves strings: `read` returns every key, `write` sets or
   removes keys, and a `change` event fires when iCloud delivers another
-  device's write. All of the merging is the page's (`web/src/cloudRecord.ts`;
-  "The record in iCloud" in [`web/docs/ui.md`](../web/docs/ui.md) has the
+  device's write. All of the merging is the page's (`apps/hypersweeper/src/cloudRecord.ts`;
+  "The record in iCloud" in [`apps/hypersweeper/docs/ui.md`](../apps/hypersweeper/docs/ui.md) has the
   rules).
 - **Only the app registers it** (`BridgeViewController.capacitorDidLoad`, under
   `#if !APP_CLIP`): the clip keeps no record.
@@ -505,10 +505,10 @@ far inside (a few kilobytes per device, at most ~60 KB of best times).
   `synchronize`) whenever the app comes back to the foreground. A fresh install's first writes are held
   back by iOS until its first download from iCloud has arrived, so a new
   install can never overwrite the record with an empty one.
-- **Testing.** `web/tests/unit/cloudRecord.test.ts` plays several devices
+- **Testing.** `apps/hypersweeper/tests/unit/cloudRecord.test.ts` plays several devices
   against one simulated store (reinstall, two devices, crossed writes, clears,
   and devices going offline);
-  `web/tests/e2e/cloudRecord.spec.ts` checks the bridge round trip. iCloud
+  `apps/hypersweeper/tests/e2e/cloudRecord.spec.ts` checks the bridge round trip. iCloud
   itself needs real devices signed in to one Apple ID (simulators sync too, but
   slowly; *Debug → Trigger iCloud Sync* nudges one).
 
@@ -533,7 +533,7 @@ On a `macos-26` GitHub-hosted runner, with the newest stable Xcode, it:
    `DEVELOPMENT_TEAM`.
 
 The upload job is titled with the version it uploads (`Upload 0.2.133 (both)`),
-read from `web/package.json` by a few-second job before it: a run's own title is
+read from `apps/hypersweeper/package.json` by a few-second job before it: a run's own title is
 fixed before anything is checked out, so the job's is the one that can say it.
 The job summary is headed with the version and build number, and lists what was
 uploaded (`ios+clip`, `mac`). If the job fails, the xcodebuild logs and result
@@ -583,7 +583,7 @@ Store Connect, select the build, and **Add for Review**.
 ### Screenshots
 
 The version page also asks for screenshots. `npm run store-screenshots` in
-`web/` renders seven of them for each slot into `app-store-screenshots/<slot>/`
+`apps/hypersweeper/` renders seven of them for each slot into `app-store-screenshots/<slot>/`
 (git-ignored), at sizes App Store Connect accepts. They are the snub
 dodecahedron, the snub square torus, the hexagon trefoil knot, the Penrose
 rhombi, the heptagonal {7,3} disc, the main menu and the Flat manifolds menu.
@@ -634,7 +634,7 @@ scheme, and no patterned page. The script builds the packaged bundle
 (`VITE_PACKAGED=1`) and stages each board through the `window.__ms` seam, as
 the README gallery does. Each device runs the layout it really gets, so the
 iPad and the Mac show the two-pane menu. The scenes are listed at the top of
-`web/scripts/make-store-screenshots.mts`. `DEVICES=iphone-6.3` or
+`apps/hypersweeper/scripts/make-store-screenshots.mts`. `DEVICES=iphone-6.3` or
 `SHOTS=01-snub-dodecahedron` renders a subset. A full run deletes any numbered
 shot that is no longer in the list. Under `SWIFTSHADER=1` a long run can time
 out loading a page. If one does, re-run the slots it did not reach with

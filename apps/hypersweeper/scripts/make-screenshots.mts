@@ -1,0 +1,270 @@
+// Dev-only: render the README screenshots from the real app.
+//
+//   npm run screenshots -- [out-dir]
+//   (default out dir: ../docs/screenshots; SHOTS=a.png,b.png renders a subset)
+//
+// Builds `dist/`, serves it with `vite preview`, then drives each shot through
+// the `window.__ms` seam: start the board with an explicit mine layout (so the
+// script knows where the mines are and nothing has to be guessed), open a
+// central patch, flag a few mines, optionally detonate one, and screenshot.
+// Each shot picks a theme, a board shape and a colour scheme, written into the
+// settings record before the app boots. A theme is the page behind the board
+// and what the board is coloured in, a shape is how its cells are cut, and a
+// scheme is which half of the theme's palette pair paints the chrome
+// (ui/theme.ts, render/cellStyle.ts) — so the combinations are spread over these
+// shots to show all three axes.
+//
+// Software WebGL (the same SwiftShader flags the e2e suite uses) keeps the
+// output identical on a machine with no GPU, e.g. CI or a cloud session.
+import { spawn, spawnSync } from "node:child_process";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { chromium, type Browser } from "@playwright/test";
+
+import { settle, stageBoard, waitForServer } from "./shots-lib";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const WEB = path.resolve(HERE, "..");
+const PORT = 4180;
+const BASE = `http://localhost:${PORT}/`;
+
+interface Shot {
+  /** File name written into the output directory. */
+  file: string;
+  /** A key in `THEME_KEYS` (apps/hypersweeper/src/ui/theme.ts) — the palette, the page and
+   * the board's colours. */
+  theme: string;
+  /** A key in `SHAPE_KEYS` (apps/hypersweeper/src/render/cellStyle.ts) — how the cells are
+   * cut. Omitted takes the shipped default (the classic bevel). */
+  shape?: string;
+  /** `"light"` or `"dark"`. Never `"auto"`: a screenshot must not depend on the
+   * machine it is rendered on. */
+  scheme: "light" | "dark";
+  /** Pattern the page behind the board with that board's own tiling
+   * (ui/backgroundPattern.ts). Bright only: the other two themes have no
+   * patterned page, so this says nothing on them. */
+  backgrounds?: true;
+  /** Board shots: the mode to open. Omitted for a chrome shot. */
+  mode?: string;
+  difficulty?: string;
+  /** Mine-layout seed — the shot is reproducible, not random. */
+  seed?: number;
+  /** Fraction of the board to open. */
+  reveal?: number;
+  /** How many of the mines to flag. */
+  flags?: number;
+  /** Detonate a mine at the end (the losing-board shot). */
+  explode?: boolean;
+  /** Turn a 3D board off its starting tilt, as a drag of (dx, dy) pixels. */
+  rotate?: [number, number];
+  /** Chrome shots: clicks to walk the menu before shooting. */
+  clicks?: string[];
+  viewport?: { width: number; height: number };
+}
+
+const BOARD_VIEW = { width: 520, height: 600 };
+
+// Spread over the renderer's range — a sphere, a non-orientable surface, an
+// aperiodic tiling, a torus mid-explosion, a fractal patch, a flat regular
+// board, and the two chrome screens — with the three themes and both schemes
+// distributed over them.
+//
+// One of those choices is not free: **every board you can turn is Realistic**,
+// because that is where a 3D marker comes from. A pin standing on a flagged
+// cell and a spiked bomb on a revealed mine are `CellStyle.solidMarkers`
+// (render/markers3d.ts), and Realistic is the only style that asks for them —
+// on Flat or Classic the same cells carry the atlas billboards, which are
+// pictures that do not turn with the board and are exactly what a photograph of
+// a solid should not show. So the spread runs the other way round: the three
+// solids take Realistic, and the flat boards carry Flat and Classic between
+// them. (A flat board never gets a model whatever the style says, so nothing is
+// lost there.)
+//
+// The four Bright shots also switch `backgrounds` on, which is the only place
+// it shows: the page behind the board is patterned with that board's own
+// tiling. On `penrose` it shows *through* the board as well, the domed cut
+// being the one with translucent opened cells.
+const SHOTS: Shot[] = [
+  {
+    file: "c180.png",
+    theme: "bright",
+    shape: "realistic",
+    scheme: "light",
+    backgrounds: true,
+    mode: "c180",
+    // Easy, the GP(3,0) the README captions: medium is the 252-cell GP(5,0)
+    difficulty: "easy",
+    seed: 7,
+    reveal: 0.34,
+    flags: 5,
+  },
+  {
+    file: "mobiushex.png",
+    theme: "bright",
+    shape: "realistic",
+    scheme: "dark",
+    backgrounds: true,
+    mode: "mobiushex",
+    // The one shot that is not on `medium`. A medium Möbius strip is 28x9
+    // hexagons, and a pin is sized off its cell's inradius — at that density
+    // the pins come out four pixels across in the README and the shot shows
+    // nothing the flat billboards did not. Easy is 16x5, which is still
+    // unmistakably a strip that comes back joined to its own other side, with
+    // markers big enough to read as objects standing on it.
+    difficulty: "easy",
+    seed: 3,
+    reveal: 0.34,
+    flags: 4,
+    // Off the starting tilt: face on, the strip reads as a disc rather than a
+    // band that comes back joined to its own other side.
+    rotate: [70, 40],
+  },
+  {
+    file: "penrose.png",
+    theme: "bright",
+    shape: "realistic",
+    scheme: "light",
+    backgrounds: true,
+    mode: "penrose",
+    seed: 11,
+    reveal: 0.36,
+    flags: 5,
+  },
+  {
+    file: "torussnubsquare-lost.png",
+    theme: "bright",
+    shape: "realistic",
+    scheme: "dark",
+    backgrounds: true,
+    mode: "torussnubsquare",
+    seed: 5,
+    reveal: 0.34,
+    flags: 4,
+    explode: true,
+  },
+  {
+    file: "gosper.png",
+    theme: "bright",
+    shape: "flat",
+    scheme: "dark",
+    mode: "gosper",
+    seed: 2,
+    reveal: 0.38,
+    flags: 4,
+  },
+  {
+    file: "hexhex.png",
+    theme: "classic",
+    shape: "classic",
+    scheme: "light",
+    mode: "hexhex",
+    seed: 9,
+    reveal: 0.36,
+    flags: 4,
+  },
+  { file: "menu.png", theme: "bright", shape: "realistic", scheme: "dark" },
+  {
+    file: "themes.png",
+    theme: "bright",
+    shape: "realistic",
+    scheme: "light",
+    clicks: [
+      '.menu-header-btn[data-action="settings"]',
+      '.menu-entry[data-settings-group="theme"]',
+    ],
+  },
+];
+
+async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void> {
+  const viewport = shot.viewport ?? BOARD_VIEW;
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor: 2,
+    reducedMotion: "reduce",
+  });
+  // The theme is a stored preference, so it has to be there before the app
+  // reads it at boot. Sound is off: a screenshot run must not build an audio
+  // graph, and the preset is irrelevant to the picture.
+  const settings = JSON.stringify({
+    version: 5,
+    gloss: false,
+    theme: shot.theme,
+    ...(shot.shape ? { shape: shot.shape } : {}),
+    scheme: shot.scheme,
+    animations: false,
+    sound: "off",
+    backgrounds: shot.backgrounds ?? false,
+  });
+  await context.addInitScript(
+    ([key, value]) => window.localStorage.setItem(key!, value!),
+    ["ms:settings", settings],
+  );
+  const page = await context.newPage();
+
+  const difficulty = shot.difficulty ?? "medium";
+  // `&seed=0`, because `stageBoard` reads this board's cells and then rebuilds
+  // it with a mine layout of its own. On the aperiodic boards the seed picks
+  // the *window* as well as the mines (session.ts), and a board built from an
+  // explicit layout claims no seed, so it is always cut from window 0 — while
+  // an address with no seed opens a random one. Left to differ, the mines are
+  // picked on one patch and applied to another, and `startBoard` rejects the
+  // ids it is handed ("mine position not on the board"). Every other mode
+  // ignores the seed, so this only pins the one that does not.
+  const query = shot.mode ? `?mode=${shot.mode}&difficulty=${difficulty}&seed=0` : "";
+  await page.goto(BASE + query);
+  await page.waitForSelector("body[data-ready]");
+  await settle(page);
+
+  if (shot.mode) {
+    await stageBoard(page, shot, difficulty);
+  }
+  for (const selector of shot.clicks ?? []) {
+    await page.locator(selector).click();
+  }
+  await settle(page);
+
+  const file = path.join(outDir, shot.file);
+  await page.screenshot({ path: file });
+  console.log(`wrote ${file}`);
+  await context.close();
+}
+
+async function main(): Promise<void> {
+  const outDir = path.resolve(
+    process.cwd(),
+    process.argv[2] ?? path.join(WEB, "../../docs/screenshots"),
+  );
+  mkdirSync(outDir, { recursive: true });
+
+  // `vite preview` serves dist/ from disk, so the shots are only of the
+  // current source if the build is current — a stale dist is the classic way
+  // to screenshot a change that is not there.
+  const build = spawnSync("npx", ["vite", "build"], { cwd: WEB, stdio: "inherit" });
+  if (build.status !== 0) throw new Error("vite build failed");
+
+  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
+    cwd: WEB,
+    stdio: "ignore",
+  });
+  try {
+    await waitForServer(BASE);
+    const browser = await chromium.launch({
+      ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+        ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
+        : {}),
+      args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
+    });
+    const only = process.env.SHOTS?.split(",").map((s) => s.trim());
+    for (const shot of SHOTS) {
+      if (only && !only.includes(shot.file) && !only.includes(shot.mode ?? "")) continue;
+      await shoot(browser, shot, outDir);
+    }
+    await browser.close();
+  } finally {
+    preview.kill();
+  }
+}
+
+await main();

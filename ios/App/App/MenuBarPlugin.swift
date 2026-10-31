@@ -3,7 +3,7 @@ import Capacitor
 
 /// What the menu bar's File menu offers besides New Game: the difficulties and
 /// every board, grouped as the home menu groups them. The page sends it
-/// (web/src/menuBar.ts) because the page owns the catalogue. Nothing about the
+/// (apps/hypersweeper/src/menuBar.ts) because the page owns the catalogue. Nothing about the
 /// boards is written down here. `AppDelegate.buildMenu` draws it, and
 /// `BridgeViewController` checkmarks the difficulty in play.
 enum MenuBarModel {

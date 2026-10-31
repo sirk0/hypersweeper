@@ -19,14 +19,14 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
         // cannot: an iPad and the Mac app both report a Mac.
         //   hypersweeperDevice: "phone", "pad" or "mac". Only a phone has a
         //     Taptic Engine, so it decides whether Settings offers Haptics
-        //     (web/src/haptics.ts).
+        //     (apps/hypersweeper/src/haptics.ts).
         //   hypersweeperShell: "catalyst" on the Mac, where the plain wheel is a
         //     two-finger trackpad swipe that pans a zoomed board instead of
         //     zooming it (onWheel in controls.ts).
         //   hypersweeperAltIcons / hypersweeperAppIcon: whether this device can
         //     switch the Home Screen icon, and the alternate one it wears now
         //     (null for the primary) — what Settings' App icon row is drawn
-        //     from (web/src/appIcon.ts). The OS is the record of the icon, not
+        //     from (apps/hypersweeper/src/appIcon.ts). The OS is the record of the icon, not
         //     the page's storage.
         #if targetEnvironment(macCatalyst)
         // Not the idiom: a Catalyst app scaled to match iPad reports `.pad`.
@@ -47,10 +47,10 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
         // Game Center reports achievements, and the App Clip earns none (its
         // target sets APP_CLIP and leaves the plugin out), so only the app
         // registers it. Its presence is what the page reads to hand the
-        // achievements to Game Center (web/src/gameCenter.ts).
+        // achievements to Game Center (apps/hypersweeper/src/gameCenter.ts).
         // iCloud keeps the best times and the achievement record in step
         // across the player's devices and through a reinstall
-        // (web/src/cloudRecord.ts). The clip keeps no record, so it too is
+        // (apps/hypersweeper/src/cloudRecord.ts). The clip keeps no record, so it too is
         // the app's alone.
         #if !APP_CLIP
         bridge?.registerPluginInstance(GameCenterPlugin())
@@ -109,7 +109,7 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
 
     #if !APP_CLIP
     /// The File menu's boards and difficulties, each carrying the command the
-    /// page gave it (MenuBarPlugin.swift, web/src/menuBar.ts). The app's alone,
+    /// page gave it (MenuBarPlugin.swift, apps/hypersweeper/src/menuBar.ts). The app's alone,
     /// like the plugin that sends them.
     @objc func menuCommand(_ sender: UICommand) {
         if let name = sender.propertyList as? String { sendCommand(name) }

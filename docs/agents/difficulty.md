@@ -307,7 +307,7 @@ hand-picked density is the one thing this game cannot get right by eye.
    moved with it.
 
    Look at a new wrapped board before believing its numbers; a fold photographs
-   much worse than it measures — `web/scripts/fold-shots.mjs` takes the shots
+   much worse than it measures — `apps/hypersweeper/scripts/fold-shots.mjs` takes the shots
    against a running preview server.
    `TestWrappedWindowsDoNotFold` reads both rules back off the shipped presets,
    so a hand-edited window cannot put one back.
@@ -377,7 +377,7 @@ and fairness are measured on the board as drawn. Where a
 calibrated density looks low for the board's degree, count them before
 believing it -- or compare it with the same tiling's donut, which has no rim. Every row the calibration cannot bring on target lands in the
 generated `data/difficulty.json`, which the TypeScript app reads
-(`web/src/modes/fairness.ts`) to mark the menu row and to deal the board less
+(`apps/hypersweeper/src/modes/fairness.ts`) to mark the menu row and to deal the board less
 often at random — so a new unfair board needs no front-end edit, only a
 `scripts/difficulty/report.py` re-run.
 

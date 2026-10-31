@@ -148,7 +148,7 @@ default gives a completely different JSON shape and an unreadable diff. These
 files are classic v1, `schemaVersion: 42` — the final v1 version, frozen when
 the dashboard API moved to the app platform, so it will not drift.
 
-`web/tests/unit/dashboards.test.ts` runs in CI over whatever is committed here
+`apps/hypersweeper/tests/unit/dashboards.test.ts` runs in CI over whatever is committed here
 and will fail on a file that has lost its time filter, started counting with
 `COUNT(*)`, or fallen behind the event schema.
 

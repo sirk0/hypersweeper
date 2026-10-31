@@ -8,9 +8,15 @@
       "port": null
     },
     {
+      "name": "hypersweeper",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/hypersweeper", "run", "dev"],
+      "port": 5173
+    },
+    {
       "name": "reptiles",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "reptiles", "run", "dev"],
+      "runtimeArgs": ["--prefix", "apps/reptiles", "run", "dev"],
       "port": 5174
     }
   ]

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- The app's privacy manifest. No tracking, no data collected: the packaged
-     game sends nothing to us or anyone else (web/src/analytics.ts is compiled
+     game sends nothing to us or anyone else (apps/hypersweeper/src/analytics.ts is compiled
      out when VITE_PACKAGED=1, and scripts/check-offline-assets.mjs fails the
      build over any remote URL). Two things leave the device, both to Apple:
      Game Center achievement progress, which GameKit sends once the player is

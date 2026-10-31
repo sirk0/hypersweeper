@@ -104,7 +104,7 @@ _MODE_SOLID_GROUP = {
 
 def _mode_family(mode: str, tiling: str) -> str:
     """The picker family a mode belongs to, as a key. Mirrors the TypeScript
-    `familyOf` (web/src/ui/boardFacts.ts), which returns the same thing as a
+    `familyOf` (apps/hypersweeper/src/ui/boardFacts.ts), which returns the same thing as a
     label; a key is what goes in the dataset, so a label rewording cannot break
     a dashboard."""
     if tiling:

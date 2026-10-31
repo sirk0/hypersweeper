@@ -1,0 +1,19 @@
+{
+  "name": "tiling-games",
+  "private": true,
+  "license": "MIT",
+  "description": "Games on flat, hyperbolic and 3D tilings: Hypersweeper (apps/hypersweeper) and Rep-tiles (apps/reptiles).",
+  "workspaces": [
+    "apps/hypersweeper",
+    "apps/reptiles"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces",
+    "format": "npm run format --workspaces",
+    "format:check": "npm run format:check --workspaces"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}

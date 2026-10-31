@@ -1,0 +1,7 @@
+# Build output (mirrors .gitignore)
+node_modules/
+dist/
+
+# Prose is wrapped by hand; src/difficulty.json is written by `npm run difficulty`
+*.md
+src/difficulty.json

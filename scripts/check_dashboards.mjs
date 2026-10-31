@@ -16,7 +16,7 @@
 //
 // What it does NOT check: that a panel is *right*. A query can run and still
 // count with COUNT(*) instead of SUM(_sample_interval), which is the mistake
-// that produces plausible wrong numbers. web/tests/unit/dashboards.test.ts is
+// that produces plausible wrong numbers. apps/hypersweeper/tests/unit/dashboards.test.ts is
 // where that is pinned, offline and in CI.
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";

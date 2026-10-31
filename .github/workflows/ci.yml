@@ -69,34 +69,73 @@ jobs:
       - name: Check for drift
         run: git diff --exit-code data/
 
+  changes:
+    # Which TypeScript apps a pull request touches. Hypersweeper's web jobs are
+    # the long ones (four Playwright shards), so a pull request that changes
+    # nothing outside apps/reptiles/ skips them; anything else — Hypersweeper
+    # itself, data/, the root workspace files, the workflows — runs them, and so
+    # does every push to master. Rep-tiles imports Hypersweeper's geometry
+    # (apps/hypersweeper/src/boards), so its own job runs on every change.
+    # A skipped job counts as passed for a required check.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      hypersweeper: ${{ steps.diff.outputs.hypersweeper }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # A pull_request run checks out the merge commit; its first parent
+          # is the base branch, so two commits are enough to diff against it.
+          fetch-depth: 2
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "hypersweeper=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only HEAD^1 HEAD)
+          printf '%s\n' "$files"
+          if printf '%s\n' "$files" | grep -qv '^apps/reptiles/'; then
+            echo "hypersweeper=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hypersweeper=false" >> "$GITHUB_OUTPUT"
+          fi
+
   web-checks:
-    # TypeScript app (web/), everything that is not Playwright: typecheck, unit
-    # tests, and the two packaged-shell guards. Runs alongside web-e2e rather
-    # than before it — neither is an input to the other, and the e2e shards
-    # build the bundle they serve themselves.
+    # Hypersweeper (apps/hypersweeper/), everything that is not Playwright:
+    # typecheck, unit tests, and the two packaged-shell guards. Runs alongside
+    # web-e2e rather than before it — neither is an input to the other, and the
+    # e2e shards build the bundle they serve themselves.
+    needs: changes
+    if: needs.changes.outputs.hypersweeper == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: web
+        working-directory: apps/hypersweeper
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
+      # One npm workspace for every app (the root package.json), so the
+      # install runs at the root whatever this job's working directory is.
       - name: Install dependencies
+        working-directory: .
         run: npm ci
       - name: Typecheck
         run: npm run typecheck
-      # Prettier, configured in web/.prettierrc.json. `npm run format` fixes it;
+      # Prettier, configured in .prettierrc.json. `npm run format` fixes it;
       # Claude sessions format each edit through .claude/hooks/format.sh.
       - name: Formatting
         run: npm run format:check
       - name: Unit tests
         run: npm run test
-      # The packaged apps (desktop/ for macOS, ios/ for the iPhone) ship the
+      # The packaged apps (shells/desktop/ for macOS, ios/ for the iPhone) ship the
       # web bundle inside themselves, so the two properties that make them work
       # offline are guarded here rather than only on whoever's Mac runs
       # `make mac-app` / `make ios-app`: the packaged build must reference
@@ -108,9 +147,9 @@ jobs:
       - name: Packaged bundle is self-contained
         run: |
           VITE_PACKAGED=1 npm run build
-          node ../scripts/check-offline-assets.mjs dist
+          node ../../scripts/check-offline-assets.mjs dist
       - name: Desktop shell unit tests
-        run: node --test "../desktop/test/*.test.mjs"
+        run: node --test "../../shells/desktop/test/*.test.mjs"
       # The iOS half of the same idea. Xcode and CocoaPods are macOS-only, but
       # the sync — config resolved, bundle copied into ios/App, plugin list
       # rebuilt — is plain node and runs here, so a broken capacitor.config.json
@@ -119,13 +158,13 @@ jobs:
       - name: iOS project syncs
         run: |
           npx cap sync ios
-          test -f ../ios/App/App/public/index.html
+          test -f ../../ios/App/App/public/index.html
 
   web-e2e:
     # The Playwright e2e + visual-regression suite under deterministic software
-    # WebGL (see web/playwright.config.ts). Visual baselines are only
+    # WebGL (see apps/hypersweeper/playwright.config.ts). Visual baselines are only
     # authoritative under the pinned Chromium headless shell this job installs —
-    # the same build web/Dockerfile.e2e's image carries and resolves the same
+    # the same build apps/hypersweeper/Dockerfile.e2e's image carries and resolves the same
     # way, which is how a developer off Linux runs the gallery (it skips itself
     # on every non-Linux platform).
     #
@@ -134,6 +173,8 @@ jobs:
     # Playwright's default of half the cores (2 on a 4-vCPU runner). Four shards
     # at four workers each is 8x the browsers. `fail-fast: false` because one
     # red shard must not cancel the other three and hide the rest of the picture.
+    needs: changes
+    if: needs.changes.outputs.hypersweeper == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -142,15 +183,18 @@ jobs:
         shard: [1, 2, 3, 4]
     defaults:
       run:
-        working-directory: web
+        working-directory: apps/hypersweeper
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
+      # One npm workspace for every app (the root package.json), so the
+      # install runs at the root whatever this job's working directory is.
       - name: Install dependencies
+        working-directory: .
         run: npm ci
       # `--only-shell`, and no `--with-deps`, because measuring what the default
       # `install --with-deps chromium` bought showed 16 of its 20.5 s were
@@ -167,7 +211,7 @@ jobs:
       #          all 42 gallery baselines included. Which figures — nothing here
       #          renders CJK or Cyrillic, and the four faces the app draws with
       #          (Rubik, DSEG7, Space Grotesk, Caprasimo) are bundled TTFs under
-      #          web/public/fonts, reached before any system fallback.
+      #          apps/hypersweeper/public/fonts, reached before any system fallback.
       #   4.5 s  the full 174 MiB Chromium, which is then never launched: no
       #          project sets `channel: "chromium"` and nothing runs headed, so
       #          Playwright resolves headless to the headless shell instead
@@ -213,7 +257,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: blob-report-${{ matrix.shard }}
-          path: web/blob-report/
+          path: apps/hypersweeper/blob-report/
           retention-days: 1
 
   web-e2e-report:
@@ -226,19 +270,22 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: web
+        working-directory: apps/hypersweeper
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
+      # One npm workspace for every app (the root package.json), so the
+      # install runs at the root whatever this job's working directory is.
       - name: Install dependencies
+        working-directory: .
         run: npm ci
       - uses: actions/download-artifact@v4
         with:
-          path: web/all-blob-reports
+          path: apps/hypersweeper/all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
       - name: Merge into one HTML report
@@ -247,5 +294,34 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: web/playwright-report/
+          path: apps/hypersweeper/playwright-report/
           retention-days: 7
+
+  reptiles-checks:
+    # Rep-tiles (apps/reptiles/): typecheck (which also checks the
+    # apps/hypersweeper/src/boards files it imports), formatting, unit tests —
+    # each level checked tile for tile against Hypersweeper's board — and a
+    # production build. A few seconds of work; it runs on every change.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: apps/reptiles
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        working-directory: .
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Formatting
+        run: npm run format:check
+      - name: Unit tests
+        run: npm run test
+      - name: Production build
+        run: npx vite build

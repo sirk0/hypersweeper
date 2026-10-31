@@ -40,16 +40,16 @@ screenshots:     ## regenerate the pygame shot in docs/screenshots/pygame
 	PYTHONPATH=. $(PY) scripts/make_screenshots.py
 
 web-screenshots: ## regenerate the README gallery from the TypeScript app
-	cd web && npm run screenshots
+	cd apps/hypersweeper && npm run screenshots
 
 # For developers who are not on Linux: the visual baselines are `-chromium-linux`
 # pixels, so gallery.spec.ts skips itself elsewhere and this is where those 41
 # shots get compared. Needs Docker with linux/amd64 emulation (Rosetta on Apple
 # Silicon, which Docker Desktop enables by default). Pass flags through as
 # ARGS="--update-snapshots". See "Running the visual suite off Linux" in
-# web/docs/testing.md.
+# apps/hypersweeper/docs/testing.md.
 web-e2e-docker:  ## run the whole Playwright suite, visual baselines included, on Linux
-	cd web && npm run e2e:docker -- $(ARGS)
+	cd apps/hypersweeper && npm run e2e:docker -- $(ARGS)
 
 # Needs CF_ACCOUNT_ID and a read-only CF_API_TOKEN (Account Analytics: Read).
 # Pass flags through as ARGS="--days=7 --mode=klein".
@@ -71,7 +71,7 @@ web-prepare:     ## stage the browser app files into $(WEB_STAGE)
 	cp -r minesweeper $(WEB_STAGE)/minesweeper
 	cp -r data $(WEB_STAGE)/data  # shared JSON config read at runtime
 
-# Not deployed any more — the TypeScript app in web/ is what the deploy
+# Not deployed any more — the TypeScript app in apps/hypersweeper/ is what the deploy
 # publishes. Kept for running the pygame build in a browser locally.
 web-package: web-prepare  ## build the browser bundle into $(WEB_OUT)
 	$(PY) -m pygbag --ume_block 0 --build $(WEB_STAGE)
@@ -85,8 +85,8 @@ web-run: web-prepare  ## serve the web version at http://localhost:8000
 
 # --- desktop app -------------------------------------------------------------
 # The TypeScript app packaged as a native macOS app that plays offline: the
-# built web app is staged into the Electron shell in desktop/ and served from
-# the app:// scheme inside the bundle. See desktop/README.md.
+# built web app is staged into the Electron shell in shells/desktop/ and served from
+# the app:// scheme inside the bundle. See shells/desktop/README.md.
 
 mac-app:         ## build Hypersweeper.app into build/desktop (macOS only)
 	scripts/build-mac-app.sh
@@ -95,24 +95,24 @@ mac-app-dmg:     ## build Hypersweeper.app plus a .dmg installer (macOS only)
 	scripts/build-mac-app.sh --dmg
 
 desktop-install: ## install the Electron shell's build tools
-	cd desktop && npm install
+	cd shells/desktop && npm install
 
 desktop-build:   ## build the offline web bundle and stage it into the shell
-	cd web && VITE_PACKAGED=1 npm run build
-	node scripts/check-offline-assets.mjs web/dist
-	rm -rf desktop/app && cp -R web/dist desktop/app
+	cd apps/hypersweeper && VITE_PACKAGED=1 npm run build
+	node scripts/check-offline-assets.mjs apps/hypersweeper/dist
+	rm -rf shells/desktop/app && cp -R apps/hypersweeper/dist shells/desktop/app
 
 desktop-run: desktop-build  ## run the packaged game in the Electron shell
-	cd desktop && npm start
+	cd shells/desktop && npm start
 
 desktop-test:    ## unit-test the shell's app:// path resolution
-	cd desktop && npm test
+	cd shells/desktop && npm test
 
 desktop-smoke:   ## launch the shell with the network cut, and screenshot it
 	scripts/desktop-smoke.sh
 
 desktop-icon:    ## regenerate every app icon from the shared vector source (macOS + Xcode)
-	cd web && npm run icons
+	cd apps/hypersweeper && npm run icons
 
 # --- iOS app -----------------------------------------------------------------
 # The TypeScript app packaged as an iPhone app: the built bundle is synced into
@@ -129,23 +129,23 @@ ios-run:         ## build and install straight onto a connected iPhone (macOS)
 ios-prepare:     ## build the bundle and sync it into ios/ (works anywhere)
 	scripts/build-ios-app.sh --prepare-only
 
-ios-install:     ## install the Capacitor tooling (it lives in web/)
-	cd web && npm install
+ios-install:     ## install the Capacitor tooling (the npm workspace at the repo root)
+	npm install
 
 ios-icon:        ## regenerate the app icons and launch image from the vector source (macOS + Xcode)
-	cd web && npm run icons
+	cd apps/hypersweeper && npm run icons
 
 ios-stickers:    ## render the iMessage sticker pack from the game's boards (SWIFTSHADER=1 with no GPU)
-	cd web && npm run stickers
+	cd apps/hypersweeper && npm run stickers
 
-reptiles-install: ## install Rep-tiles' toolchain (it lives in reptiles/)
-	cd reptiles && npm install
+reptiles-install: ## install Rep-tiles' toolchain (the npm workspace at the repo root)
+	npm install
 
 reptiles-run:    ## run Rep-tiles at http://localhost:5174
-	cd reptiles && npm run dev
+	cd apps/reptiles && npm run dev
 
 reptiles-test:   ## typecheck and unit-test Rep-tiles
-	cd reptiles && npm run typecheck && npm run test
+	cd apps/reptiles && npm run typecheck && npm run test
 
 clean:           ## remove build artifacts
-	rm -rf build desktop/app ios/App/App/public
+	rm -rf build shells/desktop/app ios/App/App/public

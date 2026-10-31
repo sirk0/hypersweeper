@@ -89,7 +89,7 @@ def test_web_only_themes_are_complete():
 # colours, not chrome, so they are not in `data/ui/screens.json` — which is why
 # this is a test rather than a shared config entry.
 SHAPE_PALETTE = (
-    Path(__file__).resolve().parent.parent / "web" / "src" / "render" / "shapePalette.ts"
+    Path(__file__).resolve().parent.parent / "apps" / "hypersweeper" / "src" / "render" / "shapePalette.ts"
 )
 
 

@@ -2,10 +2,10 @@ import UIKit
 import Capacitor
 import GameKit
 
-/// Game Center, for the page's achievements (web/src/gameCenter.ts).
+/// Game Center, for the page's achievements (apps/hypersweeper/src/gameCenter.ts).
 ///
 /// The page keeps the record of what was won and works out what that earns
-/// (web/src/achievements.ts); this only signs the player in and passes the
+/// (apps/hypersweeper/src/achievements.ts); this only signs the player in and passes the
 /// result on. Three calls:
 ///
 /// - `authenticate`: sets `GKLocalPlayer`'s handler and resolves with

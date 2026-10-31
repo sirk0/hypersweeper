@@ -11,13 +11,13 @@ name: PR preview
 # branch, and derives the URL above from the same string. `VITE_ANALYTICS` is
 # *not* set, so the bundle carries no play counter at all and preview games stay
 # out of the real numbers (the counter is opt-in per build — see
-# web/vite.config.ts). And `VITE_NO_SW=1` leaves the service worker out, because
+# apps/hypersweeper/vite.config.ts). And `VITE_NO_SW=1` leaves the service worker out, because
 # a PR reuses one URL across pushes and a root-scoped precache there is a phone
 # showing the push before last — the one failure mode a preview must not have.
 #
-# Everything else is deliberately identical, above all `workingDirectory: web`:
+# Everything else is deliberately identical, above all `workingDirectory: apps/hypersweeper`:
 # wrangler's project root is wrangler.toml's directory, so that is what makes it
-# pick up web/functions/. Run from the repo root and the deploy quietly uploads
+# pick up apps/hypersweeper/functions/. Run from the repo root and the deploy quietly uploads
 # dist/ alone.
 #
 # It does not wait for ci.yml. The `web` job there installs Chromium and runs
@@ -32,7 +32,7 @@ name: PR preview
 # lifecycle scripts out of the PR's own package.json — that is a straight
 # handover of the deploy token to anyone who opens a pull request. The same-repo
 # guard on both jobs is the second, independent layer. See "PR previews" in
-# web/README.md.
+# apps/hypersweeper/README.md.
 
 on:
   pull_request:
@@ -79,9 +79,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Build TypeScript app (preview)
-        working-directory: web
+        working-directory: apps/hypersweeper
         env:
           # No VITE_ANALYTICS, and that is the whole of it: `__APP_ANALYTICS__`
           # is false unless the variable is set, and the compiler then drops the
@@ -97,7 +97,8 @@ jobs:
           # (__APP_COMMIT__) wants the PR head.
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          npm ci
+          # The npm workspace (every app in apps/) installs from the repo root.
+          (cd ../.. && npm ci)
           npm run build
           # A preview is a real, reachable page on a real domain; keep it from
           # competing with the site in search results.
@@ -119,9 +120,9 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # From web/, so wrangler resolves wrangler.toml and — the reason for
+          # From apps/hypersweeper/, so wrangler resolves wrangler.toml and — the reason for
           # this — functions/. See the header.
-          workingDirectory: web
+          workingDirectory: apps/hypersweeper
           # `pr-<number>` rather than the git branch name: it is already
           # lowercase letters, digits and a dash, so Cloudflare's branch
           # normalisation leaves it alone (a name like

@@ -1,6 +1,6 @@
 name: Deploy to Cloudflare Pages
 
-# The whole deploy. The TypeScript app in web/ is the published game and this
+# The whole deploy. The TypeScript app in apps/hypersweeper/ is the published game and this
 # is the only thing that publishes it; the pygame build stays in the repo as
 # the reference implementation and goes nowhere.
 #
@@ -42,9 +42,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Build TypeScript app (site root)
-        working-directory: web
+        working-directory: apps/hypersweeper
         # No VITE_BASE: vite.config.ts defaults to "/", which is what
         # Cloudflare serves from.
         env:
@@ -59,18 +59,19 @@ jobs:
           # from a custom domain, which takes no code change.
           VITE_SITE_URL: ${{ vars.SITE_URL || 'https://hypersweeper.pages.dev/' }}
         run: |
-          npm ci
+          # The npm workspace (every app in apps/) installs from the repo root.
+          (cd ../.. && npm ci)
           npm run build
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # From web/, so wrangler resolves its project root there and finds
-          # both web/wrangler.toml and — the reason for this — web/functions/,
+          # From apps/hypersweeper/, so wrangler resolves its project root there and finds
+          # both apps/hypersweeper/wrangler.toml and — the reason for this — apps/hypersweeper/functions/,
           # which serves /api/tally. A deploy run from the repo root uploads
           # dist/ alone and the collector silently does not exist.
-          workingDirectory: web
+          workingDirectory: apps/hypersweeper
           # No directory argument and no --project-name: both come from
           # wrangler.toml (`pages_build_output_dir` and `name`), and passing the
           # directory positionally alongside that config is an error.

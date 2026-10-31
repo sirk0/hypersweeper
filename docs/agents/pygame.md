@@ -1,7 +1,7 @@
 # The pygame front-end
 
 The Python/pygame game is the **reference implementation**: it is not deployed,
-but it is the behaviour the TypeScript app in `web/` is checked against. Change
+but it is the behaviour the TypeScript app in `apps/hypersweeper/` is checked against. Change
 it only when the request names it, or when a shared-`data/` edit necessarily
 carries over — see "Which version to change" in the root
 [`AGENTS.md`](../../AGENTS.md).
@@ -11,8 +11,8 @@ carries over — see "Which version to change" in the root
 `minesweeper/gui.py` is the pygame UI. `MenuScreen` (a geometry-first home
 page — Classic / Flat / Flat manifolds / Sphere / Platonic solids /
 Archimedean solids / Catalan solids / Polyhedra / Volumes; **the pygame
-menu only** — the web menu was restructured in `web/` alone and is
-described in [`../../web/docs/ui.md`](../../web/docs/ui.md). Classic
+menu only** — the web menu was restructured in `apps/hypersweeper/` alone and is
+described in [`apps/hypersweeper/docs/ui.md`](../../apps/hypersweeper/docs/ui.md). Classic
 launches flat squares; Flat (the plane) and each flat manifold (cylinder,
 Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
 / Laves family submenus, Isogonal and Congruent rectangles on every
@@ -51,7 +51,7 @@ Dependency groups in pyproject.toml: `web` (pygbag), `test` (pytest,
 ruff), `all` (both); locked to requirements[-web|-test|-all].txt by
 `make lock` (uv). The Makefile wraps all common commands (`make help`);
 CI runs `make test`/`make lint`. The deploy publishes the **TypeScript** app
-in `web/`, not this one — `make web-package` is a local build only.
+in `apps/hypersweeper/`, not this one — `make web-package` is a local build only.
 
 ## Tests
 
@@ -89,7 +89,7 @@ shows it downscaled by `UI_SCALE`. To preview what the user sees,
 (`App.run_async`) so pygbag can yield to the browser each frame. This
 build is **no longer deployed** — `deploy-cloudflare.yml` publishes the
 TypeScript app at the site root (and `/next/`, where that app lived during
-the rewrite, redirects there via `web/public/next/index.html`) — so
+the rewrite, redirects there via `apps/hypersweeper/public/next/index.html`) — so
 `make web-package` / `make web-run` are for running the pygame version in a
 browser locally. Browser-specific
 care in the code: no plain

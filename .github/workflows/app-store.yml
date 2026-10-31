@@ -1,6 +1,6 @@
 name: App Store upload
 
-# Builds the native app (ios/, the web/ game inside Capacitor) and uploads it to
+# Builds the native app (ios/, the apps/hypersweeper/ game inside Capacitor) and uploads it to
 # App Store Connect, where it appears in TestFlight. Submitting a build for
 # review is still done by hand in App Store Connect. See "Releasing" in
 # ios/README.md for the one-time setup and how to run this.
@@ -59,10 +59,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: web/package.json
+          sparse-checkout: apps/hypersweeper/package.json
           sparse-checkout-cone-mode: false
       - id: read
-        run: echo "version=$(jq -r .version web/package.json)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(jq -r .version apps/hypersweeper/package.json)" >> "$GITHUB_OUTPUT"
 
   upload:
     needs: version
@@ -136,10 +136,10 @@ jobs:
           # pins one).
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install the web dependencies
-        working-directory: web
+        # The npm workspace at the repo root: one install for every app.
         run: npm ci
 
       - name: Install CocoaPods if the image lacks it
@@ -150,7 +150,7 @@ jobs:
           pod --version
 
       - name: Build the game and sync it into ios/ (prepare only)
-        # --prepare-only: build web/ with VITE_PACKAGED=1, run the offline-assets
+        # --prepare-only: build apps/hypersweeper/ with VITE_PACKAGED=1, run the offline-assets
         # check, `cap sync ios`, and stamp Version.generated.xcconfig. It does
         # not open Xcode.
         run: make ios-prepare
