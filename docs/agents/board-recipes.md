@@ -768,7 +768,7 @@ Then the steps are the usual ones:
 3. A `flat` row in `ARCH_PRESETS`, then the pipeline: `resize.py --only`,
    `calibrate.py --only`, `apply.py`, `export_data.py`, `report.py` and
    `export_conformance.py`.
-4. The same factory in `apps/hypersweeper/src/boards/tilings.ts`, and the row. The
+4. The same factory in `packages/geometry/src/tilings.ts`, and the row. The
    conformance tests compare the two ports cell for cell.
 5. The unit-test counts (`backgroundPattern`, `catalog`). Nothing else: the
    family's `tiling-all:pentagonal` achievement grows by itself.
