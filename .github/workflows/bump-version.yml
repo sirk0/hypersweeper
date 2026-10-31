@@ -14,8 +14,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # A push that sets the version itself — a minor or major release, written
+      # into pyproject.toml, apps/hypersweeper/package.json and the lockfile by
+      # hand — lands as written rather than one patch past it. Compared with the
+      # commit master was at before this push; if that cannot be read, bump as
+      # usual.
+      - name: Skip when this push already changed the version
+        id: check
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          git fetch --quiet --depth=1 origin "$BEFORE" || true
+          old=$(git show "$BEFORE:pyproject.toml" 2>/dev/null | sed -n 's/^version = "\(.*\)"$/\1/p')
+          new=$(sed -n 's/^version = "\(.*\)"$/\1/p' pyproject.toml)
+          if [ -n "$old" ] && [ "$old" != "$new" ]; then
+            echo "This push set the version to $new (was $old); not bumping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Increment the shared version (Python + TypeScript in sync)
         id: bump
+        if: steps.check.outputs.skip != 'true'
         run: |
           new_version=$(python3 - <<'EOF'
           import re
@@ -46,6 +64,7 @@ jobs:
           )
           echo "version=$new_version" >> "$GITHUB_OUTPUT"
       - name: Commit and push
+        if: steps.check.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
