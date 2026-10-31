@@ -43,7 +43,8 @@ BAND = 0.15
 # the mode is exempted whole because the reason is the geometry, not the row.
 COARSE_GEOMETRY = {"sphinx", "chair", "ltetromino", "ppentomino", "trapezoid",
                    "righttrapezoid", "halftrapezoid", "stretchedchair",
-                   "rhombicl", "carpet", "pentaflake", "gosper", "cube3d"}
+                   "rhombicl", "rightisosceles", "drafter", "ttetromino",
+                   "fivetriangle", "carpet", "pentaflake", "gosper", "cube3d"}
 # A closed hyperbolic surface's cell counts are fixed by its genus: the board
 # grows only by changing its tiling, and the rungs are {7,3}, 6.6.7 and the
 # Goldberg--Coxeter subdivisions -- 12(g - 1), 40(g - 1), then 54(g - 1),

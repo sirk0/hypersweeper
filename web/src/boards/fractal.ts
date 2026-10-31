@@ -1,7 +1,8 @@
 // Port of minesweeper/boards/fractal.py — the self-similar flat boards, in two
 // menu families: the rep-tiles (the sphinx, the chair, the L-tetromino, the
 // P-pentomino, the trapezoid, the right trapezoid, the half trapezoid, the
-// stretched chair and the rhombic L) and the fractals (the Sierpinski carpet, the
+// stretched chair, the rhombic L, the isosceles right triangle, the 30-60-90
+// triangle, the T-tetromino and the five-triangle) and the fractals (the Sierpinski carpet, the
 // pentaflake and the Gosper island). Structure and cell ids mirror the Python
 // source so the two stay diffable; see it for the fuller commentary.
 //
@@ -11,8 +12,9 @@
 // shape — the tile again for all but the Gosper island. That outline is the
 // board — unlike every other flat board these are deliberately not a
 // rectangular window, because trimming the patch to a square block would throw
-// away the only thing that makes them what they are. A rep-tile's four children
-// fill the doubled tile exactly, so its patch is the tile again, with no hole
+// away the only thing that makes them what they are. A rep-tile's n children
+// fill the tile grown by √n exactly (four for most; two, three, sixteen and five
+// for the right triangles, the T-tetromino and the five-triangle), so its patch is the tile again, with no hole
 // and a straight edge; the fractals leave holes or grow a rough edge.
 //
 //   * The **sphinx** is the pentagonal hexiamond (six unit triangles, sides
@@ -32,6 +34,13 @@
 //     sheared into rhombi) are the last rep-4 polyforms an exhaustive search
 //     turns up, up to eleven squares and ten triangles. All four dissections
 //     are unique and all four reflect a child.
+//   * The **isosceles right triangle** (rep-2) and the **30-60-90 triangle**
+//     (rep-3) inflate by 1 + i and 1 + ζ — √2 and √3, turning 45° and 30° a
+//     level — hence `twist` (a reflected child under a turning inflation) and
+//     `upright` (every level drawn the same way up). The **T-tetromino** is
+//     rep-16: four Ts fill a 4x4 square as a pinwheel of quarter turns. The
+//     **five-triangle** (the 1:2 right triangle, rep-5) has a builder of its own
+//     at the end of the module.
 //   * The **Sierpinski carpet** is no rep-tile: the unit square tripled and
 //     refilled with eight copies — the 3x3 block *minus its centre*. The
 //     children do not fill the inflated tile, and that missing middle ninth,
@@ -105,6 +114,17 @@ const times =
   (p: LatticePoint): LatticePoint =>
     p.map((c) => c * n);
 
+/** Multiply by 1 + i, the isosceles right triangle's inflation: √2 at 45°, the
+ * square lattice's own Gaussian integer of norm 2. Scaling by √2 alone would
+ * leave the lattice, so — as for the Gosper island — the inflation turns as it
+ * stretches. */
+const squareTurn = ([x, y]: LatticePoint): LatticePoint => [x! - y!, x! + y!];
+
+/** Multiply by 1 + ζ, the 30-60-90 triangle's inflation: √3 at 30°, the
+ * Eisenstein integer of norm 3. (ζ² = ζ − 1, whence (a + bζ)(1 + ζ) =
+ * (a − b) + (a + 2b)ζ.) */
+const drafterScale = ([a, b]: LatticePoint): LatticePoint => [a! - b!, a! + 2 * b!];
+
 // Z[ζ10] — the pentaflake's lattice, ζ = exp(iπ/5): (a, b, c, d) stands for
 // a + bζ + cζ² + dζ³. Rank 4 is forced, not a convenience: no lattice of two
 // integers carries a 72° rotation, so there is no integer plane to build a
@@ -162,6 +182,16 @@ export interface Substitution {
   /** `factor` again, done exactly on the lattice. */
   scale(p: LatticePoint): LatticePoint;
   toXy(p: LatticePoint): Vertex;
+  /** How far `scale` turns a mirror, in rotation steps: s^p M s^−p =
+   * R^(p·twist) M. Unset (0) for a pure scaling; 1 for the two right
+   * triangles, whose inflation turns by half a lattice step. See
+   * `substitutionPlacements`. */
+  twist?: number;
+  /** For a turning inflation: the turn, in degrees, that stands the unit tile
+   * the way the board is drawn. Every level's patch is turned back by the
+   * inflation's accumulated turn and by this, so all levels are drawn the same
+   * way up (vertex ids stay on the lattice; only the drawing turns). */
+  upright?: number;
 }
 
 /** The lattice's zero, in the tile's own coordinate count. */
@@ -513,6 +543,116 @@ export const RHOMBIC_L: Substitution = {
   toXy: triToXy,
 };
 
+// The isosceles right triangle — half a square, cut corner to corner — is
+// rep-2: its altitude cuts it into two copies of itself, each √2 smaller and
+// turned 45°. Its hypotenuse lies along the x axis, two lattice edges long, and
+// its legs run diagonally across unit squares to the right angle at (1, 1).
+// Corners only: like the trapezoid's, its substitution is edge to edge.
+const RIGHT_ISOSCELES_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [2, 0],
+  [1, 1],
+];
+
+// The two halves of the inflated tile, right angle to right angle at the middle
+// of its hypotenuse; the reflection-free pair.
+const RIGHT_ISOSCELES_CHILDREN: Placement[] = [
+  [3, 0, [0, 2]],
+  [2, 0, [2, 2]],
+];
+
+export const RIGHT_ISOSCELES: Substitution = {
+  mode: "rightisosceles",
+  outline: RIGHT_ISOSCELES_OUTLINE,
+  children: RIGHT_ISOSCELES_CHILDREN,
+  factor: Math.SQRT2,
+  order: 4,
+  rotate: squareRotate,
+  mirror: squareMirror,
+  scale: squareTurn,
+  toXy: squareToXy,
+  twist: 1,
+  upright: 135,
+};
+
+// The 30-60-90 triangle (the "drafter", half an equilateral triangle) is rep-3:
+// three copies, √3 smaller and turned 30°, meet at the centre of the equilateral
+// triangle it is half of. Its hypotenuse lies along the lattice axis, two edges
+// long, and the right angle is at (1, 1). Edge to edge, so corners only. It is
+// chiral, so the dissection cannot avoid reflecting a child: two of the three are.
+const DRAFTER_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [2, 0],
+  [1, 1],
+];
+
+const DRAFTER_CHILDREN: Placement[] = [
+  [1, 1, [0, 0]],
+  [3, 0, [2, 2]],
+  [3, 1, [2, 2]],
+];
+
+export const DRAFTER: Substitution = {
+  mode: "drafter",
+  outline: DRAFTER_OUTLINE,
+  children: DRAFTER_CHILDREN,
+  factor: ROOT3,
+  order: 6,
+  rotate: triRotate,
+  mirror: triMirror,
+  scale: drafterScale,
+  toXy: triToXy,
+  twist: 1,
+  upright: 150,
+};
+
+// The T-tetromino: three unit squares in a row and one on top of the middle, a
+// vertex at every lattice step. It is no rep-4 tile, but four Ts fill a 4x4
+// square — a pinwheel of quarter turns — so the T scaled by four is its four
+// squares, each a block of four Ts: rep-16.
+const TTETROMINO_OUTLINE: LatticePoint[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [3, 0],
+  [3, 1],
+  [2, 1],
+  [2, 2],
+  [1, 2],
+  [1, 1],
+  [0, 1],
+];
+
+// Four blocks, the same pinwheel in each, none reflected.
+const T_BLOCK: [number, LatticePoint][] = [
+  [2, [3, 4]],
+  [1, [4, 1]],
+  [0, [1, 0]],
+  [3, [0, 3]],
+];
+const TTETROMINO_CHILDREN: Placement[] = [
+  [0, 0],
+  [4, 0],
+  [8, 0],
+  [4, 4],
+].flatMap(([bx, by]) => T_BLOCK.map(([rot, [x, y]]): Placement => [rot, 0, [x! + bx!, y! + by!]]));
+
+export const TTETROMINO: Substitution = {
+  mode: "ttetromino",
+  outline: TTETROMINO_OUTLINE,
+  children: TTETROMINO_CHILDREN,
+  factor: 4,
+  order: 4,
+  // The middle of the bar's centre square, under the stem: a circle of half a
+  // square fits there. The corner mean sits 0.3 higher, up against the stem's
+  // inner corners, and leaves the glyph half that.
+  glyphAnchor: [1.5, 0.5],
+  rotate: squareRotate,
+  mirror: squareMirror,
+  scale: times(4),
+  toXy: squareToXy,
+};
+
 // The Sierpinski carpet: the unit square, tripled and refilled with the eight
 // subsquares of the 3x3 block that are not its centre. The children leave the
 // middle ninth empty — the square is no rep-tile and this is no dissection —
@@ -641,6 +781,9 @@ export const SUBSTITUTIONS: Record<string, Substitution> = {
   halftrapezoid: HALF_TRAPEZOID,
   stretchedchair: STRETCHED_CHAIR,
   rhombicl: RHOMBIC_L,
+  rightisosceles: RIGHT_ISOSCELES,
+  drafter: DRAFTER,
+  ttetromino: TTETROMINO,
   carpet: CARPET,
   pentaflake: PENTAFLAKE,
   gosper: GOSPER,
@@ -688,13 +831,20 @@ function inflate(tile: Substitution, p: LatticePoint, power: number): LatticePoi
  * edge factor**(levels − 1) and the last round's are unit tiles. Their
  * translations are given in units of their own tile, so inflating them to the
  * round's size keeps every placement an exact lattice point.
+ *
+ * An inflation that turns (the two right triangles', the Gosper island's) does
+ * not commute with a mirror: s^p M = R^(p·twist) M s^p, so a reflected child
+ * picks up `power * twist` extra rotation steps at each round. (The Gosper
+ * island turns by an angle no lattice rotation matches, and gets away with it
+ * only because none of its children is reflected.)
  */
 export function substitutionPlacements(tile: Substitution, levels: number): Placement[] {
   if (levels < 0) throw new Error("levels must be >= 0");
+  const twist = tile.twist ?? 0;
   let placements: Placement[] = [[0, 0, origin(tile)]];
   for (let power = levels - 1; power >= 0; power--) {
     const children = tile.children.map(([rot, mirrored, translation]): Placement => [
-      rot,
+      mirrored ? rot + power * twist : rot,
       mirrored,
       inflate(tile, translation, power),
     ]);
@@ -714,12 +864,28 @@ export function substitutionPlacements(tile: Substitution, levels: number): Plac
 // two flips cancel oppositely, and the tiles render upside down relative to
 // their icons. Negating y alone here, on the board only, cancels
 // that back out.
-function boardXy(tile: Substitution, p: LatticePoint): Vertex {
-  const [x, y] = tile.toXy(p);
-  return [x, -y];
+//
+// A tile with an `upright` is also turned so every level stands the same way
+// up: the right triangles' inflations turn 45° and 30° a level, and left alone a
+// patch would come out a corner at one level and a long thin triangle lying on
+// its hypotenuse at the next. (fractal.py's `board_xy`, before the y flip.)
+export function substitutionXy(tile: Substitution, levels: number): (p: LatticePoint) => Vertex {
+  if (tile.upright === undefined) return (p) => tile.toXy(p);
+  const angle = ((tile.upright - (levels * (tile.twist ?? 0) * 180) / tile.order) * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return (p) => {
+    const [x, y] = tile.toXy(p);
+    return [x * cos - y * sin, x * sin + y * cos];
+  };
 }
 
 function substitutionBoard(tile: Substitution, levels: number, scale: number): Board {
+  const toXy = substitutionXy(tile, levels);
+  const boardXy = (_tile: Substitution, p: LatticePoint): Vertex => {
+    const [x, y] = toXy(p);
+    return [x, -y];
+  };
   const cells = new Map<CellId, string[]>();
   const positions = new Map<string, Vertex>();
   const anchors = new Map<CellId, LatticePoint>();
@@ -819,6 +985,26 @@ export function rhombicLBoard(levels: number, scale = 26): Board {
   return substitutionBoard(RHOMBIC_L, levels, scale);
 }
 
+/** The isosceles right triangle rep-tile, inflated `levels` times: 2**levels
+ * half-squares filling one triangle-shaped patch. `scale` is pixels per unit
+ * square edge. */
+export function rightIsoscelesBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(RIGHT_ISOSCELES, levels, scale);
+}
+
+/** The 30-60-90 triangle rep-tile, inflated `levels` times: 3**levels of them
+ * filling one triangle-shaped patch. `scale` is pixels per unit triangle edge
+ * (the tile's hypotenuse is two). */
+export function drafterBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(DRAFTER, levels, scale);
+}
+
+/** The T-tetromino rep-tile, inflated `levels` times: 16**levels Ts filling one
+ * T-shaped patch. `scale` is pixels per unit square edge. */
+export function ttetrominoBoard(levels: number, scale = 26): Board {
+  return substitutionBoard(TTETROMINO, levels, scale);
+}
+
 /** The Sierpinski carpet, inflated `levels` times: 8**levels unit squares in a
  * 3**levels square patch (1, 8, 64, 512, 4096 tiles), the middle ninth of every
  * block left out at every scale. `scale` is pixels per unit square edge. */
@@ -840,4 +1026,181 @@ export function pentaflakeBoard(levels: number, scale = 26): Board {
  * level. `scale` is pixels per unit hexagon circumradius. */
 export function gosperBoard(levels: number, scale = 26): Board {
   return substitutionBoard(GOSPER, levels, scale);
+}
+
+// -- the five-triangle ----------------------------------------------------------
+//
+// The 1:2 right triangle (legs 1 and 2, hypotenuse √5) is rep-5: the altitude
+// from the right angle cuts off one copy √5 smaller, and what is left is a copy
+// twice that size, cut rep-4 through the midpoints of its sides. Its inflation
+// turns by atan(1/2) (multiplication by 2 + i) and every child is reflected, so
+// the turn comes straight back off at the next level: each level's tiles take
+// the four quarter turns of one hand, the hand and a 26.57° tilt alternating.
+// The placement machinery cannot say that — a reflected child's twist would be
+// (3 + 4i)/5, a rotation of no finite order — so the patch is cut affinely.
+//
+// Its famous relative, Conway and Radin's pinwheel, halves the twice copy's
+// middle rectangle along the other diagonal, which reflects two of the five and
+// sends the tiles off in ever more directions. Measured, that leaves 22 of a
+// 125-cell patch's cells with an indistinguishable twin, a coin flip per mine,
+// where this split leaves two. So this one ships, under the GIF's own name for
+// the tile. See fractal.py.
+//
+// What carries over exactly is the dissection's *affine* description. A
+// triangle is its corners in role order (A, B, C): A the 26.57° corner, B the
+// right angle, C the 63.43° corner. The split points are fixed rational
+// combinations of those — D = (A + 4C)/5 is the foot of the altitude from B, the
+// rest are midpoints — and an affine rule applied to any similar triangle,
+// reflected or not, is that triangle's own dissection. Every level divides by
+// at most 10, so a root 10**levels times the unit is cut into exact integer
+// corners all the way down (well inside 2^53 at any level that reads).
+//
+// The patch is not edge to edge (the altitude foot lands two fifths of the way
+// along a neighbour's leg), so `fiveTriangleCells` records the T-vertices
+// afterwards: every corner lying inside another tile's edge is inserted into
+// that edge, exactly.
+
+type Triangle = readonly [LatticePoint, LatticePoint, LatticePoint];
+
+function fiveTriangleSplit([a, b, c]: Triangle): Triangle[] {
+  /** sum(weight · point) / denominator, exactly (it always divides). */
+  const mix = (terms: [number, LatticePoint][], denominator: number): LatticePoint => {
+    const x = terms.reduce((sum, [w, p]) => sum + w * p[0]!, 0);
+    const y = terms.reduce((sum, [w, p]) => sum + w * p[1]!, 0);
+    if (x % denominator !== 0 || y % denominator !== 0)
+      throw new Error("five-triangle left the grid");
+    return [x / denominator, y / denominator];
+  };
+  const d = mix(
+    [
+      [1, a],
+      [4, c],
+    ],
+    5,
+  ); // the foot of the altitude from B
+  const ad = mix(
+    [
+      [1, a],
+      [1, d],
+    ],
+    2,
+  );
+  const db = mix(
+    [
+      [1, d],
+      [1, b],
+    ],
+    2,
+  );
+  const ba = mix(
+    [
+      [1, b],
+      [1, a],
+    ],
+    2,
+  );
+  return [
+    [b, d, c], // the one copy √5 smaller, its small corner at B
+    [a, ad, ba], // (A, D, B), twice a copy, cut through its midpoints: the corner at A,
+    [ad, d, db], // ...the corner at D,
+    [ba, db, b], // ...the corner at B,
+    [db, ba, ad], // ...and the middle one, a half turn
+  ];
+}
+
+/** The 5**levels triangles of a level-`levels` five-triangle patch, in (A, B, C)
+ * role order, on the integer grid in which the root's short leg is 10**levels
+ * long: A = (0, 0), B = (2k, 0), C = (2k, k). */
+export function fiveTriangles(levels: number): Triangle[] {
+  if (levels < 0) throw new Error("levels must be >= 0");
+  const k = 10 ** levels;
+  let triangles: Triangle[] = [
+    [
+      [0, 0],
+      [2 * k, 0],
+      [2 * k, k],
+    ],
+  ];
+  for (let i = 0; i < levels; i++) triangles = triangles.flatMap(fiveTriangleSplit);
+  return triangles;
+}
+
+/** Each triangle as a counterclockwise polygon carrying every T-vertex that
+ * lies on its edges. */
+function fiveTriangleCells(levels: number): Map<CellId, LatticePoint[]> {
+  const triangles = fiveTriangles(levels);
+  const corners = new Map<string, LatticePoint>();
+  for (const tri of triangles) for (const p of tri) corners.set(p.join(","), p);
+  // bucket the corners on a grid about one tile across, so an edge only looks
+  // at the corners near it
+  const size = Math.max(1, Math.floor(10 ** levels / 5 ** (Math.floor(levels / 2) + (levels % 2))));
+  const buckets = new Map<string, LatticePoint[]>();
+  for (const p of corners.values()) {
+    const key = `${Math.floor(p[0]! / size)},${Math.floor(p[1]! / size)}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(p);
+    else buckets.set(key, [p]);
+  }
+  /** The corners strictly inside segment pq, from p towards q. */
+  const between = (p: LatticePoint, q: LatticePoint): LatticePoint[] => {
+    const [px, py] = [p[0]!, p[1]!];
+    const [qx, qy] = [q[0]!, q[1]!];
+    const length = (qx - px) ** 2 + (qy - py) ** 2;
+    const found: [number, LatticePoint][] = [];
+    for (
+      let bx = Math.floor(Math.min(px, qx) / size);
+      bx <= Math.floor(Math.max(px, qx) / size);
+      bx++
+    ) {
+      for (
+        let by = Math.floor(Math.min(py, qy) / size);
+        by <= Math.floor(Math.max(py, qy) / size);
+        by++
+      ) {
+        for (const v of buckets.get(`${bx},${by}`) ?? []) {
+          const [vx, vy] = [v[0]!, v[1]!];
+          if ((vx === px && vy === py) || (vx === qx && vy === qy)) continue;
+          const cross = (qx - px) * (vy - py) - (qy - py) * (vx - px);
+          const dot = (vx - px) * (qx - px) + (vy - py) * (qy - py);
+          if (cross === 0 && dot > 0 && dot < length) found.push([dot, v]);
+        }
+      }
+    }
+    return found.sort((u, w) => u[0] - w[0]).map(([, v]) => v);
+  };
+  const cells = new Map<CellId, LatticePoint[]>();
+  for (const [a, b, c] of triangles) {
+    const turn = (b[0]! - a[0]!) * (c[1]! - a[1]!) - (b[1]! - a[1]!) * (c[0]! - a[0]!);
+    const ring = turn > 0 ? [a, b, c] : [a, c, b];
+    const polygon: LatticePoint[] = [];
+    ring.forEach((p, i) => {
+      polygon.push(p);
+      polygon.push(...between(p, ring[(i + 1) % 3]!));
+    });
+    cells.set(cid(...a, ...b, ...c), polygon);
+  }
+  return cells;
+}
+
+/** The five-triangle rep-tile — the 1:2 right triangle — cut `levels` times:
+ * 5**levels triangles (1, 5, 25, 125, 625 tiles) filling one triangle-shaped
+ * patch. `scale` is pixels per the tile's
+ * short leg. */
+export function fiveTriangleBoard(levels: number, scale = 26): Board {
+  const unit = 10 ** levels / 5 ** (levels / 2);
+  const cells = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const [cell, polygon] of fiveTriangleCells(levels)) {
+    cells.set(
+      cell,
+      polygon.map((p) => {
+        const key = p.join(",");
+        // y negated, as boardXy does for the lattice tiles, so the board stands
+        // the way its icon does
+        if (!positions.has(key)) positions.set(key, [p[0]! / unit, -p[1]! / unit]);
+        return key;
+      }),
+    );
+  }
+  return finalizeFlat("fivetriangle", cells, positions, scale);
 }

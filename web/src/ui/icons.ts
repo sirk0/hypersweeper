@@ -25,7 +25,9 @@ import {
   archTemplate,
   templateCells,
   placePoint,
+  fiveTriangles,
   substitutionPlacements,
+  substitutionXy,
   SUBSTITUTIONS,
   CLOSED_SURFACES,
   gcDisc,
@@ -1544,14 +1546,22 @@ function draw(rawKey: string): string[] {
     for (const [px, py] of raw) {
       parts.push(shape(hexagon(C + (px - midX) * r, C + (py - midY) * r, r)));
     }
-  } else if (SUBSTITUTIONS[key]) {
+  } else if (SUBSTITUTIONS[key] || key === "fivetriangle") {
     // the substitution itself: the once-smaller tiles that fill one tile
-    // (four for the rep-tiles, eight around a hole for the carpet), drawn
-    // from the board's own geometry
-    const tile = SUBSTITUTIONS[key]!;
-    const polygons = substitutionPlacements(tile, 1).map((at) =>
-      tile.outline.map((v): P => tile.toXy(placePoint(tile, at, v))),
-    );
+    // (four for most rep-tiles, two to sixteen for the rest, eight around a
+    // hole for the carpet), drawn from the board's own geometry -- turned the
+    // way the board stands, for the two triangles whose inflation turns
+    const tile = SUBSTITUTIONS[key];
+    let polygons: P[][];
+    if (tile) {
+      const toXy = substitutionXy(tile, 1);
+      polygons = substitutionPlacements(tile, 1).map((at) =>
+        tile.outline.map((v): P => toXy(placePoint(tile, at, v))),
+      );
+    } else {
+      // the five-triangle is no lattice substitution: its five triangles, cut once
+      polygons = fiveTriangles(1).map((tri) => tri.map(([x, y]): P => [x!, y!]));
+    }
     const xs = polygons.flat().map(([x]) => x!);
     const ys = polygons.flat().map(([, y]) => y!);
     const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];

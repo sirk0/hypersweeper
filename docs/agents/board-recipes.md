@@ -744,13 +744,15 @@ what the children do. A **rep-tile**'s children fill the scaled tile exactly,
 so the patch is the tile again: the sphinx, the trapezoid, the half
 trapezoid and the rhombic L (triangular lattice) and the chair, the stretched
 chair, the L-tetromino, the P-pentomino and the right trapezoid (square
-lattice), all rep-4. A **fractal**'s do not: the Sierpinski carpet's eight children
+lattice), all rep-4; the isosceles right triangle (rep-2, square lattice), the
+30-60-90 triangle (rep-3, triangular), the T-tetromino (rep-16, square) and
+the five-triangle (rep-5, on no lattice -- see below). A **fractal**'s do not: the Sierpinski carpet's eight children
 leave the middle ninth of the tripled square empty, the pentaflake's six leave
 a golden gnomon over per side, and the Gosper island's seven hexagons fill
 their flower with no gap but do not make a hexagon — so its patch outline is
 the Gosper island rather than the tile, and its inflation turns (√7 at
 19.106°, multiplication by the Eisenstein integer 2 + ζ) because no pure
-scaling by √7 stays on the lattice. Adding a thirteenth is one ``_Substitution``
+scaling by √7 stays on the lattice. Adding another is one ``_Substitution``
 record plus its wiring:
 
 1. **The tile** — a `_Substitution(mode, outline, children, factor, order,
@@ -772,11 +774,41 @@ record plus its wiring:
    just the linear scale as a number (`test_a_substitutions_scale_is_its_factor`
    pins the two together: `scale` must be a similarity of exactly `factor`,
    turned or not — the Gosper island's turns, the other four do not).
+   **A turning inflation with a reflected child needs a `twist`.** A
+   reflected child placed at round p is s^p M s^-p, and when s turns that is
+   not M but R^(p·twist) M: `twist` is 2·arg(s) in rotation steps (1 for
+   1 + i on the square lattice and for 1 + ζ on the triangular one), and
+   `substitution_placements` adds `power * twist` to a reflected child's
+   rotation. `test_the_twist_is_how_the_inflation_turns_a_mirror` pins it
+   against `scale` and `mirror`. The Gosper island turns by an angle no
+   lattice rotation matches and gets away with `twist = 0` only because no
+   child of its is reflected. Give such a tile an **`upright`** as well -- the
+   turn that stands the unit tile the way the board is drawn -- and
+   `board_xy` / `substitutionXy` turn every level's patch back by the
+   inflation's accumulated turn. Left alone, the isosceles right triangle's
+   patch is a corner at one level and a triangle lying on its hypotenuse at
+   the next, and `resize`'s shape score then picks levels by their tilt
+   rather than their size.
+
    A lattice point is a tuple of **however many**
    integers the lattice needs — two for the three integer ones, four for the
    pentaflake's ℤ[ζ10] — so nothing in the machinery may index a coordinate by
    name. And the inflation only ever *multiplies* by the factor: an irrational
    one (φ², here) cannot be divided back out of a lattice point.
+
+   **A rep-tile no placement can describe** gets a builder of its own. The
+   five-triangle (the 1:2 right triangle, rep-5) inflates by 2 + i and
+   reflects every child, so a reflected child's twist would be (3 + 4i)/5, a
+   rotation of no finite order, even though the patch only ever shows four
+   directions a level. `five_triangle_board` cuts it from the top down instead,
+   as an affine rule on each triangle's corners in role order (small corner,
+   right angle, other corner). The rule is rational, so a root 10**levels
+   times the unit keeps every corner an exact integer. Its T-vertices are then
+   recorded exactly, by integer collinearity, on the edges they split. The
+   same corner-level rule would cut Conway's pinwheel by halving the double
+   copy's middle rectangle along its other diagonal. That was measured and
+   rejected: 22 of its 125 cells have an indistinguishable twin, against 2.
+
 2. **Menu + presets** — add the mode to `menu.reptile` (children that fill
    the tile) or `menu.fractal` (the rest) and to `soloLabels` in
    `data/catalog.json`, the builder to `_JSON_BUILDERS` in `presets.py`, and a
@@ -788,7 +820,13 @@ record plus its wiring:
    which is why the carpet, growing ×8 a level, the pentaflake, growing ×6, and
    the Gosper island, growing ×7,
    each spend two of their three difficulties on the level-3 patch and separate
-   them by mine density instead). Measure the mine counts with
+   them by mine density instead). A rep-n other than 4 steps differently:
+   the rep-2 triangle doubles a level, so it has sizes between, and the rep-16
+   T and the rep-5 five-triangle have one usable patch (256 and 125 cells)
+   that serves all three difficulties. `resize` walks up to ten levels, and
+   `COARSE_MAX_LEVEL` caps a level whose cell count is nearer the target but
+   whose glyphs no longer read: the 30-60-90 triangle's 729 and the
+   five-triangle's 625, both thin triangles. Measure the mine counts with
    `resize --only` and `calibrate --only` then `apply` (see
    [`difficulty.md`](difficulty.md)), add the mode to `COARSE_GEOMETRY` in
    `tests/test_presets.py`, and re-run `scripts/export_data.py` and

@@ -16,6 +16,7 @@ from minesweeper.boards import (
     CARPET,
     CHAIR,
     DIFFICULTIES,
+    DRAFTER,
     FRACTAL_MODES,
     GOSPER,
     HALF_TRAPEZOID,
@@ -27,6 +28,7 @@ from minesweeper.boards import (
     PPENTOMINO,
     REPTILE_MODES,
     RHOMBIC_L,
+    RIGHT_ISOSCELES,
     RIGHT_TRAPEZOID,
     ROOT3,
     SHAPED_MODES,
@@ -38,6 +40,7 @@ from minesweeper.boards import (
     SURFACE_LABELS,
     TILINGS,
     TRAPEZOID,
+    TTETROMINO,
     _arch_template,
     _brick_rings_tiles,
     _finalize_flat,
@@ -74,6 +77,9 @@ from minesweeper.boards import (
     double_torus_board,
     double_torus_hex_board,
     double_torus_triangle_board,
+    drafter_board,
+    five_triangle_board,
+    five_triangles,
     gosper_board,
     gp21_board,
     half_trapezoid_board,
@@ -100,6 +106,7 @@ from minesweeper.boards import (
     projective_hex_board,
     projective_triangle_board,
     rhombic_l_board,
+    right_isosceles_board,
     right_trapezoid_board,
     solid_cube_board,
     spectre_board,
@@ -124,6 +131,7 @@ from minesweeper.boards import (
     trefoil_triangle_board,
     triangle_board,
     triangle_grid_board,
+    ttetromino_board,
 )
 from minesweeper.boards import (
     boundary_components as _boundary_components,
@@ -177,6 +185,7 @@ from minesweeper.boards.catalan import (
 )
 from minesweeper.boards.core import _cross, _normalize
 from minesweeper.boards.core import newell_normal as _newell_normal
+from minesweeper.boards.fractal import _inflate
 from minesweeper.boards.hurwitz import (
     CLOSED_SURFACES,
     COVER_COPIES,
@@ -1787,23 +1796,32 @@ class TestBrickRings:
 
 
 REPTILES = [SPHINX, CHAIR, LTETROMINO, PPENTOMINO, TRAPEZOID, RIGHT_TRAPEZOID,
-            HALF_TRAPEZOID, STRETCHED_CHAIR, RHOMBIC_L]
+            HALF_TRAPEZOID, STRETCHED_CHAIR, RHOMBIC_L, RIGHT_ISOSCELES, DRAFTER,
+            TTETROMINO]
+# The rep-tiles whose substitution is edge to edge, a side only ever meeting a
+# whole side: their outlines carry corners only.
+EDGE_TO_EDGE_REPTILES = [TRAPEZOID, RIGHT_ISOSCELES, DRAFTER]
 
 
 class TestRepTiles:
-    """The nine rep-4 boards, the Rep-tiles family: the sphinx, the chair,
-    the L-tetromino, the P-pentomino, the trapezoid, the right and half
-    trapezoids, the stretched chair and the rhombic L. (The fractal boards
-    inflate the same way but are no rep-tiles -- the carpet's and the
-    pentaflake's substitutions leave holes, the Gosper island's supertile is
-    not a hexagon -- so each has its own class.)
+    """The lattice boards of the Rep-tiles family: the nine rep-4 ones (the
+    sphinx, the chair, the L-tetromino, the P-pentomino, the trapezoid, the
+    right and half trapezoids, the stretched chair and the rhombic L), the
+    rep-2 isosceles right triangle, the rep-3 30-60-90 triangle and the
+    rep-16 T-tetromino. (The five-triangle is a rep-tile too, but cut affinely rather than placed, so
+    it has its own class, as do the fractal boards, which inflate the same way
+    but are no rep-tiles -- the carpet's and the pentaflake's substitutions
+    leave holes, the Gosper island's supertile is not a hexagon.)
 
     A rep-tile board is one tile inflated ``levels`` times, so what has to
-    hold is that the dissection is real -- four half-size tiles filling the
-    tile exactly -- and that inflating it keeps every tile congruent to the
-    prototile while the patch stays a copy of it. The searches below
-    re-derive the hardcoded substitution tables from scratch (an exact cover
-    of the size-2 tile by unit tiles), which is what pins them.
+    hold is that the dissection is real -- n tiles, 1/sqrt(n) the size,
+    filling the tile exactly -- and that inflating it keeps every tile
+    congruent to the prototile while the patch stays a copy of it. The
+    searches below re-derive the hardcoded substitution tables from scratch
+    (an exact cover of the inflated tile by unit tiles), which is what pins
+    them. The two triangles' inflations turn as they stretch, so "the tile
+    inflated" is always the outline put through ``tile.scale``, never a
+    plain multiple of it.
 
     Everything runs on the lattice's unit faces -- the unit triangles of the
     triangular-lattice tiles, the unit squares of the polyominoes -- each
@@ -1815,8 +1833,12 @@ class TestRepTiles:
     the new corners held as exact fractions.
     """
 
-    # The tiles whose sides cut across the lattice's unit faces.
-    _FINE = {RIGHT_TRAPEZOID.mode, HALF_TRAPEZOID.mode}
+    # The tiles whose sides cut across the lattice's unit faces: a square's
+    # diagonal (the right trapezoid's slant, the isosceles right triangle's
+    # legs) or a triangle's median (the half trapezoid's upright side, the
+    # 30-60-90 triangle's long leg).
+    _FINE = {RIGHT_TRAPEZOID.mode, HALF_TRAPEZOID.mode, RIGHT_ISOSCELES.mode,
+             DRAFTER.mode}
 
     @staticmethod
     def _inside(x, y, polygon):
@@ -1827,13 +1849,17 @@ class TestRepTiles:
         return inside
 
     @classmethod
-    def _region(cls, tile, size=1):
-        """The unit faces inside the tile scaled by ``size``, by scanning its
-        bounding box: the ground truth the placed tiles are compared against."""
-        polygon = [tile.to_xy((x * size, y * size)) for x, y in tile.outline]
+    def _region(cls, tile, inflations=0):
+        """The unit faces inside the tile inflated ``inflations`` times, by
+        scanning its bounding box in lattice coordinates: the ground truth the
+        placed tiles are compared against."""
+        outline = [_inflate(tile, p, inflations) for p in tile.outline]
+        polygon = [tile.to_xy(p) for p in outline]
+        a_lo, a_hi = min(p[0] for p in outline), max(p[0] for p in outline)
+        b_lo, b_hi = min(p[1] for p in outline), max(p[1] for p in outline)
         faces = set()
-        for a in range(-1, 4 * size + 1):
-            for b in range(-1, 4 * size + 1):
+        for a in range(a_lo - 1, a_hi + 1):
+            for b in range(b_lo - 1, b_hi + 1):
                 for corners in cls._unit_faces(tile, a, b):
                     points = [tile.to_xy(c) for c in corners]
                     cx = sum(x for x, _ in points) / len(points)
@@ -1895,16 +1921,21 @@ class TestRepTiles:
                                             # six triangles, in sixths
                                             (HALF_TRAPEZOID, 36),
                                             (STRETCHED_CHAIR, 6),
-                                            (RHOMBIC_L, 8)])
+                                            (RHOMBIC_L, 8),
+                                            # a square's area, in quarters
+                                            (RIGHT_ISOSCELES, 4),
+                                            # two triangles, in sixths
+                                            (DRAFTER, 12),
+                                            (TTETROMINO, 4)])
     def test_the_prototile_has_its_unit_faces(self, tile, faces):
         assert len(self._prototile(tile)) == faces
 
     @pytest.mark.parametrize("tile", REPTILES)
     def test_the_substitution_table_is_an_exact_dissection(self, tile):
-        # every child sits inside the size-2 parent, no two overlap, and
-        # together they cover it: the rep-4 property itself
-        parent = self._region(tile, size=2)
-        assert len(parent) == 4 * len(self._prototile(tile))
+        # every child sits inside the inflated parent, no two overlap, and
+        # together they cover it: the rep-n property itself
+        parent = self._region(tile, inflations=1)
+        assert len(parent) == len(tile.children) * len(self._prototile(tile))
         covered = set()
         for child in tile.children:
             placed = self._placed(tile, child)
@@ -1916,7 +1947,7 @@ class TestRepTiles:
     @pytest.mark.parametrize("tile", REPTILES)
     def test_the_dissection_is_the_one_the_table_holds(self, tile):
         # an exact-cover search over every placement of the unit tile inside
-        # the size-2 tile. The sphinx's dissection is unique. The chair and
+        # the inflated tile. The sphinx's dissection is unique. The chair and
         # the trapezoid are mirror-symmetric, so each of theirs comes back in
         # several equivalent guises and the table holds the reflection-free
         # one -- for the chair, the classic chair substitution. The L has four
@@ -1925,8 +1956,16 @@ class TestRepTiles:
         # newer tiles' dissections are each unique, and each reflects a
         # child -- the two trapezoids are chiral, and the stretched chair
         # and the rhombic L lost the quarter turns their unsheared
-        # originals dissect with.
-        parent = self._region(tile, size=2)
+        # originals dissect with. The isosceles right triangle is
+        # mirror-symmetric, so its two halves come back in several guises
+        # and the table holds the reflection-free pair; the 30-60-90 triangle
+        # is chiral and its rep-3 dissection unique, two children reflected.
+        # The T-tetromino is searched block by block instead (see
+        # test_the_t_tetrominos_blocks_are_pinwheels): sixteen pieces in a
+        # 64-square region have far too many dissections to list.
+        if tile is TTETROMINO:
+            pytest.skip("rep-16: too many dissections to enumerate")
+        parent = self._region(tile, inflations=1)
         options = [(at, placed)
                    for rotation in range(tile.order)
                    for mirrored in (0, 1)
@@ -1949,10 +1988,10 @@ class TestRepTiles:
                     chosen.pop()
 
         search(parent, [])
-        assert all(len(found) == 4 for found in solutions)
+        assert all(len(found) == len(tile.children) for found in solutions)
         assert sorted(tile.children) in [sorted(found) for found in solutions]
         if tile in (SPHINX, RIGHT_TRAPEZOID, HALF_TRAPEZOID, STRETCHED_CHAIR,
-                    RHOMBIC_L):
+                    RHOMBIC_L, DRAFTER):
             assert len(solutions) == 1  # the dissection is unique
             if tile is not SPHINX:
                 assert any(mirrored for _, mirrored, _ in tile.children)
@@ -1963,27 +2002,103 @@ class TestRepTiles:
         else:
             assert all(mirrored == 0 for _, mirrored, _ in tile.children)
 
+    def test_the_t_tetrominos_blocks_are_pinwheels(self):
+        # The T is no rep-4 tile, but four Ts fill a 4x4 square, and only as a
+        # pinwheel of quarter turns: an exact cover of the block finds just
+        # the two mirror-image pinwheels. The table puts the reflection-free
+        # one in each of the four blocks the T scaled by four is made of.
+        block = frozenset((x, y) for x in range(4) for y in range(4))
+        options = [(at, placed)
+                   for rotation in range(4)
+                   for mirrored in (0, 1)
+                   for tx in range(-4, 8)
+                   for ty in range(-4, 8)
+                   for at in [(rotation, mirrored, (tx, ty))]
+                   for placed in [frozenset(min(face)
+                                            for face in self._placed(TTETROMINO, at))]
+                   if placed <= block]
+        solutions = []
+
+        def search(remaining, chosen):
+            if not remaining:
+                solutions.append(sorted(chosen))
+                return
+            pivot = min(remaining)
+            for at, placed in options:
+                if pivot in placed and placed <= remaining:
+                    search(remaining - placed, chosen + [at])
+
+        search(block, [])
+        # the T is mirror-symmetric, so each piece comes back reflected and
+        # not: count the tilings by the squares their pieces cover
+        squares = dict(options)
+        tilings = {frozenset(squares[at] for at in found) for found in solutions}
+        assert len(tilings) == 2
+        corner = sorted(TTETROMINO.children[:4])
+        assert corner in solutions
+        assert all(mirrored == 0 for _, mirrored, _ in corner)
+        for k, (bx, by) in enumerate([(0, 0), (4, 0), (8, 0), (4, 4)]):
+            assert sorted(TTETROMINO.children[4 * k:4 * k + 4]) == [
+                (rot, mirrored, (x + bx, y + by)) for rot, mirrored, (x, y) in corner]
+
+    @pytest.mark.parametrize("tile", [t for t in REPTILES
+                                      if any(m for _, m, _ in t.children)])
+    def test_the_twist_is_how_the_inflation_turns_a_mirror(self, tile):
+        # A reflected child at round p is placed by s**p M s**-p, which is
+        # R**(p * twist) M: what substitution_placements adds. Pinned here
+        # point by point -- s(M p) = R**twist M s(p) -- for every tile that
+        # reflects a child: zero for the pure scalings, one for the 30-60-90
+        # triangle, whose inflation turns.
+        for p in [(1, 0), (0, 1), (2, 3), (-1, 4)]:
+            turned = tile.mirror(tile.scale(p))
+            for _ in range(tile.twist % tile.order):
+                turned = tile.rotate(turned)
+            assert tile.scale(tile.mirror(p)) == turned
+
     @pytest.mark.parametrize("tile", REPTILES)
     def test_inflation_tiles_the_supertile_exactly(self, tile):
-        # the level-3 patch covers the tile scaled by 8, with no gap and no
-        # overlap: the self-similar outline that makes these the rep-tile
-        # boards rather than a window cut out of a tiling
-        placements = substitution_placements(tile, 3)
-        assert len(placements) == 64
+        # the level-3 patch (level 2 for the rep-16 T) covers the tile
+        # inflated as often, with no gap and no overlap: the self-similar
+        # outline that makes these the rep-tile boards rather than a window
+        # cut out of a tiling -- which also checks the twist that keeps a
+        # turning inflation's reflected children in place
+        levels = 2 if tile is TTETROMINO else 3
+        placements = substitution_placements(tile, levels)
+        assert len(placements) == len(tile.children) ** levels
         covered = set()
         for at in placements:
             placed = self._placed(tile, at)
             assert not placed & covered
             covered |= placed
-        assert covered == self._region(tile, size=8)
+        assert covered == self._region(tile, inflations=levels)
 
-    def test_cell_counts_are_powers_of_four(self):
-        for levels in range(5):
-            for builder in (sphinx_board, chair_board, ltetromino_board,
-                            ppentomino_board, trapezoid_board,
-                            right_trapezoid_board, half_trapezoid_board,
-                            stretched_chair_board, rhombic_l_board):
-                assert len(builder(levels, 1).adjacency) == 4 ** levels
+    def test_cell_counts_are_powers_of_the_rep_order(self):
+        for builder, n in ((sphinx_board, 4), (chair_board, 4),
+                           (ltetromino_board, 4), (ppentomino_board, 4),
+                           (trapezoid_board, 4), (right_trapezoid_board, 4),
+                           (half_trapezoid_board, 4), (stretched_chair_board, 4),
+                           (rhombic_l_board, 4), (right_isosceles_board, 2),
+                           (drafter_board, 3), (ttetromino_board, 16)):
+            for levels in range(5):
+                if n ** levels > 5000:
+                    break
+                assert len(builder(levels, 1).adjacency) == n ** levels
+
+    @pytest.mark.parametrize("builder", [right_isosceles_board, drafter_board])
+    def test_a_turning_patch_stands_the_same_way_up_at_every_level(self, builder):
+        # the two triangles' inflations turn 45 and 30 degrees a level; the
+        # board turns each level back, so every patch has the same outline,
+        # scaled -- legs on the axes, not a corner at one level and a
+        # triangle lying on its hypotenuse at the next
+        for levels in range(1, 7):
+            board = builder(levels, 1, scale=1)
+            area = sum(TestRepTiles._shoelace(p) for p in board.polygons.values())
+            # a right triangle with its legs along the axes fills exactly
+            # half its bounding box
+            assert area == pytest.approx(board.width * board.height / 2)
+            assert board.width / board.height == pytest.approx(
+                1 if builder is right_isosceles_board else ROOT3)
+
 
     def test_every_tile_is_the_prototile(self):
         # each cell is a congruent copy of the tile -- the sphinx a pentagon
@@ -2003,7 +2118,10 @@ class TestRepTiles:
                 (right_trapezoid_board(3, 10, scale=1), 4, 1.5),
                 (half_trapezoid_board(3, 10, scale=1), 4, 3 * ROOT3 / 2),
                 (stretched_chair_board(3, 10, scale=1), 6, 6),
-                (rhombic_l_board(3, 10, scale=1), 6, 2 * ROOT3)):
+                (rhombic_l_board(3, 10, scale=1), 6, 2 * ROOT3),
+                (right_isosceles_board(5, 10, scale=1), 3, 1),
+                (drafter_board(4, 10, scale=1), 3, ROOT3 / 2),
+                (ttetromino_board(2, 10, scale=1), 8, 4)):
             shapes = set()
             for polygon in board.polygons.values():
                 corners = [p for p, _ in _corners(polygon, tol=1e-6)]
@@ -2029,14 +2147,15 @@ class TestRepTiles:
         assert _boundary_components(board) == 1
         assert _euler_characteristic(board) == 1
 
-    @pytest.mark.parametrize("tile", [t for t in REPTILES if t is not TRAPEZOID])
+    @pytest.mark.parametrize("tile", [t for t in REPTILES
+                                      if t not in EDGE_TO_EDGE_REPTILES])
     def test_the_step_vertices_make_the_patch_a_mesh(self, tile):
         # None of these tilings is edge to edge: a neighbour plants its
         # corner in the middle of another tile's side. Carrying a vertex at every
         # lattice step along each edge records those T-vertices, which is
         # what keeps the patch a mesh -- drop them and the polygons no longer
         # share whole edges, so the topology invariants stop reading a disc.
-        placements = substitution_placements(tile, 3)
+        placements = substitution_placements(tile, 2 if tile is TTETROMINO else 3)
         stepped = _finalize_flat(
             tile.mode,
             {at: [place_point(tile, at, v) for v in tile.outline]
@@ -2072,11 +2191,14 @@ class TestRepTiles:
         assert min(len(n) for n in full.values()) >= 3
 
     @pytest.mark.parametrize("levels", [1, 3, 5])
-    def test_the_trapezoid_is_edge_to_edge(self, levels):
-        # the one rep-tile here whose substitution never plants a corner
-        # mid-edge, which is why its outline carries no step vertex: every
-        # interior edge is shared whole by exactly two tiles
-        board = trapezoid_board(levels, 1, scale=1)
+    @pytest.mark.parametrize("builder", [trapezoid_board, right_isosceles_board,
+                                         drafter_board])
+    def test_the_edge_to_edge_ones_are(self, builder, levels):
+        # the rep-tiles here whose substitution never plants a corner
+        # mid-edge -- the trapezoid and the two right triangles -- which is
+        # why their outlines carry no step vertex: every interior edge is
+        # shared whole by exactly two tiles
+        board = builder(levels, 1, scale=1)
         edges = Counter()
         for polygon in board.polygons.values():
             points = [tuple(round(c, 6) for c in p) for p in polygon]
@@ -2084,6 +2206,106 @@ class TestRepTiles:
                 edges[frozenset((a, b))] += 1
         assert set(edges.values()) <= {1, 2}
         assert (_euler_characteristic(board), _boundary_components(board)) == (1, 1)
+
+
+class TestFiveTriangle:
+    """The five-triangle: the 1:2 right triangle, cut into five copies sqrt5
+    smaller -- one off the altitude, four from the twice-a-copy that is left,
+    through its midpoints. Its inflation turns by atan(1/2) and reflects every
+    child, which no lattice placement can say, so it is cut from the top down
+    as an affine rule on each triangle's corners, on an integer grid fine
+    enough that every cut lands on it, and its T-vertices are recorded
+    afterwards.
+
+    The oracle is an independent float recursion that knows nothing of role
+    orders or integer grids: it cuts a triangle given only its right-angle
+    corner and the ends of its two legs, at the altitude's foot and the
+    midpoints.
+    """
+
+    @staticmethod
+    def _naive(levels):
+        """The patch by plain complex arithmetic: a triangle is (right-angle
+        corner, end of the long leg, end of the short leg)."""
+        def split(right, long_end, short_end):
+            # the foot of the altitude from the right angle onto the hypotenuse
+            hyp = short_end - long_end
+            t = ((right - long_end) * hyp.conjugate()).real / abs(hyp) ** 2
+            foot = long_end + t * hyp
+            # (right, foot, short_end) is the small copy; (right, foot,
+            # long_end) the double one, its right angle at the foot, quartered
+            # through its midpoints
+            m_lf = (long_end + foot) / 2
+            m_fr = (foot + right) / 2
+            m_rl = (right + long_end) / 2
+            return [(foot, right, short_end), (m_lf, long_end, m_rl),
+                    (foot, m_lf, m_fr), (m_fr, m_rl, right), (m_rl, m_fr, m_lf)]
+
+        triangles = [(2 + 0j, 0j, 2 + 1j)]
+        for _ in range(levels):
+            triangles = [child for tri in triangles for child in split(*tri)]
+        return triangles
+
+    @staticmethod
+    def _shape(points):
+        return tuple(sorted(round(math.dist(a, b), 6)
+                            for a, b in itertools.combinations(points, 2)))
+
+    @pytest.mark.parametrize("levels", [0, 1, 2, 3])
+    def test_the_cut_is_the_naive_one(self, levels):
+        # the same triangles, corner for corner, as the float recursion
+        # (both scaled so the root's short leg is 1)
+        k = 10 ** levels
+        exact = {frozenset((round(x / k, 9), round(y / k, 9)) for x, y in tri)
+                 for tri in five_triangles(levels)}
+        naive = {frozenset((round(p.real, 9), round(p.imag, 9)) for p in tri)
+                 for tri in self._naive(levels)}
+        assert exact == naive
+
+    @pytest.mark.parametrize("levels", [1, 2, 3, 4])
+    def test_every_tile_is_the_prototile(self, levels):
+        # 5**n triangles, each a 1:2 right triangle of unit short leg, whose
+        # areas sum to the root's
+        board = five_triangle_board(levels, 1, scale=1)
+        assert len(board.adjacency) == 5 ** levels
+        unit = self._shape([(0, 0), (2, 0), (2, 1)])
+        for polygon in board.polygons.values():
+            corners = [p for p, _ in _corners(polygon, tol=1e-6)]
+            assert len(corners) == 3
+            assert self._shape(corners) == unit
+        area = sum(TestRepTiles._shoelace(p) for p in board.polygons.values())
+        assert area == pytest.approx(5 ** levels)
+
+    @pytest.mark.parametrize("levels", [2, 3, 4])
+    def test_the_t_vertices_make_the_patch_a_mesh(self, levels):
+        # every directed edge walked once, one boundary, no hole: the
+        # T-vertices recorded on the edges they split are what make the
+        # polygons share whole edges
+        board = five_triangle_board(levels, 1, scale=1)
+        directed = Counter()
+        for polygon in board.polygons.values():
+            points = [tuple(round(c, 6) for c in p) for p in polygon]
+            for a, b in zip(points, points[1:] + points[:1]):
+                directed[(a, b)] += 1
+        assert set(directed.values()) == {1}
+        assert (_euler_characteristic(board), _boundary_components(board)) == (1, 1)
+        # ...and it is not edge to edge, or there would be none to record
+        assert any(len(polygon) > 3 for polygon in board.polygons.values())
+
+    def test_each_level_is_one_hand_in_four_quarter_turns(self):
+        # every child is its parent reflected, and the inflation's
+        # atan(1/2) turn comes back off at the next level: a level's tiles
+        # point their hypotenuses four ways, a quarter turn apart, all of one
+        # hand -- the hand, and a tilt of atan(1/2), alternating level by level.
+        # (Conway's pinwheel, the other diagonal, keeps adding directions.)
+        tilt = math.degrees(math.atan2(1, 2))
+        for levels in range(0, 6):
+            angles, hands = set(), set()
+            for a, b, c in five_triangles(levels):
+                angles.add(round(math.degrees(math.atan2(c[1] - a[1], c[0] - a[0])) % 90, 6))
+                hands.add((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) > 0)
+            assert hands == {levels % 2 == 0}
+            assert angles == {round(tilt if levels % 2 == 0 else 0, 6)}
 
 
 class TestSierpinskiCarpet:
@@ -3012,7 +3234,12 @@ def test_a_substitutions_scale_is_its_factor(mode):
             continue          # the origin, which every scaling fixes
         turns.append(complex(*after) / complex(*before) / tile.factor)
     assert turns == pytest.approx([turns[0]] * len(turns))
-    expected = cmath.exp(1j * math.atan2(ROOT3, 5)) if mode == "gosper" else 1
+    # the Gosper island turns by atan(sqrt3 / 5); the two right triangles by
+    # half a lattice step (45 and 30 degrees: 1 + i and 1 + zeta); the rest
+    # scale without turning
+    expected = {"gosper": cmath.exp(1j * math.atan2(ROOT3, 5)),
+                "rightisosceles": cmath.exp(1j * math.pi / 4),
+                "drafter": cmath.exp(1j * math.pi / 6)}.get(mode, 1)
     assert turns[0] == pytest.approx(expected)
 
 

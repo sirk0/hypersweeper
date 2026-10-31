@@ -71,6 +71,16 @@
         "reason": "most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density"
       }
     },
+    "drafter": {
+      "easy": {
+        "level": "warn",
+        "winRate": 0.8486,
+        "target": 0.965,
+        "indistinguishable": 4,
+        "cells": 81,
+        "reason": "the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win"
+      }
+    },
     "fannedhex": {
       "easy": {
         "level": "warn",
