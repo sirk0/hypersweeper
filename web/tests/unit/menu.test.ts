@@ -121,7 +121,7 @@ describe("picker pages", () => {
     );
     // ...and each dual its primal's, with the Laves V in front
     const twoIsohedral = menuFamilyRows("2-isohedral", "flat");
-    expect(twoIsohedral).toHaveLength(17);
+    expect(twoIsohedral).toHaveLength(20);
     for (const row of twoIsohedral) {
       const primal = twoUniform.find((r) => `${r.mode}dual` === row.mode);
       expect(row.notation, row.mode).toBe(`V${primal?.notation}`);

@@ -10006,6 +10006,93 @@
         "hasCellCycle": false
       }
     },
+    "tritrunctrihexdual": {
+      "easy": {
+        "cellCount": 78,
+        "mineCount": 5,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 196,
+        "vertexCount": 119,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 252,
+        "mineCount": 13,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 592,
+        "vertexCount": 341,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 426,
+        "mineCount": 33,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 958,
+        "vertexCount": 533,
+        "hasCellCycle": false
+      }
+    },
+    "dodecasquaredual": {
+      "easy": {
+        "cellCount": 84,
+        "mineCount": 11,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 156,
+        "vertexCount": 73,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 220,
+        "mineCount": 35,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 400,
+        "vertexCount": 181,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 544,
+        "mineCount": 109,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 976,
+        "vertexCount": 433,
+        "hasCellCycle": false
+      }
+    },
+    "dodecarhombitrihexdual": {
+      "easy": {
+        "cellCount": 82,
+        "mineCount": 6,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 152,
+        "vertexCount": 71,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 236,
+        "mineCount": 29,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 414,
+        "vertexCount": 179,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 546,
+        "mineCount": 75,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 946,
+        "vertexCount": 401,
+        "hasCellCycle": false
+      }
+    },
     "sphinxpairs": {
       "easy": {
         "cellCount": 84,

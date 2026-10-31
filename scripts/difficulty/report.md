@@ -12,8 +12,8 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 1044 rows, 999 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
-- 45 could not be brought on target:
+- 1053 rows, 1005 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 48 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
   - `cylinder`/easy: 89.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 9%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -23,6 +23,9 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `cyltriakis`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `cyltriakis`/easy: 1.2% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `cyltritrunctrihex`/easy: 92.0% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 7%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
+  - `dodecasquaredual`/hard: 0.0% vs 50.9% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
+  - `dodecasquaredual`/medium: 0.0% vs 87.1% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
+  - `dodecasquaredual`/easy: 3.8% vs 96.5% — most cells have an indistinguishable twin, so the win rate is 0.5**mines at any density
   - `fannedhex`/easy: 87.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (5, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `hexringsdual`/easy: 91.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 8%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `hyperbolic31414`/easy: 92.3% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 5%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
@@ -59,7 +62,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `tritrunctrihex`/easy: 83.1% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 6%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `trunchex`/easy: 83.7% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (4, 5%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
   - `trunctrihex`/easy: 91.4% vs 96.5% — the tiling forces coin flips in the endgame, so even with the fewest mines that stop the opening click clearing the board outright (7, 10%) it plays harder than this difficulty's target; fewer mines would only make it a board the first click can win
-- 261 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
+- 262 rows had games the solver abandoned (its frontier DP hit its node budget); their rates are measured over the games that finished:
   - `cube3d`/hard: 466 abandoned
   - `torustrunchex`/hard: 168 abandoned
   - `torusrotatedhex`/hard: 144 abandoned
@@ -71,7 +74,7 @@ Every board's mine count, chosen so its win probability under the reference solv
   - `doubletorustri`/hard: 41 abandoned
   - `torussnubhex`/hard: 39 abandoned
 
-Densities run from 1.2% to 30.0% (median 15.8%) — the spread the old flat 14/16/19 per cent could not express.
+Densities run from 1.2% to 30.0% (median 15.7%) — the spread the old flat 14/16/19 per cent could not express.
 
 The only floor under the search is the **opening**: the fewest mines at which the first click alone stops finishing the board (`calibrate.opening_floor`). As a density that runs 0.8% to 15.0% across the zoo — which is why it is measured per board rather than set as a percentage.
 
@@ -158,7 +161,9 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `dissectedtrunchexdual` | 7.5 | 84c 6m (7%) 98% | 244c 33m (14%) 86% | 474c 85m (18%) 49% |
 | `dodecahedron` | 11.0 | 60c 16m (27%) 95% | 240c 64m (27%) 88% | 540c 160m (30%) 48% |
 | `dodecarhombitrihex` | 6.6 | 89c 5m (6%) 94% | 279c 18m (6%) 85% | 443c 42m (9%) 49% |
+| `dodecarhombitrihexdual` | 11.5 | 82c 6m (7%) 93% | 236c 29m (12%) 88% | 546c 75m (14%) 53% |
 | `dodecasquare` | 6.2 | 73c 4m (5%) 96% | 253c 15m (6%) 85% | 541c 40m (7%) 52% |
+| `dodecasquaredual` | 15.8 | 84c 11m (13%) 4% ⚠ | 220c 35m (16%) 0% ⚠ | 544c 109m (20%) 0% ⚠ |
 | `doubletorus` | 8.2 | 104c 21m (20%) 98% | 252c 56m (22%) 90% | 486c 127m (26%) 50% |
 | `doubletorushex` | 6.1 | 196c 36m (18%) 93% | 264c 47m (18%) 88% | 474c 115m (24%) 47% |
 | `doubletorustri` | 12.4 | 256c 60m (23%) 93% | 256c 63m (25%) 85% | 488c 126m (26%) 49% |
@@ -421,6 +426,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `trirhombitrihex` | 9.6 | 91c 11m (12%) 95% | 257c 40m (16%) 86% | 498c 117m (23%) 49% |
 | `trirhombitrihexdual` | 6.4 | 78c 9m (12%) 96% | 273c 30m (11%) 87% | 456c 77m (17%) 49% |
 | `tritrunctrihex` | 8.3 | 69c 4m (6%) 83% ⚠ | 229c 8m (3%) 88% | 429c 22m (5%) 52% |
+| `tritrunctrihexdual` | 9.2 | 78c 5m (6%) 93% | 252c 13m (5%) 87% | 426c 33m (8%) 52% |
 | `tromino` | 6.5 | 80c 9m (11%) 99% | 234c 43m (18%) 83% | 432c 92m (21%) 49% |
 | `trunchex` | 5.5 | 77c 4m (5%) 84% ⚠ | 280c 12m (4%) 85% | 472c 25m (5%) 53% |
 | `truncicosidodecasplit` | 12.0 | 62c 11m (18%) 95% | 270c 57m (21%) 88% | 270c 73m (27%) 53% |

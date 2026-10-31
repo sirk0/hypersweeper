@@ -9055,6 +9055,111 @@
         ]
       }
     },
+    "tritrunctrihexdual": {
+      "builder": "archimedean_board",
+      "mineArg": 3,
+      "args": {
+        "easy": [
+          "tritrunctrihexdual",
+          2.894,
+          1.487,
+          5,
+          36.374,
+          [
+            0.0,
+            4.098076
+          ]
+        ],
+        "medium": [
+          "tritrunctrihexdual",
+          4.356,
+          2.487,
+          13,
+          24.086
+        ],
+        "hard": [
+          "tritrunctrihexdual",
+          5.356,
+          3.131,
+          33,
+          20.287,
+          [
+            0.0,
+            4.098076
+          ]
+        ]
+      }
+    },
+    "dodecasquaredual": {
+      "builder": "archimedean_board",
+      "mineArg": 3,
+      "args": {
+        "easy": [
+          "dodecasquaredual",
+          3.789,
+          3.789,
+          11,
+          35.792,
+          [
+            0.0,
+            1.866025
+          ]
+        ],
+        "medium": [
+          "dodecasquaredual",
+          5.789,
+          5.789,
+          35,
+          25.346,
+          [
+            0.0,
+            1.866025
+          ]
+        ],
+        "hard": [
+          "dodecasquaredual",
+          8.789,
+          8.789,
+          109,
+          14.549
+        ]
+      }
+    },
+    "dodecarhombitrihexdual": {
+      "builder": "archimedean_board",
+      "mineArg": 3,
+      "args": {
+        "easy": [
+          "dodecarhombitrihexdual",
+          2.375,
+          1.292,
+          6,
+          32.914
+        ],
+        "medium": [
+          "dodecarhombitrihexdual",
+          3.625,
+          2.125,
+          29,
+          23.469,
+          [
+            0.0,
+            4.732051
+          ]
+        ],
+        "hard": [
+          "dodecarhombitrihexdual",
+          5.375,
+          3.125,
+          75,
+          15.639,
+          [
+            0.0,
+            4.732051
+          ]
+        ]
+      }
+    },
     "sphinxpairs": {
       "builder": "archimedean_board",
       "mineArg": 3,

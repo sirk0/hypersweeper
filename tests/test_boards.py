@@ -248,6 +248,11 @@ _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
 _REPTILE = ["sphinxpairs", "tromino"]
 _TWO_UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "2-uniform"]
 _TWO_ISOHEDRAL = [t.key for t in ARCH_TILINGS if t.family == "2-isohedral"]
+# ...less the duals of the three 2-uniform tilings with dodecagons, whose
+# dodecagon centres become corners twelve slivers meet at (TestTwoIsohedral)
+_TWO_ISOHEDRAL_ROUND = [
+    t.key for t in ARCH_TILINGS if t.family == "2-isohedral"
+    and 12 not in next(p for p in ARCH_TILINGS if p.key == t.dual_of).config]
 # the tilings that declare a grain -- straight lines no tile of them crosses,
 # which archimedean_board ends its window on. See TestFlatGrain.
 _GRAINED = [t.key for t in ARCH_TILINGS if any(t.template().grain)]
@@ -4495,17 +4500,20 @@ class TestTwoIsohedral:
     halves are checked here against the primal's own vertex_types, which the
     row carries -- the corner counts combinatorially, the angles geometrically
     -- and the family's reason to be, near-regular tiles and a moderate number
-    of neighbours, is pinned by the numbers that chose its seventeen."""
+    of neighbours, is pinned for the seventeen that have them; the three duals
+    of tilings with dodecagons are the exception, and the measured rows say
+    what that costs (dodecasquaredual is all twins, so data/difficulty.json
+    blocks it and the random launchers never deal it)."""
 
     @staticmethod
     def _tiling(mode):
         return next(t for t in ARCH_TILINGS if t.key == mode)
 
-    def test_seventeen_duals_of_the_2_uniform_tilings_without_dodecagons(self):
+    def test_one_dual_for_each_2_uniform_tiling(self):
         primals = {self._tiling(m).dual_of for m in _TWO_ISOHEDRAL}
-        assert len(_TWO_ISOHEDRAL) == len(primals) == 17
-        assert primals == {t for t in _TWO_UNIFORM
-                           if 12 not in self._tiling(t).config}
+        assert len(_TWO_ISOHEDRAL) == len(primals) == 20
+        assert primals == set(_TWO_UNIFORM)
+        assert len(_TWO_ISOHEDRAL_ROUND) == 17
 
     @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
     def test_row_derives_from_its_primal(self, mode):
@@ -4560,7 +4568,7 @@ class TestTwoIsohedral:
             if abs(sum(angles) - 2 * math.pi) > 1e-6:
                 continue  # a rim corner
             closed += 1
-            assert len(angles) == count[key] in (3, 4, 6)
+            assert len(angles) == count[key] in (3, 4, 6, 12)
             # vertex tags are rounded to 1e-6 of an edge, which moves an angle
             # by about as much (see TestTwoUniform's tolerance); a corner that
             # is not 360/n is off by degrees
@@ -4579,13 +4587,13 @@ class TestTwoIsohedral:
                             in zip(pts, pts[1:] + pts[:1]))) / 2
         assert area == pytest.approx(template.width * template.height)
 
-    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL_ROUND)
     def test_tiles_are_near_regular_and_neighbours_moderate(self, mode):
-        """What chose the seventeen: no tile further from round than a 2:1
-        brick (its isoperimetric quotient at least 0.87 of the regular
+        """What sets the seventeen apart: no tile further from round than a
+        2:1 brick (its isoperimetric quotient at least 0.87 of the regular
         polygon's with as many sides), and a hexagon's to a rhombille's
         number of neighbours (6 to 10 on average, never more than 14). The
-        three duals left out break both -- dodecasquare's tiles at 0.65 with
+        three dodecagon duals break both -- dodecasquare's tiles at 0.65 with
         18 neighbours, triakis triangular's ground."""
         board = archimedean_board(mode, 5, 5, 5)
         for polygon in board.polygons.values():

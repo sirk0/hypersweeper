@@ -2280,26 +2280,23 @@ ARCH_TILINGS = (
 # has two classes of tile -- each one's corners sit at the centres of the
 # regular polygons that meet at its vertex type, so the tile is that type read
 # the other way (a 3^3.4^2 vertex becomes the prismatic pentagon, 120-120-90-
-# 120-90). Seventeen of the twenty ship. The three left out are the
-# 2-uniform tilings with dodecagons (tritrunctrihex, dodecasquare,
-# dodecarhombitrihex): a dodecagon's centre becomes a corner twelve tiles
-# meet at, so their duals are slivers with 13 to 18 neighbours -- triakis
-# triangular's ground, which ships unfair -- where these seventeen keep tiles
-# no further from round than a brick (an isoperimetric ratio of 0.87 or more
-# against their own regular polygon) and 6.6 to 10 neighbours, a hexagon's to
-# a rhombille's. Each row derives from its primal's: the key and label with
+# 120-90). All twenty ship, one per 2-uniform tiling, but they are not alike.
+# Seventeen keep tiles no further from round than a brick (an isoperimetric
+# ratio of 0.87 or more against their own regular polygon) and 6.6 to 10
+# neighbours, a hexagon's to a rhombille's. The duals of the three with
+# dodecagons (tritrunctrihex, dodecasquare, dodecarhombitrihex) do not: a
+# dodecagon's centre becomes a corner twelve slivers meet at, 12 to 18
+# neighbours -- triakis triangular's ground. Two of them still calibrate as
+# puzzles; dodecasquaredual is all twins, measured at a win rate of zero, so
+# data/difficulty.json blocks it at every difficulty, as it does triakis: the
+# menu marks the row and the random launchers never deal it. Each row derives from its primal's: the key and label with
 # "dual" after them, the primal's vertex types (the two tiles,
 # TestTwoIsohedral checks every corner against them), the Laves V in front of
 # its notation, and its edge directions (a dual edge crosses its primal edge
 # at a right angle, so there are as many directions). The family is held to
 # the plane by catalog._FAMILY_SURFACES: none has a cut chosen yet.
-_TWO_ISOHEDRAL_PRIMALS = (
-    "studdedtri", "studdedtri2", "elongated2", "elongated3",
-    "trirhombitrihex", "fannedhex", "hexbands", "snubelongated2",
-    "snubelongated", "dissectedtrunchex2", "squarerows2", "squarerows3",
-    "dissectedtrunchex", "hexrows", "hexrings", "squaretrihex",
-    "squaretrihex2",
-)
+_TWO_ISOHEDRAL_PRIMALS = tuple(
+    t.key for t in ARCH_TILINGS if t.family == "2-uniform")
 
 
 def _two_isohedral_row(primal: ArchTiling) -> ArchTiling:

@@ -668,6 +668,15 @@ ARCH_PRESETS = {
     "squaretrihex2dual": {
         "flat": {"easy": (5.5, 2.106, 6, 46.08, (0.0, 5.464101)), "medium": (9.5, 3.356, 35, 28.333), "hard": (11.5, 4.106, 61, 22.81)},
     },
+    "tritrunctrihexdual": {
+        "flat": {"easy": (2.894, 1.487, 5, 36.374, (0.0, 4.098076)), "medium": (4.356, 2.487, 13, 24.086), "hard": (5.356, 3.131, 33, 20.287, (0.0, 4.098076))},
+    },
+    "dodecasquaredual": {
+        "flat": {"easy": (3.789, 3.789, 11, 35.792, (0.0, 1.866025)), "medium": (5.789, 5.789, 35, 25.346, (0.0, 1.866025)), "hard": (8.789, 8.789, 109, 14.549)},
+    },
+    "dodecarhombitrihexdual": {
+        "flat": {"easy": (2.375, 1.292, 6, 32.914), "medium": (3.625, 2.125, 29, 23.469, (0.0, 4.732051)), "hard": (5.375, 3.125, 75, 15.639, (0.0, 4.732051))},
+    },
     # The "Other" family is flat-only for now (_FAMILY_SURFACES in
     # catalog.py), so its three carry a "flat" row alone.
     "sphinxpairs": {

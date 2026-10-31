@@ -609,20 +609,24 @@ it unchanged.
 
 ## Recipe: add a 2-isohedral tiling
 
-The 2-isohedral family is the 2-uniform tilings' duals, and a member is one
-word: the primal's key in `_TWO_ISOHEDRAL_PRIMALS` (`tilings.py`), and in
-`TWO_ISOHEDRAL_PRIMALS` in `web/src/boards/tilings.ts` with its two tiles'
-side counts beside it (the TypeScript registry has no vertex types to derive
-them from). `_with_two_isohedral` / `withTwoIsohedral` build the row from the
+The 2-isohedral family is the 2-uniform tilings' duals, one per 2-uniform
+tiling: `_TWO_ISOHEDRAL_PRIMALS` (`tilings.py`) is derived from the 2-uniform
+rows, and `TWO_ISOHEDRAL_PRIMALS` in `web/src/boards/tilings.ts` lists each
+primal with its dual's two tiles' side counts beside it (the TypeScript
+registry has no vertex types to derive them from), which is the one line a
+new 2-uniform tiling adds there. `_with_two_isohedral` / `withTwoIsohedral` build the row from the
 primal's — key and label with `dual` after them, `vertex_types`, `notation`
 with a V in front, edge directions — and place it in the 2-uniform order. Then:
 
-1. **Check it belongs.** The family is the duals whose tiles stay near
-   regular and whose neighbours stay moderate, and
+1. **Know which kind it is.** Every 2-uniform tiling's dual ships, so
+   `_TWO_ISOHEDRAL_PRIMALS` is derived rather than listed and a new 2-uniform
+   row brings its dual with it. Those without dodecagons are held to
    `TestTwoIsohedral.test_tiles_are_near_regular_and_neighbours_moderate`
-   holds every member to that (isoperimetric quotient 0.865 of the regular
-   polygon's or better, 6 to 10 neighbours on average, at most 14). The three
-   duals of a tiling with dodecagons fail it, which is why they are not in.
+   (isoperimetric quotient 0.865 of the regular polygon's or better, 6 to 10
+   neighbours on average, at most 14); a dual with dodecagon corners is not,
+   and whether it is playable at all is the calibration's call — a board of
+   twins lands in `data/difficulty.json` as blocked, which keeps it out of
+   every random deal with no further edit.
 2. **Presets** — a `"<key>dual"` block in `ARCH_PRESETS` with a `flat` row,
    seeded from the primal's (the dual shares its domain), then the measured
    pipeline: `resize.py --only`, `calibrate.py --only`, `apply.py`

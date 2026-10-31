@@ -17435,5 +17435,215 @@
         "fill": 0.924
       }
     }
+  },
+  "dodecarhombitrihexdual": {
+    "builder": "archimedean_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dodecarhombitrihexdual",
+          2.375,
+          1.292,
+          5,
+          32.914
+        ],
+        "cells": 82,
+        "score": 0.6798,
+        "distortionMean": 1.1912,
+        "distortionP90": 1.244,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.0732,
+        "fair": true,
+        "aspect": 1.0392,
+        "fill": 0.8148
+      },
+      "medium": {
+        "args": [
+          "dodecarhombitrihexdual",
+          3.625,
+          2.125,
+          18,
+          23.469,
+          [
+            0.0,
+            4.732051
+          ]
+        ],
+        "cells": 236,
+        "score": 0.3748,
+        "distortionMean": 1.1847,
+        "distortionP90": 1.244,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.1356,
+        "fair": true,
+        "aspect": 1.0104,
+        "fill": 0.9286
+      },
+      "hard": {
+        "args": [
+          "dodecarhombitrihexdual",
+          5.375,
+          3.125,
+          42,
+          15.639,
+          [
+            0.0,
+            4.732051
+          ]
+        ],
+        "cells": 546,
+        "score": 0.355,
+        "distortionMean": 1.1872,
+        "distortionP90": 1.244,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.1502,
+        "fair": true,
+        "aspect": 1.0104,
+        "fill": 0.9603
+      }
+    }
+  },
+  "dodecasquaredual": {
+    "builder": "archimedean_board",
+    "args": {
+      "easy": {
+        "args": [
+          "dodecasquaredual",
+          3.789,
+          3.789,
+          4,
+          35.792,
+          [
+            0.0,
+            1.866025
+          ]
+        ],
+        "cells": 84,
+        "score": 1.3884,
+        "distortionMean": 1.5151,
+        "distortionP90": 1.5476,
+        "indistinguishable": 48,
+        "symmetries": 8,
+        "density": 0.131,
+        "fair": false,
+        "aspect": 1.0,
+        "fill": 0.8386
+      },
+      "medium": {
+        "args": [
+          "dodecasquaredual",
+          5.789,
+          5.789,
+          15,
+          25.346,
+          [
+            0.0,
+            1.866025
+          ]
+        ],
+        "cells": 220,
+        "score": 1.3701,
+        "distortionMean": 1.5131,
+        "distortionP90": 1.5476,
+        "indistinguishable": 120,
+        "symmetries": 8,
+        "density": 0.1591,
+        "fair": false,
+        "aspect": 1.0,
+        "fill": 0.8965
+      },
+      "hard": {
+        "args": [
+          "dodecasquaredual",
+          8.789,
+          8.789,
+          40,
+          14.549
+        ],
+        "cells": 544,
+        "score": 1.2645,
+        "distortionMean": 1.5119,
+        "distortionP90": 1.5476,
+        "indistinguishable": 288,
+        "symmetries": 8,
+        "density": 0.2004,
+        "fair": false,
+        "aspect": 1.0,
+        "fill": 0.9327
+      }
+    }
+  },
+  "tritrunctrihexdual": {
+    "builder": "archimedean_board",
+    "args": {
+      "easy": {
+        "args": [
+          "tritrunctrihexdual",
+          2.894,
+          1.487,
+          4,
+          36.374,
+          [
+            0.0,
+            4.098076
+          ]
+        ],
+        "cells": 78,
+        "score": 1.5953,
+        "distortionMean": 1.387,
+        "distortionP90": 1.4717,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.0641,
+        "fair": true,
+        "aspect": 1.0921,
+        "fill": 0.6668
+      },
+      "medium": {
+        "args": [
+          "tritrunctrihexdual",
+          4.356,
+          2.487,
+          8,
+          24.086
+        ],
+        "cells": 252,
+        "score": 0.5104,
+        "distortionMean": 1.3893,
+        "distortionP90": 1.4717,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.0635,
+        "fair": true,
+        "aspect": 1.0176,
+        "fill": 0.8518
+      },
+      "hard": {
+        "args": [
+          "tritrunctrihexdual",
+          5.356,
+          3.131,
+          22,
+          20.287,
+          [
+            0.0,
+            4.098076
+          ]
+        ],
+        "cells": 426,
+        "score": 0.3,
+        "distortionMean": 1.3986,
+        "distortionP90": 1.4717,
+        "indistinguishable": 0,
+        "symmetries": 4,
+        "density": 0.0775,
+        "fair": true,
+        "aspect": 1.0029,
+        "fill": 0.968
+      }
+    }
   }
 }

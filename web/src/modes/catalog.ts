@@ -497,7 +497,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   // Keyed `dual`; "Laves" is only its label (see `menu.familyLabels`).
   dual: "Their duals — one shape throughout",
   "2-uniform": "Regular shapes, two kinds of corner",
-  "2-isohedral": "Their duals — two shapes, near-regular",
+  "2-isohedral": "Their duals — two shapes throughout",
   isogonal: "A corner meets the middle of an edge",
   rectangle: "Brick bonds, one rectangle throughout",
   // A grab-bag rather than a symmetry class, so the hint names its members

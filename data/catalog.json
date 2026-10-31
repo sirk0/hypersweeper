@@ -301,6 +301,7 @@
     "elongated2dual": "V[3⁶; 3³.4²]₁",
     "elongated3dual": "V[3⁶; 3³.4²]₂",
     "trirhombitrihexdual": "V[3⁶; 3².4.3.4]",
+    "tritrunctrihexdual": "V[3⁶; 3².4.12]",
     "fannedhexdual": "V[3⁶; 3².6²]",
     "hexbandsdual": "V[3⁴.6; 3².6²]",
     "snubelongated2dual": "V[3³.4²; 3².4.3.4]₁",
@@ -310,9 +311,11 @@
     "squarerows3dual": "V[3³.4²; 4⁴]₂",
     "dissectedtrunchexdual": "V[3².4.3.4; 3.4.6.4]",
     "hexrowsdual": "V[3².6²; 3.6.3.6]",
+    "dodecasquaredual": "V[3.4.3.12; 3.12²]",
     "hexringsdual": "V[3.4².6; 3.4.6.4]",
     "squaretrihexdual": "V[3.4².6; 3.6.3.6]₁",
-    "squaretrihex2dual": "V[3.4².6; 3.6.3.6]₂"
+    "squaretrihex2dual": "V[3.4².6; 3.6.3.6]₂",
+    "dodecarhombitrihexdual": "V[3.4.6.4; 4.6.12]"
   },
   "modeInfo": {
     "ammannbeenker": {
@@ -789,11 +792,23 @@
       "surface": "flat",
       "family": "2-uniform"
     },
+    "dodecarhombitrihexdual": {
+      "label": "Studded rhombitrihexagonal dual",
+      "tiling": "dodecarhombitrihexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
+    },
     "dodecasquare": {
       "label": "Square dodecagonal",
       "tiling": "dodecasquare",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "dodecasquaredual": {
+      "label": "Square dodecagonal dual",
+      "tiling": "dodecasquaredual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "doubletorus": {
       "label": "Squares · Double torus",
@@ -2366,6 +2381,12 @@
       "tiling": "tritrunctrihex",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "tritrunctrihexdual": {
+      "label": "Fanned truncated trihexagonal dual",
+      "tiling": "tritrunctrihexdual",
+      "surface": "flat",
+      "family": "2-isohedral"
     },
     "tromino": {
       "label": "L-tromino",

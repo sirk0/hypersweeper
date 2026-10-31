@@ -72,9 +72,10 @@ Pick a surface, then a tiling:
   (regular polygons edge to edge with *two* kinds of corner — all twenty of
   them, named for how each is made from a uniform tiling, from *Studded
   triangular* [3⁶; 3⁴.6]₁ to *Studded rhombitrihexagonal* [3.4.6.4; 4.6.12]),
-  **2-isohedral** (seventeen of those twenty's duals, two kinds of tile —
-  pentagons ringing hexagons, kites beside trapezoids — every one close to
-  regular and with six to ten neighbours),
+  **2-isohedral** (those twenty's duals, two kinds of tile — pentagons
+  ringing hexagons, kites beside trapezoids; seventeen close to regular with
+  six to ten neighbours, and three, from the tilings with dodecagons, made of
+  slivers — one of them all twins and so marked unplayable),
   **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
   corner in the middle of its neighbour's edge), **Congruent rectangles**,

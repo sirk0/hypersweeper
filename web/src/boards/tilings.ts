@@ -2266,9 +2266,10 @@ export interface ArchTiling {
 
 // The 2-isohedral tilings: the 2-uniform tilings' duals, built by dualTemplate
 // exactly as the Laves rows are, each primal's vertex types becoming the dual's
-// two tiles. Seventeen of the twenty ship; the three with dodecagons
-// (tritrunctrihex, dodecasquare, dodecarhombitrihex) are left out, since a
-// dodecagon's centre becomes a corner twelve slivers meet at. Each row derives
+// two tiles. All twenty ship; the three with dodecagons (tritrunctrihex,
+// dodecasquare, dodecarhombitrihex) give slivers, a dodecagon's centre becoming
+// a corner twelve tiles meet at, and dodecasquaredual is all twins, blocked by
+// data/difficulty.json so it is never dealt at random. Each row derives
 // from its primal's — the key and label with "dual" after them, its edge
 // directions, its half turn — and config is the two tiles' side counts, the
 // sizes of the primal's two vertex types. Mirrors _TWO_ISOHEDRAL_PRIMALS and
@@ -2281,6 +2282,7 @@ const TWO_ISOHEDRAL_PRIMALS: [string, number[]][] = [
   ["dissectedtrunchex2", [4, 5]], ["squarerows2", [4, 5]], ["squarerows3", [4, 5]],
   ["dissectedtrunchex", [4, 5]], ["hexrows", [4]], ["hexrings", [4]],
   ["squaretrihex", [4]], ["squaretrihex2", [4]],
+  ["tritrunctrihex", [4, 6]], ["dodecasquare", [3, 4]], ["dodecarhombitrihex", [3, 4]],
 ];
 
 /** The registry with the 2-isohedral rows after the 2-uniform block, in the
