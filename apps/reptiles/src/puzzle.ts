@@ -127,8 +127,13 @@ export class Puzzle {
    * would land, if anywhere within `reach` of it: only in that orientation,
    * and only where the vertex rule allows. */
   snap(kind: number, centre: XY, reach: number, rot: number, flip = false): Cyc[] | null {
-    return this.frontier.nearest(this.shapeAt(kind, rot, flip), centre, reach, false, this.same[kind], (v) =>
-      this.allows(v),
+    return this.frontier.nearest(
+      this.shapeAt(kind, rot, flip),
+      centre,
+      reach,
+      false,
+      this.same[kind],
+      (v) => this.allows(v),
     );
   }
 
@@ -175,8 +180,13 @@ export class Puzzle {
     for (let kind = this.level.tiles.length - 1; kind >= 0; kind--) {
       for (const flip of flips) {
         for (const rot of this.orientations(kind)) {
-          const spots = this.frontier.placements(this.shapeAt(kind, rot, flip), at, 1e-6, false, this.same[kind], (v) =>
-            this.allows(v),
+          const spots = this.frontier.placements(
+            this.shapeAt(kind, rot, flip),
+            at,
+            1e-6,
+            false,
+            this.same[kind],
+            (v) => this.allows(v),
           );
           for (const spot of spots) out.push({ kind, rot, flip, spot });
         }

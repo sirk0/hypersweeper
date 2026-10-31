@@ -204,7 +204,10 @@ export function sameDirection(ring: Ring, a: Cyc, b: Cyc): boolean {
 export function strictlyBetween(ring: Ring, a: Cyc, b: Cyc, p: Cyc): boolean {
   if (ring.eq(p, a) || ring.eq(p, b)) return false;
   if (orient(ring, a, b, p) !== 0) return false;
-  return dotSign(ring, ring.sub(p, a), ring.sub(b, a)) > 0 && dotSign(ring, ring.sub(p, b), ring.sub(a, b)) > 0;
+  return (
+    dotSign(ring, ring.sub(p, a), ring.sub(b, a)) > 0 &&
+    dotSign(ring, ring.sub(p, b), ring.sub(a, b)) > 0
+  );
 }
 
 /** The open segments a–b and c–d cross at one point interior to both. */

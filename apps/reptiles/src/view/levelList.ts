@@ -50,7 +50,10 @@ function levelItem(
 
   const tiles = document.createElement("span");
   tiles.className = "level-tiles";
-  tiles.setAttribute("aria-label", `tiles: ${level.tiles.map((t) => `${t.verts.length}-gon`).join(", ")}`);
+  tiles.setAttribute(
+    "aria-label",
+    `tiles: ${level.tiles.map((t) => `${t.verts.length}-gon`).join(", ")}`,
+  );
   level.tiles.forEach((_, kind) => tiles.appendChild(tileIcon(level, kind)));
 
   const row = starRow(stars(level.key));

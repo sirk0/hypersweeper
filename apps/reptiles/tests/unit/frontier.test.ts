@@ -98,10 +98,21 @@ describe("frontier", () => {
     expect(f.corners.size).toBe(4);
     const centres = (spots: Cyc[][]): string[] =>
       spots.map((s) => s.map((v) => v.join(",")).sort()[0]!).sort();
-    expect(centres(f.placements(square, [1.5, 1.5], 10, false))).toEqual(["0,0", "0,2", "2,0", "2,2"]);
+    expect(centres(f.placements(square, [1.5, 1.5], 10, false))).toEqual([
+      "0,0",
+      "0,2",
+      "2,0",
+      "2,2",
+    ]);
     expect(f.nearest(square, [1.5, 0.5], 0.7, false)).toBeNull(); // mid-edge
     // one square in the corner: next to it, above it, or another region corner
     f = f.cover(at(square, 0, 0));
-    expect(centres(f.placements(square, [1.5, 1.5], 10, false))).toEqual(["0,1", "0,2", "1,0", "2,0", "2,2"]);
+    expect(centres(f.placements(square, [1.5, 1.5], 10, false))).toEqual([
+      "0,1",
+      "0,2",
+      "1,0",
+      "2,0",
+      "2,2",
+    ]);
   });
 });

@@ -176,7 +176,9 @@ export class SvgBoard {
     // Along the tray: each circle, then the controls as one more slot.
     const controlSlot = landscape ? knobH : 2 * KNOB;
     const total =
-      kinds.reduce((sum, k) => sum + 2 * this.trayRadius(k), 0) + controlSlot + TRAY_GAP * kinds.length;
+      kinds.reduce((sum, k) => sum + 2 * this.trayRadius(k), 0) +
+      controlSlot +
+      TRAY_GAP * kinds.length;
     let along = landscape ? (y0 + y1) / 2 + total / 2 : (x0 + x1) / 2 - total / 2;
     this.trayAt = [];
     for (const kind of kinds) {
@@ -209,7 +211,8 @@ export class SvgBoard {
       const r = this.trayRadius(kind);
       tray.push([cx - r, cy - r, cx + r, cy + r]);
     });
-    for (const [kx, ky] of this.controlsAt.values()) tray.push([kx - KNOB, ky - KNOB - LABEL, kx + KNOB, ky + KNOB]);
+    for (const [kx, ky] of this.controlsAt.values())
+      tray.push([kx - KNOB, ky - KNOB - LABEL, kx + KNOB, ky + KNOB]);
     const pad = MARGIN / 2;
     this.trayBox = [
       Math.min(...tray.map((b) => b[0])) - pad,
@@ -247,17 +250,27 @@ export class SvgBoard {
       );
     }
     for (const e of this.puzzle.openEdges) {
-      el("line", { x1: e.axy[0], y1: e.axy[1], x2: e.bxy[0], y2: e.bxy[1], class: "open" }, this.still);
+      el(
+        "line",
+        { x1: e.axy[0], y1: e.axy[1], x2: e.bxy[0], y2: e.bxy[1], class: "open" },
+        this.still,
+      );
     }
     const [tx0, ty0, tx1, ty1] = this.trayBox;
-    el("rect", { x: tx0, y: ty0, width: tx1 - tx0, height: ty1 - ty0, rx: 0.3, class: "tray-zone" }, this.still);
+    el(
+      "rect",
+      { x: tx0, y: ty0, width: tx1 - tx0, height: ty1 - ty0, rx: 0.3, class: "tray-zone" },
+      this.still,
+    );
     this.trayAt.forEach(([cx, cy], kind) => {
       const r = this.trayRadius(kind);
       el("circle", { cx, cy, r, class: "tray", "data-tray": kind }, this.still);
       el(
         "polygon",
         {
-          points: points(this.outline(kind, this.turn, this.flip).map(([x, y]): XY => [x + cx, y + cy])),
+          points: points(
+            this.outline(kind, this.turn, this.flip).map(([x, y]): XY => [x + cx, y + cy]),
+          ),
           class: `tile sides-${this.sides(kind)} in-tray`,
           "data-tray": kind,
         },
@@ -268,7 +281,11 @@ export class SvgBoard {
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
       const bx = cx + r * 0.72;
       const by = cy - r * 0.72;
-      const badge = el("g", { class: `pile${left < 0 ? " over" : left === 0 ? " done" : ""}`, "data-tray": kind }, this.still);
+      const badge = el(
+        "g",
+        { class: `pile${left < 0 ? " over" : left === 0 ? " done" : ""}`, "data-tray": kind },
+        this.still,
+      );
       el("circle", { cx: bx, cy: by, r: PILE }, badge);
       const text = el("text", { x: bx, y: -by, transform: "scale(1,-1)" }, badge);
       text.textContent = left < 0 ? `+${-left}` : String(left);
@@ -297,20 +314,77 @@ export class SvgBoard {
         el("title", {}, knob).textContent = "Flip every tile over (F)";
         const a = KNOB * 0.55;
         const h = KNOB * 0.5;
-        el("polyline", { points: points([[kx, ky - KNOB * 0.62], [kx, ky + KNOB * 0.62]]), class: "knob-mirror" }, knob);
-        el("polygon", { points: points([[kx - 0.08 * KNOB, ky - h], [kx - 0.08 * KNOB, ky + h], [kx - a, ky - h]]), class: "knob-half" }, knob);
-        el("polygon", { points: points([[kx + 0.08 * KNOB, ky - h], [kx + 0.08 * KNOB, ky + h], [kx + a, ky - h]]), class: "knob-half hollow" }, knob);
+        el(
+          "polyline",
+          {
+            points: points([
+              [kx, ky - KNOB * 0.62],
+              [kx, ky + KNOB * 0.62],
+            ]),
+            class: "knob-mirror",
+          },
+          knob,
+        );
+        el(
+          "polygon",
+          {
+            points: points([
+              [kx - 0.08 * KNOB, ky - h],
+              [kx - 0.08 * KNOB, ky + h],
+              [kx - a, ky - h],
+            ]),
+            class: "knob-half",
+          },
+          knob,
+        );
+        el(
+          "polygon",
+          {
+            points: points([
+              [kx + 0.08 * KNOB, ky - h],
+              [kx + 0.08 * KNOB, ky + h],
+              [kx + a, ky - h],
+            ]),
+            class: "knob-half hollow",
+          },
+          knob,
+        );
         label = "⇋ flip";
       } else {
         knob.setAttribute("data-remove", "");
-        el("title", {}, knob).textContent = "Remove tiles: turn on, then tap tiles on the board (X)";
+        el("title", {}, knob).textContent =
+          "Remove tiles: turn on, then tap tiles on the board (X)";
         const a = KNOB * 0.38;
-        el("polyline", { points: points([[kx - a, ky - a], [kx + a, ky + a]]), class: "knob-x" }, knob);
-        el("polyline", { points: points([[kx - a, ky + a], [kx + a, ky - a]]), class: "knob-x" }, knob);
+        el(
+          "polyline",
+          {
+            points: points([
+              [kx - a, ky - a],
+              [kx + a, ky + a],
+            ]),
+            class: "knob-x",
+          },
+          knob,
+        );
+        el(
+          "polyline",
+          {
+            points: points([
+              [kx - a, ky + a],
+              [kx + a, ky - a],
+            ]),
+            class: "knob-x",
+          },
+          knob,
+        );
         label = "remove";
       }
       // Text has to be flipped back upright against the root's y flip.
-      const text = el("text", { x: kx, y: -(ky - KNOB - LABEL * 0.75), transform: "scale(1,-1)", class: "knob-label" }, knob);
+      const text = el(
+        "text",
+        { x: kx, y: -(ky - KNOB - LABEL * 0.75), transform: "scale(1,-1)", class: "knob-label" },
+        knob,
+      );
       text.textContent = label;
     }
   }
@@ -319,11 +393,25 @@ export class SvgBoard {
    * when it would snap, a ✓ where it would land (`fitsAt`, that spot's
    * centroid) and a dot on each of its corners that would meet the edge.
    * `discard`: it is over the tray, and letting go takes it off the board. */
-  drawDrag(kind: number, outline: XY[], at: XY, fitsAt: XY | null, stick: XY[], discard = false): void {
+  drawDrag(
+    kind: number,
+    outline: XY[],
+    at: XY,
+    fitsAt: XY | null,
+    stick: XY[],
+    discard = false,
+  ): void {
     this.moving.replaceChildren();
     this.svg.classList.toggle("discarding", discard);
     const moved = outline.map(([x, y]): XY => [x + at[0], y + at[1]]);
-    el("polygon", { points: points(moved), class: `tile sides-${this.sides(kind)} floating${discard ? " discard" : ""}` }, this.moving);
+    el(
+      "polygon",
+      {
+        points: points(moved),
+        class: `tile sides-${this.sides(kind)} floating${discard ? " discard" : ""}`,
+      },
+      this.moving,
+    );
     for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
     if (fitsAt) {
       const [cx, cy] = fitsAt;

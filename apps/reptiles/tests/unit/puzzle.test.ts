@@ -1,4 +1,11 @@
-import { archimedeanBoard, archTemplate, hexBoard, squareBoard, templateCells, triangleGridBoard } from "@boards/tilings";
+import {
+  archimedeanBoard,
+  archTemplate,
+  hexBoard,
+  squareBoard,
+  templateCells,
+  triangleGridBoard,
+} from "@boards/tilings";
 import type { Board } from "@boards/core";
 import { describe, expect, it } from "vitest";
 import type { Cyc } from "../../src/geometry/cyclotomic";
@@ -17,7 +24,8 @@ function fill(p: Puzzle): number {
 describe("puzzle", () => {
   it.each(LEVELS.map((l) => l.key))("%s: the board it was cut from fills it exactly", (key) => {
     const p = new Puzzle(levelByKey(key)!);
-    const kindOf = (sides: number): number => p.level.tiles.findIndex((t) => t.verts.length === sides);
+    const kindOf = (sides: number): number =>
+      p.level.tiles.findIndex((t) => t.verts.length === sides);
     for (const cell of p.level.cells) {
       expect(p.coverage).toBeLessThan(1);
       p.place(kindOf(cell.length), ccw(p.level.ring, cell), 0);
@@ -57,7 +65,10 @@ describe("puzzle", () => {
     const left = theirs.slice();
     for (const [x, y] of ours) {
       const i = left.findIndex(([u, v]) => Math.hypot(u - x, v - y) < 1e-4);
-      expect(i, `no tile of Hypersweeper's at ${x.toFixed(4)},${y.toFixed(4)}`).toBeGreaterThanOrEqual(0);
+      expect(
+        i,
+        `no tile of Hypersweeper's at ${x.toFixed(4)},${y.toFixed(4)}`,
+      ).toBeGreaterThanOrEqual(0);
       left.splice(i, 1);
     }
   };
@@ -80,15 +91,20 @@ describe("puzzle", () => {
     expect(level.region).toHaveLength(1); // one outline, no holes
     const round = new Map<string, Corner[]>();
     for (const cell of level.cells) {
-      for (const [k, corner] of cornersOf(ring, ccw(ring, cell))) round.set(k, [...(round.get(k) ?? []), corner]);
+      for (const [k, corner] of cornersOf(ring, ccw(ring, cell)))
+        round.set(k, [...(round.get(k) ?? []), corner]);
     }
     // a point is inner when its corners go all the way round
-    const inner = [...round.values()].filter((cs) => cs.reduce((sum, c) => sum + span(ring.n, c.sides), 0) === ring.n);
+    const inner = [...round.values()].filter(
+      (cs) => cs.reduce((sum, c) => sum + span(ring.n, c.sides), 0) === ring.n,
+    );
     expect(inner.length).toBeGreaterThan(0);
     // each inner point is one of the configurations, and each of them occurs
     const seen = new Set<number>();
     for (const corners of inner) {
-      const which = configs.findIndex((c) => c.length === corners.length && fitsConfig(ring.n, c, corners));
+      const which = configs.findIndex(
+        (c) => c.length === corners.length && fitsConfig(ring.n, c, corners),
+      );
       expect(which).toBeGreaterThanOrEqual(0);
       seen.add(which);
     }
@@ -102,15 +118,22 @@ describe("puzzle", () => {
   /** A polygon's interior angles and its sides over its longest, in order,
    * counter-clockwise. */
   const signature = (raw: XY[]): { angles: number[]; sides: number[] } => {
-    const area = raw.reduce((sum, p, i) => sum + p[0] * raw[(i + 1) % raw.length]![1] - raw[(i + 1) % raw.length]![0] * p[1], 0);
+    const area = raw.reduce(
+      (sum, p, i) =>
+        sum + p[0] * raw[(i + 1) % raw.length]![1] - raw[(i + 1) % raw.length]![0] * p[1],
+      0,
+    );
     const pts = area < 0 ? [...raw].reverse() : raw;
     const m = pts.length;
-    const sides = pts.map((p, i) => Math.hypot(pts[(i + 1) % m]![0] - p[0], pts[(i + 1) % m]![1] - p[1]));
+    const sides = pts.map((p, i) =>
+      Math.hypot(pts[(i + 1) % m]![0] - p[0], pts[(i + 1) % m]![1] - p[1]),
+    );
     const longest = Math.max(...sides);
     const angles = pts.map((p, i) => {
       const prev = pts[(i + m - 1) % m]!;
       const next = pts[(i + 1) % m]!;
-      const a = Math.atan2(prev[1] - p[1], prev[0] - p[0]) - Math.atan2(next[1] - p[1], next[0] - p[0]);
+      const a =
+        Math.atan2(prev[1] - p[1], prev[0] - p[0]) - Math.atan2(next[1] - p[1], next[0] - p[0]);
       return ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     });
     return { angles, sides: sides.map((x) => x / longest) };
@@ -126,7 +149,8 @@ describe("puzzle", () => {
       for (let k = 0; k < m; k++) {
         const ok = sa.angles.every(
           (x, i) =>
-            Math.abs(x - sb.angles[(i + k) % m]!) < 1e-4 && Math.abs(sa.sides[i]! - sb.sides[(i + k) % m]!) < 1e-4,
+            Math.abs(x - sb.angles[(i + k) % m]!) < 1e-4 &&
+            Math.abs(sa.sides[i]! - sb.sides[(i + k) % m]!) < 1e-4,
         );
         if (ok) return true;
       }
@@ -193,7 +217,8 @@ describe("puzzle", () => {
   it.each(LEVELS.map((l) => l.key))("%s is about as wide as it is tall", (key) => {
     const { ring, region } = levelByKey(key)!;
     const xy = region.flat().map((v) => ring.toXY(v));
-    const span = (i: 0 | 1): number => Math.max(...xy.map((p) => p[i])) - Math.min(...xy.map((p) => p[i]));
+    const span = (i: 0 | 1): number =>
+      Math.max(...xy.map((p) => p[i])) - Math.min(...xy.map((p) => p[i]));
     // the hexagonal Laves tilings come no nearer than 0.87 at this size
     expect(span(0) / span(1)).toBeGreaterThan(0.85);
     expect(span(0) / span(1)).toBeLessThan(1.12);
@@ -227,8 +252,14 @@ describe("puzzle", () => {
     expect(spotFor(turn)).not.toBeNull();
     // a triangle is the same after 120°, so two steps is the tray's way again
     expect(spotFor(2 * turn)).toBeNull();
-    expect(spotFor(3 * turn)!.map((v) => ring.key(v)).sort()).toEqual(
-      spotFor(turn)!.map((v) => ring.key(v)).sort(),
+    expect(
+      spotFor(3 * turn)!
+        .map((v) => ring.key(v))
+        .sort(),
+    ).toEqual(
+      spotFor(turn)!
+        .map((v) => ring.key(v))
+        .sort(),
     );
   });
 
@@ -268,14 +299,34 @@ describe("puzzle", () => {
   });
 
   it("names each level by its vertex configuration", () => {
-    const named = (group: string): string[] => LEVELS.filter((l) => l.group === group).map((l) => l.name);
+    const named = (group: string): string[] =>
+      LEVELS.filter((l) => l.group === group).map((l) => l.name);
     expect(named("regular")).toEqual(["4⁴", "3⁶", "6³"]);
-    expect(named("uniform")).toEqual(["3.6.3.6", "4.8²", "3.12²", "3³.4²", "3².4.3.4", "3⁴.6", "3.4.6.4", "4.6.12"]);
+    expect(named("uniform")).toEqual([
+      "3.6.3.6",
+      "4.8²",
+      "3.12²",
+      "3³.4²",
+      "3².4.3.4",
+      "3⁴.6",
+      "3.4.6.4",
+      "4.6.12",
+    ]);
     expect(named("2-uniform")).toHaveLength(20);
-    expect(named("laves")).toEqual(["V4.8²", "V3.6.3.6", "V3.12²", "V3².4.3.4", "V3³.4²", "V3⁴.6", "V3.4.6.4", "V4.6.12"]);
+    expect(named("laves")).toEqual([
+      "V4.8²",
+      "V3.6.3.6",
+      "V3.12²",
+      "V3².4.3.4",
+      "V3³.4²",
+      "V3⁴.6",
+      "V3.4.6.4",
+      "V4.6.12",
+    ]);
     expect(new Set(named("2-uniform")).size).toBe(20); // the subscripts keep them apart
     for (const level of LEVELS) {
-      if (level.group === "regular" || level.group === "uniform") expect(level.name).toBe(notation(level.configs[0]!));
+      if (level.group === "regular" || level.group === "uniform")
+        expect(level.name).toBe(notation(level.configs[0]!));
     }
     expect(notation([3, 3, 3, 4, 4])).toBe("3³.4²");
     expect(parseNotation("[3⁶; 3².4.12]")).toEqual([
@@ -306,7 +357,8 @@ describe("puzzle", () => {
 
   it("gives one star for finishing, two for the tiles needed, three in time", () => {
     const p = new Puzzle(levelByKey("trihex")!);
-    const kindOf = (sides: number): number => p.level.tiles.findIndex((t) => t.verts.length === sides);
+    const kindOf = (sides: number): number =>
+      p.level.tiles.findIndex((t) => t.verts.length === sides);
     for (const cell of p.level.cells) p.place(kindOf(cell.length), ccw(p.level.ring, cell), 0);
     expect(p.stars(p.level.seconds)).toBe(3);
     expect(p.stars(p.level.seconds + 1)).toBe(2);
@@ -320,11 +372,13 @@ describe("puzzle", () => {
   function trihexWithHole(rule?: number[]): { p: Puzzle; hex: Cyc[] } {
     const level = levelByKey("trihex")!;
     const p = new Puzzle(rule ? { ...level, rule } : level);
-    const kindOf = (sides: number): number => p.level.tiles.findIndex((t) => t.verts.length === sides);
+    const kindOf = (sides: number): number =>
+      p.level.tiles.findIndex((t) => t.verts.length === sides);
     for (const cell of level.cells) p.place(kindOf(cell.length), ccw(level.ring, cell), 0);
     // the hexagon furthest in: fewest corners on the rim
     const rim = new Set(level.region.flat().map((v) => level.ring.key(v)));
-    const onRim = (t: { verts: Cyc[] }): number => t.verts.filter((v) => rim.has(level.ring.key(v))).length;
+    const onRim = (t: { verts: Cyc[] }): number =>
+      t.verts.filter((v) => rim.has(level.ring.key(v))).length;
     const hex = p.tiles.filter((t) => t.verts.length === 6).sort((a, b) => onRim(a) - onRim(b))[0]!;
     p.lift(hex.id);
     return { p, hex: hex.verts };
@@ -336,8 +390,11 @@ describe("puzzle", () => {
     const centre = ring.toXY(hex[0]!).map((x, i) => x + (ring.toXY(hex[3]!)[i]! - x) / 2) as XY;
     // fan the hole from its corners: each triangle has its apex at the centre
     for (let i = 0; i < 6 && !p.won; i++) {
-      const spot = p.orientations(0)
-        .map((rot) => p.snap(0, centroid([centre, ring.toXY(hex[i]!), ring.toXY(hex[(i + 1) % 6]!)]), 0.3, rot))
+      const spot = p
+        .orientations(0)
+        .map((rot) =>
+          p.snap(0, centroid([centre, ring.toXY(hex[i]!), ring.toXY(hex[(i + 1) % 6]!)]), 0.3, rot),
+        )
         .find((s) => s);
       expect(spot).toBeTruthy();
       p.place(0, spot!, 0);

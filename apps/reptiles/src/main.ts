@@ -122,7 +122,9 @@ function changed(): void {
   const used = puzzle.tiles.length;
   const lines = [
     "★ Covered, no gaps, no overlaps.",
-    used <= need ? `★ ${used} tiles — no more than the ${need} needed.` : `☆ ${used} tiles — ${need} would do.`,
+    used <= need
+      ? `★ ${used} tiles — no more than the ${need} needed.`
+      : `☆ ${used} tiles — ${need} would do.`,
     stars === 3
       ? `★ ${clockText(seconds)} — inside ${clockText(puzzle.level.seconds)}.`
       : used <= need
@@ -150,7 +152,13 @@ function open(level: Level, push = true): void {
   const puzzle = new Puzzle(level);
   stage.replaceChildren();
   const board = new SvgBoard(stage, puzzle);
-  session = { puzzle, board, control: attachDrag(board, puzzle, changed), started: null, finished: null };
+  session = {
+    puzzle,
+    board,
+    control: attachDrag(board, puzzle, changed),
+    started: null,
+    finished: null,
+  };
   const name = byId("level");
   name.textContent = level.name;
   name.title = level.label;
@@ -168,7 +176,8 @@ next.addEventListener("click", () => {
   const level = session && nextLevel(session);
   if (level) open(level);
 });
-for (const button of document.querySelectorAll("[data-go-home]")) button.addEventListener("click", () => goHome());
+for (const button of document.querySelectorAll("[data-go-home]"))
+  button.addEventListener("click", () => goHome());
 document.addEventListener("keydown", (ev) => {
   if (!session || byId("game").hidden) return;
   const { control, board } = session;

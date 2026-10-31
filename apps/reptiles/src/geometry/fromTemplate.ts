@@ -78,12 +78,13 @@ export function templateWindow(
   // `quarter`: the ring must also hold a quarter turn — for a dual, whose
   // edges cross these at right angles.
   const ringFor = (alpha: number): number | undefined =>
-    ORDERS.find((order) =>
-      (!quarter || order % 4 === 0) &&
-      sample.every((a) => {
-        const k = ((a - alpha) * order) / (2 * Math.PI);
-        return Math.abs(k - Math.round(k)) < TOLERANCE;
-      }),
+    ORDERS.find(
+      (order) =>
+        (!quarter || order % 4 === 0) &&
+        sample.every((a) => {
+          const k = ((a - alpha) * order) / (2 * Math.PI);
+          return Math.abs(k - Math.round(k)) < TOLERANCE;
+        }),
     );
   let alpha = 0;
   let n = ringFor(0);
@@ -127,7 +128,8 @@ export function templateWindow(
   };
   if (t.centre) {
     for (let m = 0; m < spread[0]!; m++) {
-      for (let k = 0; k < spread[1]!; k++) consider(frame([t.centre[0] + m * W, t.centre[1] + k * H]));
+      for (let k = 0; k < spread[1]!; k++)
+        consider(frame([t.centre[0] + m * W, t.centre[1] + k * H]));
     }
   } else {
     const biggest = Math.max(...grown.map((g) => g.ids.length));
@@ -136,9 +138,12 @@ export function templateWindow(
   const half = box / 2;
   const slack = 1e-6 * Math.max(1, W, H);
   const kept = grown.filter((g) =>
-    g.pts.every(([x, y]) => Math.abs(x - c0[0]) <= half + slack && Math.abs(y - c0[1]) <= half + slack),
+    g.pts.every(
+      ([x, y]) => Math.abs(x - c0[0]) <= half + slack && Math.abs(y - c0[1]) <= half + slack,
+    ),
   );
-  if (kept.length === 0) throw new Error(`templateWindow: nothing fits a ${box}-edge window of ${tiling}`);
+  if (kept.length === 0)
+    throw new Error(`templateWindow: nothing fits a ${box}-edge window of ${tiling}`);
   for (const g of kept) {
     g.pts.forEach((p, i) => {
       const q = g.pts[(i + 1) % g.pts.length]!;
@@ -147,12 +152,14 @@ export function templateWindow(
       }
     });
   }
-  const dirOf = (p: XY, q: XY): number => Math.round((Math.atan2(q[1] - p[1], q[0] - p[0]) * n) / (2 * Math.PI));
+  const dirOf = (p: XY, q: XY): number =>
+    Math.round((Math.atan2(q[1] - p[1], q[0] - p[0]) * n) / (2 * Math.PI));
 
   // Walk the edges outward, cell by cell, from the tile nearest the centre —
   // never a stray at a corner.
   const seed = kept.reduce((a, b) =>
-    Math.hypot(b.centroid[0] - c0[0], b.centroid[1] - c0[1]) < Math.hypot(a.centroid[0] - c0[0], a.centroid[1] - c0[1])
+    Math.hypot(b.centroid[0] - c0[0], b.centroid[1] - c0[1]) <
+    Math.hypot(a.centroid[0] - c0[0], a.centroid[1] - c0[1])
       ? b
       : a,
   );

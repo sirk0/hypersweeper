@@ -79,7 +79,9 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (!drag) return;
     // Back over the tray, a lifted tile is on its way off the board.
     const discard = drag.origin !== null && board.overTray(pointer(drag));
-    drag.ghost = discard ? null : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot, drag.flip);
+    drag.ghost = discard
+      ? null
+      : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot, drag.flip);
     const ghost = drag.ghost?.map((v) => ring.toXY(v)) ?? null;
     const stick = drag.ghost ? puzzle.touching(drag.ghost).map((v) => ring.toXY(v)) : [];
     board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroid(ghost), stick, discard);
@@ -206,7 +208,13 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const p = board.toBoard(ev.clientX, ev.clientY);
     const discard = drop && board.overTray(p);
     if (drop && !discard) {
-      ghost = puzzle.snap(d.kind, [p[0] + d.offset[0], p[1] + d.offset[1]], reachFor(d.kind), d.rot, d.flip);
+      ghost = puzzle.snap(
+        d.kind,
+        [p[0] + d.offset[0], p[1] + d.offset[1]],
+        reachFor(d.kind),
+        d.rot,
+        d.flip,
+      );
     }
     if (ghost) {
       puzzle.place(d.kind, ghost, d.rot, d.flip);

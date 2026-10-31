@@ -4,11 +4,14 @@ import { band, bandOf, measure } from "../../src/difficulty";
 import { LEVELS, levelByKey } from "../../src/levels";
 
 describe("difficulty", () => {
-  it.each(LEVELS.map((l) => l.key))("%s: src/difficulty.json is in step with the measure", (key) => {
-    const stored = (measured as Record<string, { score: number }>)[key];
-    expect(stored, "run npm run difficulty").toBeDefined();
-    expect(measure(levelByKey(key)!).score).toBeCloseTo(stored!.score, 3);
-  });
+  it.each(LEVELS.map((l) => l.key))(
+    "%s: src/difficulty.json is in step with the measure",
+    (key) => {
+      const stored = (measured as Record<string, { score: number }>)[key];
+      expect(stored, "run npm run difficulty").toBeDefined();
+      expect(measure(levelByKey(key)!).score).toBeCloseTo(stored!.score, 3);
+    },
+  );
 
   it("holds the anchors the bands were set from", () => {
     // the same tile laid over and over, hardly a turn
@@ -22,7 +25,8 @@ describe("difficulty", () => {
   });
 
   it("puts every flag-transitive level in easy, and has levels in every band", () => {
-    for (const level of LEVELS.filter((l) => l.group === "regular")) expect(bandOf(level.key)).toBe("easy");
+    for (const level of LEVELS.filter((l) => l.group === "regular"))
+      expect(bandOf(level.key)).toBe("easy");
     const bands = new Set(LEVELS.map((l) => bandOf(l.key)));
     expect([...bands].sort()).toEqual(["easy", "hard", "medium"]);
   });

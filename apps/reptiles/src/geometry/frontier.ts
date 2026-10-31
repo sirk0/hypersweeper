@@ -216,7 +216,8 @@ export class Frontier {
       return this.edges.some((e) => {
         if (e.ak === k || e.bk === k) return true;
         const box = edgeBox(e);
-        if (x < box.x0 - EPS || x > box.x1 + EPS || y < box.y0 - EPS || y > box.y1 + EPS) return false;
+        if (x < box.x0 - EPS || x > box.x1 + EPS || y < box.y0 - EPS || y > box.y1 + EPS)
+          return false;
         return strictlyBetween(ring, e.a, e.b, v);
       });
     });
@@ -247,7 +248,8 @@ export class Frontier {
     const box = boxOf(tileXY);
     const near = this.edges.filter((e) => overlaps(edgeBox(e), box));
 
-    for (const f of near) for (const t of tile) if (properlyCross(ring, f.a, f.b, t.a, t.b)) return false;
+    for (const f of near)
+      for (const t of tile) if (properlyCross(ring, f.a, f.b, t.a, t.b)) return false;
 
     // Frontier pieces: none may run through the tile's interior, and one lying
     // along a tile edge must face the same way (the uncovered side is the
@@ -256,7 +258,8 @@ export class Frontier {
     for (const piece of splitAt(ring, near, vertexMap(tile))) {
       const along = tile.find((t) => onEdge(ring, piece, t));
       if (along) {
-        if (!sameDirection(ring, ring.sub(along.b, along.a), ring.sub(piece.b, piece.a))) return false;
+        if (!sameDirection(ring, ring.sub(along.b, along.a), ring.sub(piece.b, piece.a)))
+          return false;
       } else if (winding(tileLoop, midpoint(piece)) !== 0) {
         return false;
       }
@@ -299,7 +302,10 @@ export class Frontier {
     const { ring } = this;
     const found = new Map<string, Cyc[]>();
     const tryPose = (verts: Cyc[]): void => {
-      const k = verts.map((v) => ring.key(v)).sort().join("|");
+      const k = verts
+        .map((v) => ring.key(v))
+        .sort()
+        .join("|");
       if (found.has(k)) return;
       found.set(k, this.fits(verts) && (!accept || accept(verts)) ? verts : []);
     };

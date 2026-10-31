@@ -19,10 +19,12 @@ function svgIn(className: string, viewBox: [number, number, number, number]): SV
 export function outlineIcon(level: Level): SVGSVGElement {
   const { ring, region } = level;
   // y flipped: the board draws y up
-  const loops = region.map((loop) => loop.map((v): XY => {
-    const [x, y] = ring.toXY(v);
-    return [x, -y];
-  }));
+  const loops = region.map((loop) =>
+    loop.map((v): XY => {
+      const [x, y] = ring.toXY(v);
+      return [x, -y];
+    }),
+  );
   const all = loops.flat();
   const x0 = Math.min(...all.map((p) => p[0]));
   const x1 = Math.max(...all.map((p) => p[0]));
@@ -33,7 +35,10 @@ export function outlineIcon(level: Level): SVGSVGElement {
   const cy = (y0 + y1) / 2;
   const svg = svgIn("level-outline", [cx - size / 2, cy - size / 2, size, size]);
   const path = document.createElementNS(NS, "path");
-  path.setAttribute("d", loops.map((l) => "M" + l.map((p) => p.join(",")).join("L") + "Z").join(""));
+  path.setAttribute(
+    "d",
+    loops.map((l) => "M" + l.map((p) => p.join(",")).join("L") + "Z").join(""),
+  );
   path.setAttribute("fill-rule", "evenodd");
   path.setAttribute("stroke-width", String(size * 0.035));
   svg.appendChild(path);

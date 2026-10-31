@@ -125,7 +125,9 @@ function makeLevel(
     }
   }
   const area = (s: Shape): number => signedArea(s.verts.map((v) => ring.toXY(v)));
-  kinds.sort((a, b) => a.shape.verts.length - b.shape.verts.length || area(a.shape) - area(b.shape));
+  kinds.sort(
+    (a, b) => a.shape.verts.length - b.shape.verts.length || area(a.shape) - area(b.shape),
+  );
   const tiles = kinds.map((k) => k.shape);
   // A kind's rotate step: the largest that reaches, from resting flat, every
   // way the board turns it (`period` turns it back to itself).
@@ -139,7 +141,22 @@ function makeLevel(
   const turn = turns.reduce((g, k) => gcd(g, k), 0);
   const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
   const region = outline(ring, cells);
-  return { key, label, ring, region, tiles, mirror, turns, turn, need, seconds, cells, configs, name, group };
+  return {
+    key,
+    label,
+    ring,
+    region,
+    tiles,
+    mirror,
+    turns,
+    turn,
+    need,
+    seconds,
+    cells,
+    configs,
+    name,
+    group,
+  };
 }
 
 /** A level on a `box`-edge square window of one of Hypersweeper's periodic
@@ -158,7 +175,10 @@ function windowLevel(tiling: string, box: number): Level {
   }
   const written = NOTATIONS[tiling];
   if (!written) throw new Error(`no notation for ${tiling} in data/catalog.json`);
-  return { ...makeLevel(tiling, spec.label, ring, cells, "2-uniform", parseNotation(written), written), window };
+  return {
+    ...makeLevel(tiling, spec.label, ring, cells, "2-uniform", parseNotation(written), written),
+    window,
+  };
 }
 
 const Z4 = cyclotomic(4);
@@ -174,7 +194,8 @@ export function squareCells(rows: number, cols: number): Cyc[][] {
   const cells: Cyc[][] = [];
   const at = (x: number, y: number): Cyc => combo(x, Z4.one, y, Z4.zeta(1));
   for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) cells.push([at(c, r), at(c + 1, r), at(c + 1, r + 1), at(c, r + 1)]);
+    for (let c = 0; c < cols; c++)
+      cells.push([at(c, r), at(c + 1, r), at(c + 1, r + 1), at(c, r + 1)]);
   }
   return cells;
 }
@@ -264,7 +285,8 @@ const NOTATIONS = catalog.tilingNotations as Record<string, string>;
 
 /** The vertex configurations in a written name, "[3⁶; 3⁴.6]₁" or "3.4.6.4". */
 export function parseNotation(written: string): number[][] {
-  const digits = (s: string): number => Number([...s].map((c) => (SUPERSCRIPT.includes(c) ? SUPERSCRIPT.indexOf(c) : c)).join(""));
+  const digits = (s: string): number =>
+    Number([...s].map((c) => (SUPERSCRIPT.includes(c) ? SUPERSCRIPT.indexOf(c) : c)).join(""));
   return written
     .replace(/^\[|\][₀-₉]*$/g, "")
     .split(";")
@@ -313,10 +335,20 @@ const TWO_UNIFORM: [string, number][] = [
  * labelled as Hypersweeper's dual tiling is. */
 function lavesLevel(dual: string, box: number): Level {
   const spec = ARCH_TILINGS.find((t) => t.key === dual && t.family === "dual");
-  const of = ARCH_TILINGS.find((t) => t.family === "uniform" && spec && t.config.join() === spec.config.join());
+  const of = ARCH_TILINGS.find(
+    (t) => t.family === "uniform" && spec && t.config.join() === spec.config.join(),
+  );
   if (!spec || !of) throw new Error(`no uniform tiling is dual to ${dual}`);
   const { ring, cells } = lavesWindow(of.key, box);
-  const level = makeLevel(dual, spec.label, ring, cells, "laves", [spec.config], `V${notation(spec.config)}`);
+  const level = makeLevel(
+    dual,
+    spec.label,
+    ring,
+    cells,
+    "laves",
+    [spec.config],
+    `V${notation(spec.config)}`,
+  );
   return { ...level, dualOf: of.key };
 }
 
@@ -336,12 +368,15 @@ const LAVES: [string, number][] = [
 ];
 
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
-const byEase = (a: Level, b: Level): number => a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
+const byEase = (a: Level, b: Level): number =>
+  a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
 
 export const LEVELS: Level[] = [
   // The three regular tilings, one tile each.
   makeLevel("squares", "Squares", Z4, squareCells(4, 4), "regular", [[4, 4, 4, 4]]),
-  makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6), "regular", [[3, 3, 3, 3, 3, 3]]),
+  makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6), "regular", [
+    [3, 3, 3, 3, 3, 3],
+  ]),
   makeLevel("hexagons", "Hexagons", Z12, hexCells(5, 4), "regular", [[6, 6, 6]]),
   // The eight other uniform tilings — every vertex alike, regular polygons
   // edge to edge — roughly easiest first: two tile kinds, then three. Each
@@ -370,7 +405,7 @@ export const LEVELS: Level[] = [
  * away how it is made. */
 export function notation(config: readonly number[]): string {
   const parts: string[] = [];
-  for (let i = 0; i < config.length; ) {
+  for (let i = 0; i < config.length;) {
     let j = i;
     while (j < config.length && config[j] === config[i]) j++;
     const run = j - i;

@@ -76,7 +76,11 @@ body {
   height: 100%;
   background: var(--page);
   color: var(--ink);
-  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font:
+    16px/1.4 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
 }
 
 body {

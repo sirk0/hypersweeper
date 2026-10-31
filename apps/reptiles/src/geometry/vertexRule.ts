@@ -37,7 +37,8 @@ export function cornersOf(ring: Ring, verts: Cyc[]): [string, Corner][] {
 /** How many of the n directions a regular p-gon's corner spans. */
 export function span(n: number, sides: number): number {
   const s = ((sides - 2) * n) / (2 * sides);
-  if (!Number.isInteger(s)) throw new Error(`vertexRule: a ${sides}-gon's corner is not a whole step of ζ${n}`);
+  if (!Number.isInteger(s))
+    throw new Error(`vertexRule: a ${sides}-gon's corner is not a whole step of ζ${n}`);
   return s;
 }
 
@@ -48,7 +49,11 @@ export function span(n: number, sides: number): number {
  * exactly on an entry of its own polygon. Gaps are fine — they are what is
  * still to come — and a complete vertex is just the case with none.
  */
-export function fitsConfig(n: number, config: readonly number[], corners: readonly Corner[]): boolean {
+export function fitsConfig(
+  n: number,
+  config: readonly number[],
+  corners: readonly Corner[],
+): boolean {
   if (corners.length === 0) return true;
   const first = corners[0]!;
   for (const seq of [config, [...config].reverse()]) {

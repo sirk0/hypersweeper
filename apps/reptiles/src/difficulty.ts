@@ -87,15 +87,24 @@ export function measure(level: Level): Measure {
   const { ring, turn } = level;
   const puzzle = new Puzzle(level);
   const period = level.tiles.map((t) => selfTurns(t).find((k) => k > 0) ?? ring.n);
-  const key = (vs: Cyc[]): string => vs.map((v) => ring.key(v)).sort().join("|");
-  const left = reference(level).map((c) => ({ ...c, key: key(c.verts), at: centroid(c.verts.map((v) => ring.toXY(v))) }));
+  const key = (vs: Cyc[]): string =>
+    vs
+      .map((v) => ring.key(v))
+      .sort()
+      .join("|");
+  const left = reference(level).map((c) => ({
+    ...c,
+    key: key(c.verts),
+    at: centroid(c.verts.map((v) => ring.toXY(v))),
+  }));
   const reach = 1e-3;
 
   /** Presses from tray turn `t` until kind `kind` sits at `rot`; -1 never. */
   const pressesTo = (t: number, kind: number, rot: number): number => {
     const p = period[kind]!;
-    if (turn === 0) return ((rot - t) % p + p) % p === 0 ? 0 : -1;
-    for (let k = 0; k * turn < ring.n; k++) if ((((t + k * turn - rot) % p) + p) % p === 0) return k;
+    if (turn === 0) return (((rot - t) % p) + p) % p === 0 ? 0 : -1;
+    for (let k = 0; k * turn < ring.n; k++)
+      if ((((t + k * turn - rot) % p) + p) % p === 0) return k;
     return -1;
   };
 

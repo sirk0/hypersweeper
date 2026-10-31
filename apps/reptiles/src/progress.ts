@@ -26,7 +26,8 @@ function load(): Map<string, number> {
   for (const stars of [read(RENAMED_KEY), read(KEY)]) {
     if (!stars || typeof stars !== "object") continue;
     for (const [k, n] of Object.entries(stars)) {
-      if (typeof n === "number" && n >= 1 && n <= 3) best.set(k, Math.max(best.get(k) ?? 0, Math.floor(n)));
+      if (typeof n === "number" && n >= 1 && n <= 3)
+        best.set(k, Math.max(best.get(k) ?? 0, Math.floor(n)));
     }
   }
   return best;
