@@ -1,10 +1,11 @@
-// The geometry's public surface: everything outside `boards/` imports from
-// here, never from a module inside it. The geometry is meant to outlive this
-// one game -- the same boards can carry other games -- so it knows nothing of
-// mines, difficulties or menus (those live in `modes/`), and imports nothing
-// from outside this folder. Modules inside `boards/` import each other
-// directly, never through this file, so it cannot close an import cycle.
-// `tests/unit/boardsBoundary.test.ts` holds all three rules.
+// The geometry's public surface, `@tiling/geometry`: every game imports from
+// here, never from a module inside the package. The geometry carries more than
+// one game (Hypersweeper and Rep-tiles today), so it knows nothing of mines,
+// difficulties, levels or menus (those live in each game, e.g.
+// apps/hypersweeper/src/modes/), and imports nothing from outside this folder.
+// Modules in here import each other directly, never through this file, so it
+// cannot close an import cycle. `tests/boundaries.test.ts` holds all three
+// rules, and that no package imports a game and no game imports another.
 //
 // A name is public by being listed here. Export a new one when something
 // outside needs it, not before.

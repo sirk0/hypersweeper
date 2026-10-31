@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/modes/presets";
-import { squareBoard } from "../../src/boards/tilings";
+import { squareBoard } from "@tiling/geometry/tilings";
 import { planeLie, symmetryIcon, symmetryPictures } from "../../src/ui/symmetryIcon";
 
 // What a symmetry control's icon says. The drawing itself is 26 pixels of

@@ -1,4 +1,4 @@
-import type { CellId, SymmetryId } from "./boards";
+import type { CellId, SymmetryId } from "@tiling/geometry";
 
 // The typed test seam Playwright drives. A canvas has no per-cell DOM, so e2e
 // tests translate a cell id to current screen coordinates via `cellScreenXY`

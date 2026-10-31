@@ -10,7 +10,7 @@ import {
   type BoardSymmetry,
   type CellId,
   type SymmetryId,
-} from "./boards";
+} from "@tiling/geometry";
 import { Game } from "./game";
 import { haptic } from "./haptics";
 import { mulberry32, type Rng } from "./rng";

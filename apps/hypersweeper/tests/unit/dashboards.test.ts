@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { describe, expect, it } from "vitest";
-import catalog from "@data/catalog.json";
+import catalog from "@tiling/data/catalog.json";
 import { DATASET_BLOBS, DATASET_DOUBLES } from "../../src/analyticsEvent";
 
 // The dashboards in grafana/ are the third description of the same positional

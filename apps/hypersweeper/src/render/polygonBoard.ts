@@ -11,7 +11,7 @@ import {
   Vector3,
   type Texture,
 } from "three";
-import type { Board, CellId, Vertex } from "../boards";
+import type { Board, CellId, Vertex } from "@tiling/geometry";
 import {
   baseColorFor,
   glyphFor,

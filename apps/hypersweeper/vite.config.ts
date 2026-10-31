@@ -270,17 +270,11 @@ export default defineConfig({
     __APP_ANALYTICS__: JSON.stringify(analytics),
     __APP_SITE_URL__: JSON.stringify(siteUrl),
   },
-  // Allow importing the repo-root `data/` directory (shared JSON that both
-  // the Python and TypeScript apps read — see docs/agents/shared-data.md).
-  // `@data` resolves there so imports read `@data/ui/screens.json`. The dev
-  // server may serve it with no `server.fs.allow`: Vite's default allow-list is
-  // the npm workspace root, which is the repo root (its package.json lists
-  // apps/*), and that is also where the hoisted node_modules live.
-  resolve: {
-    alias: {
-      "@data": fileURLToPath(new URL("../../data", import.meta.url)),
-    },
-  },
+  // The repo-root `data/` (the shared JSON both the Python and TypeScript apps
+  // read — see docs/agents/shared-data.md) and the geometry are workspace
+  // packages, `@tiling/data` and `@tiling/geometry`, so there is no alias to
+  // set. The dev server may serve their files with no `server.fs.allow`:
+  // Vite's default allow-list is the npm workspace root — the repo root.
   plugins: packaged
     ? []
     : [

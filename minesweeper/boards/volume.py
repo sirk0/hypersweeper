@@ -31,7 +31,7 @@ Two consequences of that layout are worth knowing before touching it:
   characteristic of ``n``, not 0 or 2.
 
 The layout constants below are part of the *drawing*, and the conformance
-oracle counts vertices and edges off the drawing, so ``apps/hypersweeper/src/boards/volume.ts``
+oracle counts vertices and edges off the drawing, so ``packages/geometry/src/volume.ts``
 carries the same numbers. Change one and change both.
 """
 

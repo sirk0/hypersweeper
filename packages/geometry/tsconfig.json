@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Pure geometry: no DOM. `vite/client` for `import.meta.env.DEV`, which
+    // gates the builders' dev-only exactness checks — every consumer bundles
+    // this package with Vite (or runs it under Vitest), which sets it.
+    "lib": ["ES2022"],
+    "types": ["node", "vite/client"]
+  },
+  "include": ["src", "tests", "vitest.config.ts"]
+}

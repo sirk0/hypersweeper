@@ -10,7 +10,7 @@ import {
   steppedBipyramidBoard,
   tetrahedronBoard,
   tetrahedronFrameBoard,
-} from "../../src/boards/solids";
+} from "../src/solids";
 import {
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
@@ -25,8 +25,8 @@ import {
   triakisIcosahedronBoard,
   triakisOctahedronBoard,
   triakisTetrahedronBoard,
-} from "../../src/boards/catalan";
-import { Base, type Op } from "../../src/boards/catalan";
+} from "../src/catalan";
+import { Base, type Op } from "../src/catalan";
 import {
   archimedeanFaces,
   cuboctahedronBoard,
@@ -35,14 +35,14 @@ import {
   snubDodecahedronSplitBoard,
   truncatedIcosidodecahedronSplitBoard,
   truncatedOctahedronBoard,
-} from "../../src/boards/archimedean";
+} from "../src/archimedean";
 import {
   boundaryComponents,
   eulerCharacteristic,
   newellNormal,
   type Board3D,
   type Vec3,
-} from "../../src/boards/core";
+} from "../src/core";
 
 // Structural invariants of the solids, mirrored from the Python suite
 // (tests/test_boards.py) — shape mixes and vertex degrees the conformance

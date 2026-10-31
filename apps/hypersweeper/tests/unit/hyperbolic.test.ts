@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildBoard } from "../../src/modes/presets";
-import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
+import { boundaryComponents, eulerCharacteristic, type Board } from "@tiling/geometry/core";
 import {
   binaryBoard,
   hyperbolicBoard,
@@ -10,7 +10,7 @@ import {
   wythoffMode,
   wythoffRingsFor,
   type WythoffOp,
-} from "../../src/boards/hyperbolic";
+} from "@tiling/geometry/hyperbolic";
 import { classifyShapes, corners } from "../../src/render/shapePalette";
 import { HYPERBOLIC_MODES } from "../../src/modes/catalog";
 

@@ -18,7 +18,7 @@ import {
   type Texture,
 } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import type { CellId } from "../boards";
+import type { CellId } from "@tiling/geometry";
 import { SOLID_GROUPS, surfaceOf, viewHint } from "../modes/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
 import { halfPlaneDrag } from "./halfPlane";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import conformance from "@data/conformance.json";
+import conformance from "@tiling/data/conformance.json";
 import { DIFFICULTIES } from "../../src/modes/catalog";
 import {
   boundaryComponents,
@@ -8,7 +8,7 @@ import {
   symmetryOf,
   vertexCount,
   type AnyBoard,
-} from "../../src/boards/core";
+} from "@tiling/geometry/core";
 import { buildBoard, MODES, presetMineCount, windowFor } from "../../src/modes/presets";
 import { MAX_DIGIT_GLYPH } from "../../src/render/glyphAtlas";
 

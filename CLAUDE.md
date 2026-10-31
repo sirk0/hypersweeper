@@ -47,7 +47,7 @@ them in one of those three, then re-run the spec to confirm determinism.
 Prettier on every `apps/*/` file Claude changes, so an edit is formatted the
 moment it lands and CI's `format:check` step stays green. Code Prettier would
 explode — a hand-aligned table of polygon vertices — keeps its layout with a
-`// prettier-ignore` line above the statement, as in `apps/hypersweeper/src/boards/tilings.ts`.
+`// prettier-ignore` line above the statement, as in `packages/geometry/src/tilings.ts`.
 
 ## Verifying through CI
 

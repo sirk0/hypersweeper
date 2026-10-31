@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import raw from "@data/distortion.json";
+import raw from "@tiling/data/distortion.json";
 import {
   distortedDifficulties,
   distortedRow,

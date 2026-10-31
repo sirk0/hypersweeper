@@ -1,4 +1,10 @@
-import { type Vec3, intersectUnion, subtractSolid, type ClipPiece, type Tri } from "../boards";
+import {
+  type Vec3,
+  intersectUnion,
+  subtractSolid,
+  type ClipPiece,
+  type Tri,
+} from "@tiling/geometry";
 
 // Cutting the drawn surface against a `SurfaceClip` (see boards/core): the
 // Klein bottle's immersion passes through itself, and the sheet that ends up
@@ -10,7 +16,7 @@ import { type Vec3, intersectUnion, subtractSolid, type ClipPiece, type Tri } fr
 // painted round it (see "The collar" in docs/render.md), and where a cut
 // cell's number ends up.
 
-export { fanTriangles, trianglesArea, type Tri } from "../boards";
+export { fanTriangles, trianglesArea, type Tri } from "@tiling/geometry";
 
 /** Cut triangles down to the part of them outside the clip's enclosed region,
  * or pass them through untouched when there is no clip. */

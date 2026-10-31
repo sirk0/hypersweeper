@@ -2,7 +2,7 @@
 // the same tiles `archimedeanBoard` puts on its flat board.
 //
 // Hypersweeper builds those tilings from a template (`ArchTemplate` in
-// apps/hypersweeper/src/boards/tilings.ts): one rectangular domain of cells, each cell a list
+// packages/geometry/src/tilings.ts): one rectangular domain of cells, each cell a list
 // of vertex references (a tag naming a vertex of the domain, and which copy of
 // the domain it is in). The positions are floats, but a reference *names* its
 // vertex, so which vertices are one and the same is known without comparing
@@ -18,7 +18,7 @@
 // the two tile for tile), and y is flipped on the way in: Hypersweeper draws y
 // down, this game y up, so the level looks as the Hypersweeper board does.
 
-import { archTemplate } from "@boards/tilings";
+import { archTemplate } from "@tiling/geometry";
 import { cyclotomic, type Cyc, type Ring } from "./cyclotomic";
 
 /** The rings tried, smallest first: a tiling lands in the first whose

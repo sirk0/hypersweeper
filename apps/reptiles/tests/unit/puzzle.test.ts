@@ -5,8 +5,8 @@ import {
   squareBoard,
   templateCells,
   triangleGridBoard,
-} from "@boards/tilings";
-import type { Board } from "@boards/core";
+} from "@tiling/geometry";
+import type { Board } from "@tiling/geometry";
 import { describe, expect, it } from "vitest";
 import type { Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";

@@ -8,7 +8,7 @@
 // opened, a few mines are flagged, and optionally one is set off.
 import type { Page } from "@playwright/test";
 
-import type { CellId } from "../src/boards";
+import type { CellId } from "@tiling/geometry";
 import type { MsHook } from "../src/testHook";
 
 declare global {

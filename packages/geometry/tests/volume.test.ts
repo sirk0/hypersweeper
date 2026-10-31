@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  boundaryComponents,
-  eulerCharacteristic,
-  isAutomorphism,
-  vertexCount,
-} from "../../src/boards/core";
-import { solidCubeBoard } from "../../src/boards/volume";
+import { boundaryComponents, eulerCharacteristic, isAutomorphism, vertexCount } from "../src/core";
+import { solidCubeBoard } from "../src/volume";
 
 // The port of tests/test_boards.py's TestSolidCube, plus the symmetry controls,
 // which are a TypeScript-only feature and so have no Python counterpart. The

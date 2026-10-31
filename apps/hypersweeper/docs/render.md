@@ -617,7 +617,7 @@ There is no post-processing pass: the canvas is transparent (see the rules in
 is off too, on purpose — the palettes are calibrated against the untone-mapped
 key light (`albedo`), and a global curve would move every one of them.
 
-## The Klein bottle's self-intersection (`src/boards/clipSolid.ts`)
+## The Klein bottle's self-intersection (`packages/geometry/src/clipSolid.ts`)
 
 The Klein bottle cannot be embedded in three dimensions, so its immersion passes
 through itself: the neck dives through the belly, and the patch of the far sheet
@@ -697,7 +697,7 @@ Traps, all of them paid for:
 `SurfaceClip.occluder` keeps the tube's own triangles, so a test can measure the
 cut against the geometry it is meant to meet rather than against the derivation
 of it — `insideOccluder` is an independent parity test through the drawn
-cross-section, and `tests/unit/clipSolid.test.ts` and `surfaces.test.ts` pin the
+cross-section, and `packages/geometry/tests/clipSolid.test.ts` and `tests/unit/surfaces.test.ts` pin the
 two answers together.
 
 ### The collar

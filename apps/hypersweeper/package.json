@@ -1,7 +1,7 @@
 {
   "name": "hypersweeper-web",
   "private": true,
-  "version": "0.3.52",
+  "version": "0.4.0",
   "license": "MIT",
   "type": "module",
   "description": "TypeScript + Three.js rewrite of the Hypersweeper game (M0 scaffold).",
@@ -28,6 +28,8 @@
   "dependencies": {
     "@capacitor/core": "^8.5.3",
     "@capacitor/haptics": "^8.0.2",
+    "@tiling/data": "*",
+    "@tiling/geometry": "*",
     "three": "^0.171.0"
   },
   "devDependencies": {

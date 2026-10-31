@@ -1,9 +1,9 @@
 // Port of the data-driven parts of minesweeper/boards/catalog.py, reading the
 // same data/catalog.json. M1 needs the flat regular modes; the derivations
 // mirror the Python and grow as later milestones port more of the catalog.
-import catalog from "@data/catalog.json";
-import presetsData from "@data/presets.json";
-import { ARCH_TILINGS, wrapTemplate } from "../boards";
+import catalog from "@tiling/data/catalog.json";
+import presetsData from "@tiling/data/presets.json";
+import { ARCH_TILINGS, wrapTemplate } from "@tiling/geometry";
 
 export interface SurfaceSpec {
   key: string;

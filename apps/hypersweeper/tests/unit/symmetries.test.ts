@@ -9,9 +9,9 @@ import {
   type BoardSymmetry,
   type CellId,
   type SymmetryId,
-} from "../../src/boards/core";
+} from "@tiling/geometry/core";
 import { buildBoard, MODES } from "../../src/modes/presets";
-import { squareBoard } from "../../src/boards/tilings";
+import { squareBoard } from "@tiling/geometry/tilings";
 import { screens } from "../../src/config/screens";
 import { symmetryMoves } from "../../src/session";
 import { boardConditions, ICONS, slotKept, slotVisible } from "../../src/ui/hud";

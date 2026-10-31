@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundaryComponents, eulerCharacteristic, type Board } from "../../src/boards/core";
+import { boundaryComponents, eulerCharacteristic, type Board } from "@tiling/geometry/core";
 import {
   cellCount,
   CLOSED_SURFACES,
@@ -16,8 +16,8 @@ import {
   type HurwitzOp,
   petrieLength,
   toddCoxeter,
-} from "../../src/boards/hurwitz";
-import { centralPolygon } from "../../src/boards/hyperbolic";
+} from "@tiling/geometry/hurwitz";
+import { centralPolygon } from "@tiling/geometry/hyperbolic";
 import { buildBoard } from "../../src/modes/presets";
 
 // The closed hyperbolic surfaces (boards/hurwitz.ts). The conformance oracle

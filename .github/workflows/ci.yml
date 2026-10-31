@@ -74,8 +74,8 @@ jobs:
     # the long ones (four Playwright shards), so a pull request that changes
     # nothing outside apps/reptiles/ skips them; anything else — Hypersweeper
     # itself, data/, the root workspace files, the workflows — runs them, and so
-    # does every push to master. Rep-tiles imports Hypersweeper's geometry
-    # (apps/hypersweeper/src/boards), so its own job runs on every change.
+    # does every push to master. Rep-tiles and the packages are seconds of
+    # work, so their jobs run on every change.
     # A skipped job counts as passed for a required check.
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -297,9 +297,32 @@ jobs:
           path: apps/hypersweeper/playwright-report/
           retention-days: 7
 
+  packages-checks:
+    # The shared packages (packages/*): typecheck, formatting and unit tests —
+    # the geometry's own tests, and the boundary test that keeps every game
+    # importing it as `@tiling/geometry` and no game importing another.
+    # Seconds; it runs on every change.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck --workspace packages
+      - name: Formatting
+        run: npm run format:check --workspace packages
+      - name: Unit tests
+        run: npm run test --workspace packages
+
   reptiles-checks:
     # Rep-tiles (apps/reptiles/): typecheck (which also checks the
-    # apps/hypersweeper/src/boards files it imports), formatting, unit tests —
+    # packages/geometry files it imports), formatting, unit tests —
     # each level checked tile for tile against Hypersweeper's board — and a
     # production build. A few seconds of work; it runs on every change.
     runs-on: ubuntu-latest

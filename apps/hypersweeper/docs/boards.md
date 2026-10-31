@@ -5,7 +5,7 @@ with the Python reference implementation and documented in
 [`../../docs/agents/geometry.md`](../../../docs/agents/geometry.md). This file
 covers what the TypeScript app adds on top.
 
-## Board symmetries (`src/boards/symmetry.ts`, `src/boards/surfaces.ts`)
+## Board symmetries (`packages/geometry/src/symmetry.ts`, `packages/geometry/src/surfaces.ts`)
 
 A board's **symmetries** are the permutations of its cells that preserve
 adjacency. Each one the UI offers is a button on the caption row: the contents

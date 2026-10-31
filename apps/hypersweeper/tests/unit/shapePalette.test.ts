@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Color, SRGBColorSpace } from "three";
-import presets from "@data/presets.json";
-import { isBoard3D } from "../../src/boards/core";
+import presets from "@tiling/data/presets.json";
+import { isBoard3D } from "@tiling/geometry/core";
 import { buildBoard } from "../../src/modes/presets";
-import { doubleTorusBoard } from "../../src/boards/surfaces";
+import { doubleTorusBoard } from "@tiling/geometry/surfaces";
 import { COLORS } from "../../src/render/boardMesh";
 import {
   cellPalette,

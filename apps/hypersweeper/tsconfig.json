@@ -1,11 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node", "vite/client", "vite-plugin-pwa/client"],
-    "baseUrl": ".",
-    "paths": {
-      "@data/*": ["../../data/*"]
-    }
+    "types": ["node", "vite/client", "vite-plugin-pwa/client"]
   },
   "include": ["src", "tests", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
 }
