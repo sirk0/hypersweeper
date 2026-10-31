@@ -247,6 +247,12 @@ _RECTANGLE = [t.key for t in ARCH_TILINGS if t.family == "rectangle"]
 # congruent polyform, in half-turned pairs) is not what the family says.
 _REPTILE = ["sphinxpairs", "tromino"]
 _TWO_UNIFORM = [t.key for t in ARCH_TILINGS if t.family == "2-uniform"]
+_TWO_ISOHEDRAL = [t.key for t in ARCH_TILINGS if t.family == "2-isohedral"]
+# ...less the duals of the three 2-uniform tilings with dodecagons, whose
+# dodecagon centres become corners twelve slivers meet at (TestTwoIsohedral)
+_TWO_ISOHEDRAL_ROUND = [
+    t.key for t in ARCH_TILINGS if t.family == "2-isohedral"
+    and 12 not in next(p for p in ARCH_TILINGS if p.key == t.dual_of).config]
 # the tilings that declare a grain -- straight lines no tile of them crosses,
 # which archimedean_board ends its window on. See TestFlatGrain.
 _GRAINED = [t.key for t in ARCH_TILINGS if any(t.template().grain)]
@@ -4481,6 +4487,134 @@ class TestTwoUniform:
         assert (uniform.width, uniform.height) == (cut.width, cut.height)
         hexagons = sum(1 for _, refs in uniform.cells if len(refs) == 6)
         assert len(cut.cells) == len(uniform.cells) - hexagons + 6 * hexagons
+
+
+class TestTwoIsohedral:
+    """The 2-isohedral tilings: the 2-uniform tilings' duals, two kinds of
+    tile edge to edge.
+
+    A dual tile sits round one of its primal's vertices with a corner at the
+    centre of each regular polygon met there, so the primal's vertex type is
+    the whole of the tile: as many tiles meet at a corner as that polygon has
+    sides, and the corner's angle is a full turn shared out among them. Both
+    halves are checked here against the primal's own vertex_types, which the
+    row carries -- the corner counts combinatorially, the angles geometrically
+    -- and the family's reason to be, near-regular tiles and a moderate number
+    of neighbours, is pinned for the seventeen that have them; the three duals
+    of tilings with dodecagons are the exception, and the measured rows say
+    what that costs (dodecasquaredual is all twins, so data/difficulty.json
+    blocks it and the random launchers never deal it)."""
+
+    @staticmethod
+    def _tiling(mode):
+        return next(t for t in ARCH_TILINGS if t.key == mode)
+
+    def test_one_dual_for_each_2_uniform_tiling(self):
+        primals = {self._tiling(m).dual_of for m in _TWO_ISOHEDRAL}
+        assert len(_TWO_ISOHEDRAL) == len(primals) == 20
+        assert primals == set(_TWO_UNIFORM)
+        assert len(_TWO_ISOHEDRAL_ROUND) == 17
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_row_derives_from_its_primal(self, mode):
+        tiling = self._tiling(mode)
+        primal = self._tiling(tiling.dual_of)
+        assert tiling.key == primal.key + "dual"
+        assert tiling.vertex_types == primal.vertex_types
+        assert tiling.notation == "V" + primal.notation
+        assert tiling.config == tuple(sorted({len(v) for v in primal.vertex_types}))
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_every_interior_tile_is_one_of_the_two_types(self, mode):
+        """Read round each tile whose corners all close, the number of tiles
+        at each corner is one of the primal's vertex types -- and both
+        types are there, plenty of each."""
+        from scripts.difficulty.metrics import _cyclic, vertex_fans
+
+        tiling = self._tiling(mode)
+        want = {_cyclic(v) for v in tiling.vertex_types}
+        assert len(want) == 2
+        template = _arch_template(mode)
+        board = archimedean_board(mode, math.ceil(16 / template.width),
+                                  math.ceil(16 / template.height), 5)
+        fans = vertex_fans(board)
+        seen = Counter()
+        for polygon in board.polygons.values():
+            corners = [fans[tuple(round(c, 6) for c in p)] for p in polygon]
+            if all(corners):
+                seen[_cyclic([len(fan) for fan in corners])] += 1
+        assert set(seen) == want, dict(seen)
+        assert min(seen.values()) > 10
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_each_corner_is_a_full_turn_shared_by_its_tiles(self, mode):
+        """A corner where n tiles meet is the centre of a regular n-gon of
+        the primal, which every tile there sees at 360/n degrees."""
+        board = archimedean_board(mode, 4, 4, 5)
+        count = Counter(tuple(round(c, 6) for c in p)
+                        for polygon in board.polygons.values() for p in polygon)
+        corners = defaultdict(list)
+        for polygon in board.polygons.values():
+            n = len(polygon)
+            for i, point in enumerate(polygon):
+                before, after = polygon[i - 1], polygon[(i + 1) % n]
+                v1 = (before[0] - point[0], before[1] - point[1])
+                v2 = (after[0] - point[0], after[1] - point[1])
+                angle = abs(math.atan2(v1[0] * v2[1] - v1[1] * v2[0],
+                                       v1[0] * v2[0] + v1[1] * v2[1]))
+                corners[tuple(round(c, 6) for c in point)].append(angle)
+        closed = 0
+        for key, angles in corners.items():
+            if abs(sum(angles) - 2 * math.pi) > 1e-6:
+                continue  # a rim corner
+            closed += 1
+            assert len(angles) == count[key] in (3, 4, 6, 12)
+            # vertex tags are rounded to 1e-6 of an edge, which moves an angle
+            # by about as much (see TestTwoUniform's tolerance); a corner that
+            # is not 360/n is off by degrees
+            assert all(abs(a - 2 * math.pi / len(angles)) < 1e-5 for a in angles)
+        assert closed > 20
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL)
+    def test_domain_is_covered_exactly(self, mode):
+        """The dual's tiles fill the primal's domain: no gap, no overlap."""
+        template = _arch_template(mode)
+        area = 0.0
+        for _, refs in template.cells:
+            pts = [(tag[0] + dm * template.width, tag[1] + dn * template.height)
+                   for tag, dm, dn in refs]
+            area += abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                            in zip(pts, pts[1:] + pts[:1]))) / 2
+        assert area == pytest.approx(template.width * template.height)
+
+    @pytest.mark.parametrize("mode", _TWO_ISOHEDRAL_ROUND)
+    def test_tiles_are_near_regular_and_neighbours_moderate(self, mode):
+        """What sets the seventeen apart: no tile further from round than a
+        2:1 brick (its isoperimetric quotient at least 0.87 of the regular
+        polygon's with as many sides), and a hexagon's to a rhombille's
+        number of neighbours (6 to 10 on average, never more than 14). The
+        three dodecagon duals break both -- dodecasquare's tiles at 0.65 with
+        18 neighbours, triakis triangular's ground."""
+        board = archimedean_board(mode, 5, 5, 5)
+        for polygon in board.polygons.values():
+            n = len(polygon)
+            area = abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                           in zip(polygon, polygon[1:] + polygon[:1]))) / 2
+            perimeter = sum(math.dist(a, b) for a, b
+                            in zip(polygon, polygon[1:] + polygon[:1]))
+            regular = math.pi / (n * math.tan(math.pi / n))
+            assert 4 * math.pi * area / perimeter ** 2 / regular > 0.865
+        xs = [x for p in board.polygons.values() for x, _ in p]
+        ys = [y for p in board.polygons.values() for _, y in p]
+        mid = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
+        reach = min(max(xs) - min(xs), max(ys) - min(ys)) / 4
+        inner = [cell for cell, polygon in board.polygons.items()
+                 if math.dist(mid, (sum(x for x, _ in polygon) / len(polygon),
+                                    sum(y for _, y in polygon) / len(polygon)))
+                 < reach]
+        degrees = [len(board.adjacency[cell]) for cell in inner]
+        assert 6 <= statistics.mean(degrees) <= 10
+        assert max(degrees) <= 14
 
 
 class TestCubeFrame:

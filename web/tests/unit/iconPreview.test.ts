@@ -246,6 +246,7 @@ describe("card previews", () => {
       ["uniform", "rhombitrihex"],
       ["dual", "deltoidal"],
       ["2-uniform", "dodecarhombitrihex"],
+      ["2-isohedral", "elongated2dual"],
       ["isogonal", "rotatedhex"],
       ["rectangle", "herringbone"],
       ["other", "durer"],
