@@ -1100,7 +1100,8 @@ iCloud" below).
   `ms:settings` is small on purpose so it can be rewritten on every change and
   mirrored across tabs on a `storage` event. Both records follow the same rules
   (one stable key holding a versioned record, total field-by-field reads,
-  guarded writes) and share `src/storage.ts`.
+  guarded writes) and share `@tiling/platform`
+  (`packages/platform/src/storage.ts`).
 - **Milliseconds rank, seconds show.** The HUD counter shows whole seconds, and
   so does every list — but entries store `ms`, so two wins the counter both read
   as `41` still order by which was actually faster. A time *equal* to a stored

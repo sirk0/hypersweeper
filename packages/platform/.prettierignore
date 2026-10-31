@@ -1,0 +1,5 @@
+# Build output
+node_modules/
+
+# Prose is wrapped by hand
+*.md

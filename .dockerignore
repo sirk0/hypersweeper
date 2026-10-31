@@ -10,4 +10,6 @@
 !apps/hypersweeper/package.json
 !apps/reptiles/package.json
 !packages/geometry/package.json
+!packages/platform/package.json
+!packages/vite-preset/package.json
 !data/package.json

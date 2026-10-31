@@ -1111,6 +1111,6 @@ Three things that are easy to get wrong when touching this:
   "Settings and themes").
 - `src/leaderboard.ts` / `src/ui/scoreDialog.ts` / `src/ui/bestTimes.ts` — the
   stored best times, the window a placing win puts up and the page that lists
-  them (see "Best times"). `src/storage.ts` holds the two `localStorage`
+  them (see "Best times"). `@tiling/platform` (`packages/platform/src/storage.ts`) holds the two `localStorage`
   helpers both stored records share.
 - `src/testHook.ts` — the `window.__ms` seam Playwright drives.

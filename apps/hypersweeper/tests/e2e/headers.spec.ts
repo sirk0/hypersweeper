@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // The deployed response headers, and the app's behaviour under them.
 //
 // public/_headers is a Cloudflare Pages file, so on the real site it is applied
-// at the edge and nowhere else. The `securityHeaders` plugin in vite.config.ts
+// at the edge and nowhere else. The `securityHeaders` plugin (packages/vite-preset)
 // parses that same file and applies it to `vite preview`, which is what this
 // suite runs against — so these tests are about the policy that ships, not a
 // restatement of it. A directive that would break the app shows up here as a
