@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 972 rows, 928 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 981 rows, 937 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 44 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -237,6 +237,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `kleintrunchex` | 6.0 | 90c 6m (7%) 96% | 252c 17m (7%) 87% | 480c 45m (9%) 52% |
 | `kleintruncsquare` | 6.0 | 80c 7m (9%) 93% | 256c 48m (19%) 85% | 480c 98m (20%) 50% |
 | `kleintrunctrihex` | 6.0 | 96c 14m (15%) 96% | 252c 41m (16%) 89% | 468c 89m (19%) 54% |
+| `ltetromino` | 5.8 | 64c 6m (9%) 95% | 256c 39m (15%) 84% | 256c 49m (19%) 51% |
 | `macbeath` | 6.3 | 72c 15m (21%) 96% | 240c 55m (23%) 89% | 324c 93m (29%) 52% |
 | `mobius` | 7.0 | 84c 12m (14%) 98% | 252c 44m (17%) 89% | 480c 103m (21%) 53% |
 | `mobiusbasketweave` | 6.5 | 88c 15m (17%) 95% | 228c 39m (17%) 90% | 464c 93m (20%) 55% |
@@ -290,6 +291,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `pentaspiral6` | 5.6 | 81c 9m (11%) 97% | 256c 41m (16%) 89% | 480c 96m (20%) 50% |
 | `pentaspiral7` | 5.6 | 81c 11m (14%) 93% | 256c 39m (15%) 87% | 480c 94m (20%) 54% |
 | `phyllotaxis` | 5.6 | 81c 11m (14%) 97% | 256c 41m (16%) 88% | 480c 96m (20%) 53% |
+| `ppentomino` | 6.0 | 64c 8m (12%) 96% | 256c 35m (14%) 87% | 256c 50m (20%) 51% |
 | `prismaticpent` | 6.5 | 84c 7m (8%) 98% | 232c 40m (17%) 84% | 516c 105m (20%) 53% |
 | `projective` | 7.8 | 75c 15m (20%) 97% | 243c 57m (23%) 86% | 507c 138m (27%) 50% |
 | `projectivehex` | 6.0 | 81c 17m (21%) 96% | 246c 57m (23%) 88% | 501c 128m (26%) 49% |
@@ -383,6 +385,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `torustrunchex` | 6.0 | 90c 6m (7%) 97% | 252c 16m (6%) 91% | 480c 40m (8%) 50% |
 | `torustruncsquare` | 6.0 | 80c 7m (9%) 94% | 252c 39m (15%) 88% | 480c 98m (20%) 52% |
 | `torustrunctrihex` | 6.0 | 96c 13m (14%) 98% | 288c 47m (16%) 87% | 468c 87m (19%) 52% |
+| `trapezoid` | 8.4 | 64c 7m (11%) 97% | 256c 32m (12%) 85% | 256c 44m (17%) 55% |
 | `trefoil` | 8.0 | 128c 28m (22%) 97% | 256c 54m (21%) 88% | 480c 110m (23%) 50% |
 | `trefoilhex` | 6.0 | 96c 16m (17%) 99% | 258c 43m (17%) 90% | 480c 103m (21%) 48% |
 | `trefoiltri` | 12.0 | 144c 26m (18%) 98% | 256c 47m (18%) 89% | 480c 119m (25%) 50% |

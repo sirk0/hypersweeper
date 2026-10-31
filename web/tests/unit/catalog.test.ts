@@ -190,20 +190,28 @@ describe("catalog families", () => {
     expect(pickerFamilies("klein")).not.toContain("spiral");
   });
 
+  it("offers the rep-tile family, the tile grown into itself, on the plane only", () => {
+    expect(pickerFamilies("flat")).toContain("reptile");
+    expect(pickerFamilies("torus")).not.toContain("reptile");
+    const reptiles = ["sphinx", "chair", "ltetromino", "ppentomino", "trapezoid"];
+    expect(familyRows("reptile", "flat").map((r) => r.mode)).toEqual(reptiles);
+    // a one-off family's rows are modes, so each carries its own icon
+    expect(familyRows("reptile", "flat").map((r) => r.icon)).toEqual(reptiles);
+    // ...and it sits just before the fractals, which inflate the same way
+    const families = pickerFamilies("flat");
+    expect(families.indexOf("fractal")).toBe(families.indexOf("reptile") + 1);
+  });
+
   it("offers the fractal family, with its self-similar boards, on the plane only", () => {
     expect(pickerFamilies("flat")).toContain("fractal");
     expect(pickerFamilies("torus")).not.toContain("fractal");
+    // the rep-tiles have a family of their own
     expect(familyRows("fractal", "flat").map((r) => r.mode)).toEqual([
-      "sphinx",
-      "chair",
       "carpet",
       "pentaflake",
       "gosper",
     ]);
-    // a one-off family's rows are modes, so each carries its own icon
     expect(familyRows("fractal", "flat").map((r) => r.icon)).toEqual([
-      "sphinx",
-      "chair",
       "carpet",
       "pentaflake",
       "gosper",

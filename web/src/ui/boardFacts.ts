@@ -3,6 +3,7 @@ import {
   APERIODIC_MODES,
   FAMILY_LABELS,
   FRACTAL_MODES,
+  REPTILE_MODES,
   HYPERBOLIC_MODES,
   fullModeLabel,
   SHAPED_MODES,
@@ -487,6 +488,7 @@ export function familyKeyOf(mode: string): string | null {
   }
   if (APERIODIC_MODES.includes(mode)) return "aperiodic";
   if (SPIRAL_MODES.includes(mode)) return "spiral";
+  if (REPTILE_MODES.includes(mode)) return "reptile";
   if (FRACTAL_MODES.includes(mode)) return "fractal";
   if (HYPERBOLIC_MODES.includes(mode)) return "hyperbolic";
   return SOLID_GROUPS.find((g) => g.modes.includes(mode))?.key ?? null;
@@ -529,7 +531,7 @@ export function boardFacts(
     // row exists for the shaped boards, whose name ("Hexagonal hexagon") does
     // not say which tiling they are cut from.
     tiling: tilingOf(mode) === null ? tiling : null,
-    // A shaped, aperiodic, spiral or fractal board is a mode of its own with no
+    // A shaped, aperiodic, spiral, rep-tile or fractal board is a mode of its own with no
     // `SurfaceSpec` behind it, and it is still on the plane; a solid is not on
     // any of these surfaces at all, and its family row names what it is.
     // A hyperbolic board is drawn on the plane but is not of it: the disc is a

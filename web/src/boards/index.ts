@@ -69,11 +69,14 @@ export {
   carpetBoard,
   chairBoard,
   gosperBoard,
+  ltetrominoBoard,
   pentaflakeBoard,
   placePoint,
+  ppentominoBoard,
   sphinxBoard,
   substitutionPlacements,
   SUBSTITUTIONS,
+  trapezoidBoard,
 } from "./fractal";
 
 // The hyperbolic plane, in the Poincaré disc and the upper half-plane.

@@ -244,9 +244,12 @@ SPEC: dict[str, dict] = {
     # The board is a square, so the flat shape term is log(1) = 0 for every
     # candidate and the size penalty decides alone; no ``rigid`` needed.
     "brick_rings_board": dict(size=(0,), mine=1, shape=2, kind="scale"),
-    # fractals: one whole substitution step at a time
+    # rep-tiles and fractals: one whole substitution step at a time
     "sphinx_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "chair_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "ltetromino_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "ppentomino_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "trapezoid_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "carpet_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "pentaflake_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "gosper_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
