@@ -6,11 +6,13 @@
   --region-edge: #8b8374;
   --open: #7b4fd0;
   /* Tiles take Hypersweeper's shape hues, by side count: 3 red, 4 orange,
-     6 green, 8 teal, 12 blue. */
+     5 yellow, 6 green, 8 teal, 12 blue. */
   --tile-3: #e07f72;
   --tile-3-edge: #8f3a2f;
   --tile-4: #e9a85a;
   --tile-4-edge: #8a5418;
+  --tile-5: #e3c75a;
+  --tile-5-edge: #7f6914;
   --tile-6: #86b872;
   --tile-6-edge: #3f6b2e;
   --tile-8: #5fb3aa;
@@ -42,6 +44,8 @@
     --tile-3-edge: #f4b8ae;
     --tile-4: #d0904a;
     --tile-4-edge: #f6cf9c;
+    --tile-5: #c2a743;
+    --tile-5-edge: #f1e1a6;
     --tile-6: #6f9f5c;
     --tile-6-edge: #c3e2b4;
     --tile-8: #4f9c94;
@@ -323,6 +327,11 @@ button {
   stroke: var(--tile-4-edge);
 }
 
+.tile.sides-5 {
+  fill: var(--tile-5);
+  stroke: var(--tile-5-edge);
+}
+
 .tile.sides-6 {
   fill: var(--tile-6);
   stroke: var(--tile-6-edge);
@@ -470,6 +479,24 @@ button {
   stroke: var(--ink);
   stroke-width: 0.06;
   stroke-linecap: round;
+}
+
+.knob-mirror {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 0.03;
+  stroke-dasharray: 0.06 0.05;
+}
+
+.knob-half {
+  fill: var(--ink);
+  stroke: var(--ink);
+  stroke-width: 0.03;
+  stroke-linejoin: round;
+}
+
+.knob-half.hollow {
+  fill: none;
 }
 
 .removing .knob-remove circle {

@@ -22,6 +22,12 @@ export interface Ring {
   readonly n: number;
   /** φ(n), the length of every element. */
   readonly dim: number;
+  /** What one unit of the ring is drawn as: `toXY` divides by it. A board
+   * whose points are only integral once scaled up — the Laves tilings, whose
+   * corners are face centres, a third or a sixth of the way along — is built
+   * at that scale and drawn back at its true size. Exactness is untouched, and
+   * so are the predicates, which only read signs. */
+  readonly unit: number;
   readonly zero: Cyc;
   readonly one: Cyc;
   /** ζ^k for any integer k. */
@@ -76,10 +82,11 @@ export function cyclotomicPolynomial(n: number): Poly {
   return p;
 }
 
-const RING_CACHE = new Map<number, Ring>();
+const RING_CACHE = new Map<string, Ring>();
 
-export function cyclotomic(n: number): Ring {
-  const cached = RING_CACHE.get(n);
+export function cyclotomic(n: number, unit = 1): Ring {
+  const cacheKey = `${n}/${unit}`;
+  const cached = RING_CACHE.get(cacheKey);
   if (cached) return cached;
   const phi = cyclotomicPolynomial(n);
   const dim = phi.length - 1;
@@ -99,7 +106,7 @@ export function cyclotomic(n: number): Ring {
   const basisXY: [number, number][] = [];
   for (let j = 0; j < dim; j++) {
     const a = (2 * Math.PI * j) / n;
-    basisXY.push([Math.cos(a), Math.sin(a)]);
+    basisXY.push([Math.cos(a) / unit, Math.sin(a) / unit]);
   }
 
   const zeta = (k: number): Cyc => powers[((k % n) + n) % n]!;
@@ -128,6 +135,7 @@ export function cyclotomic(n: number): Ring {
   const ring: Ring = {
     n,
     dim,
+    unit,
     zero,
     one: zeta(0),
     zeta,
@@ -149,7 +157,7 @@ export function cyclotomic(n: number): Ring {
       return [x, y];
     },
   };
-  RING_CACHE.set(n, ring);
+  RING_CACHE.set(cacheKey, ring);
   return ring;
 }
 

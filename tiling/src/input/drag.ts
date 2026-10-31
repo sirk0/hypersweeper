@@ -28,8 +28,9 @@ const REACH = 0.7;
 interface Drag {
   pointer: number;
   kind: number;
-  /** How it is held: the kind's shape turned by ζ^rot. */
+  /** How it is held: the kind's shape, mirrored if `flip`, turned by ζ^rot. */
   rot: number;
+  flip: boolean;
   outline: XY[];
   /** From the pointer to the tile's centroid, so it does not jump to centre. */
   offset: XY;
@@ -43,6 +44,8 @@ export interface DragControl {
   /** Turn every tray tile, and the one in hand, one step counter-clockwise
    * (1) or clockwise (-1). */
   turn(dir: 1 | -1): void;
+  /** Mirror every tray tile, and the one in hand. */
+  flip(): void;
   /** Switch the remove mode on or off. */
   setRemoving(on: boolean): void;
 }
@@ -76,7 +79,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (!drag) return;
     // Back over the tray, a lifted tile is on its way off the board.
     const discard = drag.origin !== null && board.overTray(pointer(drag));
-    drag.ghost = discard ? null : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot);
+    drag.ghost = discard ? null : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot, drag.flip);
     const ghost = drag.ghost?.map((v) => ring.toXY(v)) ?? null;
     const stick = drag.ghost ? puzzle.touching(drag.ghost).map((v) => ring.toXY(v)) : [];
     board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroid(ghost), stick, discard);
@@ -90,7 +93,18 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     board.draw();
     if (drag) {
       drag.rot = mod(drag.rot + step);
-      drag.outline = board.outline(drag.kind, drag.rot);
+      drag.outline = board.outline(drag.kind, drag.rot, drag.flip);
+      update();
+    }
+  };
+
+  const flip = (): void => {
+    if (!puzzle.canFlip()) return;
+    board.flip = !board.flip;
+    board.draw();
+    if (drag) {
+      drag.flip = !drag.flip;
+      drag.outline = board.outline(drag.kind, drag.rot, drag.flip);
       update();
     }
   };
@@ -104,6 +118,11 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       turn(Number(knob.getAttribute("data-turn")) as 1 | -1);
       return;
     }
+    if (target.closest("[data-flip]")) {
+      ev.preventDefault();
+      flip();
+      return;
+    }
     if (target.closest("[data-remove]")) {
       ev.preventDefault();
       setRemoving(!board.removing);
@@ -113,6 +132,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const p = board.toBoard(ev.clientX, ev.clientY);
     let kind: number;
     let rot: number;
+    let flipped = false;
     let outline: XY[];
     let c: XY;
     let origin: Placed | null = null;
@@ -129,13 +149,15 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       setRemoving(false);
       kind = Number(tray.getAttribute("data-tray"));
       rot = board.turn;
-      outline = board.outline(kind, rot);
+      flipped = board.flip;
+      outline = board.outline(kind, rot, flipped);
       c = board.trayAt[kind]!;
     } else if (placed) {
       origin = puzzle.lift(Number(placed.getAttribute("data-tile"))) ?? null;
       if (!origin) return;
       kind = origin.kind;
       rot = origin.rot;
+      flipped = origin.flip;
       const xy = origin.verts.map((v) => ring.toXY(v));
       c = centroid(xy);
       outline = xy.map(([x, y]): XY => [x - c[0], y - c[1]]);
@@ -150,7 +172,17 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     } catch {
       // carry on uncaptured
     }
-    drag = { pointer: ev.pointerId, kind, rot, outline, offset: [c[0] - p[0], c[1] - p[1]], at: c, ghost: null, origin };
+    drag = {
+      pointer: ev.pointerId,
+      kind,
+      rot,
+      flip: flipped,
+      outline,
+      offset: [c[0] - p[0], c[1] - p[1]],
+      at: c,
+      ghost: null,
+      origin,
+    };
     settle();
     update();
   });
@@ -174,16 +206,16 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const p = board.toBoard(ev.clientX, ev.clientY);
     const discard = drop && board.overTray(p);
     if (drop && !discard) {
-      ghost = puzzle.snap(d.kind, [p[0] + d.offset[0], p[1] + d.offset[1]], reachFor(d.kind), d.rot);
+      ghost = puzzle.snap(d.kind, [p[0] + d.offset[0], p[1] + d.offset[1]], reachFor(d.kind), d.rot, d.flip);
     }
     if (ghost) {
-      puzzle.place(d.kind, ghost, d.rot);
+      puzzle.place(d.kind, ghost, d.rot, d.flip);
     } else if (d.origin && !discard) {
-      puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot);
+      puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot, d.origin.flip);
     }
     settle();
   };
   svg.addEventListener("pointerup", (ev) => finish(ev, true));
   svg.addEventListener("pointercancel", (ev) => finish(ev, false));
-  return { turn, setRemoving };
+  return { turn, flip, setRemoving };
 }

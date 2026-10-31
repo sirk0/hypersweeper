@@ -116,6 +116,7 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
   else if (ev.key === "Escape") control.setRemoving(false);
   else if (ev.key === "r" || ev.key === "R") control.turn(-1);
+  else if (ev.key === "f" || ev.key === "F") control.flip();
 });
 new ResizeObserver(() => board.layout()).observe(stage);
 setInterval(() => {

@@ -1,9 +1,9 @@
-import { archimedeanBoard, hexBoard, squareBoard, triangleGridBoard } from "@boards/tilings";
+import { archimedeanBoard, archTemplate, hexBoard, squareBoard, templateCells, triangleGridBoard } from "@boards/tilings";
 import type { Board } from "@boards/core";
 import { describe, expect, it } from "vitest";
 import type { Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
-import { centroid, type XY } from "../../src/geometry/shape";
+import { centroid, turnsOnto, type XY } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
 import { LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
@@ -64,7 +64,7 @@ describe("puzzle", () => {
 
   // A tiling turned to lay its edges on the ring (the snub hexagonal) is cut
   // in its own frame, not Hypersweeper's; the vertex test below covers it.
-  const unturned = LEVELS.filter((l) => !l.window?.turned).map((l) => l.key);
+  const unturned = LEVELS.filter((l) => !l.window?.turned && l.group !== "laves").map((l) => l.key);
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const ours = p.level.cells.map((c) => c.map((v) => p.level.ring.toXY(v)));
@@ -73,7 +73,8 @@ describe("puzzle", () => {
     sameTiles(centroids(ours), centroids(theirs));
   });
 
-  it.each(LEVELS.map((l) => l.key))("%s is one outline, every inner point its vertex configuration", (key) => {
+  const ofPolygons = LEVELS.filter((l) => l.group !== "laves").map((l) => l.key);
+  it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
     const { ring, configs } = level;
     expect(level.region).toHaveLength(1); // one outline, no holes
@@ -94,11 +95,107 @@ describe("puzzle", () => {
     expect(seen.size).toBe(configs.length);
   });
 
+  // The Laves levels: each tile is Hypersweeper's dual tile, and at each of a
+  // tile's corners inside the board the right number of tiles meet, in order
+  // round it — the V in V3.4.6.4.
+  const laves = LEVELS.filter((l) => l.group === "laves").map((l) => l.key);
+  /** A polygon's interior angles and its sides over its longest, in order,
+   * counter-clockwise. */
+  const signature = (raw: XY[]): { angles: number[]; sides: number[] } => {
+    const area = raw.reduce((sum, p, i) => sum + p[0] * raw[(i + 1) % raw.length]![1] - raw[(i + 1) % raw.length]![0] * p[1], 0);
+    const pts = area < 0 ? [...raw].reverse() : raw;
+    const m = pts.length;
+    const sides = pts.map((p, i) => Math.hypot(pts[(i + 1) % m]![0] - p[0], pts[(i + 1) % m]![1] - p[1]));
+    const longest = Math.max(...sides);
+    const angles = pts.map((p, i) => {
+      const prev = pts[(i + m - 1) % m]!;
+      const next = pts[(i + 1) % m]!;
+      const a = Math.atan2(prev[1] - p[1], prev[0] - p[0]) - Math.atan2(next[1] - p[1], next[0] - p[0]);
+      return ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    });
+    return { angles, sides: sides.map((x) => x / longest) };
+  };
+  /** The same polygon up to a similarity — turned, moved, scaled, or
+   * mirrored. */
+  const similar = (a: XY[], b: XY[]): boolean => {
+    if (a.length !== b.length) return false;
+    const m = a.length;
+    const sa = signature(a);
+    for (const pts of [b, b.map(([x, y]): XY => [-x, y])]) {
+      const sb = signature(pts);
+      for (let k = 0; k < m; k++) {
+        const ok = sa.angles.every(
+          (x, i) =>
+            Math.abs(x - sb.angles[(i + k) % m]!) < 1e-4 && Math.abs(sa.sides[i]! - sb.sides[(i + k) % m]!) < 1e-4,
+        );
+        if (ok) return true;
+      }
+    }
+    return false;
+  };
+
+  it.each(laves)("%s: every tile is Hypersweeper's dual tile", (key) => {
+    const level = levelByKey(key)!;
+    const theirs = templateCells(archTemplate(key), 0, 0)[0]!.pts.map(([x, y]): XY => [x, y]);
+    for (const cell of level.cells) {
+      const ours = ccw(level.ring, cell).map((v) => level.ring.toXY(v));
+      expect(similar(ours, theirs)).toBe(true);
+    }
+  });
+
+  it.each(laves)("%s: one outline, and round each tile its configuration", (key) => {
+    const level = levelByKey(key)!;
+    const { ring } = level;
+    expect(level.region).toHaveLength(1);
+    // how many tiles meet at each corner, and how much angle they fill
+    const meet = new Map<string, { count: number; angle: number }>();
+    const tiles = level.cells.map((c) => ccw(ring, c));
+    for (const tile of tiles) {
+      const { angles } = signature(tile.map((v) => ring.toXY(v)));
+      tile.forEach((v, i) => {
+        const at = meet.get(ring.key(v)) ?? { count: 0, angle: 0 };
+        meet.set(ring.key(v), { count: at.count + 1, angle: at.angle + angles[i]! });
+      });
+    }
+    const config = level.configs[0]!;
+    const m = config.length;
+    let checked = 0;
+    for (const tile of tiles) {
+      // a corner on the rim has tiles missing; it reads as anything
+      const degrees = tile.map((v) => {
+        const r = meet.get(ring.key(v))!;
+        return Math.abs(r.angle - 2 * Math.PI) < 1e-6 ? r.count : null;
+      });
+      const inner = degrees.filter((d) => d !== null).length;
+      if (inner === 0) continue;
+      const fits = [config, [...config].reverse()].some((seq) =>
+        seq.some((_, k) => degrees.every((d, i) => d === null || d === seq[(i + k) % m])),
+      );
+      expect(fits, `degrees ${degrees.join(",")} against V${config.join(".")}`).toBe(true);
+      checked += inner;
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  it("flips only where the board uses a tile both ways round", () => {
+    expect(LEVELS.filter((l) => l.mirror).map((l) => l.key)).toEqual(["kisrhombille"]);
+    const p = new Puzzle(levelByKey("kisrhombille")!);
+    const { ring, tiles } = p.level;
+    // lay the board, then take out one triangle that is the tray's mirror image
+    const placed = p.level.cells.map((c) => p.place(0, ccw(ring, c), 0));
+    const flipped = placed.find((t) => turnsOnto(tiles[0]!, t.verts).length === 0)!;
+    p.lift(flipped.id);
+    const centre = centroid(flipped.verts.map((v) => ring.toXY(v)));
+    for (const rot of p.orientations(0)) expect(p.snap(0, centre, 0.2, rot, false)).toBeNull();
+    expect(p.orientations(0).some((rot) => p.snap(0, centre, 0.2, rot, true))).toBe(true);
+  });
+
   it.each(LEVELS.map((l) => l.key))("%s is about as wide as it is tall", (key) => {
     const { ring, region } = levelByKey(key)!;
     const xy = region.flat().map((v) => ring.toXY(v));
     const span = (i: 0 | 1): number => Math.max(...xy.map((p) => p[i])) - Math.min(...xy.map((p) => p[i]));
-    expect(span(0) / span(1)).toBeGreaterThan(0.88);
+    // the hexagonal Laves tilings come no nearer than 0.87 at this size
+    expect(span(0) / span(1)).toBeGreaterThan(0.85);
     expect(span(0) / span(1)).toBeLessThan(1.12);
   });
 
@@ -175,8 +272,11 @@ describe("puzzle", () => {
     expect(named("regular")).toEqual(["4⁴", "3⁶", "6³"]);
     expect(named("uniform")).toEqual(["3.6.3.6", "4.8²", "3.12²", "3³.4²", "3².4.3.4", "3⁴.6", "3.4.6.4", "4.6.12"]);
     expect(named("2-uniform")).toHaveLength(20);
+    expect(named("laves")).toEqual(["V4.8²", "V3.6.3.6", "V3.12²", "V3².4.3.4", "V3³.4²", "V3⁴.6", "V3.4.6.4", "V4.6.12"]);
     expect(new Set(named("2-uniform")).size).toBe(20); // the subscripts keep them apart
-    for (const level of LEVELS) if (level.group !== "2-uniform") expect(level.name).toBe(notation(level.configs[0]!));
+    for (const level of LEVELS) {
+      if (level.group === "regular" || level.group === "uniform") expect(level.name).toBe(notation(level.configs[0]!));
+    }
     expect(notation([3, 3, 3, 4, 4])).toBe("3³.4²");
     expect(parseNotation("[3⁶; 3².4.12]")).toEqual([
       [3, 3, 3, 3, 3, 3],

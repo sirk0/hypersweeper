@@ -21,6 +21,9 @@ some back off.
   kind into place can turn another out of it. The control draws its step as an
   axis, a fixed ray, the ray turned one step and the arrow between, and is left
   out where nothing ever needs turning.
+- Where a board uses a tile both ways round (the kisrhombille's triangles),
+  a flip control (or F) mirrors every tray tile and the one in hand; a tile
+  lands only on its own side.
 - Taking tiles off: drag a placed tile back over the tray (it turns red on
   the way), or turn on ✕ remove, the control beside rotate (or X), and tap
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
@@ -36,13 +39,13 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 31 levels in three sections, local only** — named for their
+**Status: 39 levels in four sections, local only** — named for their
 symmetry: *Flag-transitive* (the regular 4⁴, 3⁶, 6³), *Vertex-transitive*
-(the other eight uniform tilings, 3.6.3.6 to 4.6.12) and *2-isogonal* (all
+(the other eight uniform tilings, 3.6.3.6 to 4.6.12), *2-isogonal* (all
 twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
-[3⁶; 3⁴.6]₁). Each board is as near square as its tiling allows at two or
-three dozen tiles. The Laves tilings would be a fourth, *Face-transitive*.
-No CI job, no deploy, no
+[3⁶; 3⁴.6]₁) and *Face-transitive* (the eight Laves tilings, V4.8² to
+V4.6.12). Each board is as near square as its tiling allows at two or three
+dozen tiles. No CI job, no deploy, no
 packaging — `ci.yml` and the Pages deploy do not look at this folder.
 
 ## Build and run
@@ -90,6 +93,10 @@ finishes the board — the quick way to see the win state.
   axis (the snub hexagonal, drawn 19° off) is turned until one is, and its
   square cut in the turned frame — the tray's tiles rest flat, so the board's
   must too; `turned` records it.
+- `src/geometry/laves.ts` — a Laves tiling as the exact dual of a uniform
+  patch: a tile on every whole vertex, its corners the face centres round it.
+  Centres are exact once scaled by the face sizes' lcm, so the board is built
+  at that scale in a ring whose `unit` draws it back at true size.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -98,7 +105,9 @@ finishes the board — the quick way to see the win state.
   2-uniform, by the tiling's family); the 2-uniform boxes are in
   `TWO_UNIFORM`, the windows that also have both kinds of vertex inside.
   `makeLevel` reads everything off a level's
-  cells: the tray (one regular polygon per side count, resting flat), each
+  cells: the tray (one tile per kind — cells alike up to a turn, or a turn and
+  a mirror — resting flat on its longest side, `restFlat`), whether a kind is
+  used both ways round (`mirror`, which brings a flip control), each
   kind's rotate step from flat (`turns`) and pile (`need`), the time limit
   (`seconds`), the region, and keeps the cells
   themselves as one known solution; `turn` is the one rotate step for them all
@@ -126,7 +135,8 @@ finishes the board — the quick way to see the win state.
   configuration as the name (`notation`: 4⁴, 3.4.6.4), and the best stars —
   never a picture of the tiling, which would give the puzzle away. The
   descriptive label is only a tooltip.
-- `src/input/drag.ts` — pointer drag and drop, and the ✕ remove mode.
+- `src/input/drag.ts` — pointer drag and drop, rotate and flip, and the ✕
+  remove mode.
 
 `@boards/*` is `../web/src/boards/*` and `@data/*` is `../data/*`, set in
 `vite.config.ts` (and through it `vitest.config.ts`) and `tsconfig.json`.

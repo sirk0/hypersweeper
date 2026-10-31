@@ -11,8 +11,9 @@ import catalog from "@data/catalog.json";
 import { ARCH_TILINGS, archTemplate } from "@boards/tilings";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow } from "./geometry/fromTemplate";
+import { lavesWindow } from "./geometry/laves";
 import { ccw, outline } from "./geometry/outline";
-import { regular, selfTurns, turnsOnto, type Shape } from "./geometry/shape";
+import { posed, restFlat, selfTurns, signedArea, turnsOnto, type Shape } from "./geometry/shape";
 
 export interface Level {
   key: string;
@@ -66,6 +67,8 @@ export interface Level {
    * be `turned` (radians) to lay its edges on the ring, when the window is cut
    * in the turned frame instead. */
   window?: { tiling: string; nx: number; ny: number; turned: number };
+  /** For a Laves level, the uniform tiling it is the dual of. */
+  dualOf?: string;
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -98,28 +101,45 @@ function makeLevel(
   configs: number[][],
   name = notation(configs[0]!),
 ): Level {
-  const sides = [...new Set(cells.map((c) => c.length))].sort((a, b) => a - b);
-  const tiles = sides.map((m) => regular(ring, m));
-  const turns: number[] = [];
-  const need: number[] = [];
-  tiles.forEach((shape, kind) => {
-    // turning by `period` leaves the shape as it was
+  // The tile kinds: cells alike up to a turn, or up to a turn and a mirror —
+  // a mirrored copy is the same kind, flipped (the kisrhombille's triangles).
+  // Each kind's tray tile is its first cell resting flat on its longest side.
+  const kinds: { shape: Shape; mirrored: Shape; ks: number[]; flipped: boolean }[] = [];
+  for (const raw of cells) {
+    const cell = ccw(ring, raw);
+    let found = false;
+    for (const kind of kinds) {
+      const direct = turnsOnto(kind.shape, cell);
+      const flipped = direct.length ? [] : turnsOnto(kind.mirrored, cell);
+      if (direct.length || flipped.length) {
+        kind.ks.push((direct[0] ?? flipped[0])!);
+        if (!direct.length) kind.flipped = true;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      const shape = restFlat(ring, cell);
+      const mirrored = { ring, verts: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
+      kinds.push({ shape, mirrored, ks: [turnsOnto(shape, cell)[0]!], flipped: false });
+    }
+  }
+  const area = (s: Shape): number => signedArea(s.verts.map((v) => ring.toXY(v)));
+  kinds.sort((a, b) => a.shape.verts.length - b.shape.verts.length || area(a.shape) - area(b.shape));
+  const tiles = kinds.map((k) => k.shape);
+  // A kind's rotate step: the largest that reaches, from resting flat, every
+  // way the board turns it (`period` turns it back to itself).
+  const turns = kinds.map(({ shape, ks }) => {
     const period = selfTurns(shape).find((k) => k > 0) ?? ring.n;
-    const ks = cells
-      .filter((c) => c.length === sides[kind])
-      .map((c) => {
-        const k = turnsOnto(shape, ccw(ring, c))[0];
-        if (k === undefined) throw new Error(`${key}: a ${c.length}-sided cell is not a regular polygon`);
-        return k % period;
-      });
-    const step = ks.reduce((g, k) => gcd(g, k), period);
-    turns.push(step === period ? 0 : step);
-    need.push(ks.length);
+    const step = ks.reduce((g, k) => gcd(g, k % period), period);
+    return step === period ? 0 : step;
   });
+  const need = kinds.map((k) => k.ks.length);
+  const mirror = kinds.some((k) => k.flipped);
   const turn = turns.reduce((g, k) => gcd(g, k), 0);
   const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
   const region = outline(ring, cells);
-  return { key, label, ring, region, tiles, mirror: false, turns, turn, need, seconds, cells, configs, name, group };
+  return { key, label, ring, region, tiles, mirror, turns, turn, need, seconds, cells, configs, name, group };
 }
 
 /** A level on a `box`-edge square window of one of Hypersweeper's periodic
@@ -214,7 +234,7 @@ export function hexCells(rows: number, cols: number): Cyc[][] {
 
 /** The families the levels come in, in the order the list shows them, each
  * named for the symmetry that makes it one: what the tiling's own symmetries
- * can carry onto what. Laves (face-transitive) tilings are the next to come. */
+ * can carry onto what. */
 export const GROUPS = [
   {
     key: "regular",
@@ -230,6 +250,11 @@ export const GROUPS = [
     key: "2-uniform",
     name: "2-isogonal",
     hint: "The 2-uniform tilings: regular polygons, and the vertices fall into two kinds, each carried onto its own",
+  },
+  {
+    key: "laves",
+    name: "Face-transitive",
+    hint: "The Laves tilings, duals of the uniform ones: one tile, every tile carried onto every other",
   },
 ] as const;
 
@@ -282,6 +307,34 @@ const TWO_UNIFORM: [string, number][] = [
   ["dodecarhombitrihex", 8.5],
 ];
 
+/** A Laves level: the dual of a uniform tiling, cut `box` uniform edges square
+ * (see `lavesWindow`), named V and the configuration — V3.4.6.4 is the tiling
+ * whose every tile has corners where 3, 4, 6 and 4 tiles meet. Keyed and
+ * labelled as Hypersweeper's dual tiling is. */
+function lavesLevel(dual: string, box: number): Level {
+  const spec = ARCH_TILINGS.find((t) => t.key === dual && t.family === "dual");
+  const of = ARCH_TILINGS.find((t) => t.family === "uniform" && spec && t.config.join() === spec.config.join());
+  if (!spec || !of) throw new Error(`no uniform tiling is dual to ${dual}`);
+  const { ring, cells } = lavesWindow(of.key, box);
+  const level = makeLevel(dual, spec.label, ring, cells, "laves", [spec.config], `V${notation(spec.config)}`);
+  return { ...level, dualOf: of.key };
+}
+
+/** The Laves tilings and each one's window (`box`, in the uniform tiling's
+ * edges): the squarest near two or three dozen tiles with one outline. The
+ * three with hexagonal symmetry — rhombille, triakis, kisrhombille — come no
+ * nearer square than 0.87 at that size; the rhombille's next is 50 tiles. */
+const LAVES: [string, number][] = [
+  ["tetrakis", 7.3],
+  ["rhombille", 7],
+  ["triakis", 8.7],
+  ["cairo", 5.8],
+  ["prismaticpent", 6],
+  ["floret", 6.4],
+  ["deltoidal", 7.1],
+  ["kisrhombille", 8.2],
+];
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number => a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
 
@@ -306,6 +359,9 @@ export const LEVELS: Level[] = [
   windowLevel("trunctrihex", 11.95),
   // The twenty 2-uniform tilings.
   ...TWO_UNIFORM.map(([tiling, box]) => windowLevel(tiling, box)).sort(byEase),
+  // The eight Laves tilings with more than one kind of vertex (the regular
+  // tilings are their own Laves duals, already above).
+  ...LAVES.map(([dual, box]) => lavesLevel(dual, box)),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,

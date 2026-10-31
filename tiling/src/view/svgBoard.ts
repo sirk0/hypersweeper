@@ -74,7 +74,7 @@ function stepGlyph(
 }
 
 /** The tray's controls, after its tiles: turn every tile, and remove mode. */
-type Control = "rotate" | "remove";
+type Control = "rotate" | "flip" | "remove";
 
 export class SvgBoard {
   readonly svg: SVGSVGElement;
@@ -86,6 +86,9 @@ export class SvgBoard {
   /** How far every tray tile is turned from resting flat, as a power of ζ —
    * the one rotate control turns them all together. */
   turn = 0;
+  /** Whether every tray tile is held mirrored — the flip control, on a level
+   * whose board uses some kind both ways round. */
+  flip = false;
   /** The tray's own box (tiles and controls), in board units: a placed tile
    * dropped back in it is taken off the board. */
   private trayBox: [number, number, number, number] = [0, 0, 0, 0];
@@ -127,10 +130,11 @@ export class SvgBoard {
     return x >= x0 && x <= x1 && y >= y0 && y <= y1;
   }
 
-  /** A kind's outline turned by ζ^rot, about its own centroid. */
-  outline(kind: number, rot: number): XY[] {
+  /** A kind's outline, mirrored if `flip`, turned by ζ^rot, about its own
+   * centroid. */
+  outline(kind: number, rot: number, flip = false): XY[] {
     const { ring } = this.puzzle.level;
-    const xy = this.puzzle.shapeAt(kind, rot).verts.map((v) => ring.toXY(v));
+    const xy = this.puzzle.shapeAt(kind, rot, flip).verts.map((v) => ring.toXY(v));
     const [cx, cy] = centroid(xy);
     return xy.map(([x, y]): XY => [x - cx, y - cy]);
   }
@@ -141,7 +145,11 @@ export class SvgBoard {
   }
 
   private controls(): Control[] {
-    return this.puzzle.canTurn() ? ["rotate", "remove"] : ["remove"];
+    const out: Control[] = [];
+    if (this.puzzle.canTurn()) out.push("rotate");
+    if (this.puzzle.canFlip()) out.push("flip");
+    out.push("remove");
+    return out;
   }
 
   /** Fit board and tray to the element. The tray is a row of circles under
@@ -245,7 +253,7 @@ export class SvgBoard {
       el(
         "polygon",
         {
-          points: points(this.outline(kind, this.turn).map(([x, y]): XY => [x + cx, y + cy])),
+          points: points(this.outline(kind, this.turn, this.flip).map(([x, y]): XY => [x + cx, y + cy])),
           class: `tile sides-${this.sides(kind)} in-tray`,
           "data-tray": kind,
         },
@@ -278,6 +286,17 @@ export class SvgBoard {
         el("polygon", { points: head, class: "knob-head" }, knob);
         el("circle", { cx: axis[0], cy: axis[1], r: KNOB * 0.1, class: "knob-axis" }, knob);
         label = `↻ ${degrees}`;
+      } else if (control === "flip") {
+        // Mirror every tile in the tray, and the one in hand: a tile and its
+        // mirror image either side of a dashed axis.
+        knob.setAttribute("data-flip", "");
+        el("title", {}, knob).textContent = "Flip every tile over (F)";
+        const a = KNOB * 0.55;
+        const h = KNOB * 0.5;
+        el("polyline", { points: points([[kx, ky - KNOB * 0.62], [kx, ky + KNOB * 0.62]]), class: "knob-mirror" }, knob);
+        el("polygon", { points: points([[kx - 0.08 * KNOB, ky - h], [kx - 0.08 * KNOB, ky + h], [kx - a, ky - h]]), class: "knob-half" }, knob);
+        el("polygon", { points: points([[kx + 0.08 * KNOB, ky - h], [kx + 0.08 * KNOB, ky + h], [kx + a, ky - h]]), class: "knob-half hollow" }, knob);
+        label = "⇋ flip";
       } else {
         knob.setAttribute("data-remove", "");
         el("title", {}, knob).textContent = "Remove tiles: turn on, then tap tiles on the board (X)";

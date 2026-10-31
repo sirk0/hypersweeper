@@ -54,7 +54,11 @@ type XY = [number, number];
  * — and the square is cut in that turned frame, so the board's tiles sit as
  * the tray holds them.
  */
-export function templateWindow(tiling: string, box: number): Window {
+export function templateWindow(
+  tiling: string,
+  box: number,
+  { quarter = false, dropStrays = false } = {},
+): Window {
   const t = archTemplate(tiling);
   const W = t.width;
   const H = t.height;
@@ -71,8 +75,11 @@ export function templateWindow(tiling: string, box: number): Window {
       return angleOf(at(r.dm, r.dn, r.tag), at(q.dm, q.dn, q.tag));
     }),
   );
+  // `quarter`: the ring must also hold a quarter turn — for a dual, whose
+  // edges cross these at right angles.
   const ringFor = (alpha: number): number | undefined =>
     ORDERS.find((order) =>
+      (!quarter || order % 4 === 0) &&
       sample.every((a) => {
         const k = ((a - alpha) * order) / (2 * Math.PI);
         return Math.abs(k - Math.round(k)) < TOLERANCE;
@@ -142,8 +149,14 @@ export function templateWindow(tiling: string, box: number): Window {
   }
   const dirOf = (p: XY, q: XY): number => Math.round((Math.atan2(q[1] - p[1], q[0] - p[0]) * n) / (2 * Math.PI));
 
-  // Walk the edges outward from the first vertex, cell by cell.
-  const exact = new Map<string, Cyc>([[kept[0]!.ids[0]!, ring.zero]]);
+  // Walk the edges outward, cell by cell, from the tile nearest the centre —
+  // never a stray at a corner.
+  const seed = kept.reduce((a, b) =>
+    Math.hypot(b.centroid[0] - c0[0], b.centroid[1] - c0[1]) < Math.hypot(a.centroid[0] - c0[0], a.centroid[1] - c0[1])
+      ? b
+      : a,
+  );
+  const exact = new Map<string, Cyc>([[seed.ids[0]!, ring.zero]]);
   let pending = kept.slice();
   while (pending.length > 0) {
     const next: Grown[] = [];
@@ -166,8 +179,15 @@ export function templateWindow(tiling: string, box: number): Window {
         exact.set(g.ids[i1]!, there);
       }
     }
-    if (next.length === pending.length) throw new Error(`templateWindow: the ${tiling} window is not connected`);
+    if (next.length === pending.length) {
+      // `dropStrays`: a tile kept at a corner of the square, touching
+      // nothing else kept, is left out instead — for a patch that is only a
+      // means to something else (a dual), not a board.
+      if (!dropStrays) throw new Error(`templateWindow: the ${tiling} window is not connected`);
+      break;
+    }
     pending = next;
   }
-  return { ring, cells: kept.map((g) => g.ids.map((id) => exact.get(id)!)), turned: alpha };
+  const placed = kept.filter((g) => g.ids.every((id) => exact.has(id)));
+  return { ring, cells: placed.map((g) => g.ids.map((id) => exact.get(id)!)), turned: alpha };
 }

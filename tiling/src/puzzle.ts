@@ -11,8 +11,9 @@ export interface Placed {
   id: number;
   /** Which of the level's tile kinds. */
   kind: number;
-  /** The turn it was laid at: the kind's shape rotated by ζ^rot. */
+  /** How it was laid: the kind's shape, mirrored if `flip`, turned by ζ^rot. */
   rot: number;
+  flip: boolean;
   verts: Cyc[];
 }
 
@@ -63,10 +64,10 @@ export class Puzzle {
     return this.won ? 1 : Math.min(covered / region, 0.999);
   }
 
-  /** A kind's shape turned by ζ^rot. */
-  shapeAt(kind: number, rot: number): Shape {
+  /** A kind's shape, mirrored if `flip`, turned by ζ^rot. */
+  shapeAt(kind: number, rot: number, flip = false): Shape {
     const shape = this.level.tiles[kind]!;
-    return { ring: shape.ring, verts: posed(shape, { rot, flip: false, t: shape.ring.zero }) };
+    return { ring: shape.ring, verts: posed(shape, { rot, flip, t: shape.ring.zero }) };
   }
 
   /** Whether the level has a rotate control at all — not where every tile of
@@ -115,18 +116,25 @@ export class Puzzle {
     );
   }
 
-  /** Where a tile of `kind`, held turned by ζ^rot and dragged to `centre`,
+  /** Whether the level has a flip control: its board uses some kind both ways
+   * round (the kisrhombille's triangles). */
+  canFlip(): boolean {
+    return this.level.mirror;
+  }
+
+  /** Where a tile of `kind`, held turned by ζ^rot (and mirrored, if `flip`)
+   * and dragged to `centre`,
    * would land, if anywhere within `reach` of it: only in that orientation,
    * and only where the vertex rule allows. */
-  snap(kind: number, centre: XY, reach: number, rot: number): Cyc[] | null {
-    return this.frontier.nearest(this.shapeAt(kind, rot), centre, reach, this.level.mirror, this.same[kind], (v) =>
+  snap(kind: number, centre: XY, reach: number, rot: number, flip = false): Cyc[] | null {
+    return this.frontier.nearest(this.shapeAt(kind, rot, flip), centre, reach, false, this.same[kind], (v) =>
       this.allows(v),
     );
   }
 
-  place(kind: number, verts: Cyc[], rot: number): Placed {
+  place(kind: number, verts: Cyc[], rot: number, flip = false): Placed {
     if (!this.frontier.fits(verts)) throw new Error("place: the tile does not fit there");
-    const tile = { id: this.nextId++, kind, rot, verts };
+    const tile = { id: this.nextId++, kind, rot, flip, verts };
     this.placed.set(tile.id, tile);
     this.frontier = this.frontier.cover(verts);
     this.addCorners(verts);
@@ -149,6 +157,9 @@ export class Puzzle {
   }
 
   private addCorners(verts: Cyc[]): void {
+    // only a level with a rule reads them, and only its regular polygons have
+    // the unit sides they are measured off
+    if (!this.level.rule) return;
     for (const [key, corner] of cornersOf(this.level.ring, verts)) {
       const list = this.corners.get(key);
       if (list) list.push(corner);
@@ -157,16 +168,18 @@ export class Puzzle {
   }
 
   /** Every placement that lands with a corner on frontier corner `at`. */
-  private spotsAt(at: XY): { kind: number; rot: number; spot: Cyc[] }[] {
-    const { mirror } = this.level;
-    const out: { kind: number; rot: number; spot: Cyc[] }[] = [];
+  private spotsAt(at: XY): { kind: number; rot: number; flip: boolean; spot: Cyc[] }[] {
+    const out: { kind: number; rot: number; flip: boolean; spot: Cyc[] }[] = [];
+    const flips = this.canFlip() ? [false, true] : [false];
     // biggest first: one big tile settles more than several small ones
     for (let kind = this.level.tiles.length - 1; kind >= 0; kind--) {
-      for (const rot of this.orientations(kind)) {
-        const spots = this.frontier.placements(this.shapeAt(kind, rot), at, 1e-6, mirror, this.same[kind], (v) =>
-          this.allows(v),
-        );
-        for (const spot of spots) out.push({ kind, rot, spot });
+      for (const flip of flips) {
+        for (const rot of this.orientations(kind)) {
+          const spots = this.frontier.placements(this.shapeAt(kind, rot, flip), at, 1e-6, false, this.same[kind], (v) =>
+            this.allows(v),
+          );
+          for (const spot of spots) out.push({ kind, rot, flip, spot });
+        }
       }
     }
     return out;
@@ -186,14 +199,14 @@ export class Puzzle {
     if (this.won) return true;
     if (left.budget-- <= 0) return false;
     const { ring } = this.level;
-    let best: { kind: number; rot: number; spot: Cyc[] }[] | null = null;
+    let best: { kind: number; rot: number; flip: boolean; spot: Cyc[] }[] | null = null;
     for (const corner of this.openCorners.values()) {
       const here = this.spotsAt(ring.toXY(corner));
       if (!best || here.length < best.length) best = here;
       if (best.length <= 1) break;
     }
-    for (const { kind, rot, spot } of best ?? []) {
-      const tile = this.place(kind, spot, rot);
+    for (const { kind, rot, flip, spot } of best ?? []) {
+      const tile = this.place(kind, spot, rot, flip);
       if (this.search(left)) return true;
       this.lift(tile.id);
     }
