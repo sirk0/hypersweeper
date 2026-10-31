@@ -1318,6 +1318,90 @@
         ]
       }
     },
+    "righttrapezoid": {
+      "builder": "right_trapezoid_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          6,
+          22.0
+        ],
+        "medium": [
+          4,
+          34,
+          20.0
+        ],
+        "hard": [
+          4,
+          49,
+          20.0
+        ]
+      }
+    },
+    "halftrapezoid": {
+      "builder": "half_trapezoid_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          6,
+          22.0
+        ],
+        "medium": [
+          4,
+          25,
+          20.0
+        ],
+        "hard": [
+          4,
+          41,
+          20.0
+        ]
+      }
+    },
+    "stretchedchair": {
+      "builder": "stretched_chair_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          7,
+          11.0
+        ],
+        "medium": [
+          4,
+          34,
+          10.0
+        ],
+        "hard": [
+          4,
+          48,
+          10.0
+        ]
+      }
+    },
+    "rhombicl": {
+      "builder": "rhombic_l_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          7,
+          12.6
+        ],
+        "medium": [
+          4,
+          34,
+          11.4
+        ],
+        "hard": [
+          4,
+          49,
+          11.4
+        ]
+      }
+    },
     "carpet": {
       "builder": "carpet_board",
       "mineArg": 1,

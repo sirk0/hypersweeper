@@ -193,7 +193,17 @@ describe("catalog families", () => {
   it("offers the rep-tile family, the tile grown into itself, on the plane only", () => {
     expect(pickerFamilies("flat")).toContain("reptile");
     expect(pickerFamilies("torus")).not.toContain("reptile");
-    const reptiles = ["sphinx", "chair", "ltetromino", "ppentomino", "trapezoid"];
+    const reptiles = [
+      "sphinx",
+      "chair",
+      "ltetromino",
+      "ppentomino",
+      "trapezoid",
+      "righttrapezoid",
+      "halftrapezoid",
+      "stretchedchair",
+      "rhombicl",
+    ];
     expect(familyRows("reptile", "flat").map((r) => r.mode)).toEqual(reptiles);
     // a one-off family's rows are modes, so each carries its own icon
     expect(familyRows("reptile", "flat").map((r) => r.icon)).toEqual(reptiles);

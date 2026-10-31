@@ -42,7 +42,8 @@ BAND = 0.15
 # then 343 around 256. Hard (512 against 480) lands in the band on its own;
 # the mode is exempted whole because the reason is the geometry, not the row.
 COARSE_GEOMETRY = {"sphinx", "chair", "ltetromino", "ppentomino", "trapezoid",
-                   "carpet", "pentaflake", "gosper", "cube3d"}
+                   "righttrapezoid", "halftrapezoid", "stretchedchair",
+                   "rhombicl", "carpet", "pentaflake", "gosper", "cube3d"}
 # A closed hyperbolic surface's cell counts are fixed by its genus: the board
 # grows only by changing its tiling, and the rungs are {7,3}, 6.6.7 and the
 # Goldberg--Coxeter subdivisions -- 12(g - 1), 40(g - 1), then 54(g - 1),

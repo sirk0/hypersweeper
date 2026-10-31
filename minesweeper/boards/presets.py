@@ -51,10 +51,14 @@ from minesweeper.boards.fractal import (
     carpet_board,
     chair_board,
     gosper_board,
+    half_trapezoid_board,
     ltetromino_board,
     pentaflake_board,
     ppentomino_board,
+    rhombic_l_board,
+    right_trapezoid_board,
     sphinx_board,
+    stretched_chair_board,
     trapezoid_board,
 )
 from minesweeper.boards.hurwitz import hurwitz_board
@@ -231,8 +235,8 @@ _JSON_BUILDERS = {
     # the ring count: brick_rings_board(rings, mine_count, scale).
     "brick_rings_board": brick_rings_board,
     # Rep-tile and fractal boards take positional args: sphinx_board(levels,
-    # mine_count, scale), and the other seven the same -- a level is a whole
-    # substitution step, so the cell count is 4**levels for the five rep-tiles,
+    # mine_count, scale), and the other eleven the same -- a level is a whole
+    # substitution step, so the cell count is 4**levels for the nine rep-tiles,
     # 8**levels for the carpet, 6**levels for the pentaflake and 7**levels for
     # the Gosper island.
     "sphinx_board": sphinx_board,
@@ -240,6 +244,10 @@ _JSON_BUILDERS = {
     "ltetromino_board": ltetromino_board,
     "ppentomino_board": ppentomino_board,
     "trapezoid_board": trapezoid_board,
+    "right_trapezoid_board": right_trapezoid_board,
+    "half_trapezoid_board": half_trapezoid_board,
+    "stretched_chair_board": stretched_chair_board,
+    "rhombic_l_board": rhombic_l_board,
     "carpet_board": carpet_board,
     "pentaflake_board": pentaflake_board,
     "gosper_board": gosper_board,
