@@ -37,10 +37,9 @@
 //  * The three regular tilings have no template — they are direct lattice
 //    builders in boards/tilings.ts — so their domains are written out below, in
 //    the units and the orientation those builders use.
-//  * The five **fractal** boards do not repeat, but their tiles do: the Gosper
-//    island is plain hexagons, the sphinx and the chair are rep-tiles that also
-//    tile the plane in pairs, and the Sierpinski carpet is built of unit
-//    squares. The pentaflake takes two tiles rather than one — regular
+//  * The **rep-tile** and **fractal** boards do not repeat, but their tiles do:
+//    the five rep-tiles all tile the plane in pairs, the Gosper island is plain
+//    hexagons, and the Sierpinski carpet is built of unit squares. The pentaflake takes two tiles rather than one — regular
 //    pentagons do not tile the plane, but pentagons and 36° rhombs do.
 //  * The **aperiodic** and **spiral** boards are the same story. The
 //    phyllotactic spiral's hexagon is a *parallelohexagon*, so it tiles by
@@ -64,6 +63,7 @@ import { type Vertex, archTemplate, templateCells } from "../boards";
 import {
   APERIODIC_MODES,
   HYPERBOLIC_MODES,
+  REPTILE_MODES,
   SHAPED_MODES,
   SOLID_GROUPS,
   SPIRAL_MODES,
@@ -217,6 +217,45 @@ const CHAIR_TILE: Vertex[] = [
   [0, 1],
 ];
 
+/** The L-tetromino, as boards/fractal.ts writes it — a vertex at every lattice
+ * step, for the same reason as the chair's. */
+const LTETROMINO_TILE: Vertex[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [3, 0],
+  [3, 1],
+  [2, 1],
+  [1, 1],
+  [1, 2],
+  [0, 2],
+  [0, 1],
+];
+
+/** The P-pentomino, as boards/fractal.ts writes it — a vertex at every lattice
+ * step again. */
+const PPENTOMINO_TILE: Vertex[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [2, 1],
+  [2, 2],
+  [1, 2],
+  [1, 3],
+  [0, 3],
+  [0, 2],
+  [0, 1],
+];
+
+/** The trapezoid (the triamond), as boards/fractal.ts writes it: corners only,
+ * its tiling being edge to edge. */
+const TRAPEZOID_TILE: Vertex[] = [
+  [0, 0],
+  [2, 0],
+  [1.5, H3],
+  [0.5, H3],
+];
+
 /** The phyllotactic spiral's tile: the equilateral convex hexagon with angles
  * 72° and 144°, written the way boards/aperiodic.ts does — the partial sums of
  * three unit vectors 36° apart, so its opposite sides are equal and parallel.
@@ -280,7 +319,7 @@ function pentaSpiralDomain(fold: number): Domain {
   );
 }
 
-/** A tile turned a half turn about `(cx, cy)`. Both rep-tiles tile the plane in
+/** A tile turned a half turn about `(cx, cy)`. Every rep-tile tiles the plane in
  * pairs, and the second of each pair is the first upside down. */
 const halfTurn = (cell: Vertex[], cx: number, cy: number): Vertex[] =>
   cell.map(([x, y]): Vertex => [2 * cx - x, 2 * cy - y]);
@@ -343,6 +382,27 @@ export const DOMAINS: Record<string, () => Domain> = {
     height: 2,
     cells: [CHAIR_TILE, halfTurn(CHAIR_TILE, 1.5, 1)],
   }),
+
+  // An L-tetromino and its half turn fill a 4 x 2 rectangle, and a P-pentomino
+  // and its half turn a 2 x 5 one; each rectangle tiles the plane.
+  ltetromino: () => ({
+    width: 4,
+    height: 2,
+    cells: [LTETROMINO_TILE, halfTurn(LTETROMINO_TILE, 2, 1)],
+  }),
+  ppentomino: () => ({
+    width: 2,
+    height: 5,
+    cells: [PPENTOMINO_TILE, halfTurn(PPENTOMINO_TILE, 1, 2.5)],
+  }),
+
+  // Two trapezoids, long side to long side, make a regular hexagon, and
+  // hexagons tile edge to edge. (A strip of trapezoids alternating up and down
+  // tiles too, but one strip's short sides land along the next one's long
+  // ones, and an edge split one way on one side and not on the other strokes
+  // that line twice.)
+  trapezoid: () =>
+    latticeDomain([TRAPEZOID_TILE, halfTurn(TRAPEZOID_TILE, 1, 0)], [1.5, H3], [0, ROOT3]),
 
   // Two sphinxes — again, one upside down — fill the parallelogram spanned by
   // (3, 0) and (1, √3). That lattice is not rectangular, but it contains
@@ -613,8 +673,9 @@ const MODE_PATTERN = new Map<string, string>();
   for (const [tiling, modes] of Object.entries(SHAPED_MODES)) {
     for (const mode of modes) MODE_PATTERN.set(mode, tiling);
   }
-  // The fractal boards: their own tile, laid down periodically (see DOMAINS).
-  for (const mode of ["sphinx", "chair", "gosper", "pentaflake"]) {
+  // The rep-tile and fractal boards: their own tile, laid down periodically
+  // (see DOMAINS).
+  for (const mode of [...REPTILE_MODES, "gosper", "pentaflake"]) {
     MODE_PATTERN.set(mode, mode);
   }
   // The Sierpinski carpet is built out of plain unit squares, so that is its

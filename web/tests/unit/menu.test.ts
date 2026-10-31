@@ -90,10 +90,11 @@ describe("picker pages", () => {
       "other",
       "aperiodic",
       "spiral",
+      "reptile",
       "fractal",
     ]);
     // the Klein bottle carries four families: only the plane has shaped
-    // boards to fill a Regular page, and aperiodic/spiral/fractal boards
+    // boards to fill a Regular page, and aperiodic/spiral/rep-tile/fractal boards
     expect(menuFamilies("klein")).toEqual(["uniform", "dual", "isogonal", "rectangle"]);
     // ...and the cylinder, Möbius strip and torus, which the 2-uniform tilings
     // wrap too

@@ -16,6 +16,7 @@ from minesweeper.boards import (  # noqa: E402
     MENU_ROOT,
     MODE_LABELS,
     MODES_3D,
+    REPTILE_MODES,
     SHAPED_MODES,
     SOLID_GROUP_MEMBERS,
     SOLID_GROUP_ORDER,
@@ -579,7 +580,8 @@ class TestMenu:
         assert menu.path == ["flat"]
         assert self.items(menu) == {
             "regular", "uniform", "dual", "2-uniform", "isogonal", "rectangle",
-            "other", "aperiodic", "spiral", "fractal", "hyperbolic", "random",
+            "other", "aperiodic", "spiral", "reptile", "fractal", "hyperbolic",
+            "random",
         }
 
     def test_flat_regular_family_lists_the_tilings_and_shaped_boards(self):
@@ -627,12 +629,19 @@ class TestMenu:
         assert self.items(menu) == set(SPIRAL_MODES)
         assert self.click_item(menu, "brickrings") == ("start", "brickrings")
 
+    def test_flat_reptile_family_launches_a_mode(self):
+        menu = MenuScreen()
+        self.click_item(menu, "flat")
+        self.click_item(menu, "reptile")
+        assert self.items(menu) == set(REPTILE_MODES)
+        assert self.click_item(menu, "ltetromino") == ("start", "ltetromino")
+
     def test_flat_fractal_family_launches_a_mode(self):
         menu = MenuScreen()
         self.click_item(menu, "flat")
         self.click_item(menu, "fractal")
         assert self.items(menu) == set(FRACTAL_MODES)
-        assert self.click_item(menu, "sphinx") == ("start", "sphinx")
+        assert self.click_item(menu, "carpet") == ("start", "carpet")
 
     def test_flat_random_tiling_launches_a_flat_board(self):
         menu = MenuScreen()
@@ -821,7 +830,7 @@ class TestMenu:
         menu = MenuScreen()
         for path in ([], ["flat"], ["flat", "regular"], ["flat", "uniform"],
                      ["flat", "aperiodic"], ["flat", "spiral"],
-                     ["flat", "fractal"],
+                     ["flat", "reptile"], ["flat", "fractal"],
                      ["manifolds"], ["manifolds", "klein"],
                      ["manifolds", "klein", "regular"],
                      ["manifolds", "klein", "uniform"],
@@ -909,13 +918,14 @@ class TestIcon:
             | {"random", "hex"}                  # random row + home Flat icon
             | set(MANIFOLD_ORDER)                # the flat-manifold surfaces
             | {"regular", "uniform", "dual", "aperiodic", "spiral",  # families
-               "fractal"}
+               "reptile", "fractal"}
             | set(TILINGS)                       # every tiling row in the picker
             | set(SOLID_MODES)
             | set(SOLID_GROUP_ORDER)              # the four solid-group rows
             | {m for shaped in SHAPED_MODES.values() for m in shaped}
             | set(APERIODIC_MODES)
             | set(SPIRAL_MODES)
+            | set(REPTILE_MODES)
             | set(FRACTAL_MODES)
         )
         for key in sorted(keys):

@@ -1293,7 +1293,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,2-uniform,isogonal,rectangle,other,aperiodic,spiral,fractal,hyperbolic,sphere,platonic,archimedean,catalan,polyhedra,volume",
+        "query": "all,regular,uniform,dual,2-uniform,isogonal,rectangle,other,aperiodic,spiral,reptile,fractal,hyperbolic,sphere,platonic,archimedean,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -1349,6 +1349,11 @@
             "selected": false,
             "text": "spiral",
             "value": "spiral"
+          },
+          {
+            "selected": false,
+            "text": "reptile",
+            "value": "reptile"
           },
           {
             "selected": false,

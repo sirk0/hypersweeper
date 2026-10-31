@@ -47,7 +47,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, all twenty 2-uniform tilings (three cut or merged from a uniform tiling, seventeen written down from one translation cell by `_cell_template`), and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
-| `fractal.py` | The self-similar (fractal) boards: the sphinx, the chair, the Sierpinski carpet, the pentaflake and the Gosper island. One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
+| `fractal.py` | The self-similar boards, in two menu families: the rep-tiles (the sphinx, the chair, the L-tetromino, the P-pentomino and the trapezoid) and the fractals (the Sierpinski carpet, the pentaflake and the Gosper island). One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all five `*_board` builders run. The first two are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. Their uniform tilings come off the same walk by Wythoff's construction (`ambo`, `zip`, `expand`, `bevel`, `truncate`; see "The uniform hyperbolic boards"). Also Böröczky's binary tiling, drawn in the upper half-plane as a rectangle (`binary_board`); see "The binary tiling" below. |
 | `hurwitz.py` | The closed hyperbolic surfaces: Klein's quartic, Macbeath's surface and one of the first Hurwitz triplet, the {7,3} tiling glued up with no rim. Each surface's map is read off its group, PSL(2,q), with integer ids; the {7,3} disc of `hyperbolic.py` covers it, by a covering map walked on ids alone; and the board draws a patch of that disc, every face showing the cell it covers (`Board.faces`), with the surface's own adjacency and topology (`Board.quotient`). See "The closed hyperbolic surfaces" below. |
@@ -141,7 +141,7 @@ bottle.
 
 The fifth family, `family="other"`, is **flat-only** and is a grab-bag
 rather than a symmetry class — the tilings that answer to none of the other
-families, all of them the fractal boards' own tiles laid down periodically
+families, all of them the rep-tile and fractal boards' own tiles laid down periodically
 rather than inflated. Two are **rep-tile patterns** — the sphinx
 (`sphinxpairs`) and the chair (`tromino`, the L-tromino) — each one congruent
 polyform in half-turned pairs: p2, face-transitive, and not edge to edge (a
@@ -218,7 +218,7 @@ shaped boards cut from them), **Uniform** (the eight non-regular uniform
 tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
 eight duals), **Isogonal**, **Congruent rectangles**, **2-uniform** (the
 plane, the cylinder and the Möbius strip) and, on the plane only, **Other**, **Aperiodic**,
-**Fractals** and **Hyperbolic**.
+**Spirals**, **Rep-tiles**, **Fractals** and **Hyperbolic**.
 Every family is offered on every surface its members allow:
 `picker_families` in `catalog.py` (and its mirror in
 `web/src/modes/catalog.ts`) drops a family a surface has no enabled row of
@@ -1330,20 +1330,27 @@ shader stage. The board says where its ideal line is (`Board.halfPlane`).
 See "Half-plane panning" in [`web/docs/render.md`](../../web/docs/render.md).
 The pygame game does not pan; it plays the same board.
 
-## The fractal boards
+## The rep-tile and fractal boards
 
-The five **fractal** boards are each one tile inflated `levels` times --
+The eight self-similar boards are each one tile inflated `levels` times --
 scaled up by the substitution's `factor` and refilled with copies of itself --
 into a patch whose outline converges on a self-similar shape (the tile again
-for the first four, the Gosper island for the fifth); that outline is the
+for all but the Gosper island); that outline is the
 board, the second deliberate exception to the square-window
-convention. Two are rep-tiles, polygons that tile a scaled copy of
-themselves (rep-4, so 4**levels cells: 64/256/1024 by difficulty for the
-chair, one level lower for the sphinx, whose sliver of a tile needs more
-room): the **sphinx** is the pentagonal hexiamond on the triangular lattice
-(its dissection is unique -- three of its four children are reflected), the
+convention. The menu splits them in two. The **Rep-tiles** family is the
+five polygons that tile a scaled copy of themselves exactly (rep-4, so
+4**levels cells: 64 easy, and 256 medium and hard at two mine counts): the
+**sphinx** is the pentagonal hexiamond on the triangular lattice (its
+dissection is unique -- three of its four children are reflected), the
 **chair** the L-tromino on the square lattice (the classic reflection-free
-substitution, four quarter-turns). The **Sierpinski carpet** is not a
+substitution, four quarter-turns), the **L-tetromino** and the
+**P-pentomino** the next two polyominoes that do it (the L has four
+dissections, one reflection-free, the P two, neither -- and the T, S and Z
+tetrominoes none, in four copies or nine), and the **trapezoid** the
+triamond, half a hexagon, on the triangular lattice (one dissection: three
+children round the edge, one upside down in the middle). The **Fractals**
+family is the other three, whose patch is not just the tile scaled: the
+**Sierpinski carpet** is not a
 rep-tile: the unit square tripled and refilled with the eight subsquares of
 the 3x3 block that are not its centre, so it grows 8**levels (64 easy, 512
 medium; ×8 a level leaves no fourth playable size, so hard reuses the
@@ -1368,11 +1375,11 @@ do in ℤ[ζ5]) and φ² = 2 + ζ² - ζ³ is exact there. Each child translatio
 the parent's scaled by a power of the factor, so a placement stays an exact
 `(rotation, mirror, translation)` triple -- and the inflation only ever
 multiplies by the factor, never divides, because there is nothing to round
-an irrational scale back to. The two rep-tilings are not edge to edge, so
-their tile outlines carry a vertex at every lattice step and
-`corners`/`shapeMetrics` drop those again before measuring (the carpet's
-squares, the pentaflake's pentagons and the Gosper island's hexagons meet
-edge to edge and need none).
+an irrational scale back to. Four of the rep-tilings are not edge to edge,
+so their tile outlines carry a vertex at every lattice step and
+`corners`/`shapeMetrics` drop those again before measuring (the trapezoid's
+substitution, the carpet's squares, the pentaflake's pentagons and the
+Gosper island's hexagons meet edge to edge and need none).
 The **Gosper island** is the one whose *boundary* is the fractal rather than
 its interior: plain regular hexagons, no holes at all, in a patch whose
 outline converges on the Gosper island -- the curve the flowsnake draws,

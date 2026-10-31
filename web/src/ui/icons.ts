@@ -94,7 +94,7 @@ import {
   type Board3D,
   type Vec3,
 } from "../boards";
-import { FRACTAL_MODES, SHAPED_MODES, surfaceOf } from "../modes/catalog";
+import { FRACTAL_MODES, REPTILE_MODES, SHAPED_MODES, surfaceOf } from "../modes/catalog";
 import { hasMode, presetBoard } from "../modes/presets";
 import { DOMAINS } from "./backgroundPattern";
 
@@ -1118,7 +1118,8 @@ const ALIASES: Record<string, string> = {
   tri: "trigrid",
   aperiodic: "penrose",
   spiral: "phyllotaxis", // the Spirals family row: the sunflower
-  fractal: "sphinx", // the Fractals family row
+  reptile: "sphinx", // the Rep-tiles family row
+  fractal: "pentaflake", // the Fractals family row: round, gaps at every scale
   hyperbolic: "hyperbolic73", // the Hyperbolic family row: the game's namesake
   // the Hyperbolic page's three submenus: a {p,q} other than the group's own
   // {7,3}, the uniform tiling with the most kinds of corner on show, and
@@ -1985,13 +1986,14 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   // each remove from the middle, which is what the crop catches — a whole ring
   // block shrunk into the card is just a brick wall.
   brickrings: { build: () => brickRingsBoard(8, 27) },
-  // The fractals and the shaped boards: the easy board itself, whole. A
-  // fractal's picture is the one tile grown into itself, which a crop of a
+  // The rep-tiles, the fractals and the shaped boards: the easy board itself,
+  // whole. A rep-tile's or a fractal's picture is the one tile grown into
+  // itself, which a crop of a
   // deeper patch loses; a shaped board *is* a regular tiling cut to an
   // outline, so wallpapered it would be the plain tiling it is cut from — the
   // one thing its picture must not say.
   ...Object.fromEntries(
-    [...FRACTAL_MODES, ...Object.values(SHAPED_MODES).flat()].map((mode) => [
+    [...REPTILE_MODES, ...FRACTAL_MODES, ...Object.values(SHAPED_MODES).flat()].map((mode) => [
       mode,
       { build: () => presetBoard(mode, "easy") as Board, whole: true } as const,
     ]),

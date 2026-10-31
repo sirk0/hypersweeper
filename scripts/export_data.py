@@ -45,6 +45,7 @@ from minesweeper.boards.catalog import (
     MODE_LABELS,
     PICKER_REGULAR,
     REGULAR_TILINGS,
+    REPTILE_MODES,
     SHAPED_MODES,
     SOLID_GROUP_LABELS,
     SOLID_GROUP_MEMBERS,
@@ -113,6 +114,8 @@ def _mode_family(mode: str, tiling: str) -> str:
         return "aperiodic"
     if mode in SPIRAL_MODES:
         return "spiral"
+    if mode in REPTILE_MODES:
+        return "reptile"
     if mode in FRACTAL_MODES:
         return "fractal"
     if mode in HYPERBOLIC_MODES:
@@ -125,7 +128,7 @@ def _mode_info(mode: str) -> dict:
 
     ``surface`` is the SurfaceSpec key for a (tiling x surface) mode, "solid"
     for a board in a solid group, and "flat" for the rest — the shaped,
-    aperiodic, spiral, fractal and hyperbolic boards are one-off modes with no SurfaceSpec behind
+    aperiodic, spiral, rep-tile, fractal and hyperbolic boards are one-off modes with no SurfaceSpec behind
     them, and they are still on the plane. That makes the column total, so a
     dashboard can group by it without a null case.
     """
@@ -179,6 +182,7 @@ def build_catalog() -> dict:
             "pickerRegular": list(PICKER_REGULAR),
             "aperiodic": list(APERIODIC_MODES),
             "spiral": list(SPIRAL_MODES),
+            "reptile": list(REPTILE_MODES),
             "fractal": list(FRACTAL_MODES),
             "hyperbolic": list(HYPERBOLIC_MODES),
             "familyLabels": dict(FAMILY_LABELS),

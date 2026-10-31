@@ -1,6 +1,6 @@
 {
-  "count": 46,
-  "points": 655,
+  "count": 47,
+  "points": 670,
   "achievements": [
     {
       "vendorIdentifier": "hs.first_win",
@@ -476,6 +476,23 @@
         }
       },
       "icon": "spiral",
+      "ring": "complete"
+    },
+    {
+      "vendorIdentifier": "hs.tiling_all.reptile",
+      "referenceName": "tiling-all:reptile",
+      "points": 15,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "Rep-tiles",
+          "beforeEarnedDescription": "Win every board tiled this way",
+          "afterEarnedDescription": "You won every board tiled this way",
+          "image": "images/hs.tiling_all.reptile.png"
+        }
+      },
+      "icon": "reptile",
       "ring": "complete"
     },
     {

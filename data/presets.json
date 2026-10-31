@@ -1255,6 +1255,69 @@
         ]
       }
     },
+    "ltetromino": {
+      "builder": "ltetromino_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          6,
+          14.7
+        ],
+        "medium": [
+          4,
+          39,
+          13.3
+        ],
+        "hard": [
+          4,
+          49,
+          13.3
+        ]
+      }
+    },
+    "ppentomino": {
+      "builder": "ppentomino_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          8,
+          14.7
+        ],
+        "medium": [
+          4,
+          35,
+          13.3
+        ],
+        "hard": [
+          4,
+          50,
+          13.3
+        ]
+      }
+    },
+    "trapezoid": {
+      "builder": "trapezoid_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          7,
+          22.0
+        ],
+        "medium": [
+          4,
+          32,
+          20.0
+        ],
+        "hard": [
+          4,
+          44,
+          20.0
+        ]
+      }
+    },
     "carpet": {
       "builder": "carpet_board",
       "mineArg": 1,

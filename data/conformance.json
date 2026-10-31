@@ -1741,6 +1741,93 @@
         "hasCellCycle": false
       }
     },
+    "ltetromino": {
+      "easy": {
+        "cellCount": 64,
+        "mineCount": 6,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 360,
+        "vertexCount": 297,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 256,
+        "mineCount": 39,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1360,
+        "vertexCount": 1105,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 256,
+        "mineCount": 49,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1360,
+        "vertexCount": 1105,
+        "hasCellCycle": false
+      }
+    },
+    "ppentomino": {
+      "easy": {
+        "cellCount": 64,
+        "mineCount": 8,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 360,
+        "vertexCount": 297,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 256,
+        "mineCount": 35,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1360,
+        "vertexCount": 1105,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 256,
+        "mineCount": 50,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1360,
+        "vertexCount": 1105,
+        "hasCellCycle": false
+      }
+    },
+    "trapezoid": {
+      "easy": {
+        "cellCount": 64,
+        "mineCount": 7,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 141,
+        "vertexCount": 78,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 256,
+        "mineCount": 32,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 539,
+        "vertexCount": 284,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 256,
+        "mineCount": 44,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 539,
+        "vertexCount": 284,
+        "hasCellCycle": false
+      }
+    },
     "carpet": {
       "easy": {
         "cellCount": 64,

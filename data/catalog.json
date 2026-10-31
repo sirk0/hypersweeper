@@ -182,6 +182,9 @@
     "brickrings": "Brick rings",
     "sphinx": "Sphinx",
     "chair": "Chair",
+    "ltetromino": "L-tetromino",
+    "ppentomino": "P-pentomino",
+    "trapezoid": "Trapezoid",
     "carpet": "Sierpiński carpet",
     "pentaflake": "Pentaflake",
     "gosper": "Gosper island",
@@ -355,7 +358,7 @@
       "label": "Chair",
       "tiling": "",
       "surface": "flat",
-      "family": "fractal"
+      "family": "reptile"
     },
     "cube": {
       "label": "Cube",
@@ -1245,6 +1248,12 @@
       "surface": "klein",
       "family": "uniform"
     },
+    "ltetromino": {
+      "label": "L-tetromino",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "macbeath": {
       "label": "Macbeath surface",
       "tiling": "",
@@ -1563,6 +1572,12 @@
       "surface": "flat",
       "family": "spiral"
     },
+    "ppentomino": {
+      "label": "P-pentomino",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "prismaticpent": {
       "label": "Prismatic pentagonal",
       "tiling": "prismaticpent",
@@ -1711,7 +1726,7 @@
       "label": "Sphinx",
       "tiling": "",
       "surface": "flat",
-      "family": "fractal"
+      "family": "reptile"
     },
     "sphinxpairs": {
       "label": "Sphinx pairs",
@@ -2121,6 +2136,12 @@
       "surface": "torus",
       "family": "uniform"
     },
+    "trapezoid": {
+      "label": "Trapezoid",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "trefoil": {
       "label": "Squares · Trefoil knot",
       "tiling": "square",
@@ -2292,9 +2313,14 @@
       "pentaspiral7",
       "brickrings"
     ],
-    "fractal": [
+    "reptile": [
       "sphinx",
       "chair",
+      "ltetromino",
+      "ppentomino",
+      "trapezoid"
+    ],
+    "fractal": [
       "carpet",
       "pentaflake",
       "gosper"
@@ -2351,6 +2377,7 @@
       "other": "Other",
       "aperiodic": "Aperiodic",
       "spiral": "Spirals",
+      "reptile": "Rep-tiles",
       "fractal": "Fractals",
       "hyperbolic": "Hyperbolic"
     },

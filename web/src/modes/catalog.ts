@@ -233,14 +233,19 @@ export const PICKER_FAMILIES = [
   "rectangle",
   "other",
 ];
-export const FLAT_ONLY_FAMILIES = ["aperiodic", "spiral", "fractal", "hyperbolic"];
+export const FLAT_ONLY_FAMILIES = ["aperiodic", "spiral", "reptile", "fractal", "hyperbolic"];
 export const APERIODIC_MODES = MENU.aperiodic as string[];
 // The spiral family: boards wound round a centre (the phyllotactic and Klaassen
 // spirals, the pentagonal spirals, the brick rings). One-off, plane-only modes
 // like the aperiodic ones, which they used to be filed under.
 export const SPIRAL_MODES = MENU.spiral as string[];
-// The fractal family: the rep-tile boards (sphinx, chair), each a patch whose
-// outline is the tile itself, scaled. One-off modes like the aperiodic ones.
+// The rep-tile family: the sphinx, the chair, the L-tetromino, the P-pentomino
+// and the trapezoid, each a patch whose outline is the tile itself, scaled —
+// four copies of the tile fill it doubled. One-off modes like the aperiodic ones.
+export const REPTILE_MODES = MENU.reptile as string[];
+// The fractal family: the boards inflated the same way whose patch is *not* the
+// tile again — the carpet and the pentaflake leave holes at every scale, the
+// Gosper island's edge roughens. One-off modes again.
 export const FRACTAL_MODES = MENU.fractal as string[];
 // The hyperbolic family: regular {p,q} tilings of the hyperbolic plane in the
 // Poincaré disc (boards/hyperbolic.ts). One-off modes again, on the plane only.
@@ -256,6 +261,7 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   other: OTHER_ARCH,
   aperiodic: APERIODIC_MODES,
   spiral: SPIRAL_MODES,
+  reptile: REPTILE_MODES,
   fractal: FRACTAL_MODES,
   hyperbolic: HYPERBOLIC_MODES,
 };
@@ -490,7 +496,8 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   other: "Two rep-tiles, and Dürer's pentagons",
   aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre",
   spiral: "Wound round a centre: sunflower, pentagons, brick rings",
-  fractal: "One tile grown into itself, or halved row on row",
+  reptile: "One tile split into four copies of itself",
+  fractal: "Holes, or a ragged edge, at every scale",
   hyperbolic: "Curved space: more round a corner than fit flat",
   "hyperbolic-regular": "One shape throughout: {p,q} is p sides, q to a corner",
   "hyperbolic-uniform": "Two or three shapes, same at every corner",
