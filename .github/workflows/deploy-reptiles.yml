@@ -1,0 +1,54 @@
+name: Deploy Rep-tiles to Cloudflare Pages
+
+# Publishes reptiles/ to its own Pages project, rep-tiles (rep-tiles.pages.dev),
+# beside Hypersweeper's (deploy-cloudflare.yml). Same account, same API token —
+# a Pages:Edit token covers every project in the account.
+#
+# Rep-tiles reads its geometry from web/src/boards and data/ in place, so a
+# change there can change this bundle too; those paths trigger a deploy as well.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - reptiles/**
+      - web/src/boards/**
+      - data/**
+      - .github/workflows/deploy-reptiles.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deploys are not worth queueing: a newer commit supersedes an older one.
+concurrency:
+  group: cloudflare-pages-reptiles
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: reptiles/package-lock.json
+      - name: Build Rep-tiles
+        working-directory: reptiles
+        run: |
+          npm ci
+          npm run build
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # From reptiles/, so wrangler reads reptiles/wrangler.toml: the
+          # project name and `pages_build_output_dir` both come from there.
+          workingDirectory: reptiles
+          # `--branch` decides production vs preview: it must match the
+          # project's production branch (create it with
+          # `--production-branch=master`).
+          command: pages deploy --branch=master

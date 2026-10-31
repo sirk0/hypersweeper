@@ -1,0 +1,12 @@
+# Cloudflare Pages configuration for Rep-tiles (rep-tiles.pages.dev).
+#
+# The same shape as web/wrangler.toml: deploy-reptiles.yml runs
+# `wrangler pages deploy` from this directory, and both the project name and
+# the output directory come from here. No Functions and no bindings — the game
+# is a static bundle.
+#
+# Inert everywhere else — the Vite build never reads it.
+
+name = "rep-tiles"              # must match the Pages project name
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist" # so `pages deploy` needs no directory argument

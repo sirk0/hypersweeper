@@ -58,14 +58,17 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 39 levels in four sections, local only** — named for their
+**Status: 39 levels in four sections** — named for their
 symmetry: *Flag-transitive* (the regular 4⁴, 3⁶, 6³), *Vertex-transitive*
 (the other eight uniform tilings, 3.6.3.6 to 4.6.12), *2-isogonal* (all
 twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
 [3⁶; 3⁴.6]₁) and *Face-transitive* (the eight Laves tilings, V4.8² to
 V4.6.12). Each board is as near square as its tiling allows at two or three
-dozen tiles. No CI job, no deploy, no
-packaging — `ci.yml` and the Pages deploy do not look at this folder.
+dozen tiles. Deployed to <https://rep-tiles.pages.dev> by
+`.github/workflows/deploy-reptiles.yml` on every push to `master` that touches
+`reptiles/`, `web/src/boards/` or `data/` (its own Cloudflare Pages project,
+`rep-tiles`, configured by `reptiles/wrangler.toml`). No CI job and no
+packaging — `ci.yml` does not look at this folder.
 
 ## Build and run
 

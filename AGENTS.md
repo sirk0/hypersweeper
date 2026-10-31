@@ -24,8 +24,9 @@ carries over.
 A request about **Rep-tiles** (tiles, levels, drag-and-drop tiling) means
 `reptiles/` — see [`reptiles/AGENTS.md`](reptiles/AGENTS.md). It reads
 Hypersweeper's geometry from `web/src/boards/` in place, so a change there can
-reach both games. It runs locally only for now: no CI job and no deploy cover
-it yet.
+reach both games. It deploys to its own Cloudflare Pages project,
+<https://rep-tiles.pages.dev> (`.github/workflows/deploy-reptiles.yml`); no CI
+job covers it yet.
 
 ## Where to read next
 
