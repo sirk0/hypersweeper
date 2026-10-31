@@ -171,18 +171,48 @@ button {
   border-color: var(--button-edge);
 }
 
-.level-icon {
-  width: 22px;
-  height: 22px;
+.level-outline {
+  width: 40px;
+  height: 40px;
   flex: none;
 }
 
-.level-name {
+.level-outline path {
+  fill: var(--region);
+  stroke: var(--region-edge);
+  stroke-linejoin: round;
+}
+
+.level-text {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.level-name {
+  font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.level-tiles {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.level-tile {
+  width: 14px;
+  height: 14px;
 }
 
 .star {
@@ -197,24 +227,41 @@ button {
 
 @media (max-width: 560px) {
   .levels {
-    width: 64px;
-    padding: 0 8px 16px 6px;
+    width: 72px;
+    padding: 0 6px 16px 6px;
   }
 
-  .levels h2,
-  .level-name {
+  .levels h2 {
     display: none;
   }
 
   .level-pick {
     flex-direction: column;
     gap: 2px;
-    padding: 6px 4px;
+    padding: 6px 2px;
   }
 
-  .level-icon {
-    width: 26px;
-    height: 26px;
+  .level-outline {
+    width: 32px;
+    height: 32px;
+  }
+
+  .level-text {
+    align-items: center;
+  }
+
+  .level-name {
+    font-size: 0.72rem;
+  }
+
+  .level-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .level-tile {
+    width: 11px;
+    height: 11px;
   }
 }
 

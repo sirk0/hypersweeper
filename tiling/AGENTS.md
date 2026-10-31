@@ -91,8 +91,8 @@ finishes the board — the quick way to see the win state.
   (`seconds`), the region, and keeps the cells
   themselves as one known solution; `turn` is the one rotate step for them all
   (the gcd of the kinds' steps); `uniformLevel` adds the template window and
-  the tiling's vertex configuration (`window`, `config` — the icon's, not
-  enforced). Each
+  the template's window (`window`). Every level carries its vertex
+  configuration (`config`) — its name in the game, not enforced. Each
   level's cells are built on the same lattice as the Hypersweeper builder it
   mirrors (`squareBoard`, `triangleGridBoard`, `hexBoard` — Hypersweeper's
   default flat board for each tiling), and its region is their outline.
@@ -107,8 +107,11 @@ finishes the board — the quick way to see the win state.
   depends on how the board is finished), `used`, `stars`, and `solve`, a budgeted backtracking
   fill, biggest tiles first, for the tests and the dev seam.
 - `src/view/svgBoard.ts` — the SVG drawing (board units, y up, one flip).
-- `src/view/levelList.ts` — the level list on the right: name, tile, ★ when
-  finished.
+- `src/view/levelList.ts` — the level list on the right. It shows only what
+  a player starts with: the board's outline, the tray's tiles, the vertex
+  configuration as the name (`notation`: 4⁴, 3.4.6.4), and the best stars —
+  never a picture of the tiling, which would give the puzzle away. The
+  descriptive label is only a tooltip.
 - `src/input/drag.ts` — pointer drag and drop, and the ✕ remove mode.
 
 `@boards/*` is `../web/src/boards/*` and `@data/*` is `../data/*`, set in

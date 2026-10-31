@@ -45,9 +45,10 @@ export interface Level {
    * was are fine), so a player can wander off it, and may have to take tiles
    * back off to finish. */
   cells: Cyc[][];
-  /** The tiling's vertex configuration (3.6.3.6 as [3, 6, 3, 6]), for its
-   * name and its icon. Not enforced. */
-  config?: number[];
+  /** The tiling's vertex configuration — the polygons round every vertex, in
+   * order: [4, 4, 4, 4] for squares, [3, 4, 6, 4] for the rhombitrihexagonal.
+   * What the level is called in the game (`notation`). Not enforced. */
+  config: number[];
   /** A vertex configuration every vertex *must* keep, for a level whose
    * puzzle is that rule — a tile then lands only where every point it touches
    * can still become it. Unset on every level so far. */
@@ -76,7 +77,7 @@ function gcd(a: number, b: number): number {
  * that kind from flat — so pointy-top hexagons need turning, though they all
  * sit alike.
  */
-function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][]): Level {
+function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][], config: number[]): Level {
   const sides = [...new Set(cells.map((c) => c.length))].sort((a, b) => a - b);
   const tiles = sides.map((m) => regular(ring, m));
   const turns: number[] = [];
@@ -97,7 +98,7 @@ function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][]): Leve
   });
   const turn = turns.reduce((g, k) => gcd(g, k), 0);
   const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
-  return { key, label, ring, region: outline(ring, cells), tiles, mirror: false, turns, turn, need, seconds, cells };
+  return { key, label, ring, region: outline(ring, cells), tiles, mirror: false, turns, turn, need, seconds, cells, config };
 }
 
 /** A level on a window of one of Hypersweeper's uniform tilings, `box` edges
@@ -108,7 +109,7 @@ function uniformLevel(key: string, label: string, tiling: string, box: number, c
   const nx = box / t.width;
   const ny = box / t.height;
   const { ring, cells } = templateWindow(tiling, nx, ny);
-  return { ...makeLevel(key, label, ring, cells), config, window: { tiling, nx, ny } };
+  return { ...makeLevel(key, label, ring, cells, config), window: { tiling, nx, ny } };
 }
 
 const Z4 = cyclotomic(4);
@@ -183,9 +184,9 @@ export function hexCells(rows: number, cols: number): Cyc[][] {
 }
 
 export const LEVELS: Level[] = [
-  makeLevel("squares", "Squares", Z4, squareCells(4, 4)),
-  makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6)),
-  makeLevel("hexagons", "Hexagons", Z12, hexCells(5, 4)),
+  makeLevel("squares", "Squares", Z4, squareCells(4, 4), [4, 4, 4, 4]),
+  makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6), [3, 3, 3, 3, 3, 3]),
+  makeLevel("hexagons", "Hexagons", Z12, hexCells(5, 4), [6, 6, 6]),
   // Two uniform tilings, the first with two tile kinds and the second with
   // three: the trihexagonal (kagome) tiling, and the rhombitrihexagonal, which
   // sets squares between the triangles and hexagons. Each window is the
@@ -193,6 +194,25 @@ export const LEVELS: Level[] = [
   uniformLevel("trihex", "Trihexagonal", "trihex", 5.5, [3, 6, 3, 6]),
   uniformLevel("rhombitrihex", "Rhombitrihexagonal", "rhombitrihex", 7, [3, 4, 6, 4]),
 ];
+
+const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+
+/** A vertex configuration as tilings are named: the polygons round a vertex,
+ * dot-separated, a run of one polygon written as a power — 4⁴, 3⁶, 6³,
+ * 3.4.6.4, 3³.4². What the game calls a level, rather than a word that gives
+ * away how it is made. */
+export function notation(config: readonly number[]): string {
+  const parts: string[] = [];
+  for (let i = 0; i < config.length; ) {
+    let j = i;
+    while (j < config.length && config[j] === config[i]) j++;
+    const run = j - i;
+    const power = run > 1 ? [...String(run)].map((d) => SUPERSCRIPT[Number(d)]).join("") : "";
+    parts.push(`${config[i]}${power}`);
+    i = j;
+  }
+  return parts.join(".");
+}
 
 export function levelByKey(key: string): Level | undefined {
   return LEVELS.find((l) => l.key === key);

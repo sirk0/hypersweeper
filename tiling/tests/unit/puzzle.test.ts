@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
 import { centroid, type XY } from "../../src/geometry/shape";
-import { LEVELS, levelByKey } from "../../src/levels";
+import { LEVELS, levelByKey, notation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
 /** Finish a level; the number of tiles it took. */
@@ -137,6 +137,11 @@ describe("puzzle", () => {
     // its squares sit three ways, 30° apart; triangles two ways; hexagons
     // one way, but pointy-top — 30° from the tray's flat one
     expect(rhombi.turns.map((k) => (k * 360) / rhombi.ring.n)).toEqual([60, 30, 30]);
+  });
+
+  it("names each level by its vertex configuration", () => {
+    expect(LEVELS.map((l) => notation(l.config))).toEqual(["4⁴", "3⁶", "6³", "3.6.3.6", "3.4.6.4"]);
+    expect(notation([3, 3, 3, 4, 4])).toBe("3³.4²");
   });
 
   it("starts every tray tile resting on a flat side", () => {
