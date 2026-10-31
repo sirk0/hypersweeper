@@ -76,7 +76,10 @@ design rather than the rule itself.
 - **`VITE_PACKAGED=1` is the only thing this app knows about being packaged**,
   and it only *removes* (no service worker, no update check). Resist adding a
   second branch; if a shell needs different behaviour, the shell should provide
-  it.
+  it. The flag, and everything else the build shares with the other games (the
+  version stamp, the link-preview tags, the dev-server security headers, the
+  PWA wiring), lives in `@tiling/vite-preset` ([`packages/vite-preset`](../../packages/vite-preset));
+  `vite.config.ts` is a call to it plus what is Hypersweeper's own.
 - **The app must reference nothing remote** — no CDN, no web font, no remote
   image. `scripts/check-offline-assets.mjs` fails the build over any URL it does
   not recognise, and the deployed site's Content-Security-Policy

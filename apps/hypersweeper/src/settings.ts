@@ -4,7 +4,7 @@ import { hasDifficulty, screens } from "./config/screens";
 import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
 import { DEFAULT_SHAPE, resolveShape } from "./render/cellStyle";
 import { resolveQuality, type QualityPref } from "./render/quality";
-import { readObject, storage } from "./storage";
+import { readObject, storage } from "@tiling/platform";
 import {
   DEFAULT_SCHEME,
   DEFAULT_THEME,
@@ -28,9 +28,10 @@ import {
 // Reading is total: every field is validated on its own, so a partial, stale,
 // hand-edited or corrupt record degrades to defaults field by field rather than
 // throwing or wiping the rest. Reaching storage at all, and parsing a key into
-// a record, are `storage.ts`'s job — storage is not always there (Safari in
-// private mode, a policy-disabled store, the vitest node environment), and both
-// stored records answer that the same way.
+// a record, are `@tiling/platform`'s job (packages/platform/src/storage.ts) —
+// storage is not always there (Safari in private mode, a policy-disabled store,
+// the vitest node environment), and both stored records answer that the same
+// way.
 //
 // Best times are *not* here: they are game history rather than a preference,
 // they grow with every board played, and they have their own key

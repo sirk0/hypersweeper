@@ -10,7 +10,7 @@ import {
 import { mergeStars, parseStars, replaceStars, storedStars, type Stars } from "./favourites";
 import { catchUpGameCenter } from "./gameCenter";
 import { TOP_N, parseEntries, replaceBoards, storedBoards, type ScoreEntry } from "./leaderboard";
-import { readObject, storage } from "./storage";
+import { readObject, storage } from "@tiling/platform";
 
 // iCloud, where the App Store builds keep the record in step.
 //

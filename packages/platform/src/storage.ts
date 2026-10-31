@@ -1,4 +1,4 @@
-// The two things every persisted record in the app needs before it can do
+// The two things every persisted record in a game needs before it can do
 // anything else: reach `localStorage` at all, and turn a key into a plain
 // object.
 //
@@ -9,8 +9,9 @@
 // truncated or hand-mangled comes back as `null` and the caller falls back to
 // its defaults, rather than throwing on boot.
 //
-// Shared by `settings.ts` (preferences) and `leaderboard.ts` (best times),
-// which otherwise keep their own keys and their own record shapes.
+// Shared by Hypersweeper's settings, best times, favourites, achievements and
+// iCloud record, and by Rep-tiles' stars — each of which keeps its own keys and
+// its own record shape.
 
 export function storage(): Storage | null {
   try {

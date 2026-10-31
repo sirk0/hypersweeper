@@ -38,6 +38,8 @@ COPY package.json package-lock.json ./
 COPY apps/hypersweeper/package.json apps/hypersweeper/
 COPY apps/reptiles/package.json apps/reptiles/
 COPY packages/geometry/package.json packages/geometry/
+COPY packages/platform/package.json packages/platform/
+COPY packages/vite-preset/package.json packages/vite-preset/
 COPY data/package.json data/
 RUN npm ci
 

@@ -4,8 +4,8 @@
 #
 # It is applied ONLY by Cloudflare at the edge. Neither `vite dev` nor
 # `vite preview` serves these headers on their own, which would leave the policy
-# untestable anywhere but production — so vite.config.ts carries a
-# `securityHeaders` plugin that parses *this file* and applies it to both local
+# untestable anywhere but production — so the shared Vite preset
+# (packages/vite-preset) carries a `securityHeaders` plugin that parses *this file* and applies it to both local
 # servers. The e2e suite therefore runs against the real policy, and the parser
 # reading the shipped file rather than a copy of it is the point: a policy
 # restated in TypeScript would drift from the one Cloudflare serves.
