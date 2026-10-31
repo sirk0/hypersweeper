@@ -1,10 +1,12 @@
 #!/bin/sh
-# Entry point for the container in web/docker-compose.e2e.yml. An entry point
+# Entry point for the container in apps/hypersweeper/docker-compose.e2e.yml. An entry point
 # rather than a baked command so that everything a developer types after the
 # service name reaches `playwright test` untouched.
 set -eu
 
-WEB=/app/web
+WEB=/app/apps/hypersweeper
+# The workspace's one node_modules, hoisted to the repo root.
+MODULES=/app/node_modules
 
 # Docker seeds a volume only when it is empty, so a lockfile change would leave
 # the previous run's modules mounted over a freshly built image — the classic
@@ -12,11 +14,11 @@ WEB=/app/web
 # mounted copy disagrees. (The mount point itself cannot be removed, so its
 # contents are cleared rather than the directory.)
 want=$(cat /opt/web-deps/.lockfile-sha)
-if [ "$(cat "$WEB/node_modules/.lockfile-sha" 2>/dev/null || true)" != "$want" ]; then
-  echo "e2e: seeding web/node_modules from the image" >&2
-  find "$WEB/node_modules" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-  cp -a /opt/web-deps/node_modules/. "$WEB/node_modules/"
-  printf '%s' "$want" > "$WEB/node_modules/.lockfile-sha"
+if [ "$(cat "$MODULES/.lockfile-sha" 2>/dev/null || true)" != "$want" ]; then
+  echo "e2e: seeding node_modules from the image" >&2
+  find "$MODULES" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  cp -a /opt/web-deps/node_modules/. "$MODULES/"
+  printf '%s' "$want" > "$MODULES/.lockfile-sha"
 fi
 
 # A bind mount passes the container's uid straight through on a Linux host, so

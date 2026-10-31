@@ -1,8 +1,11 @@
-# Build context for web/Dockerfile.e2e. The context is the repo root because
-# web/vite.config.ts reaches ../data — but the *image* copies only the two files
-# below; everything else arrives at run time through the bind mount in
-# web/docker-compose.e2e.yml. So the context can be almost empty, which matters:
-# .git and web/node_modules are hundreds of megabytes between them.
+# Build context for apps/hypersweeper/Dockerfile.e2e. The context is the repo
+# root because the npm workspace is rooted there (package.json, the one
+# package-lock.json, the hoisted node_modules) — but the *image* copies only the
+# manifests below; everything else arrives at run time through the bind mount in
+# apps/hypersweeper/docker-compose.e2e.yml. So the context can be almost empty,
+# which matters: .git and node_modules are hundreds of megabytes between them.
 *
-!web/package.json
-!web/package-lock.json
+!package.json
+!package-lock.json
+!apps/hypersweeper/package.json
+!apps/reptiles/package.json

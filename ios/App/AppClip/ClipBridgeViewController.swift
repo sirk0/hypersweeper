@@ -7,7 +7,7 @@ import StoreKit
 /// same game bundle a clip.
 ///
 /// - It names the one board the clip plays, `window.hypersweeperClip`, before
-///   any script runs. The page reads it in `web/src/appClip.ts`: it opens that
+///   any script runs. The page reads it in `apps/hypersweeper/src/appClip.ts`: it opens that
 ///   board straight away, hides the header's back and random buttons, records
 ///   no achievements or best times, and puts no card up on a win.
 ///   The board is `HypersweeperClipBoard` in the clip's Info.plist.

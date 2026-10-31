@@ -15,8 +15,8 @@ scripts/setup-codex.sh
 ```
 
 It uses `uv` to create the required Python 3.13 virtual environment and install
-the locked Python dependencies, then runs `npm ci` in `web/` from the committed
-lockfile. The script keeps uv's cache and managed Python under `/tmp` by
+the locked Python dependencies, then runs `npm ci` at the repo root — one npm workspace for
+every app in `apps/` — from the committed lockfile. The script keeps uv's cache and managed Python under `/tmp` by
 default, which works in Codex's sandboxed worktrees. Set `UV_CACHE_DIR` and
 `UV_PYTHON_INSTALL_DIR` to reuse different writable locations.
 
@@ -26,7 +26,7 @@ Follow "Verifying a change" in [`AGENTS.md`](AGENTS.md): run only the checks
 your change touches, within about four minutes, and leave the full suite to CI,
 which runs all of it — the visual baselines included — on every push.
 
-Run `npm run format` in `web/` before committing: CI's `web-checks` fails on
+Run `npm run format` at the repo root (every app) before committing: CI's `web-checks` fails on
 any file Prettier would change (Claude formats through a hook; Codex has none).
 
 `make web-e2e-docker` is still how a Mac runs the gallery slice a change

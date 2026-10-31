@@ -4,7 +4,7 @@ Classic minesweeper, but the board can be almost any surface and tiling —
 from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 
 **Play in the browser:** <https://hypersweeper.pages.dev/>
-(the TypeScript/WebGL app in [`web/`](web), deployed from master by GitHub
+(the TypeScript/WebGL app in [`apps/hypersweeper/`](apps/hypersweeper), deployed from master by GitHub
 Actions; installable, and it works offline once loaded)
 
 <table>
@@ -219,16 +219,16 @@ collector, not merely with it switched off. The full policy is at
 
 ## Development
 
-The game is a TypeScript/Three.js app in [`web/`](web):
+The game is a TypeScript/Three.js app in [`apps/hypersweeper/`](apps/hypersweeper):
 
 ```sh
-cd web
-npm install
+npm install          # at the repo root: one npm workspace for every app
+cd apps/hypersweeper
 npm run dev          # http://localhost:5173
 npm run typecheck    # tsc
 npm run test         # vitest unit tests
 npm run e2e          # Playwright e2e + visual regression
-npm run build        # production bundle into web/dist
+npm run build        # production bundle into apps/hypersweeper/dist
 npm run screenshots  # regenerate the gallery above
 ```
 
@@ -243,7 +243,7 @@ The same game, packaged with everything it draws — bundle, fonts, icons,
 board data — inside the app, so it needs no internet connection at all.
 The build proves that rather than promising it: it refuses to package a
 bundle that references a remote URL, and then launches the app it built
-with the network cut. See [`desktop/README.md`](desktop/README.md).
+with the network cut. See [`shells/desktop/README.md`](shells/desktop/README.md).
 
 ### An iPhone app that buzzes
 
@@ -259,9 +259,9 @@ when you step on a mine, its success buzz when the board falls. No web API
 on iOS can ask for that. Building it needs a Mac with Xcode; a free Apple
 ID signs it for 7 days at a time. See [`ios/README.md`](ios/README.md).
 
-[`web/AGENTS.md`](web/AGENTS.md) is the guide to the code — the renderer,
+[`apps/hypersweeper/AGENTS.md`](apps/hypersweeper/AGENTS.md) is the guide to the code — the renderer,
 the board builders, themes, sound, and how to drive the app headless;
-[`web/README.md`](web/README.md) is its milestone history.
+[`apps/hypersweeper/README.md`](apps/hypersweeper/README.md) is its milestone history.
 [`data/*.json`](data) is shared configuration (the board catalog, presets,
 UI screens) that both implementations read, plus a conformance oracle
 exported from the Python game and replayed by the TypeScript tests, so the
@@ -316,5 +316,5 @@ The two bundled fonts are not covered by that license. Rubik (© 2015 The Rubik
 Project Authors) and DSEG7 Classic (© 2017 keshikan) are both under the SIL
 Open Font License 1.1, and their license texts ship next to the font files in
 [`minesweeper/assets/fonts/`](minesweeper/assets/fonts) — mirrored into
-[`web/public/fonts/`](web/public/fonts) so the browser app is self-contained
+[`apps/hypersweeper/public/fonts/`](apps/hypersweeper/public/fonts) so the browser app is self-contained
 offline.

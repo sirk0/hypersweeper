@@ -1,7 +1,7 @@
 import Foundation
 import Capacitor
 
-/// iCloud's key-value store, for the page's record (web/src/cloudRecord.ts).
+/// iCloud's key-value store, for the page's record (apps/hypersweeper/src/cloudRecord.ts).
 ///
 /// The best times, the achievement record and the favourites live in the page's
 /// `localStorage`, which is one device's and goes with the app when it is

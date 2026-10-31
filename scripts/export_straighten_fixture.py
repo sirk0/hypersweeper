@@ -5,7 +5,7 @@ vertices, which straightening does not change -- it moves points without
 merging any -- so nothing there would notice the TypeScript port drifting from
 this one. This writes the positions themselves, for the tilings that have a
 rule and one board per surface, into the fixture
-``web/tests/unit/straighten.fixture.json``.
+``apps/hypersweeper/tests/unit/straighten.fixture.json``.
 
 Run: ``PYTHONPATH=. python scripts/export_straighten_fixture.py``
 """
@@ -18,7 +18,7 @@ from pathlib import Path
 from minesweeper.boards.presets import build_board
 from minesweeper.boards.tilings import ARCH_TILINGS, _arch_template
 
-OUT = (Path(__file__).resolve().parent.parent / "web" / "tests" / "unit"
+OUT = (Path(__file__).resolve().parent.parent / "apps" / "hypersweeper" / "tests" / "unit"
        / "straighten.fixture.json")
 # one board per surface, on the tiling the rule was written for
 BOARDS = ["torusbasketweave3", "cylbasketweave3", "mobiusbasketweave3",

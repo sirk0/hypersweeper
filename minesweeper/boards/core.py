@@ -24,12 +24,12 @@ class Board:
     height: float
     # Where a cell's vertex mean is a poor glyph spot, the point to centre its
     # number/flag/mine on instead, in the same pixel space as ``polygons``
-    # (``glyphAnchor`` in web/src/boards/core.ts). None for nearly every board.
+    # (``glyphAnchor`` in apps/hypersweeper/src/boards/core.ts). None for nearly every board.
     glyph_anchors: dict[Cell, tuple[float, float]] | None = None
     # Which of a cell's polygon points are real corners, in polygon order, where
     # the polygon carries points that are not (the hyperbolic boards draw each
     # edge as a geodesic arc through extra points). ``cornerMask`` in
-    # web/src/boards/core.ts. None where every point is a corner, or where the
+    # apps/hypersweeper/src/boards/core.ts. None where every point is a corner, or where the
     # extra points are collinear T-vertices a geometric test finds exactly.
     corner_mask: dict[Cell, list[bool]] | None = None
     # A board drawn as a *patch of its own cover* (the closed hyperbolic

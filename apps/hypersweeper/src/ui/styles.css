@@ -1,0 +1,2945 @@
+/* The fonts the pygame game ships (minesweeper/assets/fonts), bundled under
+   apps/hypersweeper/public/fonts so the app is self-contained offline. Rubik is the UI /
+   board face; the single Bold weight is declared across the 400–700 range so
+   every UI weight renders in Rubik, matching the pygame single-face look.
+   DSEG7 Classic drives the LED-style mine / timer counters. */
+@font-face {
+  font-family: "Rubik";
+  src: url("/fonts/Rubik-Bold.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DSEG7 Classic";
+  src: url("/fonts/DSEG7Classic-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+/* The Sand theme's two faces, bundled for the same reason as the pair above —
+   nothing here may reach a CDN (scripts/check-offline-assets.mjs). Space Grotesk
+   carries that theme's interface labels and its board digits: tighter apertures
+   and a flat-sided 2 and 3 read as instrument type, which is what a board that
+   is a geometry exercise wants. It ships as one variable file rather than three
+   static weights, so 500/600/700 all come out of 137 KB.
+
+   Caprasimo is the display voice, and it is used in exactly one place — the menu
+   title. A single 30px word is the whole budget for a face this heavy; spending
+   it anywhere else would make the theme shouty rather than warm. */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-Variable.ttf") format("truetype-variations");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Caprasimo";
+  src: url("/fonts/Caprasimo-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* The app's default look: the Sand theme on the light colour scheme — the
+     warm `sand` palette (cream ground, terracotta accent, 20px corners) under
+     its own grain-and-light page, and Space Grotesk for the interface.
+
+     These are the *boot* values only. The set is a theme and a scheme together
+     (the pygame palettes, ported into data/ui/screens.json), and ui/theme.ts
+     overwrites every property below on the document element once the stored
+     settings are read — so the values here are what the first frame paints, and
+     they must stay in step with `DEFAULT_THEME` under `light` in ui/theme.ts.
+
+     `color-scheme` is here for the same reason: it is what the browser paints
+     the scrollbar and the flash between documents with. */
+  color-scheme: light;
+  /* The interface face, and the one place the boot default is load-bearing
+     beyond the first frame: this value is what a theme that does not name a
+     face of its own inherits. The default theme (Sand) *does* name one, so the
+     boot value is Sand's — a boot value of Rubik would flash the wrong face on
+     every launch — and the two themes that want Rubik say so below, beside
+     Sand's own block. */
+  --ui-font: "Space Grotesk", "Rubik", system-ui, -apple-system, sans-serif;
+  --bg: #f5ead8;
+  --bg2: #f5ead8; /* second gradient stop; equal = a flat field */
+  /* Background layers drawn *over* that field — the Sand theme's grain and
+     light, which is `SAND_PAGE.light` in ui/theme.ts written out. `none` (not
+     empty) on a theme without one: this is consumed by a `background-image`
+     list, where an empty value would invalidate the whole declaration. */
+  --bg-texture:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 0%, #fffaf0 0%, #fffaf000 55%),
+    radial-gradient(140% 110% at 50% 100%, #a1978644 0%, #a1978600 60%);
+  /* The board's own tiling, drawn very faintly over the texture — set by
+     `applyTheme` from the mode on screen (ui/backgroundPattern.ts), and `none`
+     on the menu and on the two themes that want a flat field (this one
+     included, so the boot value is the value). Over rather than under: the
+     grain is turbulence, and a hairline beneath it reads as more noise. */
+  --bg-pattern: none;
+  --panel: #f9f4ed;
+  --panel-blur: none; /* frosted cards, for the glass theme */
+  --text: #2e2b25;
+  --muted: #82796a;
+  --accent: #c67139;
+  --on-accent: #ffffff;
+  --danger: #ff5c5c;
+  --selected: #ffe1d0;
+  --border: #dcd3c4;
+  --counter-bg: #2e2b25;
+  /* The reset button's face. Not part of a palette: it is the palette's own
+     yellow anchor (render/shapePalette.ts `smileyHex`, a pentagon's hue) and it
+     is the same under every theme and both schemes, so the dark block below
+     does not restate it. `themeVars` writes all three on the root at paint
+     time; these are the boot values. */
+  --smiley: #f0e342;
+  --smiley-rim: #b5ac2f;
+  --smiley-ink: #2b2f3a;
+  /* The header flag's mast and foot (`ICONS.flag` in ui/hud.ts): the in-game
+     glyph's near-black (glyphAtlas.ts `FLAG_COLORS.mast`) on a light page, the
+     palette's own text colour on a dark one — see the dark rules below. Not
+     written by `themeVars`, so these stylesheet rules are what decide it. */
+  --flag-mast: #2b2f3a;
+  --radius: 20px;
+  --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
+  /* How far a card's `--shadow` paints outside its box, for the widest any
+     palette states (`0 4px 16px`; the neumorphic pair is ±4px 8px). A scroll
+     box clips at its padding edge on both axes — `overflow-y: auto` turns the
+     x axis to `auto` as well — so a scroller whose cards run to its edges
+     cuts their shadows off flat. Each one pads by this much and takes it back
+     with a negative margin: the cards stay put, the shadow gets the room. */
+  --shadow-room: 16px;
+  /* Header control sizing, all on one scale — the CSS counterpart of the
+     pygame header's `_header_scale`. Everything in the row is a fraction of
+     `--hud-btn`: the glyph inside a button, the gaps, the LED counters' width
+     and digits. So the row is a fixed number of buttons wide, and the button
+     can be *solved* for rather than guessed from the viewport width.
+
+     The header carries seven controls at once — back, flag, random, info and
+     the counter/smiley/counter block — and they all sit on one row, because the
+     smiley has to stay on the exact screen centre (see `.hud`). Five square
+     buttons and two counters of 1.4 buttons each is 7.8 buttons; the six gaps
+     (two inside the side clusters, two inside the centre block, two between
+     the grid columns) at 0.12 each make it 8.52. `--hud-fit` divides the width
+     between the side paddings by 8.6 — that, with a little slack for borders
+     and rounding — so it is exactly the size at which the row fills the line.
+
+     The button is Apple's standard 44pt touch target or bigger wherever that
+     fits (from about a 390pt wide phone up), grows on to `--hud-btn-max` on a
+     wider screen (the iPhone Duo, an iPad, a desktop) and only goes below 44
+     where the row would not otherwise fit: a side column is `minmax(0, 1fr)`,
+     so a row wider than the line does not scroll, it *overlaps* the centre and
+     swallows a button whole. The board's own symmetry controls on the row
+     below (`.board-bar-btn`) ride the same scale. */
+  --hud-pad: clamp(5px, 2vw, 14px);
+  --hud-pad-left: max(var(--hud-pad), var(--safe-left), var(--corner-clear));
+  --hud-pad-right: max(var(--hud-pad), var(--safe-right), var(--corner-clear));
+  --hud-btn-max: 52px;
+  --hud-fit: calc((100vw - var(--hud-pad-left) - var(--hud-pad-right)) / 8.6);
+  --hud-btn: clamp(28px, var(--hud-fit), var(--hud-btn-max));
+  --hud-icon: calc(var(--hud-btn) * 0.565);
+  --hud-gap: calc(var(--hud-btn) * 0.12);
+  --hud-counter-width: calc(var(--hud-btn) * 1.4);
+  --hud-counter-font: calc(var(--hud-btn) * 0.42);
+  /* Height of the visible viewport, the box the whole app lays out in. NOT
+     `100vh`: on iOS Safari that is the *large* viewport (the one you get with
+     the toolbars retracted), so a full-height fixed layer runs on underneath
+     the bottom toolbar — the canvas is taller than what the user can see, and
+     a board centred in it sits low, jammed against the toolbar. `100dvh`
+     tracks the toolbars, and main.ts overwrites this with the exact
+     `visualViewport` height (the signal the pygame web presenter uses too). */
+  --app-h: 100vh;
+  /* Where that box goes: the top-left of the *visible* viewport inside the
+     layout one, which is what a fixed layer's `top: 0` actually means.
+     `viewport-fit=cover` (index.html) spans the layout viewport across the
+     whole screen and a mobile browser draws its toolbars over it rather than
+     shortening it — so with the toolbars out, `top: 0` is up behind the
+     address bar and the app sat that far above the screen it was meant to
+     fill. main.ts keeps these on `visualViewport.offsetTop`/`offsetLeft`; both
+     are 0 wherever the two viewports are the same box (a desktop browser, a
+     home-screen launch, a phone with its toolbars retracted). */
+  --app-top: 0px;
+  --app-left: 0px;
+  /* The status-bar / notch strip at the top of the screen, which
+     `viewport-fit=cover` (index.html) hands the page rather than reserving.
+     The header and the menu clear it with `env(safe-area-inset-top)` directly;
+     this copy exists because two places need the *number*: the rule below, and
+     main.ts, which reads it back off a probe element (and which an e2e test can
+     stub by setting this property). */
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* The side insets — the sensor housing and the corners in landscape — read
+     through a property for the same reason: the store-screenshot script and
+     the e2e suite stand a device's insets in through these three, since a
+     desktop browser reports none. */
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  /* How far in from the side a header control must sit to clear the display's
+     rounded corner, when the top inset alone does not. A Face ID iPhone's
+     portrait inset (59–62pt) already puts the header below the corner's curve;
+     a Touch ID screen's status bar (20–24pt — the iPhone Duo, an iPad) does
+     not, and the controls at the ends of the row sat inside the curve. So the
+     header's side padding is at least `--corner-reach` less the top inset, and
+     never anything for a top inset of 0: that is a page that does not reach
+     the top of the screen at all (Safari with its address bar above it, a
+     desktop browser), or a landscape phone, whose side insets clear the
+     corners themselves. The `* 100` is the switch: any inset of a pixel or
+     more takes the `min` to `--corner-reach`, and none keeps it at 0.
+
+     The reach is an estimate — no web API reports a display's corner radius —
+     sized so a 24pt status bar leaves a control 24px in from the edge, past the
+     curve App Store Connect draws round an iPhone Duo screenshot. */
+  --corner-reach: 48px;
+  --corner-clear: max(0px, min(calc(var(--safe-top) * 100), var(--corner-reach)) - var(--safe-top));
+}
+
+/* The boot frame for a device that prefers dark. The default colour scheme is
+   `auto`, so this covers every player on a dark device who has not chosen
+   light: until main.ts has read localStorage and called `applyTheme`, the
+   block above is what paints, which would be one bright flash on every launch.
+
+   This can never fight an explicit choice: `applyTheme` writes these as *inline*
+   properties on the document element, and an inline declaration beats any
+   stylesheet rule whatever the media query says. So the moment the app boots,
+   this block stops mattering — it only ever covers the frames before that.
+
+   Same rule as the block above: it must stay in step with `DEFAULT_THEME` under
+   `dark` in ui/theme.ts. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #191712;
+    --bg2: #191712;
+    --bg-texture:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
+      radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%),
+      radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%);
+    --panel: #2e2b25;
+    --text: #f9f4ed;
+    --muted: #a19786;
+    --accent: #f6a06b;
+    --on-accent: #2e2b25;
+    --danger: #ff5c5c;
+    --selected: #8c491a55;
+    --border: #474238;
+    --counter-bg: #000000;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Guarded, unlike the block above: `--flag-mast` is never written inline, so
+     nothing else would stop this beating a player's explicit light scheme. */
+  :root:not([data-scheme="light"]) {
+    --flag-mast: var(--text);
+  }
+}
+
+/* The dark scheme chosen on a light device: `applyTheme` sets `data-scheme`. */
+:root[data-scheme="dark"] {
+  --flag-mast: var(--text);
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-h: 100dvh;
+  }
+}
+
+/* An iOS home-screen launch that draws under the status bar — every install
+   made while the app still shipped `apple-mobile-web-app-status-bar-style:
+   black-translucent`, since iOS caches that tag with the icon and only re-reads
+   it when the icon is added again (index.html). There the page starts at the
+   very top of the screen, under the status bar, but WebKit sizes the viewport
+   as if it started *below* it — so the document ends one status bar short of
+   the bottom of the screen and WebKit fills the leftover strip with the web
+   view's own white, which no theme touches (the WebGL canvas is transparent, so
+   there is nothing else down there). Growing the root by that same inset takes
+   the page background all the way down; main.ts lays the app itself out into
+   it, see `resolveHeight`.
+   Deliberately only `min-height`: clipping the growth back off with an
+   `overflow: hidden` here risks taking the paint with it, and the few px of
+   page this leaves scrollable move nothing on screen — the app is fixed layers
+   over a field that is flat but for a theme's grain and vignette. A fresh
+   install is inset below an opaque status bar, so its inset is 0 and this rule
+   grows nothing. */
+@media (display-mode: standalone) {
+  html {
+    min-height: calc(100% + var(--safe-top));
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  /* The visible viewport, the same box the app lays out in — NOT `100%`. On
+     iOS Safari `100%` resolves against the initial containing block, which
+     like `100vh` is the *large* viewport (the toolbars retracted). With the
+     toolbars out — which is how every page starts, so this is what the first
+     open looks like — the document then stands one toolbar taller than what
+     the user can actually see, and the page scrolls, even though the app is
+     nothing but fixed layers with nothing in flow to scroll. One flick drags
+     the whole app up by that strip: the menu title goes off the top of the
+     screen and the app's bottom edge lifts clear of the toolbar, leaving a
+     band of bare web view under it (white in every theme — the WebGL canvas
+     is transparent, so there is nothing else down there). Safari re-expands
+     its toolbars at the end of a scroll, so the page settles in exactly that
+     state instead of springing back. Sized to `--app-h` there is no slack to
+     scroll, and the layout viewport and the visible one stay the same box. */
+  height: calc(var(--app-top) + var(--app-h));
+  /* The page field: the theme's colour gradient (flat for every theme whose
+     two stops are equal), with the theme's texture layers over it and, on a
+     board, that board's own tiling over those. The board canvas is
+     transparent, so this shows around the board — and, on a theme whose opened
+     cells are translucent, *through* them.
+
+     The trailing colour is what the browser paints *outside* the root box: the
+     root's background propagates to the canvas, but only its colour reaches
+     past the box — an overscroll bounce, or the strip a standalone launch
+     leaves below the document (see the `display-mode: standalone` rule above).
+     `--bg2` is the gradient's far end, so the seam does not show. */
+  background:
+    var(--bg-pattern),
+    var(--bg-texture),
+    linear-gradient(160deg, var(--bg), var(--bg2)) var(--bg2);
+  color: var(--text);
+  /* Through a variable for the same reason the colours are: a theme may carry a
+     face of its own (Sand does), and every control below takes its font with
+     `font: inherit`, so swapping it here reaches all of them at once. The
+     default is the Rubik stack this always had. */
+  font-family: var(--ui-font);
+  overscroll-behavior: none;
+  /* No browser zoom anywhere in the app. iOS ignores `user-scalable=no`, so
+     the viewport meta alone leaves double-tap-to-zoom live: two quick taps
+     (two reveals in a row, a double tap on the smiley) blow the page up, the
+     board appears to jump, and every tap then lands on the wrong cell with no
+     way back. `manipulation` keeps taps and drags but drops the double-tap
+     gesture; the board has its own bounded pinch zoom instead (controls.ts,
+     which also blocks Safari's `gesture*` page pinch). */
+  touch-action: manipulation;
+  /* No text selection anywhere in the app, and no iOS long-press callout. A
+     game is all taps and holds: on iOS a long press or a quick double tap on
+     the header, the board's name or a dialog selected the text under the
+     finger and raised the magnifier and the copy menu mid-game, which then
+     swallowed the next touches. The canvas has always opted out (`#board`
+     below); this takes the rest of the chrome with it. Inherited, so it
+     reaches every layer — and the app has no text field that would need it
+     back. Safari still wants the prefixed property. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#board {
+  position: fixed;
+  top: var(--app-top);
+  left: var(--app-left);
+  /* Both axes stated explicitly: a canvas is a *replaced* element, so an auto
+     width/height resolves to the drawing buffer's size rather than to the
+     left/right (top/bottom) offsets. */
+  width: 100%;
+  height: var(--app-h);
+  display: block;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#ui {
+  touch-action: manipulation;
+  position: fixed;
+  top: var(--app-top);
+  left: var(--app-left);
+  width: 100%;
+  height: var(--app-h);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+#ui > * {
+  pointer-events: auto;
+}
+
+/* --- Board name, caption and first-run hint --- */
+
+/* The board's name, drawn *behind* the board: its own fixed layer, inserted
+   before the canvas (main.ts) so tree order paints the transparent canvas over
+   it. So it costs the board no height, and a board zoomed up over it covers it
+   — which is the point. `--board-name-top` is the line the board is framed
+   from (App.onResize), so the name sits at the top of the play field. */
+.board-name-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(var(--app-top) + var(--board-name-top, 0px));
+  padding: 2px 16px 0;
+  text-align: center;
+  /* Behind the board, and never a target: a tap here is a tap on the cell that
+     is drawn over it. */
+  pointer-events: none;
+}
+
+.board-name-layer[hidden] {
+  display: none;
+}
+
+.board-name {
+  color: var(--muted);
+  font-size: clamp(12px, 3.6vw, 16px);
+  font-weight: 600;
+  /* A label, not a caption: it reads as part of the page behind the board
+     rather than as chrome above it. */
+  opacity: 0.72;
+  letter-spacing: 0.01em;
+  /* One line: a long name (a Laves tiling on a Klein bottle) shortens rather
+     than wrapping across the top of the board. */
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Carries the board's own controls (the symmetry chevrons and mirrors), and
+   nothing else. Sits in the `#ui` flex column, so it is part of the block
+   `App.onResize` measures and frames the board below; a board with no controls
+   hides it entirely. */
+.board-caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* A board with every symmetry carries six or seven controls, which will not
+     fit on one line on a narrow phone; the row wraps rather than shrinking
+     them below a touch size, and the board is framed below whatever height
+     that comes to (main.ts onResize measures the caption's bottom). */
+  flex-wrap: wrap;
+  gap: var(--hud-gap);
+  padding: 0 16px 6px;
+  /* The strip itself is not a target; its buttons put this back. */
+  pointer-events: none;
+}
+
+/* The board's symmetry controls, grouped so they wrap as a block rather than
+   leaving one button stranded under the rest. */
+.board-caption-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--hud-gap);
+  flex: 0 0 auto;
+}
+
+.board-caption-controls[hidden] {
+  display: none;
+}
+
+/* Smaller than a header control — this row is secondary, and the chevrons sit
+   beside text rather than in a band of equal-height buttons. */
+.board-bar-btn {
+  pointer-events: auto;
+  width: auto;
+  min-width: calc(var(--hud-btn) * 0.82);
+  height: calc(var(--hud-btn) * 0.72);
+  padding: 0 6px;
+  flex: none;
+}
+
+.board-bar-btn[hidden] {
+  display: none;
+}
+
+.board-caption[hidden] {
+  display: none;
+}
+
+/* Shown once ever, over the board. Absolutely positioned rather than in the
+   column, so the board does not jump when it goes — and inside `#ui`, whose
+   box *is* the visible viewport, rather than fixed to the window: a `fixed`
+   element's bottom is the layout viewport's, which on a phone is the large
+   viewport, so the one thing a first-time player is meant to read sat behind
+   the browser's bottom toolbar. */
+.board-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translate(-50%, 8px);
+  z-index: 3;
+  max-width: min(92vw, 420px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--panel);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: clamp(13px, 3.6vw, 15px);
+  font-weight: 600;
+  text-align: center;
+  opacity: 0;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+/* A tap aimed at the board must not be eaten by the hint sitting over it — and
+   the hint is a child of `#ui`, so this has to outrank the `#ui > *` rule that
+   makes the chrome tappable. A bare `.board-hint` here loses to that id and the
+   pill quietly swallowed the first taps of the one player who ever sees it. */
+#ui > .board-hint {
+  pointer-events: none;
+}
+
+.board-hint.open {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.board-hint[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-hint {
+    transition: none;
+  }
+}
+
+/* --- HUD header --- */
+.hud[hidden] {
+  display: none;
+}
+
+.hud {
+  /* Equal-width side columns around an auto middle one, so the smiley lands on
+     the exact horizontal centre of the screen whatever the side clusters hold
+     — the pygame layout, where `face_rect` is centred on `size[0] // 2` and the
+     two counters sit symmetrically either side of it. `minmax(0, 1fr)` keeps
+     the sides equal instead of letting the wider one shove the centre across
+     (the Klein bottle's two scroll chevrons make the right cluster wider). */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--hud-gap);
+  /* Clear the notch/status bar (top) and, in landscape, the rounded corners
+     and sensor housing on the sides (viewport-fit=cover exposes these). The
+     side paddings also clear a rounded corner the top inset leaves exposed
+     (`--corner-clear`), and are what `--hud-btn` is solved against. */
+  padding: max(var(--hud-pad), var(--safe-top)) var(--hud-pad-right) var(--hud-pad)
+    var(--hud-pad-left);
+  background: transparent;
+}
+
+.hud-cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-gap);
+  min-width: 0; /* a grid child defaults to min-content — let it shrink */
+  /* A side column is `minmax(0, 1fr)`, so content wider than its share does not
+     scroll — it overflows *into* the centre and hides a button behind an LED
+     counter. Wrapping instead costs a second row (only on the Klein bottle at
+     phone widths, the one board with nine controls), which the board absorbs by
+     itself: `App.onResize` reserves the header's *measured* height. */
+  flex-wrap: wrap;
+  row-gap: var(--hud-gap);
+}
+
+.hud-left {
+  justify-self: start;
+}
+
+.hud-center {
+  justify-self: center;
+}
+
+/* The Klein scroll chevrons hug the right edge, side by side on one row — the
+   same header row as everything else, on a phone as on the desktop. */
+.hud-right {
+  justify-self: end;
+  /* Wrapped rows stay against the right edge, so the cluster reads as one block
+     hugging the corner rather than a ragged left-aligned pile. */
+  justify-content: flex-end;
+}
+
+/* The centre block is the one that must never wrap: the mine counter, the
+   smiley and the timer are read as one unit, and the smiley is the app's
+   restart button sitting on the exact screen centre. */
+.hud-center {
+  flex-wrap: nowrap;
+}
+
+/* Rounded card controls with a soft drop shadow (iOS-style chrome). Square
+   boxes of one size, like the pygame header's `_button_side`, so the whole row
+   reads as one band of equal-height controls. */
+.hud-btn,
+.hud-smiley {
+  /* Tap, never double-tap-zoom (the smiley is the classic victim: a double
+     tap on it zoomed the whole page in, with nothing to zoom back out). */
+  touch-action: manipulation;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+  width: var(--hud-btn);
+  height: var(--hud-btn);
+}
+
+/* A slot the App Clip has no use for (back, random): kept as space so the
+   clusters either side of the smiley stay equal, but neither drawn nor
+   reachable (Hud's `vacant`). */
+.hud-btn.hud-vacant {
+  visibility: hidden;
+}
+
+/* Pressed / toggled-on: system-blue tinted fill, shadow tucked away. */
+.hud-btn.active,
+.hud-btn:active,
+.hud-smiley:active {
+  border-color: var(--accent);
+  background: var(--selected);
+  box-shadow: none;
+}
+
+.hud-smiley {
+  font-size: var(--hud-icon);
+  line-height: 1;
+}
+
+/* The face is sized like every other header glyph rather than left to the
+   default `width: 100%` an inline SVG takes — at the button's full content
+   width it painted 1.7x the flag and the die beside it, which read as a
+   heavier drawing rather than a bigger one. `.hud-icon-btn` does this for the
+   icon buttons; the reset slot carries no icon class (Hud.buildSlot), so it
+   states it here. */
+.hud-smiley {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-smiley svg {
+  display: block;
+  width: var(--hud-icon);
+  height: var(--hud-icon);
+}
+
+/* Icon-only header buttons (e.g. the flag-mode toggle). Positioned so the flag
+   flash below can lay its red over the button; the icon is positioned in turn
+   so it paints on top of that layer, a pseudo-element coming after its siblings
+   in paint order. */
+.hud-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.hud-icon-btn svg .flag-mast {
+  fill: var(--flag-mast);
+}
+
+.hud-icon-btn svg {
+  display: block;
+  width: var(--hud-icon);
+  height: var(--hud-icon);
+  position: relative;
+  z-index: 1;
+}
+
+/* A flag has just been planted: the header's flag button blinks red
+   (`Hud.flashFlag`). The move it answers is the *held* one — a flag placed by
+   holding a cell lands under the player's own fingertip, so the board itself
+   cannot confirm it — and the flag button is where flag state already lives.
+
+   The red is laid over the button as its own layer rather than animated onto
+   `background`, because the button's resting background is one of two things
+   (`--panel`, or `--selected` in flag mode) and a keyframe can only name one:
+   ending on the wrong one snaps at the last frame. An overlay composes with
+   either, and with `:active` too. `--danger` is the palette's own red, so this
+   follows the theme like every other colour here. */
+@keyframes hud-flag-flash {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hud-btn.flag-flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--danger);
+  pointer-events: none;
+  /* `forwards` so the last painted frame is the transparent one: the class is
+     taken off on `animationend`, a frame or two later. */
+  animation: hud-flag-flash 420ms ease-out forwards;
+}
+
+/* LED display: red digits on a dark rounded panel, flanking the smiley. The
+   panel is exactly as tall as the buttons either side of it (pygame draws its
+   counter box on the same header midline at the same height), so the row is
+   one even band rather than tall icons with squat counters between them. */
+.hud-counter {
+  font-family: "DSEG7 Classic", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--danger);
+  background: var(--counter-bg);
+  border: 1px solid var(--counter-bg);
+  border-radius: 10px;
+  /* A width, not a minimum: `--hud-fit` counts each counter as exactly 1.4
+     buttons, and three digits at this size take about 1.2. */
+  padding: 0;
+  flex: none;
+  width: var(--hud-counter-width);
+  height: var(--hud-btn);
+  font-size: var(--hud-counter-font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Menu shell --- */
+.menu[hidden] {
+  display: none;
+}
+
+.menu {
+  /* Fill the viewport height so the title pins to the top, the difficulty row
+     to the bottom, and the mode list centres in the space between (matching the
+     pygame MenuScreen). Centred horizontally at a comfortable column width. */
+  flex: 1;
+  min-height: 0;
+  width: min(520px, 92vw);
+  margin-inline: auto;
+  /* Keep the title and the bottom difficulty row clear of the notch and the
+     home indicator when installed full-screen on iOS. */
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.menu-body {
+  /* Takes the space between the fixed title and difficulty row; its list is
+     vertically centred by auto margins, but scrolls when it overflows. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  /* Room for the rows' shadows (`--shadow-room`). Top and bottom take 12px,
+     not the full room: that is all a shadow reaches above a card, and it
+     keeps the box inside the 14px gap to the header and the difficulty row,
+     so it never lies over their buttons. */
+  padding: 12px var(--shadow-room);
+  margin: -12px calc(-1 * var(--shadow-room));
+}
+
+.menu-body > .menu-list {
+  margin-block: auto;
+}
+
+.menu-back .menu-entry-label {
+  color: var(--muted);
+}
+
+/* The back row is a sibling of the page content, not part of its list, and
+   `.menu-body` is a gapless flex column — so without this it butts straight
+   against the first card below it. One list gap keeps every page (the pickers,
+   whose content starts with a list, and settings, whose first heading adds its
+   own margin on top) reading as one evenly spaced stack. */
+.menu-body > .menu-back {
+  margin-bottom: 8px;
+}
+
+/* Title row: the how-to-play ? and the settings gear at the right, balanced by
+   an empty box of the same width at the left so the title stays centred on the
+   screen. Both sides are laid out in flow rather than absolutely, so on a
+   narrow phone — where the title wraps to two lines — it reflows around the
+   buttons instead of running underneath them. The spacer and the button box
+   share one width, so adding or dropping a button keeps the title centred. */
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* One button per side — the ? at the left edge, the gear at the right — so
+     the two balance and the title keeps the whole middle. Fluid like the HUD
+     controls (--hud-*), so a 320px phone still fits "Hypersweeper" on one
+     line. */
+  --menu-header-btn: clamp(32px, 10vw, 40px);
+  --menu-header-actions: var(--menu-header-btn);
+}
+
+.menu-header-actions {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  width: var(--menu-header-actions);
+}
+
+.menu-header-lead {
+  justify-content: flex-start;
+}
+
+.menu-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0 0 2px;
+  text-align: center;
+  /* Fluid, like the header controls (--hud-*): at 28px "Hypersweeper" is wider
+     than the space left beside the gear on a 320px phone, and a single word
+     cannot wrap, so it would overlap the button. */
+  font-size: clamp(19px, 6.4vw, 28px);
+  overflow-wrap: break-word;
+}
+
+.menu-header-btn {
+  flex: none;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--menu-header-btn);
+  height: var(--menu-header-btn);
+  padding: 0;
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.menu-header-btn svg {
+  display: block;
+  width: 60%;
+  height: 60%;
+}
+
+/* Hidden at phone width, where the header shows the icon alone; revealed by
+   `.menu-sidebar-footer .menu-header-btn-label` once this button is moved
+   into the desktop sidebar footer, which needs a visible label. */
+.menu-header-btn-label {
+  display: none;
+}
+
+.menu-header-btn:hover,
+.menu-header-btn:active {
+  color: var(--accent);
+  background: var(--selected);
+}
+
+.menu-subtitle {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-entry {
+  touch-action: manipulation;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 18px;
+  cursor: pointer;
+  /* Icon at the left, the label (and its hint) beside it — the pygame menu
+     row. Rows without an icon (the back row) just show their text. */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.menu-entry-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The menu glyphs (icons.ts): a fixed square box so every label lines up. */
+.menu-entry-icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: block;
+}
+
+.menu-entry-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.menu-entry:active {
+  background: var(--selected);
+  border-color: var(--accent);
+}
+
+.menu-entry-label {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.menu-entry-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* The mark on a board the tiling is against (fairness.ts). It sits at the
+   right edge opposite the icon, and its colour is the palette's own `--danger`
+   so it carries in every theme rather than being a hard-coded amber that
+   vanishes on the dark one. */
+.menu-entry-warning {
+  color: var(--danger);
+  font-size: 18px;
+  line-height: 1;
+  flex: none;
+}
+
+/* The favourite star (menu.ts `favButton`): a button of its own laid over the
+   row's right edge, centred on the row's height — a sibling of the row's
+   button, since a button cannot hold one — so the row keeps launching the
+   board. The row gives up that edge (`.has-fav`) so a long name or the ⚠
+   never runs under it. */
+.menu-list > li {
+  position: relative;
+}
+
+.menu-entry.has-fav {
+  padding-right: 52px;
+}
+
+.menu-fav {
+  touch-action: manipulation;
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.menu-fav svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.menu-fav:hover,
+.menu-fav[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.menu-fav[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+
+.menu-fav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The completion mark (menu.ts `addDoneMark`): three bars rising Easy, Medium,
+   Hard, filled once the board is won at that difficulty — a 1-2-3 that is not
+   a row of stars, so it cannot be read as the favourite. */
+.menu-done {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 13px;
+  margin-left: 9px;
+  vertical-align: -1px;
+}
+
+.menu-done-bar {
+  width: 4px;
+  border-radius: 1px;
+  background: var(--muted);
+  opacity: 0.3;
+}
+
+.menu-done-bar:nth-child(1) {
+  height: 5px;
+}
+
+.menu-done-bar:nth-child(2) {
+  height: 9px;
+}
+
+.menu-done-bar:nth-child(3) {
+  height: 13px;
+}
+
+.menu-done-bar.won {
+  background: var(--accent);
+  opacity: 1;
+}
+
+/* The home page's Favourites section (menu.ts `renderRoot`): the quick-play
+   list and the starred boards under it are centred in the body as one block,
+   so the first list gives up its bottom auto margin and the second its top. */
+.menu-body > .menu-list.menu-list-lead {
+  margin-bottom: 0;
+}
+
+.menu-body > .menu-fav-list {
+  margin-top: 0;
+}
+
+.menu-section-heading {
+  margin: 22px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* A blocked board keeps its row and stays tappable — the row opens the
+   explanation — but reads as unavailable rather than as a board you could
+   choose. */
+.menu-entry[data-fairness="blocked"] {
+  opacity: 0.6;
+}
+
+/* The distortion mark (modes/distortion.ts) is per difficulty, so it is built
+   once and toggled with `hidden` — which a `display` rule would override. */
+.menu-distortion-mark[hidden] {
+  display: none;
+}
+
+.menu-blocked {
+  padding: 4px 18px 18px;
+}
+
+.menu-blocked-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Submenu rows (Uniform / Dual-uniform / Aperiodic) lay the label and the ›
+   chevron out on a single row, chevron pinned to the right edge. */
+.menu-entry.menu-submenu {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.menu-entry-chevron {
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  flex: none;
+}
+
+/* A row that steps through a few values shows the current one at the right. */
+.menu-entry-value {
+  color: var(--muted);
+  font-weight: 600;
+  flex: none;
+}
+
+.menu-difficulty {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.difficulty-btn {
+  touch-action: manipulation;
+  flex: 1;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  cursor: pointer;
+}
+
+/* Selected difficulty: system-blue pill. */
+.difficulty-btn.active {
+  border-color: var(--accent);
+  background: var(--selected);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* --- Desktop menu: two-pane board browser --- */
+/* Below 900px none of this applies — the phone column above is untouched.
+   From 900px the sidebar (the whole top level of the tree) replaces the back
+   stack, and the content pane shows the current page as a grid of board
+   cards instead of a list of rows. See
+   project/design_handoff_desktop_menu/README.md in the design export for the
+   full spec this implements ("option 8b").
+   The second clause takes in a tablet held upright, which has the height for
+   it and nothing to fill with a phone column — see `Menu.wideQuery`, which
+   must match this query, and the tablet block below that fits the panes to
+   its narrower width. The first clause's height floor leaves a phone on its
+   side — even a 932px-wide one — to the landscape rail further down. */
+.menu-sidebar {
+  display: none;
+}
+
+@media (min-width: 900px) and (min-height: 501px), (min-width: 720px) and (min-height: 800px) {
+  .menu {
+    width: min(1280px, 100%);
+    display: grid;
+    grid-template-columns: 276px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+  }
+
+  /* The phone header (title + icon buttons) and the bottom difficulty block
+     are both superseded — the sidebar carries the title and footer buttons,
+     and the difficulty pills move into the pane header (`paneHeader` in
+     menu.ts reparents the same element there; it is never cloned). */
+  .menu-header,
+  .menu > .menu-difficulty-block {
+    display: none;
+  }
+
+  .menu-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: max(28px, env(safe-area-inset-top)) 20px 28px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* The app's title in the sidebar and the page's title in the pane are the
+     two headings on screen at once, so they are one size and one face rather
+     than two that nearly match — 28px is where the phone's own `.menu-title`
+     clamp tops out, so this is not a third title size in the app.
+
+     `flex: none` is load-bearing: `.menu-title` grows to take the middle of
+     the phone's header *row*, and left alone in the sidebar's *column* the
+     same rule makes the title swallow the free space — which pushes the nav
+     rows down the panel and leaves the footer's `margin-top: auto` with
+     nothing to claim. */
+  .menu-sidebar-title,
+  .menu-pane-title {
+    flex: none;
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.05;
+    text-align: left;
+  }
+
+  /* ...aligned with the labels of the nav rows underneath it. */
+  .menu-sidebar-title {
+    margin-left: 10px;
+  }
+
+  .menu-sidebar .menu-list {
+    gap: 3px;
+  }
+
+  .menu-nav-section {
+    margin: 0 0 4px 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Sidebar rows are nav rows, not the phone's cards: no border, shadow or
+     panel background of their own — they sit directly on the sidebar. */
+  .menu-sidebar .menu-entry {
+    background: none;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    border-radius: var(--radius);
+    padding: 11px 12px;
+    gap: 12px;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 1.1;
+  }
+
+  .menu-sidebar .menu-entry:active {
+    border-color: transparent;
+  }
+
+  .menu-sidebar .menu-entry:hover,
+  .menu-sidebar .menu-entry:active {
+    background: var(--selected);
+  }
+
+  .menu-sidebar .menu-entry:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .menu-sidebar .menu-entry.active {
+    background: var(--selected);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .menu-sidebar .menu-entry-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  /* Sidebar rows show no hint line (the pane header explains the page once
+     it is open) — only `.menu-entry-label` is ever populated here. */
+  .menu-sidebar .menu-entry-hint {
+    display: none;
+  }
+
+  .menu-sidebar-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  /* The how-to-play / settings buttons, reparented here from the (now
+     hidden) phone header — full labelled rows instead of a bare icon. */
+  .menu-sidebar-footer .menu-header-btn {
+    width: 100%;
+    height: auto;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.1;
+  }
+
+  .menu-sidebar-footer .menu-header-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .menu-sidebar-footer .menu-header-btn-label {
+    display: inline;
+  }
+
+  .menu-body {
+    grid-column: 2;
+    min-height: 0;
+    /* The pane's own padding is already wider than `--shadow-room`, so the
+       phone's negative margin is not wanted here. */
+    margin: 0;
+    padding: 30px 34px max(34px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .menu-body > .menu-list {
+    margin-block: 0;
+  }
+
+  .menu-body > .menu-back {
+    margin-bottom: 0;
+  }
+
+  .menu-pane-header {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+  }
+
+  /* A board-browsing page (`paneHeader` in menu.ts sets `paned`) scrolls its
+     card grid, not the pane: the page's title, its breadcrumb and the
+     difficulty pills stay on screen however far down the catalogue the player
+     is — and so does the back row, on a family page, where it is the only way
+     up. Sticky would do it too, but the header would then need a fill of its
+     own over the page's textured gradient (`--bg-texture`), and a flat one
+     seams against it. Moving the scroll down one level needs no fill at all.
+
+     Scoped to `paned` because the settings, help and best-times pages are a
+     stack of sections with no single list to hand the scrolling to — those
+     still scroll whole, as `.menu-body` does everywhere else. */
+  .menu-body.paned {
+    overflow: hidden;
+    /* the grid carries the bottom inset now, below its last row */
+    padding-bottom: 0;
+  }
+
+  .menu-body.paned > .menu-list,
+  .menu-body.paned > .menu-pane-scroll {
+    /* A flex item's min-content floor would refuse to shrink, and the grid
+       would push its overflow out of the pane instead of scrolling. */
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: max(34px, env(safe-area-inset-bottom));
+    /* The cards' shadows and their hover lift (`--shadow-room`), taken back
+       out of the pane's padding and the 20–24px gap under its header. */
+    padding-top: var(--shadow-room);
+    padding-inline: var(--shadow-room);
+    margin: calc(-1 * var(--shadow-room)) calc(-1 * var(--shadow-room)) 0;
+  }
+
+  /* Quick start with favourites: two card grids and a heading in the one
+     scroller (menu.ts `renderQuickStart`). */
+  .menu-pane-scroll > .menu-section-heading {
+    margin: 30px 0 14px;
+    text-align: left;
+  }
+
+  /* On a card the star sits over the preview's corner, on a disc of the
+     panel colour so it reads over a busy tiling — and the card, whose caption
+     is under the preview, keeps its full width. */
+  .menu-entry.menu-board-card.has-fav {
+    padding-right: 0;
+  }
+
+  .menu-card-grid > li > .menu-fav {
+    top: 9px;
+    right: 9px;
+    transform: none;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+
+  .menu-board-card-caption .menu-done {
+    flex: none;
+    margin-left: 0;
+  }
+
+  .menu-pane-heading {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .menu-pane-hint {
+    margin: 7px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  /* The difficulty pills, reparented into the pane header: a segmented
+     control instead of the phone's row of separate pills. */
+  .menu-pane-header .menu-difficulty-block {
+    flex: none;
+  }
+
+  .menu-pane-header .menu-difficulty-heading {
+    display: none;
+  }
+
+  .menu-pane-header .menu-difficulty {
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 5px;
+    background: var(--bg);
+    border-radius: 999px;
+  }
+
+  .menu-pane-header .difficulty-btn {
+    flex: none;
+    padding: 9px 20px;
+    border: 0;
+    box-shadow: none;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .menu-pane-header .difficulty-btn.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 700;
+  }
+
+  /* The card grid: fluid columns rather than a fixed count, so an ultrawide
+     pane gains more columns instead of stretching each card. */
+  .menu-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
+
+  /* The grid stretches the row to its tallest card, but the button inside is
+     what draws the card — without this a two-line caption leaves its
+     neighbours' bottom edges hanging short of the row. */
+  .menu-card-grid > li {
+    display: flex;
+  }
+
+  .menu-card-grid > li > .menu-board-card {
+    height: 100%;
+  }
+
+  /* `.menu-entry.menu-submenu` (styles.css, phone rows) lays its content out
+     as a single row and outranks a bare `.menu-board-card` on specificity —
+     matched here so the family card's column layout actually wins. */
+  .menu-entry.menu-board-card {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    /* The theme's own corner, as the phone's rows take it — Classic states 0
+       and means it, and a card is the one place that was rounded anyway. */
+    border-radius: var(--radius);
+  }
+
+  .menu-board-card:hover {
+    border-color: var(--accent);
+  }
+
+  .menu-board-card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* The padding is all the air a figure gets: its viewBox is cropped to the
+     drawing (icons.ts `figureSvg`), so this is the gap to the card's edge. */
+  .menu-board-card-preview {
+    height: 168px;
+    padding: 6px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* A tiling is the board's own paper, so it runs to the card's edges and is
+     cropped there, rather than sitting in the frame a solid or a shaped board
+     needs to show its silhouette (icons.ts `previewIcon`). */
+  .menu-board-card-preview.is-tiled {
+    padding: 0;
+  }
+
+  .menu-board-card-preview svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .menu-board-card-caption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 18px 17px;
+    border-top: 1px solid var(--border);
+  }
+
+  .menu-board-card-caption .menu-entry-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .menu-board-card-caption .menu-entry-chevron {
+    font-size: 20px;
+  }
+
+  .menu-fairness-pill {
+    flex: none;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--selected);
+    color: var(--danger);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.3;
+  }
+}
+
+/* The two-pane menu on a tablet held upright (the second clause of the query
+   above, and only it — the desktop from 900px is untouched). Its 744–899px
+   would leave the desktop's 276px sidebar a pane of one card column, under a
+   title squeezed to a word a line beside the difficulty pills. So: a narrower
+   sidebar, a tighter card floor so the pane holds two columns, and a pane
+   header that drops the pills to their own row under the title instead of
+   wrapping the title around them. The two titles step down together (they
+   are one size on purpose, see above): at 28px "Hypersweeper" is wider than
+   this sidebar and, being one word, breaks mid-word. */
+@media (max-width: 899px) and (min-width: 720px) and (min-height: 800px) {
+  .menu {
+    grid-template-columns: 236px minmax(0, 1fr);
+  }
+
+  .menu-sidebar {
+    padding-inline: 14px;
+  }
+
+  .menu-sidebar-title,
+  .menu-pane-title {
+    font-size: 25px;
+  }
+
+  .menu-sidebar .menu-entry {
+    padding-inline: 10px;
+  }
+
+  .menu-body {
+    padding-inline: 20px;
+    gap: 20px;
+  }
+
+  .menu-pane-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .menu-pane-heading {
+    align-self: stretch;
+  }
+
+  .menu-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .menu-board-card-preview {
+    height: 150px;
+  }
+
+  /* A card here is ~225px, and a board name can be one long word
+     ("Rhombicosidodecahedron,") that would otherwise run out of the card. */
+  .menu-board-card-caption {
+    padding-inline: 12px;
+  }
+
+  .menu-board-card-caption .menu-entry-label {
+    font-size: 15px;
+    overflow-wrap: break-word;
+  }
+}
+
+/* --- Settings page --- */
+/* Settings is a menu page, not a modal, so it inherits the card rows and the
+   scrolling body. Two things differ: the difficulty row is meaningless here, and
+   the content is a top-aligned stack of titled sections rather than one list
+   centred in the body. */
+/* The settings, theme, sound, best-times and help pages select no board, so the
+   whole difficulty block goes with them. */
+.menu.settings-open .menu-difficulty-block {
+  display: none;
+}
+
+/* The same small-caps label a settings section uses, but its own class rather
+   than `.settings-heading` — the difficulty block is mounted on every page, so
+   sharing that class would make it an ambiguous selector everywhere. Tighter
+   too: this one sits at the bottom of the page, directly above its own row
+   rather than opening a list. */
+.menu-difficulty-heading {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+.menu.settings-open .menu-body > .menu-list {
+  margin-block: 0;
+}
+
+.settings-heading {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.settings-heading:first-of-type {
+  margin-top: 10px;
+}
+
+/* A sentence explaining a section, under its rows. Left-aligned and tight
+   against the list it belongs to — unlike .settings-footer, which is the
+   centred sign-off at the very bottom of the page. */
+.settings-note {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.settings-note a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+/* Rows that only report something (the version) — a card, but not a control. */
+.settings-static {
+  cursor: default;
+}
+
+.settings-value {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-status:empty {
+  display: none;
+}
+
+.settings-update,
+.settings-toggle,
+.settings-theme {
+  justify-content: space-between;
+}
+
+/* The board half of a look swatch: four tiles cut to a shape and painted in a
+   theme's colours, one of them opened. Nested inside `.theme-swatch`, which
+   sets every theme custom property on itself — so `var(--panel)` below is the
+   *row's* panel colour, not the page's.
+
+   The two halves are split the way the real board's are (render/cellStyle.ts):
+   the `[data-theme]` blocks name the tile colours, the `[data-shape]` blocks the
+   cut, and a swatch composes one of each. The relief is faked with gradients
+   rather than rendered — the point is to tell a few rows apart in a list, and
+   the real geometry lives in cellStyle.ts, so keep the two in step by eye when
+   retuning a profile. */
+.cell-swatch {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  display: grid;
+  /* Fixed square tracks rather than `1fr`: each cut below picks its own gap
+     and padding, and a fraction of a fixed box would turn the tiles into
+     ovals the moment those differ. The block sizes itself instead, 27–29px
+     wide under every cut, and is centred under the card. */
+  grid-template-columns: repeat(3, var(--tile-size));
+  grid-auto-rows: var(--tile-size);
+  --tile-size: 8px;
+  gap: 2px;
+  border-radius: 3px;
+  overflow: hidden;
+  /* Bright's board, and the fallback: the shape palette's own orange at the
+     hidden/opened step a square tile is drawn at. */
+  --tile: #ef9f3d;
+  --tile-open: #fbe3ca;
+  --tile-hi: #ffb552;
+  --tile-lo: #b06f1c;
+  --tile-grout: #b7b2ab;
+  background: var(--tile-grout);
+}
+
+.cell-swatch-tile {
+  background: var(--tile);
+}
+
+.cell-swatch-tile.open {
+  background: var(--tile-open);
+}
+
+/* Classic: `SHAPE_PALETTE.board.mono`, i.e. the pygame board's own faces, since
+   this theme switches the shape colour code off at every cut. */
+.theme-swatch[data-theme="classic"] .cell-swatch {
+  --tile: #bdbdbd;
+  --tile-open: #cdcdcd;
+  --tile-hi: #e6e6e6;
+  --tile-lo: #8b8b8b;
+  --tile-grout: #9a9a9a;
+}
+
+/* Sand: the real board's square tones under `SAND_TINT` — the same two values
+   tests/unit/cellStyle.test.ts pins the board itself to. */
+.theme-swatch[data-theme="sand"] .cell-swatch {
+  --tile: #c0a994;
+  --tile-open: #f3eae3;
+  --tile-hi: #d4c0ad;
+  --tile-lo: #96826f;
+  --tile-grout: #b7b2ab;
+}
+
+/* Soft: rounded pillows with a lit top edge, lifted off the panel by a soft
+   shadow; an opened tile is a shallow dish that casts none. */
+.cell-swatch[data-shape="soft"] {
+  overflow: visible;
+  background: transparent;
+}
+
+.cell-swatch[data-shape="soft"] .cell-swatch-tile {
+  border-radius: 2.5px;
+  box-shadow:
+    inset 0 1px 0 var(--tile-hi),
+    inset 0 -1px 0 var(--tile-lo),
+    0 1.5px 2px color-mix(in srgb, var(--tile-lo) 70%, transparent);
+}
+
+.cell-swatch[data-shape="soft"] .cell-swatch-tile.open {
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--tile-lo) 45%, transparent);
+}
+
+/* Classic: a hard bevel, inverted on the opened tile. */
+.cell-swatch[data-shape="classic"] {
+  --tile-size: 9px;
+  gap: 0;
+  border-radius: 1px;
+}
+
+.cell-swatch[data-shape="classic"] .cell-swatch-tile {
+  border: 1.5px solid;
+  border-color: var(--tile-hi) var(--tile-lo) var(--tile-lo) var(--tile-hi);
+}
+
+.cell-swatch[data-shape="classic"] .cell-swatch-tile.open {
+  border-width: 1px;
+  border-color: var(--tile-lo) var(--tile-hi) var(--tile-hi) var(--tile-lo);
+}
+
+/* Flat: unlit plate colour, near-square corners, no relief at all. The swatch's
+   own page field shows between the tiles rather than the grout, as the page
+   does on the real board. */
+.cell-swatch[data-shape="flat"] {
+  border-radius: 0;
+  background: transparent;
+}
+
+.cell-swatch[data-shape="flat"] .cell-swatch-tile {
+  border-radius: 1px;
+}
+
+/* Realistic: glass beads, each lit from its own middle — and an opened tile that
+   is deliberately *not* one: flat matte colour at the `openAlpha` the real board
+   draws it at, so the page shows through. That contrast of materials is what
+   this cut's two states look like (see CellStyle.openShade). Classic is the one
+   theme whose board stays opaque at every cut (`BOARD_LOOKS.classic` clears
+   `openAlpha`), so it takes that back below. */
+.cell-swatch[data-shape="realistic"] {
+  --tile-size: 9px;
+  gap: 1px;
+  background: transparent;
+}
+
+.cell-swatch[data-shape="realistic"] .cell-swatch-tile {
+  border-radius: 2.5px;
+  background: radial-gradient(circle at 50% 50%, var(--tile-hi) 0 12%, var(--tile-lo) 92%);
+}
+
+.cell-swatch[data-shape="realistic"] .cell-swatch-tile.open {
+  opacity: 0.74;
+}
+
+.theme-swatch[data-theme="classic"] .cell-swatch[data-shape="realistic"] .cell-swatch-tile.open {
+  opacity: 1;
+}
+
+/* A sound preset's voice in miniature: one bar per harmonic partial, as tall
+   as that partial is loud. The heights are written inline from the preset's own
+   timbre numbers (ui/settings.ts soundSwatch), so the swatch is the spectrum
+   the engine actually synthesises rather than a picture of one. */
+.sound-swatch {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.sound-swatch-bar {
+  flex: 1;
+  border-radius: 1.5px;
+  background: var(--accent);
+}
+
+/* Off has no preset, so its bars come out at the floor height already; grey
+   them too, so the row reads as silence rather than as a missing swatch. */
+.sound-swatch[data-sound="off"] .sound-swatch-bar {
+  background: var(--muted);
+  opacity: 0.5;
+}
+
+/* A theme in miniature, and literally so: ui/settings.ts writes the theme's
+   whole custom-property set onto this element, so everything inside resolves
+   its colours (and the page texture) through the same `var(--…)` the real
+   chrome uses. Nothing here names a palette colour.
+
+   Deliberately *without* --bg-pattern: a swatch is a picture of the theme, not
+   of a board. `themeVars` leaves that property out unless it is given one, and
+   ui/settings.ts calls it with only the texture, so this needs no guard of its
+   own — but the list below has to stay two layers for that to hold. */
+.theme-swatch {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--bg-texture), linear-gradient(160deg, var(--bg), var(--bg2));
+}
+
+/* The chrome above the board: a card the width of the tile block, carrying the
+   accent as the one place the real chrome wears it most — a switch, on. */
+.theme-swatch-card {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  height: 8px;
+  border-radius: 2.5px;
+  /* The hairline is a shadow rather than a border: a 0.5px border is rounded
+     to whole device pixels, which moved the padding box the switch is placed
+     in and left it a pixel low. A shadow takes no room, so the switch sits on
+     exact 2px margins top, bottom and right. */
+  box-shadow: inset 0 0 0 0.5px var(--border);
+  background: var(--panel);
+}
+
+.theme-swatch-dot {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 8px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* The board shape row's swatch: the cut up close — two by two tiles, no card,
+   scaled up so each cut's bevels and radii, tuned for the small tiles above,
+   grow with it rather than being retuned. */
+.shape-swatch .cell-swatch {
+  grid-template-columns: repeat(2, var(--tile-size));
+  bottom: 50%;
+  transform: translate(-50%, 50%) scale(1.45);
+}
+
+/* The colour scheme row's swatch: the light look with the dark one laid over
+   its bottom-right half (ui/settings.ts `schemeSwatch`). */
+.scheme-swatch {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 38px;
+}
+
+.scheme-swatch > .theme-swatch {
+  position: absolute;
+  inset: 0;
+}
+
+.scheme-swatch > .scheme-swatch-dark {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+/* An app icon in miniature (ui/settings.ts `appIconSwatch`): the Home Screen
+   PNG itself, cut to the rounded square iOS cuts it to. The hairline is the
+   theme's, so the cream icon still has an edge on the Sand page. */
+.app-icon-swatch {
+  flex: none;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.settings-check {
+  flex: none;
+  width: 18px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.menu-entry.settings-theme.active {
+  border-color: var(--accent);
+}
+
+/* iOS-style switch, sized to stay a comfortable target on a phone. */
+.settings-switch {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 120ms ease;
+}
+
+.settings-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 120ms ease;
+}
+
+.settings-toggle.on .settings-switch {
+  background: var(--accent);
+}
+
+.settings-toggle.on .settings-switch::after {
+  transform: translateX(18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-switch,
+  .settings-switch::after {
+    transition: none;
+  }
+}
+
+/* The volume slider (Settings › Sound). A native <input type="range">, because
+   the platform one is what a phone already knows how to drag, but with the
+   track and thumb restyled from the theme's own custom properties — the default
+   chrome is the one control that would not follow a theme. `accent-color` is
+   not enough: it tints the track but leaves it the browser's shape and size, so
+   the track is drawn here and the thumb sized for a fingertip. */
+.settings-volume {
+  justify-content: space-between;
+  gap: 16px;
+  cursor: default;
+}
+
+/* The same row shape carrying a three-word label instead of "Volume": left to
+   itself the label column gives way to the slider's minimum and the title wraps
+   mid-phrase ("Hold to / flag"), which reads as a squeezed row rather than a
+   deliberate one. The label holds its line and the slider gives up the width
+   instead — it still has room to drag on the narrowest phone. */
+.settings-hold .menu-entry-label,
+.settings-hold .menu-entry-hint {
+  white-space: nowrap;
+}
+
+/* ...and the text column has to stop shrinking for that to mean anything: the
+   shared rule gives it `min-width: 0` so a long hint can wrap, which with
+   `nowrap` on instead lets the label run out under the slider. */
+.settings-hold .menu-entry-text {
+  flex: 0 1 auto;
+  min-width: max-content;
+}
+
+.settings-hold .settings-range {
+  min-width: 72px;
+}
+
+.settings-range {
+  flex: 1 1 auto;
+  max-width: 180px;
+  min-width: 96px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  touch-action: none; /* dragging the slider must not scroll the page */
+}
+
+.settings-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.settings-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.settings-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.settings-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px; /* centres the thumb on the 4px track */
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.settings-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.settings-range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.settings-footer {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* --- Best times page --- */
+.best-row {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.best-times {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.best-time {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.best-time.best {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.best-empty {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Set off from the last board's list. The settings-page rule above zeroes the
+   block margins of every list in the body, so this has to out-specify it. */
+.menu.settings-open .menu-body > .menu-list.best-clear-row {
+  margin-top: 26px;
+}
+
+/* --- Achievements page --- */
+/* A row is icon, name-and-hint, then either the date it was unlocked or how far
+   along it is. Locked rows are dimmed rather than hidden: the list of what
+   there is left to win is most of the point of the page. */
+.achievement-row {
+  gap: 12px;
+}
+
+.achievement-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: block;
+}
+
+.achievement-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.achievement-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.achievement-when,
+.achievement-progress {
+  flex: none;
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.achievement-when {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Dimmed, not greyed out: the icon keeps its own colour at a lower opacity so a
+   locked hexagon badge still reads as a hexagon. */
+.achievement-row[data-locked] {
+  color: var(--muted);
+}
+
+.achievement-row[data-locked] .achievement-icon {
+  opacity: 0.35;
+}
+
+.achievement-summary {
+  margin-top: 8px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.achievement-note {
+  font-size: 12px;
+}
+
+.settings-danger {
+  justify-content: center;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.settings-danger.armed {
+  border-color: var(--danger);
+}
+
+/* --- Dialogs: the record window and the info window --- */
+/* The app's two modals (everything else that looks like a page is a page). Both
+   sit over a live board, so the backdrop is a scrim rather than an opaque field
+   — the board stays visible behind them. Every colour is a theme property, so
+   they follow all eight palettes. */
+.dialog-backdrop {
+  position: fixed;
+  top: var(--app-top);
+  left: var(--app-left);
+  width: 100%;
+  /* The visible viewport, like every other layer — not `inset: 0`, which is
+     the layout viewport and on a phone runs on under the bottom toolbar: the
+     scrim covered ground the player could not see, and the dialog centred in
+     it sat half a toolbar low, with a tall one's last row cut off by the
+     chrome rather than scrolling inside the box. */
+  height: var(--app-h);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: rgb(0 0 0 / 35%);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.dialog-backdrop.open {
+  opacity: 1;
+}
+
+.dialog {
+  position: relative;
+  width: min(340px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 22px 20px 18px;
+  text-align: center;
+  background: var(--panel);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transform: translateY(8px) scale(0.97);
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.dialog-backdrop.open .dialog {
+  transform: none;
+}
+
+.dialog-medal {
+  display: block;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.dialog-title {
+  margin: 10px 0 2px;
+  font-size: 20px;
+}
+
+.dialog-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.score-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid transparent;
+  color: var(--muted);
+}
+
+/* The row just set — the reason the window is up. */
+.score-row.current {
+  background: var(--selected);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.score-medal {
+  flex: none;
+  font-size: 15px;
+}
+
+/* The number and its unit travel together, so the row's gap does not open up
+   between "41" and "s". */
+.score-value {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.score-time {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-unit {
+  font-size: 13px;
+}
+
+.score-when {
+  flex: none;
+  width: 62px;
+  text-align: right;
+  font-size: 12px;
+}
+
+/* What the win unlocked, under the times when there are both. Same card, same
+   custom properties — see the note at the top of ui/scoreDialog.ts for why an
+   unlock does not get a window of its own. */
+.dialog-unlocks-heading {
+  margin: 18px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dialog-unlocks {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dialog-unlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  text-align: left;
+  border-radius: 10px;
+  background: var(--selected);
+  border: 1px solid var(--accent);
+}
+
+.dialog-unlock-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.dialog-unlock-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.dialog-unlock-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dialog-unlock-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dialog-unlock-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The way to the whole list. A row of the same list rather than a third
+   button: the actions row is two real choices — play this board again, or take
+   another — and a link into a settings page is not a third answer to that. */
+.dialog-unlock-link {
+  display: flex;
+}
+
+.dialog-unlock-more {
+  width: 100%;
+  padding: 6px 12px;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dialog-unlock-more:active {
+  background: var(--selected);
+}
+
+/* The card's decision row: at most two buttons, side by side. It held four —
+   Share and Menu among them — and three of anything does not fit across a
+   phone: "Play again" breaks over two lines and the row reads as a squeeze.
+   Share is the corner icon now and Menu is gone, so the row is the question
+   ("this board again, or another?") and nothing else. */
+.dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* One button takes the whole width rather than half of it: the info window's
+   Done, and a board with no New board to offer (the test seam). */
+.dialog-actions[data-buttons="1"] .dialog-btn {
+  grid-column: 1 / -1;
+}
+
+.dialog-btn {
+  min-width: 0;
+  touch-action: manipulation;
+  padding: 11px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.dialog-btn.dialog-primary {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.dialog-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  touch-action: manipulation;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dialog-close:hover,
+.dialog-close:active {
+  color: var(--text);
+}
+
+/* The board's link (ui/scoreDialog.ts): the mirror of the × in the card's other
+   top corner. Chrome, not one of the actions — the row at the foot of the card
+   asks what to play next, and a link is no answer to that. */
+.dialog-share {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  touch-action: manipulation;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dialog-share:hover,
+.dialog-share:active {
+  color: var(--text);
+}
+
+/* A copy landed; a failure stays muted rather than shouting in red, since the
+   note under it already says so. */
+.dialog-share[data-state="copied"] {
+  color: var(--accent);
+}
+
+.dialog-share-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.dialog-share-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* What a clipboard write cannot say for itself. Hung under the icon and out of
+   the card's flow, so the layout does not shift when it appears; empty until
+   there is something to say, which draws nothing. */
+.dialog-share-note {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* --- Info window --- */
+/* What the board is (ui/infoDialog.ts): a list of facts about it, then one row
+   per kind of tile with the colour the board paints it. Left-aligned rather
+   than centred like the record card — these are rows to read down, and a
+   centred label against a centred value has nothing to line up on. */
+.info-dialog {
+  text-align: left;
+}
+
+.info-dialog .dialog-title,
+.info-dialog .dialog-subtitle {
+  text-align: center;
+}
+
+.info-facts {
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.info-fact-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.info-fact-value {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.info-heading {
+  margin: 18px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.info-shapes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-shape {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 14px;
+}
+
+/* The tile's own colour, at the menu icons' saturation (the board's is faint by
+   design). A border, so a pale shape still reads as a chip on the pale row. */
+.info-swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.info-shape-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.info-shape-count {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The ⚠ the board's name carries, spelled out: this board's tiling forces
+   guesses. */
+.info-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.info-warning {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-backdrop,
+  .dialog {
+    transition: none;
+  }
+}
+
+/* Short viewports (a small phone, or landscape): trim the menu rows so the
+   longest list — the eight uniform / dual tilings — still fits without
+   scrolling where it can. */
+@media (max-height: 700px) {
+  .menu-entry {
+    padding: 9px 14px;
+    gap: 10px;
+  }
+
+  .menu-entry-icon {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* --- A phone on its side --- */
+/* At 844x390 the phone column spends its top on the title and its bottom on
+   the difficulty row, and the list between them shows three and a half rows.
+   Landscape has width to spare and no height, so the chrome moves to a rail
+   at the left — the title row on top, the difficulty pills stacked at the
+   bottom, where a thumb holding the phone already is — and the list takes the
+   whole height to its right, in two columns where they fit. Still the phone's
+   navigation (back stack, rows): the desktop panes are excluded from this
+   height by `Menu.wideQuery`, since their cards are taller than half of it.
+   Grid placement only — the DOM is the phone column's, in the same order. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .menu {
+    width: 100%;
+    padding: max(14px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 14px 24px;
+  }
+
+  .menu-header {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    /* "Hypersweeper" on one line between the two buttons in a 248px rail. */
+    --menu-header-btn: 36px;
+  }
+
+  .menu-title {
+    font-size: 22px;
+  }
+
+  .menu-body {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+
+  /* Top-aligned, level with the title: centred, a page with a back row opened
+     a gap under it as wide as the list was short. */
+  .menu-body > .menu-list {
+    margin-block: 0 auto;
+  }
+
+  .menu-difficulty-block {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+  }
+
+  .menu-difficulty {
+    flex-direction: column;
+  }
+
+  .difficulty-btn {
+    padding: 10px;
+  }
+
+  /* Board lists go two-up when the space beside the rail allows it. Not the
+     settings-style pages: their rows carry switches and sliders and read as
+     one column of sections. */
+  .menu:not(.settings-open) .menu-body > .menu-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .menu:not(.settings-open) .menu-body > .menu-list > li {
+    display: flex;
+  }
+
+  .menu-entry-label {
+    font-size: 16px;
+  }
+}
+
+/* --- Narrow screens (phones) --- */
+/* The header carries back + flag, mine/smiley/timer, and random + info: five
+   square controls and two counters, all on one row. No phone-specific rule
+   reshapes that row; `--hud-btn` at the top is solved for the size that fills
+   the line, so it shrinks to fit only below about a 390pt phone, down to a
+   320px viewport (the narrowest iPhone). tests/e2e/hud.spec.ts pins the size,
+   the fit and the centring across the iPhone widths. */
+
+/* --- Typography, per theme --- */
+/* Rubik for the two themes that are not Sand. It is the pygame board's own face
+   and what this app was set in throughout until Sand arrived; it is stated here
+   rather than on `:root` because `:root` is the *boot* frame and has to carry
+   the default theme's face (see the top of this file), and the default theme is
+   the one with a face of its own. */
+[data-theme="bright"],
+[data-theme="classic"] {
+  --ui-font: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Sand is the one theme that carries faces of its own. Everything else about it
+   — the warm ground, the terracotta accent, the 20px radii, the card fills — is
+   in its palette (`sand` / `sandDark` in data/ui/screens.json) and arrives
+   through the custom properties above, so this block is only what a palette
+   cannot say. It is keyed on the theme alone, whichever shape the board is cut
+   in: the chrome is the theme's business.
+
+   Space Grotesk carries the interface: tighter apertures and a flat-sided 2 and
+   3 read as instrument type rather than as something friendly, which is the
+   register a board that is a geometry exercise wants. It reaches every control
+   through `--ui-font` and the `font: inherit` on each of them, and it is the
+   same face this theme's board digits are baked in (`BOARD_LOOKS.sand`), so the
+   numbers on the tiles and the labels around them are one voice. */
+[data-theme="sand"] {
+  --ui-font: "Space Grotesk", "Rubik", system-ui, -apple-system, sans-serif;
+}
+
+/* Caprasimo gets exactly one word. It is a display face — heavy, warm, and
+   wrong for anything at interface size — so it is spent on the menu title and
+   nowhere else, which is what makes it read as the game's name rather than as
+   the theme shouting. Weight is stated because the face ships one (400) and the
+   title's own rule does not set it. */
+[data-theme="sand"] .menu-title {
+  font-family: "Caprasimo", var(--ui-font);
+  font-weight: 400;
+}
+
+/* The board's name becomes a spaced-out label under the header rather than a
+   caption over the page: at this size and weight, uppercase with the letters
+   opened up is what stops a line of small type from reading as a leftover.
+   `--muted` is already this palette's warm neutral, so the opacity the other
+   themes use to push it back is not needed here — it would only muddy it. */
+[data-theme="sand"] .board-name {
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 1;
+}
+
+/* Sand's corner hierarchy. One `--radius` cannot say what this theme wants: at
+   20px it is the card rounding the menu entries and the dialog are drawn for,
+   but a header button is 42px square, and 20px on a 42px box is half its width
+   — a circle. The design draws these as chips with corners still visible, and
+   reserves the fuller round for the big surfaces, so the small controls state a
+   radius of their own here and the cards keep the palette's.
+
+   The corner is a fraction of `--hud-btn` rather than a length, because that
+   is what the rest of this row already is: the box, the glyph and the gaps all
+   ride the same scale, and a fixed radius that reads as a chip at 52px
+   closes back into a circle on a 320px phone's 36px button. The fractions are the design's
+   own measurements taken at the size it drew: 16px on a 42px button, 12px on
+   the counters and on the board bar's smaller chevrons (whose 10px in
+   `.hud-counter` is a flat constant, not a themed one). Bar buttons and
+   counters share the tighter corner, so the secondary row reads as one step in
+   from the header. The `.board-bar-btn` rule follows `.hud-btn` because those
+   buttons carry both classes and the two selectors weigh the same — order is
+   what settles it. */
+[data-theme="sand"] .hud-btn,
+[data-theme="sand"] .hud-smiley {
+  border-radius: calc(var(--hud-btn) * 0.38);
+}
+
+[data-theme="sand"] .board-bar-btn,
+[data-theme="sand"] .hud-counter {
+  border-radius: calc(var(--hud-btn) * 0.28);
+}
+
+/* ---------------------------------------------------------------------------
+   Motion in the chrome. Everything here answers to the player's motion
+   setting, which `App` mirrors onto `<html data-motion>` (the OS
+   `prefers-reduced-motion` unless Settings › Animations says otherwise), so
+   it is all written under `:root:not([data-motion="off"])`.
+
+   * Buttons give under the finger: a quick scale-down while pressed.
+   * A page of the menu rises into place row by row when it is navigated to
+     (`Menu.go` sets `.menu-enter` and each row's `--i`), never when the same
+     page repaints for a toggle.
+   * The header answers the game: the mine counter ticks when it changes, the
+     smiley bounces on a win and shakes its head on a loss, and both counters
+     glow once in the accent on a win.
+   --------------------------------------------------------------------------- */
+:root:not([data-motion="off"])
+  :is(
+    .hud-btn,
+    .hud-smiley,
+    .menu-entry,
+    .difficulty-btn,
+    .menu-header-btn,
+    .dialog-close,
+    .dialog-share
+  ) {
+  transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root:not([data-motion="off"])
+  :is(
+    .hud-btn,
+    .hud-smiley,
+    .difficulty-btn,
+    .menu-header-btn,
+    .dialog-close,
+    .dialog-share
+  ):active {
+  transform: scale(0.92);
+}
+
+:root:not([data-motion="off"]) .menu-entry:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) {
+  :root:not([data-motion="off"]) .menu-board-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes menu-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+:root:not([data-motion="off"]) .menu-body.menu-enter [style*="--i"] {
+  animation: menu-rise 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i) * 26ms);
+}
+
+@keyframes hud-tick {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes hud-face-won {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  30% {
+    transform: scale(1.28) rotate(-10deg);
+  }
+  55% {
+    transform: scale(0.94) rotate(6deg);
+  }
+  78% {
+    transform: scale(1.06) rotate(-2deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hud-face-lost {
+  0%,
+  100% {
+    transform: none;
+  }
+  18% {
+    transform: translateX(-4px) rotate(-8deg);
+  }
+  38% {
+    transform: translateX(4px) rotate(7deg);
+  }
+  58% {
+    transform: translateX(-3px) rotate(-4deg);
+  }
+  78% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+
+@keyframes hud-win-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  35% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent),
+      0 0 22px 6px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+}
+
+:root:not([data-motion="off"]) .hud-counter.tick {
+  animation: hud-tick 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root:not([data-motion="off"]) .hud-smiley.face-won {
+  animation: hud-face-won 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root:not([data-motion="off"]) .hud-smiley.face-lost {
+  animation: hud-face-lost 520ms ease-out;
+}
+
+:root:not([data-motion="off"]) .hud-counter.win-glow {
+  animation: hud-win-glow 1400ms ease-out;
+}

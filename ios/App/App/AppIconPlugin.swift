@@ -2,7 +2,7 @@ import UIKit
 import Capacitor
 
 /// Switches the Home Screen icon: the page's App icon setting
-/// (web/src/appIcon.ts) calls `set` with an alternate icon's name — one of the
+/// (apps/hypersweeper/src/appIcon.ts) calls `set` with an alternate icon's name — one of the
 /// Icon Composer documents beside this file, listed in the target's
 /// `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES` — or `null` for the primary
 /// `AppIcon`. iOS shows its own "You have changed the icon" alert; that is the

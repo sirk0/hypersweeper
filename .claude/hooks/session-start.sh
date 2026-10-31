@@ -24,14 +24,15 @@ fi
 # locked file. These resolve from PyPI, which is reachable.
 VIRTUAL_ENV="$VENV" uv pip install -r requirements-test.txt
 
-# Install the TypeScript app's dependencies so `npm run test`/`typecheck`/
+# Install the TypeScript apps' dependencies — one npm workspace at the repo root
+# (package.json lists apps/*), so one `npm ci` there installs every app — so `npm run test`/`typecheck`/
 # `build`/`e2e` work in cloud sessions (npm registry is reachable). Playwright
 # is pinned to the version whose bundled Chromium build matches the one
 # preinstalled in the image (/opt/pw-browsers/chromium-<build>), so `npm run
 # e2e` resolves it automatically; PLAYWRIGHT_CHROMIUM_EXECUTABLE is only a
 # fallback if the image ships a different build.
-if [ -f web/package-lock.json ] && command -v npm >/dev/null 2>&1; then
-  (cd web && npm ci) || echo "session-start: web npm ci failed (non-fatal)" >&2
+if [ -f package-lock.json ] && command -v npm >/dev/null 2>&1; then
+  npm ci || echo "session-start: npm ci failed (non-fatal)" >&2
 fi
 
 # That pin is only useful here if the image's preinstalled Chromium really is the
@@ -39,8 +40,8 @@ fi
 # check it is there, so a mismatched image is a line at session start rather than
 # a red e2e run an hour later reading "Executable doesn't exist" — which names
 # neither revision. Non-fatal: everything but the browser still works.
-if [ -d web/node_modules/playwright-core ]; then
-  (cd web && node -e '
+if [ -d node_modules/playwright-core ]; then
+  (cd apps/hypersweeper && node -e '
     const fs = require("fs");
     const exe = require("playwright-core").chromium.executablePath();
     if (fs.existsSync(exe)) process.exit(0);
@@ -48,7 +49,7 @@ if [ -d web/node_modules/playwright-core ]; then
     console.error(
       `session-start: @playwright/test wants ${exe}, which is not installed. ` +
         `${root} has: ${(fs.existsSync(root) ? fs.readdirSync(root) : []).join(" ") || "nothing"}` +
-        ` — see "Cloud sessions" in web/docs/testing.md`,
+        ` — see "Cloud sessions" in apps/hypersweeper/docs/testing.md`,
     );
   ') || true
 fi

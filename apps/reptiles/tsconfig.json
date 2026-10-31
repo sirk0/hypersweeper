@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@data/*": ["../../data/*"],
+      "@boards/*": ["../hypersweeper/src/boards/*"]
+    }
+  },
+  "include": ["src", "tests", "scripts", "vite.config.ts", "vitest.config.ts"]
+}

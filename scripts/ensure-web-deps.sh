@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Make web/node_modules match web/package-lock.json, installing only when it
-# does not.
+# Make node_modules match package-lock.json, installing only when it does not.
+# Both are the npm workspace's, at the repo root: one install covers every app
+# in apps/.
 #
 # "Is node_modules there?" is not the question — it is there on any machine that
 # has ever built this app, including one that last did so before a dependency
@@ -15,14 +16,14 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOCK="$ROOT/web/package-lock.json"
-INSTALLED="$ROOT/web/node_modules/.package-lock.json"
+LOCK="$ROOT/package-lock.json"
+INSTALLED="$ROOT/node_modules/.package-lock.json"
 
 if [ -f "$INSTALLED" ] && [ ! "$LOCK" -nt "$INSTALLED" ]; then
   exit 0
 fi
 
-if [ -d "$ROOT/web/node_modules" ]; then
+if [ -d "$ROOT/node_modules" ]; then
   printf '\n\033[1m==> Dependencies changed since the last install — npm ci\033[0m\n'
 else
   printf '\n\033[1m==> Installing web dependencies — npm ci\033[0m\n'
@@ -30,4 +31,4 @@ fi
 
 # `ci` rather than `install`: it installs exactly the locked tree and never
 # rewrites the lock file, which is what a build script wants.
-(cd "$ROOT/web" && npm ci)
+(cd "$ROOT" && npm ci)

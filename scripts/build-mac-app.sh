@@ -2,8 +2,8 @@
 # Build Hypersweeper.app — the TypeScript game packaged as a macOS app that
 # runs with no internet connection.
 #
-# The pieces: web/ builds to static files, those files are staged into
-# desktop/app/, and electron-builder wraps the desktop/ shell (which serves
+# The pieces: apps/hypersweeper/ builds to static files, those files are staged into
+# shells/desktop/app/, and electron-builder wraps the shells/desktop/ shell (which serves
 # them over the app:// scheme) into a bundle. Every asset the game needs —
 # fonts, icons, the shared data/*.json, Three.js — is compiled into that
 # bundle, and scripts/check-offline-assets.mjs refuses to let the build past
@@ -33,7 +33,7 @@ while [ $# -gt 0 ]; do
     --x64) ARCH+=(--x64) ;;
     --universal) ARCH+=(--universal) ;;
     --open) OPEN=1 ;;
-    --skip-web) SKIP_WEB=1 ;;   # reuse the existing web/dist
+    --skip-web) SKIP_WEB=1 ;;   # reuse the existing apps/hypersweeper/dist
     --no-verify) VERIFY=0 ;;    # skip launching the built app to check it
     # The header comment above, up to the first line that is not one.
     -h|--help) awk 'NR>1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "${BASH_SOURCE[0]}"; exit 0 ;;
@@ -61,36 +61,36 @@ if [ "$SKIP_WEB" = 0 ]; then
   scripts/ensure-web-deps.sh
   step "Building the web app (VITE_PACKAGED=1)"
   # VITE_PACKAGED drops the service worker and the update check: inside a
-  # bundle there is no deployed build to update from. See web/vite.config.ts.
-  (cd web && VITE_PACKAGED=1 npm run build)
+  # bundle there is no deployed build to update from. See apps/hypersweeper/vite.config.ts.
+  (cd apps/hypersweeper && VITE_PACKAGED=1 npm run build)
 fi
-[ -f web/dist/index.html ] || die "web/dist is empty — build the web app first"
+[ -f apps/hypersweeper/dist/index.html ] || die "apps/hypersweeper/dist is empty — build the web app first"
 
 step "Checking the bundle needs no network"
-node scripts/check-offline-assets.mjs web/dist
+node scripts/check-offline-assets.mjs apps/hypersweeper/dist
 
 # --- 2. stage it into the shell ---------------------------------------------
-step "Staging the build into desktop/app"
-rm -rf desktop/app
-cp -R web/dist desktop/app
+step "Staging the build into shells/desktop/app"
+rm -rf shells/desktop/app
+cp -R apps/hypersweeper/dist shells/desktop/app
 
 # --- 3. package --------------------------------------------------------------
 step "Installing the desktop shell's build tools"
-if [ -f desktop/package-lock.json ]; then
-  (cd desktop && npm ci)
+if [ -f shells/desktop/package-lock.json ]; then
+  (cd shells/desktop && npm ci)
 else
-  (cd desktop && npm install)
+  (cd shells/desktop && npm install)
 fi
 
 step "Running the shell's unit tests"
-(cd desktop && npm test)
+(cd shells/desktop && npm test)
 
-[ -f desktop/resources/icon.png ] || die "desktop/resources/icon.png is missing — run: make desktop-icon"
+[ -f shells/desktop/resources/icon.png ] || die "shells/desktop/resources/icon.png is missing — run: make desktop-icon"
 
 step "Packaging Hypersweeper.app"
 # The ${arr[@]+"${arr[@]}"} dance is for macOS's own bash 3.2, where `set -u`
 # treats an empty array expansion as an unbound variable.
-(cd desktop && npx --no-install electron-builder --mac \
+(cd shells/desktop && npx --no-install electron-builder --mac \
   ${TARGETS[@]+"${TARGETS[@]}"} ${ARCH[@]+"${ARCH[@]}"})
 
 # --- 4. make it launchable ---------------------------------------------------
