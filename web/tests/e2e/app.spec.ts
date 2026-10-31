@@ -1,4 +1,12 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+
+// The Hyperbolic family, as the shared catalogue lists it: the {p,q} discs and
+// their uniform tilings, the binary tiling, and the closed surfaces (Bolza,
+// Dyck, Bring, ...) — the boards the home Hyperbolic row deals from.
+const HYPERBOLIC: string[] = JSON.parse(
+  readFileSync(new URL("../../../data/catalog.json", import.meta.url), "utf8"),
+).menu.hyperbolic;
 
 // Boot + menu navigation + the test seam.
 test.describe("M1 app", () => {
@@ -141,7 +149,10 @@ test.describe("M1 app", () => {
     const state = await page.evaluate(() => window.__ms?.state());
     expect(state?.screen).toBe("game");
     expect(state?.is3d).toBe(false);
-    expect(state?.mode).toMatch(/^hyperbolic\d+$/);
+    // a member of the family, not a name pattern: the pool holds the closed
+    // surfaces too (`bolza`, `dyck`, `macbeath`, ...), which the unseeded deal
+    // picks about one time in seven
+    expect(HYPERBOLIC).toContain(state?.mode);
     await expect(page).toHaveURL(new RegExp(`\\?mode=${state?.mode}&difficulty=easy&seed=\\d+$`));
   });
 

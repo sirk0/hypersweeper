@@ -9,7 +9,8 @@ twice.
   `DIFFICULTIES`, `SOLO_LABELS`, and the menu taxonomy/labels (including
   `menu.solidGroups`, the solid pages), and `tilingNotations`, the
   2-uniform tilings' vertex-type symbols the web menu shows under their
-  labels (from `ArchTiling.notation` in `tilings.py`). `catalog.py`
+  labels, and their 2-isohedral duals' (the same with a Laves V in front),
+  from `ArchTiling.notation` in `tilings.py`. `catalog.py`
   loads these via `boards/_data.py`; the *derivations* stay in code.
 - `data/presets.json` — the difficulty presets for the **ported** modes
   (the flat regular ones — square/triangle/trigrid/hex/hexhex/hextriangle —

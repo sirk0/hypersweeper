@@ -607,6 +607,39 @@ Möbius strip glues through is what a Klein bottle would glue through too, so
 the same nineteen would reach it, and the torus's size arithmetic applies to
 it unchanged.
 
+## Recipe: add a 2-isohedral tiling
+
+The 2-isohedral family is the 2-uniform tilings' duals, and a member is one
+word: the primal's key in `_TWO_ISOHEDRAL_PRIMALS` (`tilings.py`), and in
+`TWO_ISOHEDRAL_PRIMALS` in `web/src/boards/tilings.ts` with its two tiles'
+side counts beside it (the TypeScript registry has no vertex types to derive
+them from). `_with_two_isohedral` / `withTwoIsohedral` build the row from the
+primal's — key and label with `dual` after them, `vertex_types`, `notation`
+with a V in front, edge directions — and place it in the 2-uniform order. Then:
+
+1. **Check it belongs.** The family is the duals whose tiles stay near
+   regular and whose neighbours stay moderate, and
+   `TestTwoIsohedral.test_tiles_are_near_regular_and_neighbours_moderate`
+   holds every member to that (isoperimetric quotient 0.865 of the regular
+   polygon's or better, 6 to 10 neighbours on average, at most 14). The three
+   duals of a tiling with dodecagons fail it, which is why they are not in.
+2. **Presets** — a `"<key>dual"` block in `ARCH_PRESETS` with a `flat` row,
+   seeded from the primal's (the dual shares its domain), then the measured
+   pipeline: `resize.py --only`, `calibrate.py --only`, `apply.py`
+   ([`difficulty.md`](difficulty.md)), `scripts/export_data.py` and
+   `export_conformance.py`.
+3. **Achievements** — none to add (the family's `tiling-all:2-isohedral` grows
+   by itself), but run `npm run gamecenter` in `web/` if the family itself is
+   new: its badge is drawn from the family icon.
+
+`TestTwoIsohedral` covers the rest by itself: each interior tile's corner
+counts read round it are one of the primal's two vertex types (and both are
+present), every closed corner where n tiles meet shares the full turn as n
+angles of 360/n, the domain is covered exactly, and the row matches its
+primal. **Wrapping the family** is the 2-uniform recipe's wrap half: a `cut`
+on each dual (a second argument to `_dual_template`, as Cairo's is), the
+surfaces added to its `_FAMILY_SURFACES` entry, and the preset rows.
+
 ## Recipe: add a congruent-rectangle bond
 
 The fourth family in `ARCH_TILINGS` (`family="rectangle"`): the brick bonds,

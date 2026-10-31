@@ -2240,7 +2240,8 @@ function squaretrihex2Template(): ArchTemplate {
 
 // -- registry ----------------------------------------------------------------
 
-export type ArchFamily = "uniform" | "dual" | "2-uniform" | "isogonal" | "rectangle" | "other";
+export type ArchFamily =
+  "uniform" | "dual" | "2-uniform" | "2-isohedral" | "isogonal" | "rectangle" | "other";
 
 export interface ArchTiling {
   key: string;
@@ -2249,7 +2250,8 @@ export interface ArchTiling {
   edgeDirections: number;
   template: () => ArchTemplate;
   /** "uniform" (Archimedean), "dual" (Laves), "2-uniform" (regular polygons
-   * edge to edge, with two kinds of vertex), "isogonal" (not edge to edge),
+   * edge to edge, with two kinds of vertex), "2-isohedral" (the 2-uniform
+   * tilings' duals: two kinds of tile), "isogonal" (not edge to edge),
    * "rectangle" (a bond of congruent rectangles, not edge to edge either), or
    * "other" — the tilings that answer to none of those, and so claim nothing
    * as a family: two rep-tile patterns (one congruent polyform in half-turned
@@ -2262,12 +2264,53 @@ export interface ArchTiling {
   halfTurn: boolean;
 }
 
+// The 2-isohedral tilings: the 2-uniform tilings' duals, built by dualTemplate
+// exactly as the Laves rows are, each primal's vertex types becoming the dual's
+// two tiles. Seventeen of the twenty ship; the three with dodecagons
+// (tritrunctrihex, dodecasquare, dodecarhombitrihex) are left out, since a
+// dodecagon's centre becomes a corner twelve slivers meet at. Each row derives
+// from its primal's — the key and label with "dual" after them, its edge
+// directions, its half turn — and config is the two tiles' side counts, the
+// sizes of the primal's two vertex types. Mirrors _TWO_ISOHEDRAL_PRIMALS and
+// _with_two_isohedral in boards/tilings.py, which explain the choice.
+// prettier-ignore
+const TWO_ISOHEDRAL_PRIMALS: [string, number[]][] = [
+  ["studdedtri", [5, 6]], ["studdedtri2", [5, 6]], ["elongated2", [5, 6]],
+  ["elongated3", [5, 6]], ["trirhombitrihex", [5, 6]], ["fannedhex", [4, 6]],
+  ["hexbands", [4, 5]], ["snubelongated2", [5]], ["snubelongated", [5]],
+  ["dissectedtrunchex2", [4, 5]], ["squarerows2", [4, 5]], ["squarerows3", [4, 5]],
+  ["dissectedtrunchex", [4, 5]], ["hexrows", [4]], ["hexrings", [4]],
+  ["squaretrihex", [4]], ["squaretrihex2", [4]],
+];
+
+/** The registry with the 2-isohedral rows after the 2-uniform block, in the
+ * 2-uniform order, so each family's menu page reads alike. */
+function withTwoIsohedral(rows: ArchTiling[]): ArchTiling[] {
+  const order = rows.map((t) => t.key);
+  const duals = [...TWO_ISOHEDRAL_PRIMALS]
+    .sort(([a], [b]) => order.indexOf(a) - order.indexOf(b))
+    .map(([key, config]): ArchTiling => {
+      const primal = rows.find((t) => t.key === key)!;
+      return {
+        key: `${key}dual`,
+        label: `${primal.label} dual`,
+        config,
+        edgeDirections: primal.edgeDirections,
+        template: () => dualTemplate(primal.template),
+        family: "2-isohedral",
+        halfTurn: primal.halfTurn,
+      };
+    });
+  const last = rows.map((t) => t.family).lastIndexOf("2-uniform");
+  return [...rows.slice(0, last + 1), ...duals, ...rows.slice(last + 1)];
+}
+
 // Listed in vertex-configuration order, the order Wikipedia's "List of
 // Euclidean uniform tilings" uses, so the menu's Uniform page reads the same
 // way; the Laves block repeats it, each dual next to the position its uniform
 // tiling holds above. Mirrors ARCH_TILINGS in boards/tilings.py.
 // prettier-ignore
-export const ARCH_TILINGS: ArchTiling[] = [
+export const ARCH_TILINGS: ArchTiling[] = withTwoIsohedral([
   { key: "snubhex", label: "Snub hexagonal", config: [3, 3, 3, 3, 6], edgeDirections: 12, template: snubhexTemplate, family: "uniform", halfTurn: true },
   { key: "elongated", label: "Elongated triangular", config: [3, 3, 3, 4, 4], edgeDirections: 12, template: elongatedTemplate, family: "uniform", halfTurn: true },
   { key: "snubsquare", label: "Snub square", config: [3, 3, 4, 3, 4], edgeDirections: 12, template: snubsquareTemplate, family: "uniform", halfTurn: true },
@@ -2339,7 +2382,7 @@ export const ARCH_TILINGS: ArchTiling[] = [
   { key: "sphinxpairs", label: "Sphinx pairs", config: [5], edgeDirections: 3, template: sphinxpairsTemplate, family: "other", halfTurn: true },
   { key: "tromino", label: "L-tromino", config: [6], edgeDirections: 2, template: trominoTemplate, family: "other", halfTurn: true },
   { key: "durer", label: "Dürer pentagonal", config: [5, 4], edgeDirections: 5, template: durerTemplate, family: "other", halfTurn: true },
-];
+]);
 
 const ARCH_BY_KEY = new Map(ARCH_TILINGS.map((t) => [t.key, t]));
 const TEMPLATE_CACHE = new Map<string, ArchTemplate>();
