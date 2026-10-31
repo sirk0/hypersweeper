@@ -135,9 +135,11 @@ REGULAR_TILINGS = tuple(
 # TilingSpec.surfaces, rather than by being kept out of the picker. "Other" is
 # the plane alone (no cut chosen); the 2-uniform tilings have cuts, and so a
 # cylinder and (all but the p6 studdedtri2) a Mobius strip, and a donut, which
-# needs no cut, but no Klein windows.
+# needs no cut, but no Klein windows. Their duals, the 2-isohedral tilings,
+# are the plane alone for now, as "Other" is: no cut chosen.
 _FAMILY_SURFACES: dict[str, frozenset[str]] = {
     "2-uniform": frozenset({"flat", "cylinder", "mobius", "torus"}),
+    "2-isohedral": frozenset({"flat"}),
     "other": frozenset({"flat"}),
 }
 
@@ -240,6 +242,8 @@ PICKER_REGULAR = tuple(_MENU["pickerRegular"])
 UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "uniform")
 DUAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "dual")
 TWO_UNIFORM_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "2-uniform")
+TWO_ISOHEDRAL_ARCH = tuple(t.key for t in ARCH_TILINGS
+                           if t.family == "2-isohedral")
 ISOGONAL_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "isogonal")
 RECTANGLE_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "rectangle")
 OTHER_ARCH = tuple(t.key for t in ARCH_TILINGS if t.family == "other")
@@ -273,6 +277,7 @@ FAMILY_MEMBERS = {
     "uniform": UNIFORM_ARCH,
     "dual": DUAL_ARCH,
     "2-uniform": TWO_UNIFORM_ARCH,
+    "2-isohedral": TWO_ISOHEDRAL_ARCH,
     "isogonal": ISOGONAL_ARCH,
     "rectangle": RECTANGLE_ARCH,
     "other": OTHER_ARCH,
@@ -283,12 +288,13 @@ FAMILY_MEMBERS = {
     "hyperbolic": HYPERBOLIC_MODES,
 }
 # the picker's family rows, in order; the flat-only families (whose members are
-# one-off modes, not tilings) are added on the plane alone. "2-uniform" and
-# "Other" are in the ordinary list although they reach only some surfaces (see
-# _FAMILY_SURFACES): their members are tilings, and picker_families drops a
-# family a surface has no row of rather than naming it in two places.
-PICKER_FAMILIES = ("regular", "uniform", "dual", "2-uniform", "isogonal",
-                   "rectangle", "other")
+# one-off modes, not tilings) are added on the plane alone. "2-uniform",
+# "2-isohedral" and "Other" are in the ordinary list although they reach only
+# some surfaces (see _FAMILY_SURFACES): their members are tilings, and
+# picker_families drops a family a surface has no row of rather than naming it
+# in two places.
+PICKER_FAMILIES = ("regular", "uniform", "dual", "2-uniform", "2-isohedral",
+                   "isogonal", "rectangle", "other")
 FLAT_ONLY_FAMILIES = ("aperiodic", "spiral", "reptile", "fractal",
                       "hyperbolic")
 

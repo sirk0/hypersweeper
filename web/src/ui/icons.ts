@@ -1103,6 +1103,10 @@ const FAMILY_TILINGS: Record<string, string> = {
   // 4.6.12; 3.4.6.4: a dodecagon ringed by squares and hexagons beside a
   // 3.4.6.4 patch — the four shapes the family is made of
   "2-uniform": "dodecarhombitrihex",
+  // pentagons ringing hexagons: the two shapes, both close to regular, that
+  // most of the family is made of (the 2-uniform row's tiling is one of the
+  // three whose duals do not ship)
+  "2-isohedral": "elongated2dual",
   // rotated hexagonal, the clearest picture of what the family is — tiles
   // sliding along each other's edges rather than meeting them, with the gaps
   // that opens filled by a second shape

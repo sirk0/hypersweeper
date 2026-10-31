@@ -579,9 +579,9 @@ class TestMenu:
         assert self.click_item(menu, "flat") is None
         assert menu.path == ["flat"]
         assert self.items(menu) == {
-            "regular", "uniform", "dual", "2-uniform", "isogonal", "rectangle",
-            "other", "aperiodic", "spiral", "reptile", "fractal", "hyperbolic",
-            "random",
+            "regular", "uniform", "dual", "2-uniform", "2-isohedral",
+            "isogonal", "rectangle", "other", "aperiodic", "spiral", "reptile",
+            "fractal", "hyperbolic", "random",
         }
 
     def test_flat_regular_family_lists_the_tilings_and_shaped_boards(self):

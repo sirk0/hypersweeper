@@ -1,6 +1,6 @@
 {
-  "count": 47,
-  "points": 670,
+  "count": 48,
+  "points": 685,
   "achievements": [
     {
       "vendorIdentifier": "hs.first_win",
@@ -408,6 +408,23 @@
         }
       },
       "icon": "2-uniform",
+      "ring": "complete"
+    },
+    {
+      "vendorIdentifier": "hs.tiling_all.2_isohedral",
+      "referenceName": "tiling-all:2-isohedral",
+      "points": 15,
+      "showBeforeEarned": true,
+      "repeatable": false,
+      "localizations": {
+        "en-US": {
+          "name": "2-isohedral",
+          "beforeEarnedDescription": "Win every board tiled this way",
+          "afterEarnedDescription": "You won every board tiled this way",
+          "image": "images/hs.tiling_all.2_isohedral.png"
+        }
+      },
+      "icon": "2-isohedral",
       "ring": "complete"
     },
     {

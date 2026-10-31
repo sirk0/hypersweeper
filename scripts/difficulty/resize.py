@@ -53,6 +53,7 @@ from scripts.difficulty.metrics import (
     distortion_summary,
     indistinguishable_cells,
     near_twin_cells,
+    tile_types_shown,
     vertex_types_shown,
 )
 
@@ -822,7 +823,8 @@ def _topology_ok(mode: str, board) -> bool:
 def shows_tiling(args: list, board) -> bool:
     """Does the window show the tiling it is named after?
 
-    Asked of the 2-uniform tilings, the ones a window can miss: every interior
+    Asked of the 2-uniform tilings and their 2-isohedral duals, the ones a
+    window can miss: every interior
     vertex of any other periodic board has the tiling's one configuration, but
     a 2-uniform one has two, and a strip of a tiling built in courses can hold
     only one of them. ``cylsquarerows3`` easy was 23 domains round and a third
@@ -840,8 +842,12 @@ def shows_tiling(args: list, board) -> bool:
                    if args and t.key == args[0] and t.vertex_types), None)
     if tiling is None:
         return True
-    return len(vertex_types_shown(board, tiling.vertex_types)) == len(
-        tiling.vertex_types)
+    # a 2-isohedral tiling carries its primal's vertex types, which are its
+    # own two *tiles* (see `tile_types_shown`), so the window must hold an
+    # interior tile of each rather than a vertex of each
+    shown = (tile_types_shown if tiling.family == "2-isohedral"
+             else vertex_types_shown)
+    return len(shown(board, tiling.vertex_types)) == len(tiling.vertex_types)
 
 
 def _candidate_values(current, coarse: bool, domains: bool = True,
