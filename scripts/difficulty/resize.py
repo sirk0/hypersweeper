@@ -254,6 +254,10 @@ SPEC: dict[str, dict] = {
     "half_trapezoid_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "stretched_chair_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "rhombic_l_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "right_isosceles_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "drafter_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "ttetromino_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
+    "five_triangle_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "carpet_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "pentaflake_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
     "gosper_board": dict(size=(0,), mine=1, shape=2, kind="scale", coarse=True),
@@ -359,6 +363,15 @@ GRIDS = {
 # already drag its win rate to 83% against an easy target of 96.5%. The
 # level-3 patch calibrates cleanly at 10 mines. See `calibrate.opening_floor`.
 COARSE_MIN_LEVEL = {("pentaflake", "easy"): 3}
+
+# ...and the levels a coarse board may not *exceed*. Scored on cell count alone,
+# the 30-60-90 triangle's 729-cell patch is nearer the hard target of 480 than
+# its 243-cell one, and the five-triangle's 625 nearer than its 125 -- but both are
+# long thin triangles (inradius 0.37 of a unit edge, against 0.5 for the
+# carpet's 512 squares), and at that count their numbers stop reading. Past
+# about 500 cells is where the glyphs go, so the level below is the hard board,
+# told apart from medium by its mines.
+COARSE_MAX_LEVEL = {("drafter", "hard"): 5, ("fivetriangle", "hard"): 3}
 
 # The donut builders take a tube *radius* (a fraction of the ring radius); the
 # Klein builders take a tube *scale* around 1.0. Same role -- the surface's own
@@ -849,8 +862,11 @@ def _candidate_values(current, coarse: bool, domains: bool = True,
     no such window in the grid at all. Windows are filtered on their product
     before any board is built, so the wider range costs a list, not a search.
     """
-    if coarse:  # a fractal level is a whole substitution step
-        return [1, 2, 3, 4, 5]
+    if coarse:  # a fractal level is a whole substitution step -- up to ten,
+        # for the rep-2 isosceles right triangle, which needs eight to reach
+        # 256 cells (the walk stops as soon as a level overshoots, so the
+        # faster growers never build the big ones)
+        return list(range(1, 11))
     if isinstance(current, float) and not float(current).is_integer():
         frac = current - math.floor(current)
         return [n + frac for n in range(1, 31)]
@@ -1879,10 +1895,12 @@ def search(mode: str, builder: str, args: list, difficulty: str,
         # and stop as soon as the board overshoots, or a range wide enough for
         # the two-knob builders would ask for a 150,000-cell cube.
         floor = COARSE_MIN_LEVEL.get((mode, difficulty), 0) if coarse else 0
+        ceiling = (COARSE_MAX_LEVEL.get((mode, difficulty), math.inf)
+                   if coarse else math.inf)
         grids = []
         for value in _candidate_values(args[knobs[0]], coarse, domains,
                                        spec.get("floor", 1)):
-            if value < floor:
+            if value < floor or value > ceiling:
                 continue
             trial = list(args)
             trial[knobs[0]] = value

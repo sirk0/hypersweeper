@@ -47,7 +47,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
 | `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, all twenty 2-uniform tilings (three cut or merged from a uniform tiling, seventeen written down from one translation cell by `_cell_template`), and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
-| `fractal.py` | The self-similar boards, in two menu families: the rep-tiles (the sphinx, the chair, the L-tetromino, the P-pentomino, the trapezoid, the right trapezoid, the half trapezoid, the stretched chair and the rhombic L) and the fractals (the Sierpinski carpet, the pentaflake and the Gosper island). One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all twelve `*_board` builders run. The first nine are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
+| `fractal.py` | The self-similar boards, in two menu families: the rep-tiles (the sphinx, the chair, the L-tetromino, the P-pentomino, the trapezoid, the right trapezoid, the half trapezoid, the stretched chair, the rhombic L, the isosceles right triangle, the 30-60-90 triangle, the T-tetromino and the five-triangle) and the fractals (the Sierpinski carpet, the pentaflake and the Gosper island). One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all twelve `*_board` builders run. The first nine are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. Their uniform tilings come off the same walk by Wythoff's construction (`ambo`, `zip`, `expand`, `bevel`, `truncate`; see "The uniform hyperbolic boards"). Also Böröczky's binary tiling, drawn in the upper half-plane as a rectangle (`binary_board`); see "The binary tiling" below. |
 | `hurwitz.py` | The closed hyperbolic surfaces: Klein's quartic, Macbeath's surface and one of the first Hurwitz triplet, the {7,3} tiling glued up with no rim. Each surface's map is read off its group, PSL(2,q), with integer ids; the {7,3} disc of `hyperbolic.py` covers it, by a covering map walked on ids alone; and the board draws a patch of that disc, every face showing the cell it covers (`Board.faces`), with the surface's own adjacency and topology (`Board.quotient`). See "The closed hyperbolic surfaces" below. |
@@ -1332,14 +1332,15 @@ The pygame game does not pan; it plays the same board.
 
 ## The rep-tile and fractal boards
 
-The twelve self-similar boards are each one tile inflated `levels` times --
+The sixteen self-similar boards are each one tile inflated `levels` times --
 scaled up by the substitution's `factor` and refilled with copies of itself --
 into a patch whose outline converges on a self-similar shape (the tile again
 for all but the Gosper island); that outline is the
 board, the second deliberate exception to the square-window
 convention. The menu splits them in two. The **Rep-tiles** family is the
-nine polygons that tile a scaled copy of themselves exactly (rep-4, so
-4**levels cells: 64 easy, and 256 medium and hard at two mine counts): the
+thirteen polygons that tile a scaled copy of themselves exactly -- nine of them
+rep-4, so 4**levels cells: 64 easy, and 256 medium and hard at two mine
+counts; the other four are below. The
 **sphinx** is the pentagonal hexiamond on the triangular lattice (its
 dissection is unique -- three of its four children are reflected), the
 **chair** the L-tromino on the square lattice (the classic reflection-free
@@ -1362,12 +1363,34 @@ chair** is the chair drawn out into upright dominoes and the **rhombic L** the
 L-tetromino sheared into four 60° rhombi, and neither keeps the quarter turn
 its original dissects with. All four dissections are unique, all four reflect
 a child, and none is edge to edge, so all four outlines carry their step
-vertices. Wikipedia's other famous rep-tiles do not fit this machinery or add
-nothing to it: the isosceles right triangle (rep-2) and the 30-60-90 triangle
-(rep-3) inflate into windows of the tetrakis square and kisrhombille tilings
-the Laves family already ships, and the pinwheel triangle (rep-5) reflects a
-child under a spiral inflation by 2 + i, which turns its tiles through
-irrational angles and so off any lattice. The **Fractals**
+vertices. Four more come from Wikipedia's *A selection of rep-tiles*, and
+each needed something the rep-4 ones did not. The **isosceles right
+triangle** (rep-2) and the **30-60-90 triangle** (rep-3) inflate by 1 + i and
+1 + ζ: √2 and √3, turned 45° and 30° a level. The 30-60-90 triangle reflects
+two of its three children, and a turning inflation does not commute with a
+mirror, so each `_Substitution` carries a `twist` (s^p M s^-p = R^(p·twist) M)
+that `substitution_placements` adds to a reflected child's rotation. Each also
+carries an `upright`, the turn that stands every level the same way up
+(`board_xy`). Both are edge to edge. Their patches are the tetrakis square and
+kisrhombille tilings cut to a triangle -- the Laves family's tiles, in a
+rep-tile's outline. The **T-tetromino** is rep-16, not rep-4: four Ts make a
+4x4 square only as a pinwheel of quarter turns, so the T scaled by four is
+four such blocks, and its one usable patch (256 cells) serves all three
+difficulties. The **five-triangle** is the 1:2 right triangle, rep-5: the
+altitude cuts off one copy √5 smaller, and the double copy left over is
+quartered through its midpoints. Its inflation by 2 + i turns 26.57° and
+reflects every child, so a level's tiles take the four quarter turns of one
+hand, the hand and the tilt alternating. No placement can say that, so
+`five_triangle_board` cuts the patch top down as an affine rule on each
+triangle's corners, on an integer grid of 10**levels per unit, and then
+records its T-vertices exactly. Conway and Radin's *pinwheel* is the same
+triangle with the double copy's middle rectangle halved along the other
+diagonal, which sends the tiles through ever more angles. It was measured
+and left out: its 125-cell patch leaves 22 cells with an indistinguishable
+twin, a coin flip per mine, where the midpoint split leaves two and
+calibrates. Both right triangles' corner pairs are twins on every patch,
+which is why `drafter` easy (four twin cells in 81) ships flagged in
+`data/difficulty.json`. The **Fractals**
 family is the other three, whose patch is not just the tile scaled: the
 **Sierpinski carpet** is not a
 rep-tile: the unit square tripled and refilled with the eight subsquares of

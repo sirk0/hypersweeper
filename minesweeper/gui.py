@@ -48,8 +48,10 @@ from minesweeper.boards import (
     _pentaspiral_tiles,
     _z7_to_xy,
     binary_board,
+    board_xy,
     build_board,
     family_rows,
+    five_triangles,
     hyperbolic_board,
     hyperbolic_uniform_board,
     newell_normal,
@@ -1459,13 +1461,19 @@ def _render_icon(key: str) -> pygame.Surface:
                             (left + w * sc, top + h * sc), (left, top + h * sc)],
                         fill=ICON_BLUE if core else ICON_BLUE_LIGHT, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.08, d * 0.06, d * 0.84, d * 0.55))
-    elif key in SUBSTITUTIONS:
+    elif key in SUBSTITUTIONS or key == "fivetriangle":
         # the substitution itself: the once-smaller tiles that fill one tile
-        # (four for the rep-tiles, eight around a hole for the carpet), drawn
-        # from the board's own geometry
-        tile = SUBSTITUTIONS[key]
-        polygons = [[tile.to_xy(place_point(tile, at, v)) for v in tile.outline]
-                    for at in substitution_placements(tile, 1)]
+        # (four for most rep-tiles, two to sixteen for the rest, eight around
+        # a hole for the carpet), drawn from the board's own geometry -- turned
+        # the way the board stands, for the two triangles whose inflation turns
+        if key == "fivetriangle":
+            # no lattice substitution: its five triangles, cut once
+            polygons = [list(tri) for tri in five_triangles(1)]
+        else:
+            tile = SUBSTITUTIONS[key]
+            to_xy = board_xy(tile, 1)
+            polygons = [[to_xy(place_point(tile, at, v)) for v in tile.outline]
+                        for at in substitution_placements(tile, 1)]
         pts = [p for polygon in polygons for p in polygon]
         min_x, max_x = min(x for x, _ in pts), max(x for x, _ in pts)
         min_y, max_y = min(y for _, y in pts), max(y for _, y in pts)

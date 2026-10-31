@@ -38,7 +38,7 @@
 //    builders in boards/tilings.ts — so their domains are written out below, in
 //    the units and the orientation those builders use.
 //  * The **rep-tile** and **fractal** boards do not repeat, but their tiles do:
-//    the nine rep-tiles all tile the plane in pairs, the Gosper island is plain
+//    the thirteen rep-tiles all tile the plane in pairs, the Gosper island is plain
 //    hexagons, and the Sierpinski carpet is built of unit squares. The pentaflake takes two tiles rather than one — regular
 //    pentagons do not tile the plane, but pentagons and 36° rhombs do.
 //  * The **aperiodic** and **spiral** boards are the same story. The
@@ -229,6 +229,21 @@ const LTETROMINO_TILE: Vertex[] = [
   [1, 1],
   [1, 2],
   [0, 2],
+  [0, 1],
+];
+
+/** The T-tetromino, as boards/fractal.ts writes it — a vertex at every
+ * lattice step, as for the chair. */
+const TTETROMINO_TILE: Vertex[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [3, 0],
+  [3, 1],
+  [2, 1],
+  [2, 2],
+  [1, 2],
+  [1, 1],
   [0, 1],
 ];
 
@@ -496,6 +511,83 @@ export const DOMAINS: Record<string, () => Domain> = {
       width: 4,
       height: 2 * ROOT3,
       cells: [...pair, ...pair.map((tile) => shift(tile, 2, 0))],
+    };
+  },
+
+  // Two isosceles right triangles, the second a half turn of the first, make a
+  // square cut corner to corner: legs 1, so the square is the unit one.
+  rightisosceles: () => ({
+    width: 1,
+    height: 1,
+    cells: [
+      [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+      ],
+      [
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ],
+    ],
+  }),
+
+  // Two 30-60-90 triangles the same way make a √3 x 1 rectangle, cut along its
+  // diagonal (the hypotenuse, 2).
+  drafter: () => ({
+    width: ROOT3,
+    height: 1,
+    cells: [
+      [
+        [0, 0],
+        [ROOT3, 0],
+        [0, 1],
+      ],
+      [
+        [ROOT3, 0],
+        [ROOT3, 1],
+        [0, 1],
+      ],
+    ],
+  }),
+
+  // ...and two five-triangles a 2 x 1 one. (The board's own tiling is the
+  // substitution, at ever more angles; this is the same tile laid down the
+  // plain way, as the chair's is.)
+  fivetriangle: () => ({
+    width: 2,
+    height: 1,
+    cells: [
+      [
+        [0, 0],
+        [2, 0],
+        [0, 1],
+      ],
+      [
+        [2, 0],
+        [2, 1],
+        [0, 1],
+      ],
+    ],
+  }),
+
+  // A T and its half turn interlock into a two-row staircase eight squares
+  // long — its rows run 0..4 and 1..5 — which tiles the plane along (4, 0) and
+  // (1, 2); the smallest rectangle in that lattice is 4 x 8, four staircases
+  // stacked, each shifted back by a period where it would run a whole one past
+  // the rectangle (the tile is drawn from one copy either side, no further).
+  ttetromino: () => {
+    const pair = [TTETROMINO_TILE, halfTurn(TTETROMINO_TILE, 2.5, 1)];
+    return {
+      width: 4,
+      height: 8,
+      cells: [
+        [0, 0],
+        [1, 2],
+        [-2, 4],
+        [-1, 6],
+      ].flatMap(([dx, dy]) => pair.map((tile) => shift(tile, dx!, dy!))),
     };
   },
 

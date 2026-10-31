@@ -250,9 +250,11 @@ APERIODIC_MODES = tuple(_MENU["aperiodic"])
 # like them.
 SPIRAL_MODES = tuple(_MENU["spiral"])
 # The rep-tile family: the sphinx, the chair, the L-tetromino, the P-pentomino,
-# the trapezoid, the right and half trapezoids, the stretched chair and the
-# rhombic L, each a patch whose outline is the tile itself, scaled --
-# four copies of the tile fill the tile doubled, level on level. Like the
+# the trapezoid, the right and half trapezoids, the stretched chair, the
+# rhombic L, the isosceles right and 30-60-90 triangles, the T-tetromino and
+# the five-triangle, each a patch whose outline is the tile itself,
+# scaled -- n copies of the tile fill it grown by sqrt(n), level on level
+# (four for most; two, three, sixteen and five for the last four). Like the
 # aperiodic ones they are one-off modes rather than a tiling x surface
 # product, so they live on the plane only.
 REPTILE_MODES = tuple(_MENU["reptile"])

@@ -1402,6 +1402,90 @@
         ]
       }
     },
+    "rightisosceles": {
+      "builder": "right_isosceles_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          7,
+          6,
+          30.0
+        ],
+        "medium": [
+          7,
+          11,
+          30.0
+        ],
+        "hard": [
+          9,
+          59,
+          21.9
+        ]
+      }
+    },
+    "drafter": {
+      "builder": "drafter_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          4,
+          5,
+          24.4
+        ],
+        "medium": [
+          5,
+          11,
+          23.7
+        ],
+        "hard": [
+          5,
+          26,
+          23.7
+        ]
+      }
+    },
+    "ttetromino": {
+      "builder": "ttetromino_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          2,
+          12,
+          13.3
+        ],
+        "medium": [
+          2,
+          28,
+          13.3
+        ],
+        "hard": [
+          2,
+          41,
+          13.3
+        ]
+      }
+    },
+    "fivetriangle": {
+      "builder": "five_triangle_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          6,
+          21.5
+        ],
+        "medium": [
+          3,
+          11,
+          21.5
+        ],
+        "hard": [
+          3,
+          23,
+          21.5
+        ]
+      }
+    },
     "carpet": {
       "builder": "carpet_board",
       "mineArg": 1,

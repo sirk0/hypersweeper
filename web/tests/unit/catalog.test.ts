@@ -203,6 +203,10 @@ describe("catalog families", () => {
       "halftrapezoid",
       "stretchedchair",
       "rhombicl",
+      "rightisosceles",
+      "drafter",
+      "ttetromino",
+      "fivetriangle",
     ];
     expect(familyRows("reptile", "flat").map((r) => r.mode)).toEqual(reptiles);
     // a one-off family's rows are modes, so each carries its own icon

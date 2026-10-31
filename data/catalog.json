@@ -189,6 +189,10 @@
     "halftrapezoid": "Half trapezoid",
     "stretchedchair": "Stretched chair",
     "rhombicl": "Rhombic L",
+    "rightisosceles": "Isosceles right triangle",
+    "drafter": "30-60-90 triangle",
+    "ttetromino": "T-tetromino",
+    "fivetriangle": "Five-triangle",
     "carpet": "Sierpiński carpet",
     "pentaflake": "Pentaflake",
     "gosper": "Gosper island",
@@ -784,6 +788,12 @@
       "surface": "doubletorus",
       "family": "regular"
     },
+    "drafter": {
+      "label": "30-60-90 triangle",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "durer": {
       "label": "Dürer pentagonal",
       "tiling": "durer",
@@ -819,6 +829,12 @@
       "tiling": "fannedhex",
       "surface": "flat",
       "family": "2-uniform"
+    },
+    "fivetriangle": {
+      "label": "Five-triangle",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
     },
     "floret": {
       "label": "Floret pentagonal",
@@ -1660,6 +1676,12 @@
       "surface": "flat",
       "family": "uniform"
     },
+    "rightisosceles": {
+      "label": "Isosceles right triangle",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "righttrapezoid": {
       "label": "Right trapezoid",
       "tiling": "",
@@ -2283,6 +2305,12 @@
       "tiling": "trunctrihex",
       "surface": "flat",
       "family": "uniform"
+    },
+    "ttetromino": {
+      "label": "T-tetromino",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
     }
   },
   "menu": {
@@ -2350,7 +2378,11 @@
       "righttrapezoid",
       "halftrapezoid",
       "stretchedchair",
-      "rhombicl"
+      "rhombicl",
+      "rightisosceles",
+      "drafter",
+      "ttetromino",
+      "fivetriangle"
     ],
     "fractal": [
       "carpet",

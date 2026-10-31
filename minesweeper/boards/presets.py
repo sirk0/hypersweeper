@@ -50,16 +50,20 @@ from minesweeper.boards.core import DIFFICULTIES, ROOT3, Board, Board3D
 from minesweeper.boards.fractal import (
     carpet_board,
     chair_board,
+    drafter_board,
+    five_triangle_board,
     gosper_board,
     half_trapezoid_board,
     ltetromino_board,
     pentaflake_board,
     ppentomino_board,
     rhombic_l_board,
+    right_isosceles_board,
     right_trapezoid_board,
     sphinx_board,
     stretched_chair_board,
     trapezoid_board,
+    ttetromino_board,
 )
 from minesweeper.boards.hurwitz import hurwitz_board
 from minesweeper.boards.hyperbolic import (
@@ -248,6 +252,10 @@ _JSON_BUILDERS = {
     "half_trapezoid_board": half_trapezoid_board,
     "stretched_chair_board": stretched_chair_board,
     "rhombic_l_board": rhombic_l_board,
+    "right_isosceles_board": right_isosceles_board,
+    "drafter_board": drafter_board,
+    "ttetromino_board": ttetromino_board,
+    "five_triangle_board": five_triangle_board,
     "carpet_board": carpet_board,
     "pentaflake_board": pentaflake_board,
     "gosper_board": gosper_board,

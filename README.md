@@ -80,7 +80,9 @@ Pick a surface, then a tiling:
   gaps they leave, as Dürer drew it in 1525), **Aperiodic**, **Spirals**,
   **Rep-tiles** (the sphinx, the chair, the L-tetromino, the P-pentomino, the
   trapezoid, the right and half trapezoids, the stretched chair and the
-  rhombic L, each split into four copies of itself level on level),
+  rhombic L, each split into four copies of itself level on level, and the
+  isosceles right triangle, the 30-60-90 triangle, the T-tetromino and the
+  five-triangle, split into two, three, sixteen and five),
   **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform and the last six also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too

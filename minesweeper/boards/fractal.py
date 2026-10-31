@@ -1,8 +1,9 @@
 """Self-similar flat boards, in two menu families. The **rep-tiles** -- the
 sphinx, the chair, the L-tetromino, the P-pentomino, the trapezoid, the right
-trapezoid, the half trapezoid, the stretched chair and the rhombic L -- and
-the **fractals** -- the Sierpinski carpet, the pentaflake and the Gosper
-island.
+trapezoid, the half trapezoid, the stretched chair, the rhombic L, the
+isosceles right triangle, the 30-60-90 triangle, the T-tetromino and the
+five-triangle -- and the **fractals** -- the Sierpinski carpet, the pentaflake
+and the Gosper island.
 
 Each is one tile inflated ``levels`` times: the tile is scaled up by the
 substitution's ``factor`` and refilled with copies of itself, so the patch
@@ -13,7 +14,8 @@ these are deliberately *not* a rectangular window: trimming the patch to a
 square block would throw away the only thing that makes them what they are
 (the same exception the shaped boards make, and for the same reason).
 
-A rep-tile's four children fill the doubled tile exactly, so its patch is the
+A rep-tile's n children fill the tile grown by sqrt(n) exactly -- four for
+most, two, three, sixteen and five for the last four -- so its patch is the
 tile again, scaled, with no hole and a straight edge; that is the whole
 Rep-tiles family. The other three leave holes (the carpet, the pentaflake) or
 grow a rough edge (the Gosper island), and those are the Fractals.
@@ -47,6 +49,17 @@ The substitutions:
     up to eleven squares and ten triangles -- once the triangles,
     parallelograms and the four tiles above are set aside. All four
     dissections are unique and all four reflect a child.
+  * The **isosceles right triangle** (rep-2) and the **30-60-90 triangle**
+    (rep-3) inflate by the Gaussian integer 1 + i and the Eisenstein integer
+    1 + zeta: sqrt2 and sqrt3, turning 45 and 30 degrees a level. The
+    30-60-90 triangle reflects two children, which a turning inflation does
+    not commute with, hence ``twist``; both stand each level the same way up
+    on the board, hence ``upright``. Both are edge to edge.
+  * The **T-tetromino** is rep-16: four Ts fill a 4x4 square, as a pinwheel of
+    quarter turns, so the T grown fourfold is four such blocks.
+  * The **five-triangle** -- the 1:2 right triangle, rep-5 -- is the one no
+    placement can describe, and has a builder of its own at the end of the
+    module.
   * The **Sierpinski carpet** is the odd one out: the unit square tripled
     and refilled with eight copies -- the 3x3 block *minus its centre*. The
     children do not fill the inflated tile, and that missing middle ninth,
@@ -178,6 +191,23 @@ def _times(n: int) -> Callable[[Point], Point]:
     return lambda p: tuple(c * n for c in p)
 
 
+def _square_turn(p: Point) -> Point:
+    """Multiply by 1 + i, the isosceles right triangle's inflation: sqrt2 at
+    45 degrees, the square lattice's own Gaussian integer of norm 2. Scaling
+    by sqrt2 alone would leave the lattice, so -- as for the Gosper island --
+    the inflation turns as it stretches."""
+    x, y = p
+    return (x - y, x + y)
+
+
+def _drafter_scale(p: Point) -> Point:
+    """Multiply by 1 + zeta, the 30-60-90 triangle's inflation: sqrt3 at 30
+    degrees, the Eisenstein integer of norm 3. (zeta**2 = zeta - 1, whence
+    (a + b*zeta)(1 + zeta) = (a - b) + (a + 2b)*zeta.)"""
+    a, b = p
+    return (a - b, a + 2 * b)
+
+
 # Z[zeta10] -- the pentaflake's lattice, zeta = exp(i*pi/5): (a, b, c, d)
 # stands for a + b*zeta + c*zeta**2 + d*zeta**3. Rank 4 is forced, not a
 # convenience: no lattice of two integers carries a 72-degree rotation, so
@@ -241,6 +271,23 @@ class _Substitution:
     #                                        pure scaling: the Gosper island's
     #                                        turns as it stretches
     to_xy: Callable[[Point], tuple[float, float]]
+    twist: int = 0                         # how far `scale` turns a mirror, in
+    #                                        rotation steps: s**p M s**-p =
+    #                                        R**(p*twist) M. Zero for a pure
+    #                                        scaling; 1 for the two right
+    #                                        triangles, whose inflation turns
+    #                                        by half a lattice step (2*arg(s)
+    #                                        is one step) -- see
+    #                                        substitution_placements
+    upright: float | None = None           # for a turning inflation: the
+    #                                        turn, in degrees, that stands the
+    #                                        unit tile the way the board is
+    #                                        drawn. Every level's patch is then
+    #                                        turned back by the inflation's
+    #                                        accumulated turn and by this, so
+    #                                        all levels are drawn the same way
+    #                                        up (vertex ids stay on the
+    #                                        lattice; only the drawing turns)
 
     @property
     def origin(self) -> Point:
@@ -447,6 +494,67 @@ _RHOMBIC_L_CHILDREN: tuple[_Placement, ...] = (
 RHOMBIC_L = _Substitution("rhombicl", _RHOMBIC_L_OUTLINE, _RHOMBIC_L_CHILDREN,
                           2, 6, _tri_rotate, _tri_mirror, _times(2), _tri_to_xy)
 
+# The isosceles right triangle -- half a square, cut corner to corner -- is
+# rep-2: its altitude cuts it into two copies of itself, each sqrt2 smaller
+# and turned 45 degrees. Its hypotenuse lies along the x axis, two lattice
+# edges long, and its legs run diagonally across unit squares to the right
+# angle at (1, 1). Corners only: like the trapezoid's, its substitution is
+# edge to edge -- a hypotenuse only ever meets a hypotenuse, a leg a leg --
+# so there is no T-vertex for a step vertex to record.
+_RIGHT_ISOSCELES_OUTLINE: tuple[Point, ...] = ((0, 0), (2, 0), (1, 1))
+
+# The two halves of the inflated tile, right angle to right angle at the
+# middle of its hypotenuse. The tile is mirror-symmetric, so each could be
+# written reflected as well; these are the reflection-free ones.
+_RIGHT_ISOSCELES_CHILDREN: tuple[_Placement, ...] = (
+    (3, 0, (0, 2)),
+    (2, 0, (2, 2)),
+)
+
+RIGHT_ISOSCELES = _Substitution("rightisosceles", _RIGHT_ISOSCELES_OUTLINE,
+                                _RIGHT_ISOSCELES_CHILDREN, 2 ** 0.5, 4,
+                                _square_rotate, _square_mirror, _square_turn,
+                                _square_to_xy, twist=1, upright=135)
+
+# The 30-60-90 triangle (the "drafter", half an equilateral triangle) is
+# rep-3: three copies, sqrt3 smaller and turned 30 degrees, meet at the
+# centre of the equilateral triangle it is half of. Its hypotenuse lies along
+# the lattice axis, two edges long, and the right angle is at (1, 1), so its
+# long leg crosses unit triangles down their medians. Edge to edge, so corners
+# only. It is chiral, so the dissection cannot avoid reflecting a child: two
+# of the three are.
+_DRAFTER_OUTLINE: tuple[Point, ...] = ((0, 0), (2, 0), (1, 1))
+
+_DRAFTER_CHILDREN: tuple[_Placement, ...] = (
+    (1, 1, (0, 0)),
+    (3, 0, (2, 2)),
+    (3, 1, (2, 2)),
+)
+
+DRAFTER = _Substitution("drafter", _DRAFTER_OUTLINE, _DRAFTER_CHILDREN,
+                        3 ** 0.5, 6, _tri_rotate, _tri_mirror, _drafter_scale,
+                        _tri_to_xy, twist=1, upright=150)
+
+# The T-tetromino: three unit squares in a row and one on top of the middle,
+# a vertex at every lattice step. It is no rep-4 tile, but four Ts fill a 4x4
+# square -- a pinwheel of quarter turns -- so the T scaled by four is its four
+# squares, each a block of four Ts: rep-16.
+_TTETROMINO_OUTLINE: tuple[Point, ...] = (
+    (0, 0), (1, 0), (2, 0), (3, 0), (3, 1), (2, 1), (2, 2), (1, 2), (1, 1),
+    (0, 1),
+)
+
+# Four blocks, the same pinwheel in each, none reflected.
+_TTETROMINO_CHILDREN: tuple[_Placement, ...] = tuple(
+    (rot, 0, (x + bx, y + by))
+    for bx, by in ((0, 0), (4, 0), (8, 0), (4, 4))
+    for rot, (x, y) in ((2, (3, 4)), (1, (4, 1)), (0, (1, 0)), (3, (0, 3)))
+)
+
+TTETROMINO = _Substitution("ttetromino", _TTETROMINO_OUTLINE,
+                           _TTETROMINO_CHILDREN, 4, 4, _square_rotate,
+                           _square_mirror, _times(4), _square_to_xy)
+
 # The Sierpinski carpet: the unit square, tripled and refilled with the
 # eight subsquares of the 3x3 block that are not its centre. The children
 # leave the middle ninth empty -- the square is no rep-tile and this is no
@@ -533,7 +641,8 @@ GOSPER = _Substitution("gosper", _HEXAGON_OUTLINE, _GOSPER_CHILDREN,
 SUBSTITUTIONS = {tile.mode: tile
                  for tile in (SPHINX, CHAIR, LTETROMINO, PPENTOMINO, TRAPEZOID,
                               RIGHT_TRAPEZOID, HALF_TRAPEZOID, STRETCHED_CHAIR,
-                              RHOMBIC_L, CARPET, PENTAFLAKE, GOSPER)}
+                              RHOMBIC_L, RIGHT_ISOSCELES, DRAFTER, TTETROMINO,
+                              CARPET, PENTAFLAKE, GOSPER)}
 
 
 def _linear(tile: _Substitution, rot: int, mirrored: int, p: Point) -> Point:
@@ -578,12 +687,19 @@ def substitution_placements(tile: _Substitution, levels: int) -> list[_Placement
     edge ``factor**(levels - 1)`` and the last round's are unit tiles. Their
     translations are given in units of their own tile, so inflating them to the
     round's size keeps every placement an exact lattice point.
+
+    An inflation that turns (the two right triangles', the Gosper island's)
+    does not commute with a mirror: s**p M = R**(p*twist) M s**p, so a
+    reflected child picks up ``power * twist`` extra rotation steps at each
+    round. (The Gosper island turns by an angle no lattice rotation matches,
+    and gets away with it only because none of its children is reflected.)
     """
     if levels < 0:
         raise ValueError("levels must be >= 0")
     placements = [(0, 0, tile.origin)]
     for power in reversed(range(levels)):
-        children = [(rot, mirrored, _inflate(tile, translation, power))
+        children = [(rot + power * tile.twist if mirrored else rot, mirrored,
+                     _inflate(tile, translation, power))
                     for rot, mirrored, translation in tile.children]
         placements = [_compose(tile, parent, child)
                       for parent in placements
@@ -604,7 +720,26 @@ def _substitution_board(tile: _Substitution, levels: int, mine_count: int,
         ]
     if len(cells) != len(tile.children) ** levels:
         raise ValueError("substitution produced overlapping placements")
-    return _finalize_flat(tile.mode, cells, tile.to_xy, mine_count, scale)
+    return _finalize_flat(tile.mode, cells, board_xy(tile, levels), mine_count,
+                          scale)
+
+
+def board_xy(tile: _Substitution, levels: int) -> Callable[[Point], tuple[float, float]]:
+    """Where a level-``levels`` patch draws a lattice point. A tile with an
+    ``upright`` is turned so every level stands the same way up: the right
+    triangles' inflations turn 45 and 30 degrees a level, and left alone a
+    patch would come out a corner at one level and a long thin triangle
+    lying on its hypotenuse at the next."""
+    if tile.upright is None:
+        return tile.to_xy
+    angle = math.radians(tile.upright - levels * tile.twist * 180 / tile.order)
+    cos, sin = math.cos(angle), math.sin(angle)
+
+    def to_xy(p: Point) -> tuple[float, float]:
+        x, y = tile.to_xy(p)
+        return (x * cos - y * sin, x * sin + y * cos)
+
+    return to_xy
 
 
 def sphinx_board(levels: int, mine_count: int, scale: float = 26) -> Board:
@@ -668,6 +803,27 @@ def rhombic_l_board(levels: int, mine_count: int, scale: float = 26) -> Board:
     return _substitution_board(RHOMBIC_L, levels, mine_count, scale)
 
 
+def right_isosceles_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The isosceles right triangle rep-tile, inflated ``levels`` times:
+    2**levels half-squares filling one triangle-shaped patch, turned a further
+    45 degrees with every level. ``scale`` is pixels per unit square edge."""
+    return _substitution_board(RIGHT_ISOSCELES, levels, mine_count, scale)
+
+
+def drafter_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The 30-60-90 triangle rep-tile, inflated ``levels`` times: 3**levels
+    of them filling one triangle-shaped patch, turned a further 30 degrees
+    with every level. ``scale`` is pixels per unit triangle edge (the tile's
+    hypotenuse is two)."""
+    return _substitution_board(DRAFTER, levels, mine_count, scale)
+
+
+def ttetromino_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The T-tetromino rep-tile, inflated ``levels`` times: 16**levels Ts
+    filling one T-shaped patch. ``scale`` is pixels per unit square edge."""
+    return _substitution_board(TTETROMINO, levels, mine_count, scale)
+
+
 def carpet_board(levels: int, mine_count: int, scale: float = 26) -> Board:
     """The Sierpinski carpet, inflated ``levels`` times: 8**levels unit
     squares in a 3**levels square patch (1, 8, 64, 512, 4096 tiles), the
@@ -691,3 +847,142 @@ def gosper_board(levels: int, mine_count: int, scale: float = 26) -> Board:
     degrees further round with every level. ``scale`` is pixels per unit
     hexagon circumradius."""
     return _substitution_board(GOSPER, levels, mine_count, scale)
+
+
+# -- the five-triangle ---------------------------------------------------------
+#
+# The 1:2 right triangle (legs 1 and 2, hypotenuse sqrt5) is rep-5: the
+# altitude from the right angle cuts off one copy sqrt5 smaller, and what is
+# left is a copy twice that size, cut rep-4 through the midpoints of its
+# sides. Its inflation turns by atan(1/2) -- multiplication by 2 + i -- and
+# every one of the five children is reflected, so the turn comes straight back
+# off at the next level: each level's tiles take just the four quarter turns
+# of one hand, the hand and a 26.57-degree tilt alternating level by level.
+# The placement machinery above cannot say that, though. A reflected child's
+# twist would be (2 + i) / (2 - i) = (3 + 4i) / 5, a rotation of no finite
+# order, and the alternation only cancels it because *all* the children are
+# reflected.
+#
+# Its famous relative is Conway and Radin's *pinwheel*, which halves the
+# twice copy's middle rectangle (the corner at D and the middle child) along
+# its other diagonal, from the right angle to the hypotenuse's middle. That
+# reflects two of the five rather than all of them, and then the turn never
+# cancels: the pinwheel's tiles point in ever more directions, dense in the
+# limit. It also costs the board its game. Measured, the pinwheel's 125-cell
+# patch leaves 22 cells with an indistinguishable twin and plays at a coin
+# flip per mine, where this split leaves two and calibrates like any other
+# board. So this one ships, under the GIF's own name for the tile.
+#
+# What does carry over exactly is the dissection's *affine* description. A
+# triangle is held as its corners in role order (A, B, C): A the 26.57-degree
+# corner, B the right angle, C the 63.43-degree corner. The split points are
+# fixed rational combinations of those -- D = (A + 4C) / 5 is the foot of the
+# altitude from B, the rest are midpoints -- and an affine rule applied to any
+# similar triangle, reflected or not, is that triangle's own dissection. So
+# the patch is cut from the top down with no rotations at all. Every level
+# divides by at most 10 (a fifth, then a half), so a root ten**levels times
+# the unit is cut into exact integer corners all the way down, and vertex ids
+# need no tolerance, as on the lattices.
+#
+# The patch is not edge to edge -- the altitude foot lands two fifths of the
+# way along a neighbour's leg, a midpoint in the middle of another's
+# hypotenuse -- and the tilted levels have no lattice step to put a vertex on
+# in advance. So ``_five_triangle_cells`` records the T-vertices afterwards
+# instead: every corner that lies inside another tile's
+# edge is inserted into that edge, exactly (integer collinearity), which is
+# what ``_insert_t_vertices`` does for the isogonal tilings.
+
+_Triangle = tuple[Point, Point, Point]
+
+
+def _five_triangle_split(tri: _Triangle) -> list[_Triangle]:
+    """The five children of one triangle, each in (A, B, C) role order."""
+    a, b, c = tri
+
+    def mix(*terms):
+        """sum(weight * point) / denominator, exactly (it always divides)."""
+        *weighted, denominator = terms
+        x = sum(w * p[0] for w, p in weighted)
+        y = sum(w * p[1] for w, p in weighted)
+        assert x % denominator == 0 and y % denominator == 0
+        return (x // denominator, y // denominator)
+
+    d = mix((1, a), (4, c), 5)          # the foot of the altitude from B
+    # (B, D, C): the one copy sqrt5 smaller, its small corner at B. (A, D, B)
+    # is twice a copy, its right angle at D, cut through its midpoints.
+    ad = mix((1, a), (1, d), 2)
+    db = mix((1, d), (1, b), 2)
+    ba = mix((1, b), (1, a), 2)
+    return [
+        (b, d, c),
+        (a, ad, ba),         # the corner at A
+        (ad, d, db),         # the corner at D
+        (ba, db, b),         # the corner at B
+        (db, ba, ad),        # the middle one, a half turn
+    ]
+
+
+def five_triangles(levels: int) -> list[_Triangle]:
+    """The 5**levels triangles of a level-``levels`` five-triangle patch, in
+    (A, B, C) role order, on the integer grid in which the root's short leg
+    is 10**levels long: A = (0, 0), B = (2k, 0), C = (2k, k)."""
+    if levels < 0:
+        raise ValueError("levels must be >= 0")
+    k = 10 ** levels
+    triangles: list[_Triangle] = [((0, 0), (2 * k, 0), (2 * k, k))]
+    for _ in range(levels):
+        triangles = [child for tri in triangles for child in _five_triangle_split(tri)]
+    return triangles
+
+
+def _five_triangle_cells(levels: int) -> dict[Cell, list[Point]]:
+    """Each triangle as a counterclockwise polygon carrying every T-vertex
+    that lies on its edges."""
+    triangles = five_triangles(levels)
+    corners = {p for tri in triangles for p in tri}
+    # bucket the corners on a grid about one tile across, so an edge only
+    # looks at the corners near it
+    size = max(1, 10 ** levels // 5 ** (levels // 2 + levels % 2))
+    buckets: dict[tuple[int, int], list[Point]] = {}
+    for p in corners:
+        buckets.setdefault((p[0] // size, p[1] // size), []).append(p)
+
+    def between(p: Point, q: Point) -> list[Point]:
+        """The corners strictly inside segment pq, from p towards q."""
+        found = []
+        for bx in range(min(p[0], q[0]) // size, max(p[0], q[0]) // size + 1):
+            for by in range(min(p[1], q[1]) // size, max(p[1], q[1]) // size + 1):
+                for v in buckets.get((bx, by), ()):
+                    if v in (p, q):
+                        continue
+                    cross = (q[0] - p[0]) * (v[1] - p[1]) - (q[1] - p[1]) * (v[0] - p[0])
+                    dot = (v[0] - p[0]) * (q[0] - p[0]) + (v[1] - p[1]) * (q[1] - p[1])
+                    length = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2
+                    if cross == 0 and 0 < dot < length:
+                        found.append((dot, v))
+        return [v for _, v in sorted(found)]
+
+    cells: dict[Cell, list[Point]] = {}
+    for a, b, c in triangles:
+        turn = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+        ring = (a, b, c) if turn > 0 else (a, c, b)
+        polygon: list[Point] = []
+        for p, q in zip(ring, ring[1:] + ring[:1]):
+            polygon.append(p)
+            polygon.extend(between(p, q))
+        cells[(*a, *b, *c)] = polygon
+    return cells
+
+
+def five_triangle_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The five-triangle rep-tile -- the 1:2 right triangle -- cut ``levels``
+    times: 5**levels triangles (1, 5, 25, 125, 625 tiles) filling one
+    triangle-shaped patch. ``scale`` is
+    pixels per the tile's short leg."""
+    unit = 10 ** levels / 5 ** (levels / 2)
+
+    def to_xy(p: Point) -> tuple[float, float]:
+        return (p[0] / unit, p[1] / unit)
+
+    return _finalize_flat("fivetriangle", _five_triangle_cells(levels), to_xy,
+                          mine_count, scale)
