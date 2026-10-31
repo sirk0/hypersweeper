@@ -6,6 +6,12 @@
       "runtimeExecutable": ".venv/bin/python",
       "runtimeArgs": ["-m", "minesweeper"],
       "port": null
+    },
+    {
+      "name": "reptiles",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "reptiles", "run", "dev"],
+      "port": 5174
     }
   ]
 }
