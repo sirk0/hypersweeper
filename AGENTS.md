@@ -25,7 +25,7 @@ A request about **Rep-tiles** (tiles, levels, drag-and-drop tiling) means
 `apps/reptiles/` — see [`apps/reptiles/AGENTS.md`](apps/reptiles/AGENTS.md). It is
 built on the same geometry as Hypersweeper, the `@tiling/geometry` package in
 `packages/geometry/`, so a change there can reach both games. CI checks it
-(`reptiles-checks`); no deploy covers it yet.
+(`reptiles-checks`, `reptiles-e2e`) and deploys it to <https://rep-tiles.pages.dev/>.
 
 ## Repository layout
 
@@ -98,8 +98,9 @@ package in its `dependencies` (`"*"`) and imports it by name. The rules:
 and iOS-sync guards) and `web-e2e`, which shards the Playwright suite across
 four runners — those two are Hypersweeper's, independent of each other, and
 skipped on a pull request that changes nothing outside `apps/reptiles/` — and
-`reptiles-checks` (typecheck, Prettier, unit tests, build) and `packages-checks`
-(the same for `packages/*`). That is the full
+`reptiles-checks` (typecheck, Prettier, unit tests, build), `reptiles-e2e` (the
+Playwright smoke test) and `packages-checks` (typecheck, Prettier, tests for
+`packages/*`). That is the full
 run; locally, run only what a change touches — see "Verifying a change" below.
 No CI job builds the native app: `app-store.yml`, started by hand from
 `master`, archives it and uploads it to App Store Connect.
@@ -168,7 +169,7 @@ budget, and leave the full run to CI:
 | `apps/**` | `npm run format` in that app — Prettier, the config is the root `.prettierrc.json`; Claude sessions format each edit through a hook |
 | `apps/hypersweeper/src/**`, `apps/hypersweeper/functions/**` | `npm run typecheck` (seconds — always), then `npx vitest related --run <changed files>` (the unit tests that import them) |
 | `packages/**` | `npm run typecheck && npm run test` in that package (seconds), then the same in `apps/reptiles` and `npm run typecheck` in `apps/hypersweeper` — both games import it |
-| `apps/reptiles/**` | `npm run typecheck && npm run test` in `apps/reptiles` (seconds) |
+| `apps/reptiles/**` | `npm run typecheck && npm run test` in `apps/reptiles` (seconds); `npm run e2e` there too for a UI, build or `public/` change (seconds) |
 | UI, rendering, input behaviour | the e2e spec(s) that cover it — `npx playwright test hud.spec.ts`, narrowed with `-g "<title>"`. The topic docs name the spec that pins each behaviour |
 | A visual baseline | only that slice — `npx playwright test gallery.spec.ts -g <board>` — then run it once more to confirm determinism |
 | Python (`minesweeper/`, `scripts/`) | `make lint`, and the matching test file — `.venv/bin/pytest tests/test_game.py`, or `-k <name>` |
@@ -180,7 +181,7 @@ to be safe" — that is what CI is for.
 
 **When the work is ready** — not after every edit — commit, push the branch and
 open a pull request. CI's jobs (pytest, ruff, `data-sync`, `web-checks`, the
-four e2e shards, `reptiles-checks`, `packages-checks`) are the authoritative full run; a red one is yours to fix on
+four e2e shards, `reptiles-checks`, `reptiles-e2e`, `packages-checks`) are the authoritative full run; a red one is yours to fix on
 the same branch, and the change is done when CI is green.
 
 ## Rules that apply to every change

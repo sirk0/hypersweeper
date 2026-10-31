@@ -348,3 +348,37 @@ jobs:
         run: npm run test
       - name: Production build
         run: npx vite build
+
+  reptiles-e2e:
+    # Rep-tiles' Playwright smoke test against its production bundle under
+    # `vite preview`: it boots under the deployed security policy (the shared
+    # preset applies public/_headers there) with no console errors, its screens
+    # open, and a tile dragged onto a board lands. Three tests, seconds — the
+    # browser install is most of the job. Same Chromium headless shell, and the
+    # same reasoning for installing only that, as web-e2e above.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/reptiles
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        working-directory: .
+        run: npm ci
+      - name: Install Playwright Chromium headless shell
+        run: npx playwright install --only-shell chromium
+      - name: Smoke test
+        run: npx playwright test
+      - name: Upload Playwright report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: reptiles-playwright-report
+          path: apps/reptiles/playwright-report/
+          retention-days: 7

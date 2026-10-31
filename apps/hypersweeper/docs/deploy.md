@@ -116,6 +116,13 @@ Cloudflare Pages on every push to `master` — **it is the deployed game**; the
 pygbag build of the pygame version is no longer published (it is still
 buildable locally with `make web-package`).
 
+The workflow is a matrix with one entry per game. Rep-tiles is the other one:
+`apps/reptiles` goes to the `rep-tiles` project at <https://rep-tiles.pages.dev/>
+(see "Deploy" in `apps/reptiles/AGENTS.md`). The same holds for the PR
+previews below. A new game is a new entry in both workflows, plus a Pages
+project created once — like `hypersweeper`'s, with `master` as its production
+branch, or its deploys land as previews.
+
 It is served from the domain root, so the job sets no `VITE_BASE` and takes
 `vite.config.ts`'s default `"/"`. That path is baked into the bundle at build
 time — asset URLs, the PWA manifest, the service worker scope all derive from

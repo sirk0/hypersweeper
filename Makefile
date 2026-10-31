@@ -9,7 +9,7 @@ WEB_OUT = $(WEB_STAGE)/build/web
         mac-app mac-app-dmg desktop-install desktop-build desktop-run \
         desktop-test desktop-smoke desktop-icon \
         ios-app ios-run ios-prepare ios-install ios-icon ios-stickers \
-        reptiles-install reptiles-run reptiles-test
+        reptiles-install reptiles-run reptiles-test reptiles-e2e
 
 help:            ## list available targets
 	@grep -E '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ -/' | sort
@@ -146,6 +146,9 @@ reptiles-run:    ## run Rep-tiles at http://localhost:5174
 
 reptiles-test:   ## typecheck and unit-test Rep-tiles
 	cd apps/reptiles && npm run typecheck && npm run test
+
+reptiles-e2e:    ## Rep-tiles' Playwright smoke test against its production bundle
+	cd apps/reptiles && npm run e2e
 
 clean:           ## remove build artifacts
 	rm -rf build shells/desktop/app ios/App/App/public

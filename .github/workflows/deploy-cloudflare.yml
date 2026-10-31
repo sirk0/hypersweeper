@@ -1,10 +1,18 @@
 name: Deploy to Cloudflare Pages
 
-# The whole deploy. The TypeScript app in apps/hypersweeper/ is the published game and this
-# is the only thing that publishes it; the pygame build stays in the repo as
-# the reference implementation and goes nowhere.
+# The whole deploy: every TypeScript game, each to its own Cloudflare Pages
+# project, one matrix entry per game —
 #
-# The app is served from the domain root, which is `VITE_BASE`'s default, so
+#   apps/hypersweeper  ->  the `hypersweeper` project, https://hypersweeper.pages.dev
+#   apps/reptiles      ->  the `rep-tiles` project,    https://rep-tiles.pages.dev
+#
+# Each entry builds its game and runs wrangler from the game's folder, whose
+# wrangler.toml names the project. This is the only thing that publishes them;
+# the pygame build stays in the repo as the reference implementation and goes
+# nowhere. A new game is a new matrix entry (and a Pages project created once in
+# the Cloudflare dashboard, with `master` as its production branch).
+#
+# Each game is served from its domain root, which is `VITE_BASE`'s default, so
 # nothing here sets it. That path is baked into the bundle at build time —
 # asset URLs, the PWA manifest and the service worker scope all derive from it
 # — so serving the same artifact from a subdirectory would take its own build.
@@ -30,7 +38,25 @@ concurrency:
 
 jobs:
   deploy:
+    name: deploy (${{ matrix.app }})
     runs-on: ubuntu-latest
+    strategy:
+      # One game's failed deploy must not cancel the other's.
+      fail-fast: false
+      matrix:
+        include:
+          # Hypersweeper carries the anonymous play counter, and this is the one
+          # host that serves the Pages Function it posts to (functions/api/tally.ts);
+          # elsewhere the post would 404 and the browser would log it. Its URL
+          # can be overridden from a custom domain with the repository variable
+          # SITE_URL, which takes no code change.
+          - app: hypersweeper
+            analytics: "1"
+            site: https://hypersweeper.pages.dev/
+          # Rep-tiles has no counter and no Functions.
+          - app: reptiles
+            analytics: ""
+            site: https://rep-tiles.pages.dev/
     # Skip the automated version-bump commits. Belt and braces: bump-version.yml
     # pushes with the default GITHUB_TOKEN, and a GITHUB_TOKEN push triggers no
     # workflow, so that commit does not reach here anyway — but it would the day
@@ -43,21 +69,17 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-      - name: Build TypeScript app (site root)
-        working-directory: apps/hypersweeper
-        # No VITE_BASE: vite.config.ts defaults to "/", which is what
+      - name: Build ${{ matrix.app }} (site root)
+        working-directory: apps/${{ matrix.app }}
+        # No VITE_BASE: the shared preset defaults to "/", which is what
         # Cloudflare serves from.
         env:
-          # This is the one host that serves the Pages Function the anonymous
-          # play counter posts to, so it is the one build that carries the
-          # counter. Elsewhere the post would 404 and the browser would log it.
-          VITE_ANALYTICS: "1"
+          VITE_ANALYTICS: ${{ matrix.analytics }}
           # Absolute origin + base, for the link-preview tags (og:url, og:image);
           # a crawler runs no JavaScript, so these are fixed at build time. The
           # fallback is the Pages project's own domain, so this is right with no
-          # configuration; set the repository variable SITE_URL to override it
-          # from a custom domain, which takes no code change.
-          VITE_SITE_URL: ${{ vars.SITE_URL || 'https://hypersweeper.pages.dev/' }}
+          # configuration.
+          VITE_SITE_URL: ${{ (matrix.app == 'hypersweeper' && vars.SITE_URL) || matrix.site }}
         run: |
           # The npm workspace (every app in apps/) installs from the repo root.
           (cd ../.. && npm ci)
@@ -67,11 +89,12 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # From apps/hypersweeper/, so wrangler resolves its project root there and finds
-          # both apps/hypersweeper/wrangler.toml and — the reason for this — apps/hypersweeper/functions/,
-          # which serves /api/tally. A deploy run from the repo root uploads
-          # dist/ alone and the collector silently does not exist.
-          workingDirectory: apps/hypersweeper
+          # From the game's folder, so wrangler resolves its project root there
+          # and finds both its wrangler.toml (the project name) and — for
+          # Hypersweeper, the reason for this — its functions/, which serves
+          # /api/tally. A deploy run from the repo root uploads dist/ alone and
+          # the collector silently does not exist.
+          workingDirectory: apps/${{ matrix.app }}
           # No directory argument and no --project-name: both come from
           # wrangler.toml (`pages_build_output_dir` and `name`), and passing the
           # directory positionally alongside that config is an error.
