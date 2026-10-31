@@ -8,7 +8,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         // The smallest window the layout is tested at: an iPhone SE's width,
-        // and the height of the shortest landscape case (web/tests/e2e). This
+        // and the height of the shortest landscape case (apps/hypersweeper/tests/e2e). This
         // applies to Mac windows and resizable iPad windows; an iPhone has none.
         windowScene.sizeRestrictions?.minimumSize = CGSize(width: 375, height: 560)
 

@@ -4,7 +4,7 @@
 #
 # It builds the desktop bundle, stages it into the shell, and launches the real
 # Electron app with every off-bundle request cancelled (see installOfflineGuard
-# in desktop/main.mjs). The run passes only if the app reports itself ready,
+# in shells/desktop/main.mjs). The run passes only if the app reports itself ready,
 # logs no errors, and asked for nothing it does not carry. The screenshot it
 # leaves behind is what to look at when something renders wrong.
 #
@@ -24,20 +24,20 @@ step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
 scripts/ensure-web-deps.sh
 step "Building the web app (VITE_PACKAGED=1)"
-(cd web && VITE_PACKAGED=1 npm run build)
+(cd apps/hypersweeper && VITE_PACKAGED=1 npm run build)
 
 step "Checking the bundle needs no network"
-node scripts/check-offline-assets.mjs web/dist
+node scripts/check-offline-assets.mjs apps/hypersweeper/dist
 
-step "Staging the build into desktop/app"
-rm -rf desktop/app
-cp -R web/dist desktop/app
+step "Staging the build into shells/desktop/app"
+rm -rf shells/desktop/app
+cp -R apps/hypersweeper/dist shells/desktop/app
 
 step "Installing the desktop shell"
-if [ ! -d desktop/node_modules ]; then
-  if [ -f desktop/package-lock.json ]; then (cd desktop && npm ci); else (cd desktop && npm install); fi
+if [ ! -d shells/desktop/node_modules ]; then
+  if [ -f shells/desktop/package-lock.json ]; then (cd shells/desktop && npm ci); else (cd shells/desktop && npm install); fi
 fi
-(cd desktop && npm test)
+(cd shells/desktop && npm test)
 
 step "Launching the app offline"
 # A headless box has no X server and no GPU: Xvfb supplies the display, and
@@ -49,9 +49,9 @@ if [ -n "$ROUTE" ]; then RUN+=("--route=$ROUTE"); fi
 # renderer is sandboxed either way, see webPreferences in main.mjs).
 if [ "$(id -u)" = 0 ]; then RUN+=(--no-sandbox); fi
 if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then
-  (cd desktop && xvfb-run -a --server-args="-screen 0 1280x960x24" "${RUN[@]}")
+  (cd shells/desktop && xvfb-run -a --server-args="-screen 0 1280x960x24" "${RUN[@]}")
 else
-  (cd desktop && "${RUN[@]}")
+  (cd shells/desktop && "${RUN[@]}")
 fi
 
 step "Done"

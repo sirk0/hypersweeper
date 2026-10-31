@@ -7,7 +7,7 @@ dataset back over Cloudflare's SQL API.
 
 This file is the whole of it: the schema, the rules for changing it, the
 queries, and the line the data must not cross. It is the one place any of that
-is written — [`web/docs/deploy.md`](../../web/docs/deploy.md) covers only the
+is written — [`apps/hypersweeper/docs/deploy.md`](../../apps/hypersweeper/docs/deploy.md) covers only the
 *deploy* side (which builds carry a collector, and the binding), and
 [`shared-data.md`](shared-data.md) covers the generated `data/*.json` this
 depends on.
@@ -53,7 +53,7 @@ index*, so a board nobody plays keeps its fidelity while a popular one is being
 sampled.
 
 The layout is not a comment anywhere: `DATASET_BLOBS` and `DATASET_DOUBLES` in
-`web/src/analyticsEvent.ts` **are** the layout, `_tally.ts` maps over them to
+`apps/hypersweeper/src/analyticsEvent.ts` **are** the layout, `_tally.ts` maps over them to
 write, and `tests/unit/analyticsSchema.test.ts` checks the table below against
 them. Change one, change all three.
 
@@ -187,7 +187,7 @@ is.
 Two guards, because a dashboard is the one place in this repo that addresses
 these columns by number and cannot notice one that moved:
 
-- `web/tests/unit/dashboards.test.ts` — offline, runs in CI. The raw-events
+- `apps/hypersweeper/tests/unit/dashboards.test.ts` — offline, runs in CI. The raw-events
   panel still selects every `blob`/`double` this schema defines and still gives
   its timestamp a date unit; every query still filters on the time range;
   nothing counts with `COUNT(*)`; every taxonomy filter offers exactly the
@@ -299,7 +299,7 @@ column map. Flags: `--days=N`, `--mode=TEXT`, `--min=N`, `--json`.
 
 In this order, because each step is checked by the next:
 
-1. **`web/src/analyticsEvent.ts`** — add the key to `EventPayload` (short, this
+1. **`apps/hypersweeper/src/analyticsEvent.ts`** — add the key to `EventPayload` (short, this
    is sent on every game), write it in `payloadFor`, validate and total it in
    `parseEvent`, and **append** an entry to `DATASET_BLOBS` or
    `DATASET_DOUBLES`. Validate against a closed `Set` if it is an enum; clamp it
@@ -322,9 +322,9 @@ In this order, because each step is checked by the next:
    validation, `tests/unit/tally.test.ts` for the exact column vector,
    `tests/unit/analyticsSchema.test.ts` for the doc, and
    `tests/unit/dashboards.test.ts` for the dashboards.
-7. **The privacy copy**: `web/public/privacy.html` lists every field an event
+7. **The privacy copy**: `apps/hypersweeper/public/privacy.html` lists every field an event
    holds, so any new field goes there. If the field is about the client,
-   `README.md` and the Privacy note in `web/src/ui/settings.ts` also say what is
+   `README.md` and the Privacy note in `apps/hypersweeper/src/ui/settings.ts` also say what is
    sent. All three must stay true.
 
 `npm run typecheck` runs twice — the second pass compiles the contract with no

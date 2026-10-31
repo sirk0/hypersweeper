@@ -5,7 +5,7 @@ cells, flag a few real mines, optionally detonate one, then save the
 supersampled canvas downscaled to the size a player actually sees.
 
 The README's own gallery comes from the TypeScript app
-(`web/scripts/make-screenshots.mts`, written into docs/screenshots); the
+(`apps/hypersweeper/scripts/make-screenshots.mts`, written into docs/screenshots); the
 pygame build is the reference implementation and gets the one shot in its
 own section, so these land in docs/screenshots/pygame. Add a row to SHOTS
 to render any other board — nothing here is limited to the README set.

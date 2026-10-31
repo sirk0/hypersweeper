@@ -22,6 +22,6 @@ export UV_PYTHON_INSTALL_DIR="${UV_PYTHON_INSTALL_DIR:-/tmp/hypersweeper-uv-pyth
 
 uv venv --python 3.13 .venv
 uv pip install --python .venv/bin/python -r requirements-all.txt
-(cd web && npm ci)
+npm ci  # the npm workspace at the repo root: every app in apps/
 
 echo "setup-codex: ready ($(.venv/bin/python --version), $(node --version))"

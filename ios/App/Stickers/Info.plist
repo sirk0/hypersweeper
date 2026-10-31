@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- The iMessage sticker pack: an app extension with no code of its own.
      Messages' StickerBrowserViewController shows Stickers.xcassets, which
-     web/scripts/make-stickers.mts writes (`make ios-stickers`). The version
+     apps/hypersweeper/scripts/make-stickers.mts writes (`make ios-stickers`). The version
      keys come from Version.xcconfig like the app's: App Store Connect requires
      an extension's version and build to match its app's. -->
 <plist version="1.0">

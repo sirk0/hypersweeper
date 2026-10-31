@@ -29,15 +29,15 @@ checks — is unaffected; the two things that do read the polygons are told
 separately (`two_sided` for the open sheets, and the symmetry controls, which
 `volume.ts` offers from the lattice because the layout has none to measure).
 
-`web/src/boards/` is a port of the same model, checked against it by the
+`apps/hypersweeper/src/boards/` is a port of the same model, checked against it by the
 conformance oracle — see [`shared-data.md`](shared-data.md). The port is
 **pure geometry**, kept apart so other games can be built on the same boards:
 its builders take no mine count (the Python ones still do, as `mine_count`),
 it imports nothing from outside its folder, and the rest of the app reaches it
-only through `web/src/boards/index.ts`. What *is* minesweeper — the presets
+only through `apps/hypersweeper/src/boards/index.ts`. What *is* minesweeper — the presets
 (a board's size and its mine count), fairness, distortion, the menu catalogue,
-dealing a random board — lives beside it in `web/src/modes/`.
-`web/tests/unit/boardsBoundary.test.ts` holds that line.
+dealing a random board — lives beside it in `apps/hypersweeper/src/modes/`.
+`apps/hypersweeper/tests/unit/boardsBoundary.test.ts` holds that line.
 
 ## Package layout (`minesweeper/boards/`)
 
@@ -253,7 +253,7 @@ plane, the cylinder, the Möbius strip and the torus) and, on the plane only,
 **Spirals**, **Rep-tiles**, **Fractals** and **Hyperbolic**.
 Every family is offered on every surface its members allow:
 `picker_families` in `catalog.py` (and its mirror in
-`web/src/modes/catalog.ts`) drops a family a surface has no enabled row of
+`apps/hypersweeper/src/modes/catalog.ts`) drops a family a surface has no enabled row of
 — the one-off flat-only families, "Other" and "2-isohedral" everywhere but
 the plane, and "2-uniform" everywhere but the plane, the cylinder, the Möbius
 strip and the torus — and everything else a surface refuses it refuses one row at a time, in
@@ -600,7 +600,7 @@ tiling repeats nowhere and each builder grows far more of a patch than a board
 keeps — the Penrose wheel is 430 rhombi where the easy board is 81, the
 Ammann–Beenker star 7784 tiles and the Spectre cluster 4401 where the hard board
 is 480. The `variant` argument (`aperiodic._window`, ported to
-`windowRows` in `web/src/boards/aperiodic.ts`, shared by all four) picks *which* window onto that
+`windowRows` in `apps/hypersweeper/src/boards/aperiodic.ts`, shared by all four) picks *which* window onto that
 patch the board is: 0 is the centred trim this game shipped with, and any other
 integer a block of the same size somewhere else in the same tiling, so a
 finished game followed by another is played on tiles that have never sat
@@ -615,7 +615,7 @@ over 800 games a window, the 81-cell Penrose board runs from a 0.76 win rate to
 candidate at the preset's own mine count and keeps those within the
 calibration's tolerance of the centred window's rate — 13 to 79 of 96 per board
 — and the kept list is `data/windows.json`. `presets.window_for` (ported to
-`windowFor` in `web/src/modes/presets.ts`) is what turns a game seed into one
+`windowFor` in `apps/hypersweeper/src/modes/presets.ts`) is what turns a game seed into one
 of them, and the centred window is always first in the list. See
 [`difficulty.md`](difficulty.md).
 
@@ -744,7 +744,7 @@ but join only once they share two edges with those already kept, and the board
 comes out as the spiral's own round disc rather than a square. Its tile is the
 one cell in the game with **no point that sees all of it** (not star-shaped), so
 the renderer cuts it differently from every other cell — see
-[`web/docs/render.md`](../../web/docs/render.md).
+[`apps/hypersweeper/docs/render.md`](../../apps/hypersweeper/docs/render.md).
 
 `pentaspiral_board` is the zoo's **monohedral pentagonal** tiling, in three
 boards: `pentaspiral5`, `pentaspiral6` and `pentaspiral7`, one convex pentagon
@@ -803,7 +803,7 @@ tie (512/480 and 450/480 are reciprocals), broken towards the larger board.
 
 ## The hyperbolic boards
 
-The game's namesake. `hyperbolic.py` (ported to `web/src/boards/hyperbolic.ts`)
+The game's namesake. `hyperbolic.py` (ported to `apps/hypersweeper/src/boards/hyperbolic.ts`)
 builds the regular **{p,q}** tilings -- q regular p-gons round every corner --
 for which (p - 2)(q - 2) > 4, so the angles do not close up in the plane and the
 tiling lives in the hyperbolic plane instead. Eleven ship, as the flat-only
@@ -951,9 +951,9 @@ Four things worth knowing before touching them:
   Möbius map (a disc isometry), so a cell can be brought towards the centre,
   growing as it comes, and tapped there. The board says which disc it is
   drawn in (`Board.disc`: centre, unit radius, and `rim`, how far out it is
-  whole, which bounds the pan); the view and its drag are `web/src/render/disc.ts`,
+  whole, which bounds the pan); the view and its drag are `apps/hypersweeper/src/render/disc.ts`,
   and how the renderer applies it is "Hyperbolic panning" in
-  [`web/docs/render.md`](../../web/docs/render.md). Nothing about the board
+  [`apps/hypersweeper/docs/render.md`](../../apps/hypersweeper/docs/render.md). Nothing about the board
   changes -- ids, adjacency and the data are the board as built -- so the
   pygame game, which does not pan, plays the same boards.
 * **One shape, at every size.** Every tile is congruent in the plane it lives in
@@ -1104,7 +1104,7 @@ and 6.6.9, with `hs.shape.9`. And 6.6.7
 puts a hexagon and a heptagon on one board, which one pentatonic degree apart
 is a whole tone, so the sound spelling moved the 7-gon and everything above it
 down (see "One collection, and a spelling measured against the catalog" in
-[`web/docs/audio.md`](../../web/docs/audio.md)).
+[`apps/hypersweeper/docs/audio.md`](../../apps/hypersweeper/docs/audio.md)).
 
 ## The closed hyperbolic surfaces
 
@@ -1277,7 +1277,7 @@ Four things worth knowing before touching it:
   the half of `_disc_board` without `_is_disc`.
 * **The web app pans without end** (`Board.disc.cover`, `render/disc.ts`
   `discRecentre`, and "A board with no rim" under "Hyperbolic panning" in
-  [`web/docs/render.md`](../../web/docs/render.md)): a step per tile round the
+  [`apps/hypersweeper/docs/render.md`](../../apps/hypersweeper/docs/render.md)): a step per tile round the
   central one, the isometry and the matching surface symmetry, so a view that
   wanders off the central tile is carried back and the labels follow, the
   picture unchanged. The view shows the patch out to `cover_view(surface)`
@@ -1360,7 +1360,7 @@ ideal line under the board plus a slide along it, so a bottom-row cell dragged
 up comes in at tappable size. It is a Euclidean similarity, so it runs on the
 ordinary flat camera (zoom up to `2^(levels-1)` for this board) with no
 shader stage. The board says where its ideal line is (`Board.halfPlane`).
-See "Half-plane panning" in [`web/docs/render.md`](../../web/docs/render.md).
+See "Half-plane panning" in [`apps/hypersweeper/docs/render.md`](../../apps/hypersweeper/docs/render.md).
 The pygame game does not pan; it plays the same board.
 
 ## The rep-tile and fractal boards

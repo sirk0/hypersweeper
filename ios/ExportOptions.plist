@@ -10,7 +10,7 @@
      the one place the team is named.
 
      manageAppVersionAndBuildNumber is false so that what is uploaded is exactly
-     what scripts/build-ios-app.sh stamped: web/package.json's version, and the
+     what scripts/build-ios-app.sh stamped: apps/hypersweeper/package.json's version, and the
      git commit count as the build number. Left at Xcode's default, the export
      may rewrite the build number to whatever App Store Connect expects next. -->
 <plist version="1.0">

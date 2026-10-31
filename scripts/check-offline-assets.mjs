@@ -12,7 +12,7 @@
 // URL scan cannot see. FORBIDDEN below is the second pass, and the only
 // automated proof that the collector really was compiled out of this build.
 //
-//   node scripts/check-offline-assets.mjs web/dist
+//   node scripts/check-offline-assets.mjs apps/hypersweeper/dist
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
@@ -24,10 +24,10 @@ import { extname, join, relative } from "node:path";
  *  - the Capacitor license banner (`/*! Capacitor: https://capacitorjs.com/ …`),
  *    a comment the minifier keeps in the bridge the iOS app talks through;
  *  - the published site's address (`__APP_SITE_URL__`), which a packaged app
- *    puts in the board links it *shares* (web/src/share.ts) because its own
+ *    puts in the board links it *shares* (apps/hypersweeper/src/share.ts) because its own
  *    address opens nothing for anyone else. It is handed to other people and
  *    never fetched. The match is exact, so a path under it (an image, an API)
- *    still fails the build. Same default as web/vite.config.ts, and the same
+ *    still fails the build. Same default as apps/hypersweeper/vite.config.ts, and the same
  *    VITE_SITE_URL override, so a custom domain stays in step. */
 const SITE_URL = (process.env.VITE_SITE_URL ?? "https://hypersweeper.pages.dev/").replace(
   /\/*$/,
@@ -43,14 +43,14 @@ const ALLOWED = [
 ];
 
 /** Same-origin paths that must not survive into a packaged bundle even though
- * they name no host. `web/src/analytics.ts` posts anonymous play counts to a
+ * they name no host. `apps/hypersweeper/src/analytics.ts` posts anonymous play counts to a
  * Cloudflare Pages Function, behind the build-time constant `__APP_ANALYTICS__`
  * — which `VITE_PACKAGED=1` vetoes outright, so the transport and this string
  * with it are supposed to be gone from the macOS and iOS bundles. This pass is
  * what proves that, and it is the whole reason the app can promise those builds
  * talk to nothing.
  *
- * `version.json` is the second: `web/src/update.ts` fetches it to ask the
+ * `version.json` is the second: `apps/hypersweeper/src/update.ts` fetches it to ask the
  * server which build is deployed, and a packaged app has no server and no
  * update row (`__APP_PACKAGED__` again), so the fetch has to be compiled out
  * along with the row that calls it. */

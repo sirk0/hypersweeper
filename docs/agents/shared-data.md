@@ -1,7 +1,7 @@
 # Shared configuration (`data/*.json`) — single source of truth
 
 Two front-ends read this config: the Python/pygame game and the
-TypeScript/Three.js app in `web/`. To keep them from drifting, the *pure-data
+TypeScript/Three.js app in `apps/hypersweeper/`. To keep them from drifting, the *pure-data
 leaves* live in repo-root JSON that **both** read — so a value is never written
 twice.
 
@@ -22,7 +22,7 @@ twice.
   builder, mine count included; `mineArg` — written by
   `scripts/export_data.py` from the builder's signature — says which arg that
   is, because the TypeScript builders take no mine count and
-  `web/src/modes/presets.ts` splits it out. `presets.py` loads every row into `_PRESETS`
+  `apps/hypersweeper/src/modes/presets.ts` splits it out. `presets.py` loads every row into `_PRESETS`
   via `_JSON_BUILDERS`; `_PRESETS` starts empty and holds only any
   still-unported one-offs. The Archimedean rows are generated from the
   compact `ARCH_PRESETS` table by `scripts/export_data.py`, so that table
@@ -48,7 +48,7 @@ twice.
   not exported: `scripts/difficulty/distortion.py` writes it in a few seconds
   and `data-sync` does not re-run it, so re-run it by hand after changing a
   wrapped preset window or adding a wrapped tiling. The TypeScript app reads it
-  (`web/src/modes/distortion.ts`) to mark the menu row and to keep the board
+  (`apps/hypersweeper/src/modes/distortion.ts`) to mark the menu row and to keep the board
   out of the random pools at that difficulty.
 
 `scripts/export_data.py` and `scripts/export_conformance.py` regenerate
@@ -69,18 +69,18 @@ key to the shaped flat boards cut from it) with labels in `SOLO_LABELS`.
 UI-screen chrome (header slots, menu structure, difficulty rows, themes, smiley
 faces) is declared once in **`data/ui/screens.json`** at the repo root and read
 by both front-ends, so the pygame and TypeScript UIs can be kept in sync from a
-single source rather than hand-matched. `web/src/config/screens.ts` gives the TS app
+single source rather than hand-matched. `apps/hypersweeper/src/config/screens.ts` gives the TS app
 compile-time types over it. The same shared-`data/` approach covers the board
 catalog and presets above.
 
-Shared does not mean identical. `web/src/modes/catalog.ts` is a faithful port of
+Shared does not mean identical. `apps/hypersweeper/src/modes/catalog.ts` is a faithful port of
 `minesweeper/boards/catalog.py` over `data/catalog.json` — and where the two
 menus deliberately differ (the promoted regular tilings, the shaped-board
 family's own label, the home page's random pools), the difference is *derived*
 in that file's "web menu" section rather than pushed into the shared JSON. So
 `data/catalog.json` keeps describing the pygame menu, its exporter still
-round-trips (`tests/test_data_sync.py`), and `web/tests/unit/catalog.test.ts` pins
-the port while `web/tests/unit/menu.test.ts` pins the web shape.
+round-trips (`tests/test_data_sync.py`), and `apps/hypersweeper/tests/unit/catalog.test.ts` pins
+the port while `apps/hypersweeper/tests/unit/menu.test.ts` pins the web shape.
 
 
 ## The conformance oracle, and the one rule it cannot see
@@ -101,8 +101,8 @@ cell's corners as the surface's own ids (`mesh_loops` / `meshLoops`). One rule m
 chord its line has become, so a three-brick basket-weave block is drawn as one
 flat patch rather than three strips each cutting its own chord. The oracle is
 blind to it, so `scripts/export_straighten_fixture.py` dumps the rules and the
-resulting geometry into `web/tests/unit/straighten.fixture.json` and
-`web/tests/unit/straighten.test.ts` compares the TypeScript port against them coordinate by
+resulting geometry into `apps/hypersweeper/tests/unit/straighten.fixture.json` and
+`apps/hypersweeper/tests/unit/straighten.test.ts` compares the TypeScript port against them coordinate by
 coordinate. Regenerate the fixture whenever the rule or a basket-weave preset
 changes. See "Recipe: add an isogonal (non-edge-to-edge) tiling" in
 [`board-recipes.md`](board-recipes.md) for why the rule skips unbroken lines

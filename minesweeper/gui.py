@@ -117,7 +117,7 @@ WEB_MIN_ASPECT = 0.42
 # board reads against a light page now, so the hidden/opened step has to carry
 # state on its own rather than share the job with the bevel. Quoted back by
 # `tests/test_theme_sync.py` against `SHAPE_PALETTE.board.mono` in
-# web/src/render/shapePalette.ts, so the two move together.
+# apps/hypersweeper/src/render/shapePalette.ts, so the two move together.
 BG = (192, 192, 192)
 HIDDEN_FACE = (139, 148, 156)
 REVEALED_FACE = (223, 228, 232)
@@ -147,7 +147,7 @@ ICON_BLUE_DARK = (67, 56, 202)     # dark face on the 3D solids + detail lines
 ICON_OUTLINE = (79, 82, 194)       # soft same-hue hairline round the shapes
 
 # The pygame window icon: Sand's cream ground under a terracotta pentagon cell
-# and the flat mine. The TS build's icons (web/scripts/make-icons.mts) have
+# and the flat mine. The TS build's icons (apps/hypersweeper/scripts/make-icons.mts) have
 # since moved to Sand's per-shape colours — an olive pentagon — and to Icon
 # Composer; this one is the pygame game's own and was left as it was.
 ICON_GROUND = (245, 234, 216)   # #f5ead8
@@ -422,7 +422,7 @@ def centroid(vertices: list[tuple[float, float]]) -> tuple[float, float]:
 def label_point(vertices: list[tuple[float, float]]) -> tuple[float, float]:
     """The interior point farthest from the boundary (the pole of
     inaccessibility), by a grid search refined three times -- the same search
-    as ``labelPoint`` in web/src/render/boardMesh.ts."""
+    as ``labelPoint`` in apps/hypersweeper/src/render/boardMesh.ts."""
     xs = [x for x, _ in vertices]
     ys = [y for _, y in vertices]
     steps = 24
@@ -1037,7 +1037,7 @@ _HYPERBOLIC_ICON_SHELLS = {"hyperbolic93": 4, "hyperbolic83": 4, "hyperbolic73":
 # same disc as its tiling's, with every face of the surface's tiling lit (a
 # Hurwitz surface's heptagons) rather than the central one: on a surface with
 # no rim every one of them is a full cell. Must match `HYPERBOLIC_UNIFORM` in
-# web/src/ui/icons.ts.
+# apps/hypersweeper/src/ui/icons.ts.
 _HYPERBOLIC_UNIFORM = {
     "hyperbolic667": (7, 3, "zip"),
     "hyperbolic31414": (7, 3, "truncate"),

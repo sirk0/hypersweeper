@@ -1,7 +1,7 @@
 // The app's version numbers, for every configuration (the project-level base
 // configuration, so the target inherits them).
 //
-// One source of truth: MARKETING_VERSION is web/package.json's "version" and
+// One source of truth: MARKETING_VERSION is apps/hypersweeper/package.json's "version" and
 // CURRENT_PROJECT_VERSION is the git commit count, which only ever grows, as
 // App Store Connect requires of each upload. scripts/build-ios-app.sh writes
 // both into Version.generated.xcconfig (gitignored) on every run, so run

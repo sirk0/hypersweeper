@@ -3,7 +3,7 @@
 # it installs on a phone, plays with no internet connection, and buzzes through
 # the Taptic Engine (which no web API on iOS can reach).
 #
-# The pieces: web/ builds to static files, `npx cap sync ios` copies them into
+# The pieces: apps/hypersweeper/ builds to static files, `npx cap sync ios` copies them into
 # ios/App/App/public and refreshes the CocoaPods the native project links
 # against, and Xcode signs and installs the result on the phone. Every asset the
 # game needs — fonts, icons, the shared data/*.json, Three.js — is compiled into
@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --open) OPEN=1 ;;
     --run) RUN=1; OPEN=0 ;;      # build straight onto a connected device
-    --skip-web) SKIP_WEB=1 ;;    # reuse the existing web/dist
+    --skip-web) SKIP_WEB=1 ;;    # reuse the existing apps/hypersweeper/dist
     --prepare-only) OPEN=0 ;;    # stop after the sync (what CI can check)
     # The header comment above, up to the first line that is not one.
     -h|--help) awk 'NR>1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "${BASH_SOURCE[0]}"; exit 0 ;;
@@ -69,13 +69,13 @@ if [ "$SKIP_WEB" = 0 ]; then
   scripts/ensure-web-deps.sh
   step "Building the web app (VITE_PACKAGED=1)"
   # VITE_PACKAGED drops the service worker and the update check: inside a
-  # bundle there is no deployed build to update from. See web/vite.config.ts.
-  (cd web && VITE_PACKAGED=1 npm run build)
+  # bundle there is no deployed build to update from. See apps/hypersweeper/vite.config.ts.
+  (cd apps/hypersweeper && VITE_PACKAGED=1 npm run build)
 fi
-[ -f web/dist/index.html ] || die "web/dist is empty — build the web app first"
+[ -f apps/hypersweeper/dist/index.html ] || die "apps/hypersweeper/dist is empty — build the web app first"
 
 step "Checking the bundle needs no network"
-node scripts/check-offline-assets.mjs web/dist
+node scripts/check-offline-assets.mjs apps/hypersweeper/dist
 
 # --- 2. into the native project ----------------------------------------------
 # `cap sync` = copy (web assets -> ios/App/App/public, config -> the project)
@@ -87,16 +87,16 @@ if [ "$MAC" = 1 ] && ! command -v pod >/dev/null; then
        and @capacitor/haptics). Install it with:  brew install cocoapods
        (or: sudo gem install cocoapods)"
 fi
-(cd web && npx cap sync ios)
+(cd apps/hypersweeper && npx cap sync ios)
 
 [ -f ios/App/App/public/index.html ] || die "the sync copied no web assets"
 
-# The app's version, from the one place it is kept: web/package.json's
+# The app's version, from the one place it is kept: apps/hypersweeper/package.json's
 # "version" for the version the store shows, and the git commit count for the
 # build number, which must grow with every upload. Version.xcconfig includes
 # this file; see the comment there.
 step "Stamping the app version"
-VERSION="$(node -p 'require("./web/package.json").version')"
+VERSION="$(node -p 'require("./apps/hypersweeper/package.json").version')"
 BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
   note "shallow clone — build number $BUILD is not the real commit count;
@@ -119,13 +119,13 @@ if [ "$RUN" = 1 ]; then
   step "Building onto a connected device"
   # `cap run ios` lists the attached devices and simulators and builds onto the
   # one picked. It needs the signing team to have been set once in Xcode.
-  (cd web && npx cap run ios)
+  (cd apps/hypersweeper && npx cap run ios)
   exit 0
 fi
 
 if [ "$OPEN" = 1 ]; then
   step "Opening the project in Xcode"
-  (cd web && npx cap open ios)
+  (cd apps/hypersweeper && npx cap open ios)
   cat <<'EOF'
 
 Xcode is opening ios/App/App.xcworkspace. To put the game on your iPhone:

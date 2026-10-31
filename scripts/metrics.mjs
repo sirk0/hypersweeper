@@ -1,7 +1,7 @@
 // What the deployed game is actually played on, and how often it is won.
 //
 // Reads the Workers Analytics Engine dataset the Pages Function writes to
-// (web/functions/api/tally.ts) through Cloudflare's SQL API, and prints one row
+// (apps/hypersweeper/functions/api/tally.ts) through Cloudflare's SQL API, and prints one row
 // per board and difficulty. No dependencies; Node's global fetch is all it is.
 //
 //   CF_ACCOUNT_ID=... CF_API_TOKEN=... node scripts/metrics.mjs
