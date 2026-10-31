@@ -25,89 +25,122 @@ import { cyclotomic, type Cyc, type Ring } from "./cyclotomic";
  * directions hold every edge it has. */
 const ORDERS = [4, 6, 8, 12, 24];
 
+/** How far a template edge may be off one unit long, or off a ring
+ * direction (in steps of it), and still be read as it. Templates store their
+ * positions rounded to six decimals, so a snub square's edges come out 0.999999
+ * or 1.000001 and a degree or so of a millionth off — while the directions it
+ * chooses among are 15° apart. Only which direction an edge runs in is read
+ * this way; the walk that follows is exact and checks itself. */
+const TOLERANCE = 1e-4;
+
 export interface Window {
   ring: Ring;
   cells: Cyc[][];
+  /** How far the tiling was turned from Hypersweeper's drawing to put its
+   * edges on the ring's directions, in radians: 0, unless it has no edge
+   * along an axis at all (the snub hexagonal, drawn with its lattice square
+   * and its tiles 19° off). Then the window is not `archimedeanBoard`'s. */
+  turned: number;
 }
 
-export function templateWindow(tiling: string, nx: number, ny: number): Window {
+type XY = [number, number];
+
+/**
+ * The tiles of `tiling` that fit whole in a `box`-edge square, in exact
+ * coordinates. Where the tiling's edges already lie on a ring's directions
+ * this is the very window `archimedeanBoard(tiling, box / width, box /
+ * height)` keeps. Where they do not, the tiling is first turned so that one
+ * of its edges is level — every other edge then lands on a ring direction too
+ * — and the square is cut in that turned frame, so the board's tiles sit as
+ * the tray holds them.
+ */
+export function templateWindow(tiling: string, box: number): Window {
   const t = archTemplate(tiling);
   const W = t.width;
   const H = t.height;
-  const at = (m: number, n: number, tag: string): [number, number] => {
+  const at = (m: number, n: number, tag: string): XY => {
     const v = t.verts.get(tag)!;
     return [m * W + v[0], n * H + v[1]];
   };
+  const angleOf = (p: XY, q: XY): number => Math.atan2(-(q[1] - p[1]), q[0] - p[0]);
 
-  // The grown patch and its centre: archimedeanBoard's own steps.
+  // The frame: Hypersweeper's, y flipped (it draws y down), turned by -alpha.
+  const sample = t.cells.flatMap(({ refs }) =>
+    refs.map((r, i) => {
+      const q = refs[(i + 1) % refs.length]!;
+      return angleOf(at(r.dm, r.dn, r.tag), at(q.dm, q.dn, q.tag));
+    }),
+  );
+  const ringFor = (alpha: number): number | undefined =>
+    ORDERS.find((order) =>
+      sample.every((a) => {
+        const k = ((a - alpha) * order) / (2 * Math.PI);
+        return Math.abs(k - Math.round(k)) < TOLERANCE;
+      }),
+    );
+  let alpha = 0;
+  let n = ringFor(0);
+  if (n === undefined) {
+    alpha = sample[0]!;
+    n = ringFor(alpha);
+  }
+  if (n === undefined) throw new Error(`templateWindow: ${tiling} has edges at no 15° multiple`);
+  const ring = cyclotomic(n);
+  const [ca, sa] = [Math.cos(-alpha), Math.sin(-alpha)];
+  const frame = ([x, y]: XY): XY => [x * ca + y * sa, x * sa - y * ca];
+
+  // The grown patch and its centre: archimedeanBoard's own steps, unturned;
+  // turned, a patch big enough to hold the square whichever way it lies.
+  const nx = box / W;
+  const ny = box / H;
+  const spread = alpha === 0 ? [nx + 2, ny + 2] : [2 * nx + 4, 2 * ny + 4];
   interface Grown {
     ids: string[];
-    pts: [number, number][];
-    centroid: [number, number];
+    pts: XY[];
+    centroid: XY;
   }
   const grown: Grown[] = [];
-  for (let m = 0; m < nx + 2; m++) {
-    for (let n = 0; n < ny + 2; n++) {
+  for (let m = 0; m < spread[0]!; m++) {
+    for (let k = 0; k < spread[1]!; k++) {
       for (const { refs } of t.cells) {
-        const ids = refs.map((r) => `${m + r.dm},${n + r.dn},${r.tag}`);
-        const pts = refs.map((r) => at(m + r.dm, n + r.dn, r.tag));
-        const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
-        const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+        const ids = refs.map((r) => `${m + r.dm},${k + r.dn},${r.tag}`);
+        const pts = refs.map((r) => frame(at(m + r.dm, k + r.dn, r.tag)));
+        const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+        const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
         grown.push({ ids, pts, centroid: [cx, cy] });
       }
     }
   }
-  const midX = ((nx + 2) * W) / 2;
-  const midY = ((ny + 2) * H) / 2;
-  let c0: [number, number] = [0, 0];
+  const mid = frame([(spread[0]! * W) / 2, (spread[1]! * H) / 2]);
+  let c0: XY = [0, 0];
   let best = Infinity;
+  const consider = (p: XY): void => {
+    const d = (p[0] - mid[0]) ** 2 + (p[1] - mid[1]) ** 2;
+    if (d < best) [best, c0] = [d, p];
+  };
   if (t.centre) {
-    for (let m = 0; m < nx + 2; m++) {
-      for (let n = 0; n < ny + 2; n++) {
-        const p: [number, number] = [t.centre[0] + m * W, t.centre[1] + n * H];
-        const d = (p[0] - midX) ** 2 + (p[1] - midY) ** 2;
-        if (d < best) [best, c0] = [d, p];
-      }
+    for (let m = 0; m < spread[0]!; m++) {
+      for (let k = 0; k < spread[1]!; k++) consider(frame([t.centre[0] + m * W, t.centre[1] + k * H]));
     }
   } else {
     const biggest = Math.max(...grown.map((g) => g.ids.length));
-    for (const g of grown) {
-      if (g.ids.length !== biggest) continue;
-      const d = (g.centroid[0] - midX) ** 2 + (g.centroid[1] - midY) ** 2;
-      if (d < best) [best, c0] = [d, g.centroid];
-    }
+    for (const g of grown) if (g.ids.length === biggest) consider(g.centroid);
   }
-  const halfW = (nx * W) / 2;
-  const halfH = (ny * H) / 2;
+  const half = box / 2;
   const slack = 1e-6 * Math.max(1, W, H);
   const kept = grown.filter((g) =>
-    g.pts.every(([x, y]) => Math.abs(x - c0[0]) <= halfW + slack && Math.abs(y - c0[1]) <= halfH + slack),
+    g.pts.every(([x, y]) => Math.abs(x - c0[0]) <= half + slack && Math.abs(y - c0[1]) <= half + slack),
   );
-  if (kept.length === 0) throw new Error(`templateWindow: nothing fits a ${nx}×${ny} window of ${tiling}`);
-
-  // Every edge as a direction index — in the first ring whose directions fit
-  // them all — with y flipped.
-  const edges = kept.flatMap((g) =>
-    g.pts.map((p, i) => {
+  if (kept.length === 0) throw new Error(`templateWindow: nothing fits a ${box}-edge window of ${tiling}`);
+  for (const g of kept) {
+    g.pts.forEach((p, i) => {
       const q = g.pts[(i + 1) % g.pts.length]!;
-      const dx = q[0] - p[0];
-      const dy = -(q[1] - p[1]);
-      if (Math.abs(Math.hypot(dx, dy) - 1) > 1e-6) {
+      if (Math.abs(Math.hypot(q[0] - p[0], q[1] - p[1]) - 1) > TOLERANCE) {
         throw new Error(`templateWindow: ${tiling} has an edge that is not one unit long`);
       }
-      return Math.atan2(dy, dx);
-    }),
-  );
-  const n = ORDERS.find((order) =>
-    edges.every((a) => {
-      const k = (a * order) / (2 * Math.PI);
-      return Math.abs(k - Math.round(k)) < 1e-6;
-    }),
-  );
-  if (n === undefined) throw new Error(`templateWindow: ${tiling} has edges at no 15° multiple`);
-  const ring = cyclotomic(n);
-  const dirOf = (p: [number, number], q: [number, number]): number =>
-    Math.round((Math.atan2(-(q[1] - p[1]), q[0] - p[0]) * n) / (2 * Math.PI));
+    });
+  }
+  const dirOf = (p: XY, q: XY): number => Math.round((Math.atan2(q[1] - p[1], q[0] - p[0]) * n) / (2 * Math.PI));
 
   // Walk the edges outward from the first vertex, cell by cell.
   const exact = new Map<string, Cyc>([[kept[0]!.ids[0]!, ring.zero]]);
@@ -136,5 +169,5 @@ export function templateWindow(tiling: string, nx: number, ny: number): Window {
     if (next.length === pending.length) throw new Error(`templateWindow: the ${tiling} window is not connected`);
     pending = next;
   }
-  return { ring, cells: kept.map((g) => g.ids.map((id) => exact.get(id)!)) };
+  return { ring, cells: kept.map((g) => g.ids.map((id) => exact.get(id)!)), turned: alpha };
 }

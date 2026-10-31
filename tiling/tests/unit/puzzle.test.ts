@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
 import { centroid, type XY } from "../../src/geometry/shape";
+import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
 import { LEVELS, levelByKey, notation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
@@ -54,13 +55,32 @@ describe("puzzle", () => {
       .sort();
   };
 
-  it.each(LEVELS.map((l) => l.key))("%s is Hypersweeper's board, tile for tile", (key) => {
+  // A tiling turned to lay its edges on the ring (the snub hexagonal) is cut
+  // in its own frame, not Hypersweeper's; the vertex test below covers it.
+  const unturned = LEVELS.filter((l) => !l.window?.turned).map((l) => l.key);
+  it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
-    expect(p.level.region).toHaveLength(1); // one outline, no holes
     const ours = p.level.cells.map((c) => c.map((v) => p.level.ring.toXY(v)));
     const board = builderFor(key);
     const theirs = [...board.polygons.values()].map((poly) => poly.map(([x, y]): XY => [x, -y]));
     expect(centroids(ours)).toEqual(centroids(theirs));
+  });
+
+  it.each(LEVELS.map((l) => l.key))("%s is one outline, every inner point its vertex configuration", (key) => {
+    const level = levelByKey(key)!;
+    const { ring, config } = level;
+    expect(level.region).toHaveLength(1); // one outline, no holes
+    const round = new Map<string, Corner[]>();
+    for (const cell of level.cells) {
+      for (const [k, corner] of cornersOf(ring, ccw(ring, cell))) round.set(k, [...(round.get(k) ?? []), corner]);
+    }
+    // a point is inner when its corners go all the way round
+    const inner = [...round.values()].filter((cs) => cs.reduce((sum, c) => sum + span(ring.n, c.sides), 0) === ring.n);
+    expect(inner.length).toBeGreaterThan(0);
+    for (const corners of inner) {
+      expect(corners).toHaveLength(config.length);
+      expect(fitsConfig(ring.n, config, corners)).toBe(true);
+    }
   });
 
   it.each(LEVELS.map((l) => l.key))("%s is about as wide as it is tall", (key) => {
@@ -140,7 +160,9 @@ describe("puzzle", () => {
   });
 
   it("names each level by its vertex configuration", () => {
-    expect(LEVELS.map((l) => notation(l.config))).toEqual(["4⁴", "3⁶", "6³", "3.6.3.6", "3.4.6.4"]);
+    expect(LEVELS.map((l) => notation(l.config))).toEqual([
+      "4⁴", "3⁶", "6³", "3.6.3.6", "4.8²", "3.12²", "3³.4²", "3².4.3.4", "3⁴.6", "3.4.6.4", "4.6.12",
+    ]);
     expect(notation([3, 3, 3, 4, 4])).toBe("3³.4²");
   });
 

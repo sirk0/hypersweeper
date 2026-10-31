@@ -7,7 +7,7 @@
 // lattice, as the Hypersweeper builder it mirrors, and its region is their
 // outline; the unit tests check the cells against that builder.
 
-import { archTemplate } from "@boards/tilings";
+import { ARCH_TILINGS, archTemplate } from "@boards/tilings";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow } from "./geometry/fromTemplate";
 import { ccw, outline } from "./geometry/outline";
@@ -54,8 +54,10 @@ export interface Level {
    * can still become it. Unset on every level so far. */
   rule?: number[];
   /** For a level on a Hypersweeper tiling window, which: the tiling and the
-   * window `archimedeanBoard(tiling, nx, ny)` takes. */
-  window?: { tiling: string; nx: number; ny: number };
+   * window `archimedeanBoard(tiling, nx, ny)` takes — unless the tiling had to
+   * be `turned` (radians) to lay its edges on the ring, when the window is cut
+   * in the turned frame instead. */
+  window?: { tiling: string; nx: number; ny: number; turned: number };
 }
 
 /** The third star's time allowance per tile the board takes — room to pick
@@ -102,14 +104,16 @@ function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][], confi
 }
 
 /** A level on a window of one of Hypersweeper's uniform tilings, `box` edges
- * square — the window `archimedeanBoard(tiling, box / width, box / height)`
- * keeps — named by the tiling's vertex configuration. */
-function uniformLevel(key: string, label: string, tiling: string, box: number, config: number[]): Level {
+ * square (see `templateWindow`), named by the tiling's vertex configuration. */
+function uniformLevel(key: string, label: string, tiling: string, box: number): Level {
+  const spec = ARCH_TILINGS.find((t) => t.key === tiling);
+  if (!spec) throw new Error(`unknown tiling ${tiling}`);
   const t = archTemplate(tiling);
-  const nx = box / t.width;
-  const ny = box / t.height;
-  const { ring, cells } = templateWindow(tiling, nx, ny);
-  return { ...makeLevel(key, label, ring, cells, config), window: { tiling, nx, ny } };
+  const { ring, cells, turned } = templateWindow(tiling, box);
+  return {
+    ...makeLevel(key, label, ring, cells, spec.config),
+    window: { tiling, nx: box / t.width, ny: box / t.height, turned },
+  };
 }
 
 const Z4 = cyclotomic(4);
@@ -184,15 +188,24 @@ export function hexCells(rows: number, cols: number): Cyc[][] {
 }
 
 export const LEVELS: Level[] = [
+  // The three regular tilings, one tile each.
   makeLevel("squares", "Squares", Z4, squareCells(4, 4), [4, 4, 4, 4]),
   makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6), [3, 3, 3, 3, 3, 3]),
   makeLevel("hexagons", "Hexagons", Z12, hexCells(5, 4), [6, 6, 6]),
-  // Two uniform tilings, the first with two tile kinds and the second with
-  // three: the trihexagonal (kagome) tiling, and the rhombitrihexagonal, which
-  // sets squares between the triangles and hexagons. Each window is the
-  // squarest near a couple of dozen tiles.
-  uniformLevel("trihex", "Trihexagonal", "trihex", 5.5, [3, 6, 3, 6]),
-  uniformLevel("rhombitrihex", "Rhombitrihexagonal", "rhombitrihex", 7, [3, 4, 6, 4]),
+  // The eight other uniform tilings — every vertex alike, regular polygons
+  // edge to edge — roughly easiest first: two tile kinds, then three. Each
+  // window is the squarest near two or three dozen tiles that keeps one
+  // outline (`box`, in edges, measured by scanning sizes). The snub hexagonal
+  // is mostly triangles whatever the window — eight to each hexagon — and its
+  // squarest is one hexagon in thirty triangles; the next square one is 65.
+  uniformLevel("trihex", "Trihexagonal", "trihex", 5.5),
+  uniformLevel("truncsquare", "Truncated square", "truncsquare", 8.7),
+  uniformLevel("trunchex", "Truncated hexagonal", "trunchex", 11.95),
+  uniformLevel("elongated", "Elongated triangular", "elongated", 5),
+  uniformLevel("snubsquare", "Snub square", "snubsquare", 4.6),
+  uniformLevel("snubhex", "Snub hexagonal", "snubhex", 5.2),
+  uniformLevel("rhombitrihex", "Rhombitrihexagonal", "rhombitrihex", 7),
+  uniformLevel("trunctrihex", "Truncated trihexagonal", "trunctrihex", 11.95),
 ];
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";

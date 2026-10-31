@@ -36,10 +36,10 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: five levels, local only** — Squares (4×4), Triangles (4 rows of
-6), Hexagons (5 rows of 4), and two uniform tilings, Trihexagonal 3.6.3.6 (two
-tile kinds) and Rhombitrihexagonal 3.4.6.4 (three), each as near square as
-its tiling allows. No CI job, no deploy, no
+**Status: all eleven uniform tilings, local only** — the regular 4⁴
+(4×4), 3⁶ (4 rows of 6) and 6³ (5 rows of 4), then 3.6.3.6, 4.8², 3.12²,
+3³.4², 3².4.3.4, 3⁴.6, 3.4.6.4 and 4.6.12, each as near square as its tiling
+allows at two or three dozen tiles. No CI job, no deploy, no
 packaging — `ci.yml` and the Pages deploy do not look at this folder.
 
 ## Build and run
@@ -78,10 +78,15 @@ finishes the board — the quick way to see the win state.
   `nearest` the one the drag shows. Won ⇔ empty.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
   cancel exactly): how a level's region is made from its cells.
-- `src/geometry/fromTemplate.ts` — a window of one of Hypersweeper's periodic
-  tilings in exact coordinates: the tiles `archimedeanBoard` keeps, with vertex
-  identity taken from the template's own references and each unit edge's
-  direction read off its float vector. How the uniform levels get their cells.
+- `src/geometry/fromTemplate.ts` — a `box`-edge square window of one of
+  Hypersweeper's periodic tilings in exact coordinates: the tiles
+  `archimedeanBoard` keeps, with vertex identity taken from the template's own
+  references and each unit edge's direction read off its float vector (to
+  1e-4: templates round positions to six decimals). The ring is the first of
+  ℤ[ζ4], ζ6, ζ8, ζ12, ζ24 that holds every edge. A tiling with no edge along an
+  axis (the snub hexagonal, drawn 19° off) is turned until one is, and its
+  square cut in the turned frame — the tray's tiles rest flat, so the board's
+  must too; `turned` records it.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -124,9 +129,11 @@ finishes the board — the quick way to see the win state.
   boxes, for ordering points already known to be on one segment, and for the
   sign of a value already known to be non-zero.
 - **A level follows a Hypersweeper board.** Build its cells exactly — for a
-  periodic tiling, `uniformLevel` with the template key — and the tests check
+  periodic tiling, `uniformLevel` with the template key and a box size found by
+  scanning (square, one outline, a couple of dozen tiles) — and the tests check
   it tile for tile against the Hypersweeper board (`archimedeanBoard` for a
-  window, else the builder in `BUILDERS` in `tests/unit/puzzle.test.ts`). Planned: builders
+  window, else the builder in `BUILDERS` in `tests/unit/puzzle.test.ts`), and
+  check every inner point carries the level's vertex configuration. Planned: builders
   publish their exact coordinates, so a level can be read off a `Board`.
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
