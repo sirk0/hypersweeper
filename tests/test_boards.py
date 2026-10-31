@@ -6046,8 +6046,8 @@ class TestPresets:
 
     def test_every_mode_appears_exactly_once_in_the_menu(self):
         # the one-off (non-periodic) modes, plus every periodic tiling x surface
-        modes = list(APERIODIC_MODES + SPIRAL_MODES + FRACTAL_MODES
-                     + HYPERBOLIC_MODES + SOLID_MODES)
+        modes = list(APERIODIC_MODES + SPIRAL_MODES + REPTILE_MODES
+                     + FRACTAL_MODES + HYPERBOLIC_MODES + SOLID_MODES)
         modes += [m for shaped in SHAPED_MODES.values() for m in shaped]
         modes += [m for _, surfaces in TILINGS.values() for m in surfaces.values()]
         assert sorted(modes) == sorted(MODE_LABELS)

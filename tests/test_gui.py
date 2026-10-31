@@ -918,13 +918,14 @@ class TestIcon:
             | {"random", "hex"}                  # random row + home Flat icon
             | set(MANIFOLD_ORDER)                # the flat-manifold surfaces
             | {"regular", "uniform", "dual", "aperiodic", "spiral",  # families
-               "fractal"}
+               "reptile", "fractal"}
             | set(TILINGS)                       # every tiling row in the picker
             | set(SOLID_MODES)
             | set(SOLID_GROUP_ORDER)              # the four solid-group rows
             | {m for shaped in SHAPED_MODES.values() for m in shaped}
             | set(APERIODIC_MODES)
             | set(SPIRAL_MODES)
+            | set(REPTILE_MODES)
             | set(FRACTAL_MODES)
         )
         for key in sorted(keys):
