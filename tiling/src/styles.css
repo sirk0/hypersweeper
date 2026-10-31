@@ -155,6 +155,19 @@ button {
   gap: 6px;
 }
 
+.level-group h3 {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 10px 0 4px;
+  cursor: help;
+}
+
+.level-group:first-child h3 {
+  margin-top: 0;
+}
+
 .level-pick {
   width: 100%;
   display: flex;
@@ -193,9 +206,9 @@ button {
 
 .level-name {
   font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  /* a 2-uniform name, [3³.4²; 3².4.3.4]₁, wraps after its semicolon */
+  overflow-wrap: anywhere;
 }
 
 .level-row {
@@ -233,6 +246,13 @@ button {
 
   .levels h2 {
     display: none;
+  }
+
+  .level-group h3 {
+    font-size: 0.6rem;
+    text-align: center;
+    overflow-wrap: anywhere;
+    hyphens: auto;
   }
 
   .level-pick {

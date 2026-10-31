@@ -36,10 +36,13 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: all eleven uniform tilings, local only** — the regular 4⁴
-(4×4), 3⁶ (4 rows of 6) and 6³ (5 rows of 4), then 3.6.3.6, 4.8², 3.12²,
-3³.4², 3².4.3.4, 3⁴.6, 3.4.6.4 and 4.6.12, each as near square as its tiling
-allows at two or three dozen tiles. No CI job, no deploy, no
+**Status: 31 levels in three sections, local only** — named for their
+symmetry: *Flag-transitive* (the regular 4⁴, 3⁶, 6³), *Vertex-transitive*
+(the other eight uniform tilings, 3.6.3.6 to 4.6.12) and *2-isogonal* (all
+twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
+[3⁶; 3⁴.6]₁). Each board is as near square as its tiling allows at two or
+three dozen tiles. The Laves tilings would be a fourth, *Face-transitive*.
+No CI job, no deploy, no
 packaging — `ci.yml` and the Pages deploy do not look at this folder.
 
 ## Build and run
@@ -90,14 +93,19 @@ finishes the board — the quick way to see the win state.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
-- `src/levels.ts` — the levels. `makeLevel` reads everything off a level's
+- `src/levels.ts` — the levels, and `GROUPS`, the sections they are listed
+  in. `windowLevel` makes a level from a tiling key and a box size (uniform or
+  2-uniform, by the tiling's family); the 2-uniform boxes are in
+  `TWO_UNIFORM`, the windows that also have both kinds of vertex inside.
+  `makeLevel` reads everything off a level's
   cells: the tray (one regular polygon per side count, resting flat), each
   kind's rotate step from flat (`turns`) and pile (`need`), the time limit
   (`seconds`), the region, and keeps the cells
   themselves as one known solution; `turn` is the one rotate step for them all
-  (the gcd of the kinds' steps); `uniformLevel` adds the template window and
-  the template's window (`window`). Every level carries its vertex
-  configuration (`config`) — its name in the game, not enforced. Each
+  (the gcd of the kinds' steps). Every level carries its vertex
+  configurations (`configs`, one or two — not enforced) and its `name`: the
+  `notation` of the one, or the catalog's `[A; B]ᵢ` for two, read back by
+  `parseNotation`. Each
   level's cells are built on the same lattice as the Hypersweeper builder it
   mirrors (`squareBoard`, `triangleGridBoard`, `hexBoard` — Hypersweeper's
   default flat board for each tiling), and its region is their outline.
@@ -109,8 +117,9 @@ finishes the board — the quick way to see the win state.
   unchanged — and, on a level with a rule, only edge to edge and where every
   vertex touched can still become the configuration: `allows`), `canTurn`,
   `won`, `coverage` (a share of the area, not a tile count — the count
-  depends on how the board is finished), `used`, `stars`, and `solve`, a budgeted backtracking
-  fill, biggest tiles first, for the tests and the dev seam.
+  depends on how the board is finished), `used`, `stars`, and `solve`, a
+  budgeted backtracking fill for the tests and the dev seam that always works
+  the open corner with the fewest placements.
 - `src/view/svgBoard.ts` — the SVG drawing (board units, y up, one flip).
 - `src/view/levelList.ts` — the level list on the right. It shows only what
   a player starts with: the board's outline, the tray's tiles, the vertex

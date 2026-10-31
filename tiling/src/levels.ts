@@ -7,6 +7,7 @@
 // lattice, as the Hypersweeper builder it mirrors, and its region is their
 // outline; the unit tests check the cells against that builder.
 
+import catalog from "@data/catalog.json";
 import { ARCH_TILINGS, archTemplate } from "@boards/tilings";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow } from "./geometry/fromTemplate";
@@ -45,10 +46,17 @@ export interface Level {
    * was are fine), so a player can wander off it, and may have to take tiles
    * back off to finish. */
   cells: Cyc[][];
-  /** The tiling's vertex configuration — the polygons round every vertex, in
-   * order: [4, 4, 4, 4] for squares, [3, 4, 6, 4] for the rhombitrihexagonal.
-   * What the level is called in the game (`notation`). Not enforced. */
-  config: number[];
+  /** The tiling's vertex configurations — the polygons round a vertex, in
+   * order: [[4, 4, 4, 4]] for squares, [[3, 4, 6, 4]] for the
+   * rhombitrihexagonal; a 2-uniform tiling has two. Not enforced. */
+  configs: number[][];
+  /** What the game calls the level: its configuration (`notation`), 3.4.6.4,
+   * or for a 2-uniform tiling both, as Hypersweeper's catalog writes them,
+   * [3⁶; 3⁴.6]₁ — the subscript telling apart two tilings with the same pair.
+   * A name that says what meets at a point, not how the board is made. */
+  name: string;
+  /** Which family of tilings the level is in — the list's sections. */
+  group: GroupKey;
   /** A vertex configuration every vertex *must* keep, for a level whose
    * puzzle is that rule — a tile then lands only where every point it touches
    * can still become it. Unset on every level so far. */
@@ -59,6 +67,8 @@ export interface Level {
    * in the turned frame instead. */
   window?: { tiling: string; nx: number; ny: number; turned: number };
 }
+
+const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
 /** The third star's time allowance per tile the board takes — room to pick
  * each one up, turn it and lay it, not to think hard. Rounded up to ten
@@ -79,7 +89,15 @@ function gcd(a: number, b: number): number {
  * that kind from flat — so pointy-top hexagons need turning, though they all
  * sit alike.
  */
-function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][], config: number[]): Level {
+function makeLevel(
+  key: string,
+  label: string,
+  ring: Ring,
+  cells: Cyc[][],
+  group: GroupKey,
+  configs: number[][],
+  name = notation(configs[0]!),
+): Level {
   const sides = [...new Set(cells.map((c) => c.length))].sort((a, b) => a - b);
   const tiles = sides.map((m) => regular(ring, m));
   const turns: number[] = [];
@@ -100,20 +118,27 @@ function makeLevel(key: string, label: string, ring: Ring, cells: Cyc[][], confi
   });
   const turn = turns.reduce((g, k) => gcd(g, k), 0);
   const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
-  return { key, label, ring, region: outline(ring, cells), tiles, mirror: false, turns, turn, need, seconds, cells, config };
+  const region = outline(ring, cells);
+  return { key, label, ring, region, tiles, mirror: false, turns, turn, need, seconds, cells, configs, name, group };
 }
 
-/** A level on a window of one of Hypersweeper's uniform tilings, `box` edges
- * square (see `templateWindow`), named by the tiling's vertex configuration. */
-function uniformLevel(key: string, label: string, tiling: string, box: number): Level {
+/** A level on a `box`-edge square window of one of Hypersweeper's periodic
+ * tilings (see `templateWindow`), keyed and labelled as the tiling is. A
+ * uniform tiling is named by its one vertex configuration; a 2-uniform one by
+ * the pair in Hypersweeper's catalog, which the tests also hold its inner
+ * vertices to. */
+function windowLevel(tiling: string, box: number): Level {
   const spec = ARCH_TILINGS.find((t) => t.key === tiling);
   if (!spec) throw new Error(`unknown tiling ${tiling}`);
   const t = archTemplate(tiling);
   const { ring, cells, turned } = templateWindow(tiling, box);
-  return {
-    ...makeLevel(key, label, ring, cells, spec.config),
-    window: { tiling, nx: box / t.width, ny: box / t.height, turned },
-  };
+  const window = { tiling, nx: box / t.width, ny: box / t.height, turned };
+  if (spec.family === "uniform") {
+    return { ...makeLevel(tiling, spec.label, ring, cells, "uniform", [spec.config]), window };
+  }
+  const written = NOTATIONS[tiling];
+  if (!written) throw new Error(`no notation for ${tiling} in data/catalog.json`);
+  return { ...makeLevel(tiling, spec.label, ring, cells, "2-uniform", parseNotation(written), written), window };
 }
 
 const Z4 = cyclotomic(4);
@@ -187,28 +212,101 @@ export function hexCells(rows: number, cols: number): Cyc[][] {
   return cells;
 }
 
+/** The families the levels come in, in the order the list shows them, each
+ * named for the symmetry that makes it one: what the tiling's own symmetries
+ * can carry onto what. Laves (face-transitive) tilings are the next to come. */
+export const GROUPS = [
+  {
+    key: "regular",
+    name: "Flag-transitive",
+    hint: "The regular tilings: any vertex, with an edge at it and a tile on that edge, can be carried onto any other",
+  },
+  {
+    key: "uniform",
+    name: "Vertex-transitive",
+    hint: "The uniform tilings: regular polygons, every vertex carried onto every other",
+  },
+  {
+    key: "2-uniform",
+    name: "2-isogonal",
+    hint: "The 2-uniform tilings: regular polygons, and the vertices fall into two kinds, each carried onto its own",
+  },
+] as const;
+
+export type GroupKey = (typeof GROUPS)[number]["key"];
+
+const NOTATIONS = catalog.tilingNotations as Record<string, string>;
+
+/** The vertex configurations in a written name, "[3⁶; 3⁴.6]₁" or "3.4.6.4". */
+export function parseNotation(written: string): number[][] {
+  const digits = (s: string): number => Number([...s].map((c) => (SUPERSCRIPT.includes(c) ? SUPERSCRIPT.indexOf(c) : c)).join(""));
+  return written
+    .replace(/^\[|\][₀-₉]*$/g, "")
+    .split(";")
+    .map((part) =>
+      part
+        .trim()
+        .split(".")
+        .flatMap((term) => {
+          const m = /^(\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]*)$/.exec(term);
+          if (!m) throw new Error(`parseNotation: cannot read ${term} in ${written}`);
+          return new Array<number>(m[2] ? digits(m[2]) : 1).fill(Number(m[1]));
+        }),
+    );
+}
+
+/** The 2-uniform tilings and each one's window (`box`, in edges): the
+ * squarest near two or three dozen tiles that keeps one outline and has both
+ * kinds of vertex inside it, found by scanning sizes. studdedtri2 is turned
+ * like the snub hexagonal, and its squarest such window is 47 tiles. */
+const TWO_UNIFORM: [string, number][] = [
+  ["studdedtri", 5.2],
+  ["studdedtri2", 5.2],
+  ["elongated2", 4],
+  ["elongated3", 4.5],
+  ["trirhombitrihex", 4.8],
+  ["tritrunctrihex", 7.2],
+  ["fannedhex", 5.2],
+  ["hexbands", 7],
+  ["snubelongated2", 4.8],
+  ["snubelongated", 4.4],
+  ["dissectedtrunchex2", 5.8],
+  ["squarerows2", 4],
+  ["squarerows3", 5],
+  ["dissectedtrunchex", 4.8],
+  ["hexrows", 5.2],
+  ["dodecasquare", 11.2],
+  ["hexrings", 7.2],
+  ["squaretrihex", 5.5],
+  ["squaretrihex2", 5.5],
+  ["dodecarhombitrihex", 8.5],
+];
+
+/** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
+const byEase = (a: Level, b: Level): number => a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
+
 export const LEVELS: Level[] = [
   // The three regular tilings, one tile each.
-  makeLevel("squares", "Squares", Z4, squareCells(4, 4), [4, 4, 4, 4]),
-  makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6), [3, 3, 3, 3, 3, 3]),
-  makeLevel("hexagons", "Hexagons", Z12, hexCells(5, 4), [6, 6, 6]),
+  makeLevel("squares", "Squares", Z4, squareCells(4, 4), "regular", [[4, 4, 4, 4]]),
+  makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6), "regular", [[3, 3, 3, 3, 3, 3]]),
+  makeLevel("hexagons", "Hexagons", Z12, hexCells(5, 4), "regular", [[6, 6, 6]]),
   // The eight other uniform tilings — every vertex alike, regular polygons
   // edge to edge — roughly easiest first: two tile kinds, then three. Each
   // window is the squarest near two or three dozen tiles that keeps one
   // outline (`box`, in edges, measured by scanning sizes). The snub hexagonal
   // is mostly triangles whatever the window — eight to each hexagon — and its
   // squarest is one hexagon in thirty triangles; the next square one is 65.
-  uniformLevel("trihex", "Trihexagonal", "trihex", 5.5),
-  uniformLevel("truncsquare", "Truncated square", "truncsquare", 8.7),
-  uniformLevel("trunchex", "Truncated hexagonal", "trunchex", 11.95),
-  uniformLevel("elongated", "Elongated triangular", "elongated", 5),
-  uniformLevel("snubsquare", "Snub square", "snubsquare", 4.6),
-  uniformLevel("snubhex", "Snub hexagonal", "snubhex", 5.2),
-  uniformLevel("rhombitrihex", "Rhombitrihexagonal", "rhombitrihex", 7),
-  uniformLevel("trunctrihex", "Truncated trihexagonal", "trunctrihex", 11.95),
+  windowLevel("trihex", 5.5),
+  windowLevel("truncsquare", 8.7),
+  windowLevel("trunchex", 11.95),
+  windowLevel("elongated", 5),
+  windowLevel("snubsquare", 4.6),
+  windowLevel("snubhex", 5.2),
+  windowLevel("rhombitrihex", 7),
+  windowLevel("trunctrihex", 11.95),
+  // The twenty 2-uniform tilings.
+  ...TWO_UNIFORM.map(([tiling, box]) => windowLevel(tiling, box)).sort(byEase),
 ];
-
-const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,
  * dot-separated, a run of one polygon written as a power — 4⁴, 3⁶, 6³,

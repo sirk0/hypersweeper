@@ -1,6 +1,6 @@
 import "./styles.css";
 import { attachDrag, type DragControl } from "./input/drag";
-import { LEVELS, levelByKey, notation, type Level } from "./levels";
+import { LEVELS, levelByKey, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
 import { renderLevelList } from "./view/levelList";
@@ -94,7 +94,7 @@ function open(level: Level): void {
   board = new SvgBoard(stage, puzzle);
   control = attachDrag(board, puzzle, changed);
   const name = byId("level");
-  name.textContent = notation(level.config);
+  name.textContent = level.name;
   name.title = level.label;
   history.replaceState(null, "", `?level=${level.key}`);
   listLevels();

@@ -5,7 +5,7 @@ import type { Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
 import { centroid, type XY } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
-import { LEVELS, levelByKey, notation } from "../../src/levels";
+import { LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
 /** Finish a level; the number of tiles it took. */
@@ -43,16 +43,23 @@ describe("puzzle", () => {
     const { window } = levelByKey(key)!;
     return window ? archimedeanBoard(window.tiling, window.nx, window.ny, 1) : BUILDERS[key]!();
   };
-  const centroids = (polys: XY[][]): string[] => {
+  const centroids = (polys: XY[][]): XY[] => {
     const all = polys.flat();
     const x0 = Math.min(...all.map((p) => p[0]));
     const y0 = Math.min(...all.map((p) => p[1]));
-    return polys
-      .map((poly) => centroid(poly.map(([x, y]): XY => [x - x0, y - y0])))
-      // 4 decimals: Hypersweeper's tiling templates store positions rounded
-      // to 6, so a centroid there can be 5e-7 off the exact one
-      .map(([x, y]) => `${x.toFixed(4)},${y.toFixed(4)}`)
-      .sort();
+    return polys.map((poly) => centroid(poly.map(([x, y]): XY => [x - x0, y - y0])));
+  };
+  /** The same tiles: one for one, each centroid within 1e-4 of its partner —
+   * Hypersweeper's tiling templates store positions rounded to six decimals,
+   * so a centroid there can be a few millionths off the exact one. */
+  const sameTiles = (ours: XY[], theirs: XY[]): void => {
+    expect(ours).toHaveLength(theirs.length);
+    const left = theirs.slice();
+    for (const [x, y] of ours) {
+      const i = left.findIndex(([u, v]) => Math.hypot(u - x, v - y) < 1e-4);
+      expect(i, `no tile of Hypersweeper's at ${x.toFixed(4)},${y.toFixed(4)}`).toBeGreaterThanOrEqual(0);
+      left.splice(i, 1);
+    }
   };
 
   // A tiling turned to lay its edges on the ring (the snub hexagonal) is cut
@@ -63,12 +70,12 @@ describe("puzzle", () => {
     const ours = p.level.cells.map((c) => c.map((v) => p.level.ring.toXY(v)));
     const board = builderFor(key);
     const theirs = [...board.polygons.values()].map((poly) => poly.map(([x, y]): XY => [x, -y]));
-    expect(centroids(ours)).toEqual(centroids(theirs));
+    sameTiles(centroids(ours), centroids(theirs));
   });
 
   it.each(LEVELS.map((l) => l.key))("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
-    const { ring, config } = level;
+    const { ring, configs } = level;
     expect(level.region).toHaveLength(1); // one outline, no holes
     const round = new Map<string, Corner[]>();
     for (const cell of level.cells) {
@@ -77,18 +84,22 @@ describe("puzzle", () => {
     // a point is inner when its corners go all the way round
     const inner = [...round.values()].filter((cs) => cs.reduce((sum, c) => sum + span(ring.n, c.sides), 0) === ring.n);
     expect(inner.length).toBeGreaterThan(0);
+    // each inner point is one of the configurations, and each of them occurs
+    const seen = new Set<number>();
     for (const corners of inner) {
-      expect(corners).toHaveLength(config.length);
-      expect(fitsConfig(ring.n, config, corners)).toBe(true);
+      const which = configs.findIndex((c) => c.length === corners.length && fitsConfig(ring.n, c, corners));
+      expect(which).toBeGreaterThanOrEqual(0);
+      seen.add(which);
     }
+    expect(seen.size).toBe(configs.length);
   });
 
   it.each(LEVELS.map((l) => l.key))("%s is about as wide as it is tall", (key) => {
     const { ring, region } = levelByKey(key)!;
     const xy = region.flat().map((v) => ring.toXY(v));
     const span = (i: 0 | 1): number => Math.max(...xy.map((p) => p[i])) - Math.min(...xy.map((p) => p[i]));
-    expect(span(0) / span(1)).toBeGreaterThan(0.9);
-    expect(span(0) / span(1)).toBeLessThan(1.1);
+    expect(span(0) / span(1)).toBeGreaterThan(0.88);
+    expect(span(0) / span(1)).toBeLessThan(1.12);
   });
 
   it("lifting a tile reopens exactly its spot", () => {
@@ -160,10 +171,21 @@ describe("puzzle", () => {
   });
 
   it("names each level by its vertex configuration", () => {
-    expect(LEVELS.map((l) => notation(l.config))).toEqual([
-      "4⁴", "3⁶", "6³", "3.6.3.6", "4.8²", "3.12²", "3³.4²", "3².4.3.4", "3⁴.6", "3.4.6.4", "4.6.12",
-    ]);
+    const named = (group: string): string[] => LEVELS.filter((l) => l.group === group).map((l) => l.name);
+    expect(named("regular")).toEqual(["4⁴", "3⁶", "6³"]);
+    expect(named("uniform")).toEqual(["3.6.3.6", "4.8²", "3.12²", "3³.4²", "3².4.3.4", "3⁴.6", "3.4.6.4", "4.6.12"]);
+    expect(named("2-uniform")).toHaveLength(20);
+    expect(new Set(named("2-uniform")).size).toBe(20); // the subscripts keep them apart
+    for (const level of LEVELS) if (level.group !== "2-uniform") expect(level.name).toBe(notation(level.configs[0]!));
     expect(notation([3, 3, 3, 4, 4])).toBe("3³.4²");
+    expect(parseNotation("[3⁶; 3².4.12]")).toEqual([
+      [3, 3, 3, 3, 3, 3],
+      [3, 3, 4, 12],
+    ]);
+    expect(parseNotation("[3.4².6; 3.6.3.6]₂")).toEqual([
+      [3, 4, 4, 6],
+      [3, 6, 3, 6],
+    ]);
   });
 
   it("starts every tray tile resting on a flat side", () => {

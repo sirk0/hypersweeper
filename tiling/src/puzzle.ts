@@ -156,10 +156,27 @@ export class Puzzle {
     }
   }
 
-  /** Fill what is left — a test and dev aid: at the first open corner, try
-   * every kind at every turn that lands, biggest tiles first, backtracking out
-   * of dead ends. False if the board cannot be finished from here, or not
-   * within `budget` placements. */
+  /** Every placement that lands with a corner on frontier corner `at`. */
+  private spotsAt(at: XY): { kind: number; rot: number; spot: Cyc[] }[] {
+    const { mirror } = this.level;
+    const out: { kind: number; rot: number; spot: Cyc[] }[] = [];
+    // biggest first: one big tile settles more than several small ones
+    for (let kind = this.level.tiles.length - 1; kind >= 0; kind--) {
+      for (const rot of this.orientations(kind)) {
+        const spots = this.frontier.placements(this.shapeAt(kind, rot), at, 1e-6, mirror, this.same[kind], (v) =>
+          this.allows(v),
+        );
+        for (const spot of spots) out.push({ kind, rot, spot });
+      }
+    }
+    return out;
+  }
+
+  /** Fill what is left — a test and dev aid. Each step works the open corner
+   * with the fewest ways to fill it, so a corner nothing fits is found at once
+   * and a forced one is taken without a guess, and backtracks out of dead
+   * ends. False if the board cannot be finished from here, or not within
+   * `budget` placements. */
   solve(budget = 20000): boolean {
     const left = { budget };
     return this.search(left);
@@ -168,19 +185,17 @@ export class Puzzle {
   private search(left: { budget: number }): boolean {
     if (this.won) return true;
     if (left.budget-- <= 0) return false;
-    const { ring, mirror } = this.level;
-    const corner = ring.toXY(this.openCorners.values().next().value!);
-    for (let kind = this.level.tiles.length - 1; kind >= 0; kind--) {
-      for (const rot of this.orientations(kind)) {
-        const spots = this.frontier.placements(this.shapeAt(kind, rot), corner, 1e-6, mirror, this.same[kind], (v) =>
-          this.allows(v),
-        );
-        for (const spot of spots) {
-          const tile = this.place(kind, spot, rot);
-          if (this.search(left)) return true;
-          this.lift(tile.id);
-        }
-      }
+    const { ring } = this.level;
+    let best: { kind: number; rot: number; spot: Cyc[] }[] | null = null;
+    for (const corner of this.openCorners.values()) {
+      const here = this.spotsAt(ring.toXY(corner));
+      if (!best || here.length < best.length) best = here;
+      if (best.length <= 1) break;
+    }
+    for (const { kind, rot, spot } of best ?? []) {
+      const tile = this.place(kind, spot, rot);
+      if (this.search(left)) return true;
+      this.lift(tile.id);
     }
     return false;
   }
