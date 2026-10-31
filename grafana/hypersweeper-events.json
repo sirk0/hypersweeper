@@ -765,7 +765,7 @@
         "name": "family",
         "label": "Family",
         "description": "",
-        "query": "all,regular,uniform,dual,2-uniform,isogonal,rectangle,other,aperiodic,spiral,reptile,fractal,hyperbolic,sphere,platonic,archimedean,catalan,polyhedra,volume",
+        "query": "all,regular,uniform,dual,2-uniform,2-isohedral,isogonal,rectangle,other,aperiodic,spiral,reptile,fractal,hyperbolic,sphere,platonic,archimedean,catalan,polyhedra,volume",
         "current": {
           "selected": true,
           "text": "all",
@@ -796,6 +796,11 @@
             "selected": false,
             "text": "2-uniform",
             "value": "2-uniform"
+          },
+          {
+            "selected": false,
+            "text": "2-isohedral",
+            "value": "2-isohedral"
           },
           {
             "selected": false,

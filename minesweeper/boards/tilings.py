@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, replace
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import Callable
 
 from minesweeper.boards.core import (
@@ -2031,7 +2031,8 @@ class ArchTiling:
     #   the tile whose edge passes straight through the vertex; for a
     #   face-transitive (Laves) tiling, the configuration of its single
     #   tile shape; for a rectangle bond, just that tile's side count; for a
-    #   2-uniform tiling, its tiles' side counts (vertex_types has the rest).
+    #   2-uniform tiling, its tiles' side counts (vertex_types has the rest);
+    #   for a 2-isohedral tiling, its two tiles' side counts.
     edge_directions: int           # distinct edge directions
     template: Callable[[], "_ArchTemplate"]
     family: str = "uniform"        # a key of _FAMILY_TRAITS below
@@ -2040,11 +2041,16 @@ class ArchTiling:
     #   True of every wallpaper group here except p3.
     vertex_types: tuple[tuple[int, ...], ...] = ()  # a 2-uniform tiling's
     #   two vertex configurations, ((3, 3, 3, 3, 3, 3), (3, 3, 4, 3, 4)) --
-    #   what TestTwoUniform holds every interior vertex to. Empty elsewhere.
+    #   what TestTwoUniform holds every interior vertex to. A 2-isohedral
+    #   tiling carries its primal's: each is one of its two tiles, read as
+    #   the polygons its corners sit at the centres of. Empty elsewhere.
     notation: str = ""             # a 2-uniform tiling's symbol as the
     #   literature writes it, "[3^6; 3^4.6]_1" -- the menu shows it under the
     #   label. The subscript is Grunbaum and Shephard's, for the five pairs
-    #   that share both vertex types. Empty elsewhere.
+    #   that share both vertex types. A 2-isohedral tiling's is its primal's
+    #   with the Laves V in front. Empty elsewhere.
+    dual_of: str = ""              # a 2-isohedral tiling's primal: the key of
+    #   the 2-uniform tiling it is the dual of. Empty elsewhere.
 
     @property
     def vertex_transitive(self) -> bool:
@@ -2080,6 +2086,7 @@ _FAMILY_TRAITS = {
     "uniform": (True, True, False),      # Archimedean: every vertex alike
     "dual": (False, True, True),         # Laves: every tile congruent
     "2-uniform": (False, True, False),   # two kinds of vertex, regular tiles
+    "2-isohedral": (False, True, False),  # the 2-uniform duals: two tiles
     "isogonal": (True, False, False),    # every vertex alike, T-vertices and all
     "rectangle": (False, False, True),   # one congruent rectangle, staggered
     # "Other" is a grab-bag rather than a symmetry class -- the two rep-tile
@@ -2265,6 +2272,59 @@ ARCH_TILINGS = (
     ArchTiling("durer", "Dürer pentagonal", (5, 4), 5,
                _durer_template, family="other"),
 )
+
+
+# THE 2-ISOHEDRAL TILINGS: the 2-uniform tilings' duals, a vertex at each tile
+# centre and a tile round each vertex, built by _dual_template exactly as the
+# Laves block is. A 2-uniform tiling has two classes of vertex, so its dual
+# has two classes of tile -- each one's corners sit at the centres of the
+# regular polygons that meet at its vertex type, so the tile is that type read
+# the other way (a 3^3.4^2 vertex becomes the prismatic pentagon, 120-120-90-
+# 120-90). Seventeen of the twenty ship. The three left out are the
+# 2-uniform tilings with dodecagons (tritrunctrihex, dodecasquare,
+# dodecarhombitrihex): a dodecagon's centre becomes a corner twelve tiles
+# meet at, so their duals are slivers with 13 to 18 neighbours -- triakis
+# triangular's ground, which ships unfair -- where these seventeen keep tiles
+# no further from round than a brick (an isoperimetric ratio of 0.87 or more
+# against their own regular polygon) and 6.6 to 10 neighbours, a hexagon's to
+# a rhombille's. Each row derives from its primal's: the key and label with
+# "dual" after them, the primal's vertex types (the two tiles,
+# TestTwoIsohedral checks every corner against them), the Laves V in front of
+# its notation, and its edge directions (a dual edge crosses its primal edge
+# at a right angle, so there are as many directions). The family is held to
+# the plane by catalog._FAMILY_SURFACES: none has a cut chosen yet.
+_TWO_ISOHEDRAL_PRIMALS = (
+    "studdedtri", "studdedtri2", "elongated2", "elongated3",
+    "trirhombitrihex", "fannedhex", "hexbands", "snubelongated2",
+    "snubelongated", "dissectedtrunchex2", "squarerows2", "squarerows3",
+    "dissectedtrunchex", "hexrows", "hexrings", "squaretrihex",
+    "squaretrihex2",
+)
+
+
+def _two_isohedral_row(primal: ArchTiling) -> ArchTiling:
+    return ArchTiling(
+        primal.key + "dual", primal.label + " dual",
+        tuple(sorted({len(v) for v in primal.vertex_types})),
+        primal.edge_directions,
+        partial(_dual_template, primal.template),
+        family="2-isohedral", half_turn=primal.half_turn,
+        vertex_types=primal.vertex_types, notation="V" + primal.notation,
+        dual_of=primal.key)
+
+
+def _with_two_isohedral(rows):
+    """The registry with the 2-isohedral rows after the 2-uniform block, in
+    the 2-uniform order, so each family's menu page reads alike."""
+    by_key = {t.key: t for t in rows}
+    duals = tuple(_two_isohedral_row(by_key[k])
+                  for k in sorted(_TWO_ISOHEDRAL_PRIMALS,
+                                  key=[t.key for t in rows].index))
+    last = max(i for i, t in enumerate(rows) if t.family == "2-uniform")
+    return rows[:last + 1] + duals + rows[last + 1:]
+
+
+ARCH_TILINGS = _with_two_isohedral(ARCH_TILINGS)
 
 # Backward-compatible views derived from the single registry above.
 _ARCH_TEMPLATES = {t.key: t.template for t in ARCH_TILINGS}

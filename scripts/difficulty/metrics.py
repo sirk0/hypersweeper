@@ -82,6 +82,33 @@ def vertex_types_shown(board, vertex_types: Iterable[Sequence[int]]) -> set:
     return {want[fan] for fan in vertex_fans(board).values() if fan in want}
 
 
+def tile_types_shown(board, tile_types: Iterable[Sequence[int]]) -> set:
+    """Which of a 2-isohedral tiling's tile types some *interior* tile of the
+    board has -- the dual of ``vertex_types_shown``.
+
+    A 2-isohedral tiling here is a 2-uniform tiling's dual: each tile sits
+    round one of the primal's vertices, and each of its corners at the centre
+    of one of the regular polygons met there, so as many tiles meet at that
+    corner as the polygon has sides. Read round the tile, the number of tiles
+    at each corner is therefore the primal's vertex configuration itself --
+    ``tile_types`` is the primal's ``vertex_types`` -- and a tile counts once
+    every one of its corners closes (``vertex_fans``).
+    """
+    def key(point) -> tuple:
+        return tuple(round(c, 6) for c in point)
+
+    fans = vertex_fans(board)
+    want = {_cyclic(t): index for index, t in enumerate(tile_types)}
+    shown = set()
+    for polygon in board.polygons.values():
+        corners = [fans.get(key(p)) for p in polygon]
+        if all(corners):
+            index = want.get(_cyclic([len(fan) for fan in corners]))
+            if index is not None:
+                shown.add(index)
+    return shown
+
+
 def mean_degree(adjacency: dict) -> float:
     """Average number of neighbours per cell."""
     return sum(len(tuple(v)) for v in adjacency.values()) / len(adjacency)
