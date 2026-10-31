@@ -7,7 +7,21 @@
     <title>Rep-tiles</title>
   </head>
   <body>
+    <section class="screen home" id="home" hidden>
+      <h1 class="home-title">Rep-tiles</h1>
+      <p class="home-sub">Cover the board, tile by tile.</p>
+      <div class="home-picks" id="home-picks"></div>
+    </section>
+    <section class="screen catalog" id="catalog" hidden>
+      <header class="hud">
+        <button type="button" class="home-button" data-go-home title="Home">‹ Home</button>
+        <h1>Catalog</h1>
+      </header>
+      <div class="catalog-list" id="catalog-list"></div>
+    </section>
+    <div class="screen game" id="game" hidden>
     <header class="hud">
+      <button type="button" class="home-button" data-go-home title="Home">‹ Home</button>
       <h1>Rep-tiles</h1>
       <span class="level" id="level"></span>
       <span class="count" id="count" aria-live="polite"></span>
@@ -20,6 +34,7 @@
         <h2>Levels</h2>
         <ol id="levels"></ol>
       </nav>
+    </div>
     </div>
     <div class="won" id="won" hidden>
       <div class="won-card">

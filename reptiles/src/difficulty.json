@@ -1,0 +1,197 @@
+{
+  "squares": {
+    "score": 0.08,
+    "presses": 0,
+    "flips": 0
+  },
+  "triangles": {
+    "score": 0.273,
+    "presses": 3,
+    "flips": 0
+  },
+  "hexagons": {
+    "score": 0.187,
+    "presses": 1,
+    "flips": 0
+  },
+  "trihex": {
+    "score": 0.372,
+    "presses": 2,
+    "flips": 0
+  },
+  "truncsquare": {
+    "score": 0.332,
+    "presses": 1,
+    "flips": 0
+  },
+  "trunchex": {
+    "score": 0.33,
+    "presses": 1,
+    "flips": 0
+  },
+  "elongated": {
+    "score": 0.345,
+    "presses": 1,
+    "flips": 0
+  },
+  "snubsquare": {
+    "score": 1.305,
+    "presses": 9,
+    "flips": 0
+  },
+  "snubhex": {
+    "score": 0.384,
+    "presses": 2,
+    "flips": 0
+  },
+  "rhombitrihex": {
+    "score": 0.567,
+    "presses": 2,
+    "flips": 0
+  },
+  "trunctrihex": {
+    "score": 0.567,
+    "presses": 2,
+    "flips": 0
+  },
+  "elongated2": {
+    "score": 0.372,
+    "presses": 2,
+    "flips": 0
+  },
+  "snubelongated": {
+    "score": 1.597,
+    "presses": 11,
+    "flips": 0
+  },
+  "squarerows2": {
+    "score": 0.316,
+    "presses": 1,
+    "flips": 0
+  },
+  "hexrows": {
+    "score": 0.496,
+    "presses": 3,
+    "flips": 0
+  },
+  "fannedhex": {
+    "score": 0.321,
+    "presses": 1,
+    "flips": 0
+  },
+  "trirhombitrihex": {
+    "score": 0.613,
+    "presses": 5,
+    "flips": 0
+  },
+  "snubelongated2": {
+    "score": 0.599,
+    "presses": 5,
+    "flips": 0
+  },
+  "elongated3": {
+    "score": 0.384,
+    "presses": 2,
+    "flips": 0
+  },
+  "squarerows3": {
+    "score": 0.352,
+    "presses": 1,
+    "flips": 0
+  },
+  "studdedtri": {
+    "score": 0.434,
+    "presses": 3,
+    "flips": 0
+  },
+  "hexbands": {
+    "score": 0.486,
+    "presses": 3,
+    "flips": 0
+  },
+  "studdedtri2": {
+    "score": 0.463,
+    "presses": 3,
+    "flips": 0
+  },
+  "squaretrihex2": {
+    "score": 0.466,
+    "presses": 1,
+    "flips": 0
+  },
+  "squaretrihex": {
+    "score": 0.471,
+    "presses": 1,
+    "flips": 0
+  },
+  "dissectedtrunchex": {
+    "score": 0.633,
+    "presses": 3,
+    "flips": 0
+  },
+  "dissectedtrunchex2": {
+    "score": 0.719,
+    "presses": 5,
+    "flips": 0
+  },
+  "hexrings": {
+    "score": 0.579,
+    "presses": 2,
+    "flips": 0
+  },
+  "dodecasquare": {
+    "score": 0.634,
+    "presses": 3,
+    "flips": 0
+  },
+  "tritrunctrihex": {
+    "score": 0.676,
+    "presses": 4,
+    "flips": 0
+  },
+  "dodecarhombitrihex": {
+    "score": 0.828,
+    "presses": 4,
+    "flips": 0
+  },
+  "tetrakis": {
+    "score": 0.412,
+    "presses": 7,
+    "flips": 0
+  },
+  "rhombille": {
+    "score": 0.647,
+    "presses": 9,
+    "flips": 0
+  },
+  "triakis": {
+    "score": 0.732,
+    "presses": 12,
+    "flips": 0
+  },
+  "cairo": {
+    "score": 2.672,
+    "presses": 25,
+    "flips": 0
+  },
+  "prismaticpent": {
+    "score": 0.182,
+    "presses": 1,
+    "flips": 0
+  },
+  "floret": {
+    "score": 1.131,
+    "presses": 17,
+    "flips": 0
+  },
+  "deltoidal": {
+    "score": 0.494,
+    "presses": 9,
+    "flips": 0
+  },
+  "kisrhombille": {
+    "score": 1.106,
+    "presses": 11,
+    "flips": 8
+  }
+}

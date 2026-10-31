@@ -34,6 +34,25 @@ some back off.
   (`seconds`, five a tile), three. The clock starts with the first tile down.
   The best per level is kept in `localStorage` and shown in the level list.
 
+**Screens.** Home (no query): Easy, Medium and Hard each deal a random level
+of that difficulty, Catalog opens the catalog (`?catalog`): each family a
+row of level cards scrolling sideways — board outline, tiles, name,
+difficulty as Hypersweeper's three bars, stars. A level is `?level=<key>`,
+with ‹ Home in its header and the level list on its right. Each move is a
+history entry, so the browser's Back works.
+
+**Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
+player lays the board the level was cut from, always taking a tile it can
+snap down now that needs the fewest rotate/flip presses from how the tray is
+held, so it groups tiles by orientation as a person would. The score is its
+presses per tile, each weighted √(90°/step) — a 15° press counts 2.4, a 90°
+one 1 — plus flips, plus 0.15 per extra tile kind and tiles/200. Bands split
+at 0.45 and 1.0 (`MEDIUM`, `HARD`), set so that every flag-transitive level,
+4.8² and 3³.4² are easy and the Cairo pentagonal and V4.6.12 hard; the tests
+pin those anchors. Measuring all levels takes a second, so `npm run
+difficulty` writes `src/difficulty.json` and the game reads that; a test
+fails while it is out of step.
+
 The ladder it is built for is every flat board Hypersweeper has: squares,
 triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
@@ -55,7 +74,8 @@ cd reptiles
 npm install          # first time, and after a dependency change
 npm run dev          # http://localhost:5174 (Hypersweeper's dev server is 5173)
 npm run typecheck    # tsc --noEmit, strict — also checks the web/src/boards files it imports
-npm run test         # vitest unit tests (well under a second)
+npm run test         # vitest unit tests (a few seconds)
+npm run difficulty   # re-measure every level into src/difficulty.json
 ```
 
 or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`.
@@ -130,6 +150,9 @@ finishes the board — the quick way to see the win state.
   budgeted backtracking fill for the tests and the dev seam that always works
   the open corner with the fewest placements.
 - `src/view/svgBoard.ts` — the SVG drawing (board units, y up, one flip).
+- `src/view/home.ts`, `src/view/catalog.ts` — the first screen and the
+  catalog; `src/view/icons.ts` the pictures they and the level list share
+  (board outline, tray tile, the three bars, a star row).
 - `src/view/levelList.ts` — the level list on the right. It shows only what
   a player starts with: the board's outline, the tray's tiles, the vertex
   configuration as the name (`notation`: 4⁴, 3.4.6.4), and the best stars —
