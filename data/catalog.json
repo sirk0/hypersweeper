@@ -1642,6 +1642,24 @@
       "surface": "flat",
       "family": "fractal"
     },
+    "pentagon10": {
+      "label": "Type 10 (James, 1975)",
+      "tiling": "pentagon10",
+      "surface": "flat",
+      "family": "pentagonal"
+    },
+    "pentagon13": {
+      "label": "Type 13 (Rice, 1977)",
+      "tiling": "pentagon13",
+      "surface": "flat",
+      "family": "pentagonal"
+    },
+    "pentagon15": {
+      "label": "Type 15 (Mann et al., 2015)",
+      "tiling": "pentagon15",
+      "surface": "flat",
+      "family": "pentagonal"
+    },
     "pentagonalicositetra": {
       "label": "Pentagonal icositetrahedron",
       "tiling": "",
@@ -2577,6 +2595,7 @@
       "dual": "Laves",
       "2-uniform": "2-uniform",
       "2-isohedral": "2-isohedral",
+      "pentagonal": "Pentagonal",
       "isogonal": "Isogonal",
       "rectangle": "Congruent rectangles",
       "other": "Other",

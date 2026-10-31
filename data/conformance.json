@@ -10295,6 +10295,93 @@
         "vertexCount": 648,
         "hasCellCycle": false
       }
+    },
+    "pentagon10": {
+      "easy": {
+        "cellCount": 86,
+        "mineCount": 10,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 290,
+        "vertexCount": 205,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 278,
+        "mineCount": 43,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 846,
+        "vertexCount": 569,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 484,
+        "mineCount": 87,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1447,
+        "vertexCount": 964,
+        "hasCellCycle": false
+      }
+    },
+    "pentagon13": {
+      "easy": {
+        "cellCount": 92,
+        "mineCount": 13,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 289,
+        "vertexCount": 198,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 254,
+        "mineCount": 39,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 765,
+        "vertexCount": 512,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 496,
+        "mineCount": 90,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1466,
+        "vertexCount": 971,
+        "hasCellCycle": false
+      }
+    },
+    "pentagon15": {
+      "easy": {
+        "cellCount": 82,
+        "mineCount": 10,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 255,
+        "vertexCount": 174,
+        "hasCellCycle": false
+      },
+      "medium": {
+        "cellCount": 256,
+        "mineCount": 34,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 749,
+        "vertexCount": 494,
+        "hasCellCycle": false
+      },
+      "hard": {
+        "cellCount": 482,
+        "mineCount": 98,
+        "euler": 1,
+        "boundaryComponents": 1,
+        "edgeCount": 1365,
+        "vertexCount": 884,
+        "hasCellCycle": false
+      }
     }
   },
   "seeds": {

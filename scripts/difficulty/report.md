@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 1065 rows, 1016 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 1074 rows, 1025 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 49 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -303,6 +303,9 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `offsetsquare` | 5.6 | 76c 12m (16%) 95% | 280c 46m (16%) 90% | 518c 108m (21%) 50% |
 | `penrose` | 8.8 | 81c 6m (7%) 92% ⚠ | 256c 17m (7%) 88% | 480c 48m (10%) 47% |
 | `pentaflake` | 4.4 | 216c 11m (5%) 95% | 216c 15m (7%) 88% | 216c 27m (12%) 52% |
+| `pentagon10` | 5.8 | 86c 10m (12%) 98% | 278c 43m (15%) 90% | 484c 87m (18%) 49% |
+| `pentagon13` | 5.8 | 92c 13m (14%) 93% | 254c 39m (15%) 88% | 496c 90m (18%) 53% |
+| `pentagon15` | 6.0 | 82c 10m (12%) 96% | 256c 34m (13%) 90% | 482c 98m (20%) 51% |
 | `pentagonalicositetra` | 8.1 | 120c 23m (19%) 97% | 480c 109m (23%) 85% | 480c 126m (26%) 49% |
 | `pentakisdodeca` | 11.9 | 60c 14m (23%) 98% | 240c 64m (27%) 86% | 540c 159m (29%) 49% |
 | `pentaspiral5` | 5.7 | 81c 8m (10%) 99% | 256c 37m (14%) 91% | 480c 99m (21%) 51% |

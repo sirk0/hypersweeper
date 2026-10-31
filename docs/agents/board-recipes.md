@@ -644,6 +644,135 @@ primal. **Wrapping the family** is the 2-uniform recipe's wrap half: a `cut`
 on each dual (a second argument to `_dual_template`, as Cairo's is), the
 surfaces added to its `_FAMILY_SURFACES` entry, and the preset rows.
 
+## Recipe: add a pentagonal tiling
+
+`family="pentagonal"`: periodic tilings by **one convex pentagon**. Fifteen
+types are known, and Rao's 2017 proof says there are no more. Three ship —
+`pentagon10` (type 10, James 1975), `pentagon13` (type 13, Rice 1977) and
+`pentagon15` (type 15, Mann, McLoud and Von Derau 2015) — flat only
+(`_FAMILY_SURFACES`). The other twelve were measured and left out, and this
+section is the record of why, so adding one later starts from numbers rather
+than from scratch.
+
+### What a type had to pass
+
+1. **A new board.** Its shared-vertex adjacency is not that of any tiling
+   already here. Two boards with the same graph play the same game whatever
+   the tiles look like, so a pentagon tiling that is Cairo's graph is Cairo.
+   `TestPentagonal.test_each_is_a_new_board` proves it one way: each cell's
+   neighbour count and how many neighbours it shares with each of them,
+   which an isomorphism keeps.
+2. **No twins** on a medium (~240-cell) window
+   (`metrics.indistinguishable_cells == 0`).
+3. **A rectangular period**, because `_ArchTemplate` is a rectangle: the
+   lattice must contain two vectors at right angles.
+4. **Round enough to number**: 0.77 or better of a regular pentagon's
+   isoperimetric quotient (type 15's, about a 3:1 brick's). The 2-isohedral
+   bar is 0.865; this one was relaxed to admit 13 and 15, so 11 is the next
+   type a lower bar would let in.
+
+### The fifteen, measured
+
+Each type at its roundest member (a type with free parameters), tiled as
+that type tiles. Sides are Wikipedia's labels: side x runs into corner X
+(a = EA, b = AB, c = BC, d = CD, e = DE). "Corners" are the vertex
+combinations of the tiling: letters are tile corners meeting at a point, and
+`|` marks a point that lies mid-side on one more tile (a T-vertex).
+
+| Type | Conditions | Group, tiles/cell, isohedrality | Corners | Roundness | Neighbours | Plays like | Rectangle | Status |
+|---|---|---|---|---|---|---|---|---|
+| 1 (Reinhardt 1918) | B + C = 180 | p2, 2, 1 | ADE, BC\| (BBCC edge to edge) | 0.94 generic | 6 | hexagonal grid (edge to edge: prismatic pentagonal) | not at a generic member | out: duplicate |
+| 2 (Reinhardt 1918) | c = e, B + D = 180 | pgg (p4g at the Cairo tile), 4, 1 | ACE, BBDD | 0.97 | 7 | Cairo | yes | out: duplicate |
+| 3 (Reinhardt 1918) | a = b, d = c + e, A = C = D = 120 | p3 (p31m at a = b, c = e), 3, 1 | AAA, CCC, DDD, BE\| | 0.90 | 6 | hexagonal grid | yes | out: duplicate |
+| 4 (Reinhardt 1918) | b = c, d = e, B = D = 90 | p4 (p4g at the Cairo tile), 4, 1 | ACE, BBDD | 0.97 | 7 | Cairo | yes | out: duplicate (is Cairo) |
+| 5 (Reinhardt 1918) | a = b, d = e, A = 60, D = 120 | p6, 6, 1 | AAAAAA, DDD, BCE | 0.90 | 8 | floret pentagonal | yes | out: duplicate (is floret) |
+| 6 (Kershner 1968) | a = d = e, b = c, B + D = 180, 2B = E | p2, 4, 2 | ACE, ABBC, DDE | 0.93 | 7 | prismatic pentagonal | not at the roundest member | out: duplicate |
+| 7 (Kershner 1968) | b = c = d = e, B + 2E = 2C + D = 360 | pgg, 8, 2 | BEE, CCD, AABD | 0.92 | 7 | `snubelongateddual` (and type 9) | yes | out: duplicate |
+| 8 (Kershner 1968) | b = c = d = e, 2B + C = D + 2E = 360 | pgg, 8, 2 | BBC, DEE, AACD | 0.95 | 7 | Cairo | yes | out: duplicate |
+| 9 (Rice 1976) | b = c = d = e, 2A + C = D + 2E = 360 | pgg, 8, 2 | AAC, DEE, BBCD | 0.93 | 7 | `snubelongateddual` (and type 7) | yes | out: duplicate |
+| **10** (James 1975) | a = b = c + e, A = 90, B + E = 180, B + 2C = 360 | cmm, 6, 3 | AAAA, ACD, BCC, DDE, BE\| | **0.92** | 6–7 | new | yes (12 tiles) | **ships** at B = 90 |
+| 11 (Rice 1976) | 2a + c = d = e, A = 90, C + E = 180, 2B + C = 360 | pgg, 8, 2 | BBC, DDE, AA\|, CE\| | 0.72 at best | 5–7 | new | yes (8) | out: too thin |
+| 12 (Rice 1976) | 2a = d = c + e, A = 90, C + E = 180, 2B + C = 360 | pgg, 8, 2 | BBC, DDE, AA\|, CE\| | 0.83 at best | 6 | hexagonal grid | yes (8) | out: duplicate |
+| **13** (Rice 1977) | d = 2a = 2e, B = E = 90, 2A + D = 360 | pgg, 8, 2 | AAD, CCD, BBBB, EE\| | **0.78** | 6–7 | new | yes (8) | **ships** at A = 120 |
+| 14 (Stein 1985) | 2a = 2c = d = e, A = 90, 2B + C = 360, C + E = 180 | p2, 6, 3 | ABD, BBC, DDE, AA\|, CE\| | 0.80, rigid | 5–7 | new | **none** | out: no rectangle |
+| **15** (Mann et al. 2015) | A = 150, B = 60, C = 135, D = 105, E = 90; a = c = e, b = 2a | pgg, 12, 3 | AAB, ADD, CCE, BBCD, EE\| | **0.77**, rigid | 6–8 | new | yes (12) | **ships** |
+
+"At best" means the highest roundness anywhere in the type's one-parameter
+family, found by a sweep, so no other member does better. Twins were zero on
+every medium window except type 5's (4, on a window the floret preset does
+not use). No two distinct vertices of any of them come within 0.05 of each
+other, so tag rounding is never a risk.
+
+### Adding one of the twelve
+
+- **Type 14** is the only new graph the current machinery cannot hold. Its
+  angles involve √57, its lattice has no two vectors at right angles, and so
+  no rectangle tiles it. It needs `_ArchTemplate` (and its TypeScript twin) to
+  take a parallelogram domain — the window builder, `_flip_levels` and the
+  wrap code all assume a rectangle today. Rounding the lattice to a rectangle
+  is not an option: the tiles would not close.
+- **Type 11** passes everything but roundness (0.72, some cells with 5
+  neighbours). Lowering `TestPentagonal.ROUNDNESS` to 0.70 admits it; it is
+  then a template like the other three.
+- **The nine duplicates** would each be a second board that plays exactly like
+  one already in the menu. `test_each_is_a_new_board` fails on them by design.
+  If one is wanted anyway, for the story (Rice's type 9, say), exempt it in that
+  test by name, with the reason.
+- Types 1 and 6 also lack a rectangle at the member measured. Both have free
+  parameters, so a member whose lattice is rectangular may exist, but both
+  are duplicates in any case.
+
+### How the cells were found, and how to find another
+
+The cells came from a search, not from drawings (the search script itself was
+not kept). To redo one:
+
+1. **The tile.** Solve for the type's member: unknowns are three corners (A at
+   the origin, B at (1, 0)), the equalities are the conditions above, and the
+   objective is the isoperimetric quotient. Prefer the most symmetric member
+   near the maximum (angles of 90 or 120, sides in Q(√2) or Q(√3)), because
+   its coordinates come out exact.
+2. **Which corners may meet.** List every multiset of corners whose angles sum
+   to 360, and every one summing to 180 (a T-vertex), that holds for **every**
+   member of the family, not just the chosen one. Check a few random members
+   to tell them apart. Coincidences at a special member let the search wander
+   into other tilings, or into ones that never repeat. Types 3 and 6 still
+   needed the list narrowed to their own corners (AAA, CCC, DDD, BE\| and ACE,
+   ABBC, DDE), and type 6 needed same-handed copies tried first.
+3. **Grow a patch.** Depth first, always at the boundary point with the
+   smallest open angle (never one of exactly 180°, where a straight side could
+   run through): place a corner there, along one side of the gap, as any of
+   the ten corner-and-handedness choices. Reject a placement that overlaps a
+   tile or leaves a point no allowed corner combination can complete. Grow to a
+   radius of about 11 tile-widths (16 for type 15, whose cell is twelve tiles
+   in a strip 1.7 wide).
+4. **Read it off.** The translations are the isometries carrying one tile onto
+   another that also carry every tile in the patch's interior onto a tile.
+   Reduce them to a basis, and take the smallest rectangle the lattice
+   contains. Each tile in the cell is then (mirrored or not, turn, where A
+   lands), and with the tile's corner A at the origin the numbers come out as
+   small combinations of 1, √2 and √3. That is the placement table
+   `_pentagon_template` takes.
+5. **Check it** against Wikipedia's table: the wallpaper group, the tiles per
+   primitive cell and the isohedrality all have to match. All fifteen did.
+
+Then the steps are the usual ones:
+
+1. The factory in `tilings.py` and the row in `ARCH_TILINGS`, labelled
+   "Type N (finder, year)". Set `centre` to a half-turn centre:
+   `resize.flat_centres` lists them, and on a tiling with mirrors take one
+   where two mirrors cross. A pentagon has no centre of its own, so the
+   biggest-tile default would leave the window lopsided.
+2. `TestPentagonal`: the type's conditions in `CONDITIONS`, its domain's tile
+   count in `DOMAIN_TILES`, the key in `test_the_family`.
+3. A `flat` row in `ARCH_PRESETS`, then the pipeline: `resize.py --only`,
+   `calibrate.py --only`, `apply.py`, `export_data.py`, `report.py` and
+   `export_conformance.py`.
+4. The same factory in `web/src/boards/tilings.ts`, and the row. The
+   conformance tests compare the two ports cell for cell.
+5. The unit-test counts (`backgroundPattern`, `catalog`). Nothing else: the
+   family's `tiling-all:pentagonal` achievement grows by itself.
+
 ## Recipe: add a congruent-rectangle bond
 
 The fourth family in `ARCH_TILINGS` (`family="rectangle"`): the brick bonds,

@@ -2014,13 +2014,167 @@ def _squaretrihex2_template() -> _ArchTemplate:
     ], centre=((),), cut=2 / 5)
 
 
+# -- the pentagonal tilings ----------------------------------------------------
+#
+# Periodic tilings by one convex pentagon. Fifteen types are known, and
+# Rao's 2017 proof says the list is complete:
+# Reinhardt's five (1918), Kershner's three (1968), James's (1975), Marjorie
+# Rice's four (1976-77; an amateur, working from a Scientific American column),
+# Stein's (1985), and Mann, McLoud and Von Derau's computer search (2015).
+#
+# THREE SHIP: types 10, 13 and 15. Each is a new board -- its shared-vertex
+# adjacency is not that of any tiling already here -- with no indistinguishable
+# cells, a rectangular period, and tiles at least 0.77 as round as a regular
+# pentagon. The other twelve fail one of those bars; what each measured, and
+# what adding one would take, is "Recipe: add a pentagonal tiling" in
+# docs/agents/board-recipes.md. Read it before adding a type here.
+#
+# All three put a corner in the middle of a neighbour's side, so the family is
+# not edge to edge; _insert_t_vertices records those points as for the
+# isogonal family. Each factory below is data. ``_pentagon`` lays the tile out from its angles
+# and sides, corner A at the origin and side AB along +x (side x runs *into*
+# corner X: a = EA, b = AB, c = BC, d = CD, e = DE -- Wikipedia's labelling,
+# which the types' conditions are written in). Each tile of one lattice cell is
+# that pentagon, mirrored in the y axis or not, turned about A and moved so that
+# A lands at a point; the lattice and the rectangle the domain is come with it.
+# Every number is exact -- the types with a free parameter take its most
+# symmetric member, and the coordinates live in Q(sqrt 2) or Q(sqrt 3) -- so
+# there is no vertex here two roundings could merge. The cells were found by a
+# search that grows a patch tile by tile, letting only the corner combinations
+# the type's conditions allow meet at a point; TestPentagonal checks what it
+# found against the conditions.
+
+
+def _pentagon(angles, sides):
+    """Corners A..E of a convex pentagon from its five angles (degrees) and
+    five sides, A at the origin and AB along +x. ``a`` closes it, so it is
+    taken as read; the walk only uses b..e."""
+    points = [(0.0, 0.0)]
+    heading = 0.0
+    for corner, side in zip("BCDE", "bcde"):
+        x, y = points[-1]
+        points.append((x + sides[side] * math.cos(math.radians(heading)),
+                       y + sides[side] * math.sin(math.radians(heading))))
+        heading += 180 - angles[corner]
+    return points
+
+
+def _placed(tile, mirror, turn, at):
+    """``tile`` reflected in the y axis if ``mirror``, turned ``turn`` degrees
+    about its corner A (the origin) and moved so that A lands on ``at``. A
+    mirrored tile is listed backwards, so every tile runs anticlockwise."""
+    points = [(-x, y) for x, y in reversed(tile)] if mirror else tile
+    return [(x + at[0], y + at[1]) for x, y in (_rotate2(p, turn) for p in points)]
+
+
+def _pentagon_template(angles, sides, placements, v1, v2, rect, turn,
+                       centre, mirrored=False) -> _ArchTemplate:
+    """One pentagonal tiling: the tile, its ``placements`` on one lattice cell
+    ((mirror, turn, A's position) each), the lattice ``v1``/``v2``, and the
+    rectangle ``rect`` -- two lattice vectors at right angles, as integer
+    combinations of v1 and v2 -- that the domain is, turned by ``turn``
+    degrees to lie along the axes. ``centre`` is a half-turn centre in domain
+    coordinates: a pentagon has none of its own, so the biggest-tile default
+    would centre the window on a point the tiling is not symmetric about."""
+    tile = _pentagon(angles, sides)
+    polygons = [("pent", _placed(tile, mirror, spin, at))
+                for mirror, spin, at in placements]
+    (m1, n1), (m2, n2) = rect
+    width = math.hypot(m1 * v1[0] + n1 * v2[0], m1 * v1[1] + n1 * v2[1])
+    height = math.hypot(m2 * v1[0] + n2 * v2[0], m2 * v1[1] + n2 * v2[1])
+    return _template((5,), width, height,
+                     _periodic_domain(v1, v2, width, height, polygons, turn),
+                     mirrored=mirrored, centre=centre)
+
+
+_R2, _R3 = math.sqrt(2), math.sqrt(3)
+
+
+def _pentagon10_template() -> _ArchTemplate:
+    """Type 10 (Richard James, 1975), cmm: a = b = c + e, A = 90,
+    B + E = 180, B + 2C = 360. A one-parameter family; at B = 90 the tile is
+    a unit square with one corner cut off at the edge midpoints, the most
+    symmetric member and the roundest (0.92 of a regular pentagon).
+
+    Four tiles meet at their right-angled A corners in a square, and the
+    squares sit in rows with a band of tiles between them. Not edge to edge: a
+    B and an E corner meet square-on in the middle of a neighbour's full side
+    (a or b). A tile has 6 or 7 neighbours; three orbits under the symmetries
+    (3-isohedral), six tiles a lattice cell. The rectangle runs at 45 degrees to the tile's square sides,
+    along the mirrors, so it is turned to lie along the axes and y = 0 is a
+    mirror (the tile's own axis, through its A corner)."""
+    return _pentagon_template(
+        dict(A=90, B=90, C=135, D=135, E=90),
+        dict(a=1, b=1, c=1 / 2, d=_R2 / 2, e=1 / 2),
+        [(False, 0, (0, 0)), (False, -90, (0, 0)), (False, 180, (0, 0)),
+         (False, 90, (3 / 2, -3 / 2)), (False, 180, (1 / 2, -1)),
+         (False, 0, (-3 / 2, -3 / 2))],
+        (3 / 2, -3 / 2), (-5 / 2, -1), ((1, 2), (-1, 0)), turn=-45,
+        centre=(0.0, 0.0), mirrored=True)
+
+
+def _pentagon13_template() -> _ArchTemplate:
+    """Type 13 (Marjorie Rice, 1977), pgg: d = 2a = 2e, B = E = 90,
+    2A + D = 360. A one-parameter family; at A = 120 every angle is 90 or 120
+    (C = D = 120 too), the most symmetric member and within a hair of the
+    roundest (0.78). The sides are then a = e = 1, d = 2, b = (3*sqrt3 - 1)/2
+    and c = (sqrt3 - 1)/2.
+
+    Not edge to edge: two neighbours' right-angled E corners meet in the
+    middle of the long side d, and four B corners meet at a point. Two orbits
+    (2-isohedral) of four tiles, half of them mirror images; no mirror, glides
+    both ways. 6 or 7 neighbours."""
+    return _pentagon_template(
+        dict(A=120, B=90, C=120, D=120, E=90),
+        dict(a=1, b=(3 * _R3 - 1) / 2, c=(_R3 - 1) / 2, d=2, e=1),
+        [(False, 0, (0, 0)), (True, 180, (0, 0)),
+         (True, 0, (2 * _R3 - 1, -_R3)), (False, 180, (2 * _R3 - 1, -_R3)),
+         (True, 90, ((5 * _R3 - 1) / 2, (-1 - _R3) / 2)),
+         (False, -90, ((3 * _R3 - 1) / 2, (-1 - 3 * _R3) / 2)),
+         (False, 90, ((5 * _R3 - 1) / 2, (1 - 7 * _R3) / 2)),
+         (True, -90, ((5 * _R3 - 1) / 2, (1 - 7 * _R3) / 2))],
+        (-_R3, -_R3), (3 * _R3, -3 * _R3), ((1, 0), (0, 1)), turn=-45,
+        centre=((math.sqrt(6) - _R2) / 4, (3 * math.sqrt(6) + _R2) / 4))
+
+
+def _pentagon15_template() -> _ArchTemplate:
+    """Type 15 (Casey Mann, Jennifer McLoud and David Von Derau, 2015), pgg:
+    found by a computer search, the first new type in thirty years and the
+    last there is. Rigid -- no free parameter at all: A = 150, B = 60,
+    C = 135, D = 105, E = 90, a = c = e = 1, b = 2, d = (sqrt6 + sqrt2)/2.
+
+    Twelve tiles a lattice cell in three orbits (3-isohedral), half of them
+    mirror images, stacked in long staggered columns; no mirror, glides both
+    ways. Not edge to edge: two right-angled E corners meet in the middle of
+    the long side b. A tile is long (0.77 as round as a regular pentagon) and
+    has 6 or 8 neighbours."""
+    return _pentagon_template(
+        dict(A=150, B=60, C=135, D=105, E=90),
+        dict(a=1, b=2, c=1, d=(math.sqrt(6) + _R2) / 2, e=1),
+        [(False, 0, (0, 0)),
+         (True, 90, ((-1 - _R3) / 2, (1 - _R3) / 2)),
+         (True, 60, ((1 - _R3) / 2, (1 + _R3) / 2)),
+         (True, -90, ((-2 - 3 * _R3) / 2, -3 / 2)),
+         (False, 180, ((-3 - 4 * _R3) / 2, (-2 - _R3) / 2)),
+         (False, 90, ((-2 - 3 * _R3) / 2, -3 / 2)),
+         (False, 150, ((-7 - 4 * _R3) / 2, (-2 - _R3) / 2)),
+         (True, -120, ((-5 - 4 * _R3) / 2, -_R3 / 2)),
+         (True, -30, ((-7 - 4 * _R3) / 2, (-2 - _R3) / 2)),
+         (False, -90, (-1 - _R3, 2)),
+         (False, -30, ((-6 - 7 * _R3) / 2, (-3 - 2 * _R3) / 2)),
+         (True, 150, ((-6 - 7 * _R3) / 2, (-3 - 2 * _R3) / 2))],
+        ((-1 - _R3) / 2, (3 + _R3) / 2), ((-9 - 6 * _R3) / 2, (-6 - 3 * _R3) / 2),
+        ((-1, 0), (0, 1)), turn=60, centre=(1 / 2 + _R3 / 4, 5 / 4 + _R3))
+
+
 @dataclass(frozen=True)
 class ArchTiling:
-    """One template-based periodic tiling, in one of six families: the
+    """One template-based periodic tiling, in one of eight families: the
     ``uniform`` (Archimedean) tilings, their ``dual`` (Laves/Catalan)
-    partners, the ``2-uniform`` tilings with two kinds of vertex, the
-    ``isogonal`` tilings that are not edge to edge, the
-    ``rectangle`` bonds tiled by one congruent rectangle, and ``other``, the
+    partners, the ``2-uniform`` tilings with two kinds of vertex and their
+    ``2-isohedral`` duals, the ``isogonal`` tilings that are not edge to edge,
+    the ``rectangle`` bonds tiled by one congruent rectangle, the
+    ``pentagonal`` tilings by one convex pentagon, and ``other``, the
     tilings that answer to none of those -- see
     docs/agents/board-recipes.md. The menu catalog, mode strings, presets and
     tests all derive from this list."""
@@ -2094,6 +2248,9 @@ _FAMILY_TRAITS = {
     # with two tile shapes -- so as a *family* it claims none of the three,
     # and each member's own test class checks what actually holds of it.
     "other": (False, False, False),
+    # one convex pentagon per tiling, mirror images included; all three put a
+    # corner in the middle of a neighbour's side, so not edge to edge
+    "pentagonal": (False, False, True),
 }
 
 
@@ -2271,6 +2428,15 @@ ARCH_TILINGS = (
                _tromino_template, family="other"),
     ArchTiling("durer", "Dürer pentagonal", (5, 4), 5,
                _durer_template, family="other"),
+    # the pentagonal tilings: one convex pentagon each, numbered by the type
+    # the literature gives it -- three of the fifteen, the rest left out for
+    # reasons the recipe records. config is the tile, as for a bond.
+    ArchTiling("pentagon10", "Type 10 (James, 1975)", (5,), 4,
+               _pentagon10_template, family="pentagonal"),
+    ArchTiling("pentagon13", "Type 13 (Rice, 1977)", (5,), 6,
+               _pentagon13_template, family="pentagonal"),
+    ArchTiling("pentagon15", "Type 15 (Mann et al., 2015)", (5,), 10,
+               _pentagon15_template, family="pentagonal"),
 )
 
 

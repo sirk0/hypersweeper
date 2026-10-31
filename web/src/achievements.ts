@@ -100,8 +100,8 @@ export function emptyProgress(): Progress {
  * drift.
  *
  * Game Center allows 100 points per achievement and 1000 across the game, and
- * achievements are only ever added. Today's 48 spend 685. Points run out
- * first: twenty-one more groups (15 points each) reach exactly 1000 at 69
+ * achievements are only ever added. Today's 49 spend 700. Points run out
+ * first: twenty more groups (15 points each) reach exactly 1000 at 69
  * achievements. `tests/unit/achievements.test.ts` checks both caps. */
 const POINTS = {
   firstWin: 5,

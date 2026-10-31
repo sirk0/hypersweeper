@@ -696,6 +696,18 @@ ARCH_PRESETS = {
     "durer": {
         "flat": {"easy": (7.191, 2.5, 9, 45.585), "medium": (12.691, 4.191, 43, 24.697, (0.5, 0.0)), "hard": (15.691, 5.191, 87, 19.688)},
     },
+    # The pentagonal tilings are flat-only for now (_FAMILY_SURFACES in
+    # catalog.py): no cut chosen. Sizes measured by resize.py, mines by
+    # calibrate.py.
+    "pentagon10": {
+        "flat": {"easy": (1.929, 4.833, 10, 48.231), "medium": (3.357, 7.833, 43, 29.217), "hard": (4.357, 10.333, 87, 21.467, (2.474874, 0.0))},
+    },
+    "pentagon13": {
+        "flat": {"easy": (6.606, 2.237, 13, 29.785, (1.483564, 2.190671)), "medium": (10.606, 3.535, 39, 18.041, (0.258819, 5.864905)), "hard": (14.606, 4.833, 90, 13.573, (1.483564, 5.864905))},
+    },
+    "pentagon15": {
+        "flat": {"easy": (6.183, 1.545, 10, 27.545, (0.933012, 8.580127)), "medium": (10.183, 2.545, 34, 17.43, (2.299038, 8.580127)), "hard": (13.5, 3.345, 98, 13.048, (2.299038, 2.982051))},
+    },
 }
 
 #: The builders that take a ``variant`` after their preset args: the

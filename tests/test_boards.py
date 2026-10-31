@@ -4844,6 +4844,159 @@ class TestTwoIsohedral:
         assert max(degrees) <= 14
 
 
+_PENTAGONAL = [t.key for t in ARCH_TILINGS if t.family == "pentagonal"]
+
+
+class TestPentagonal:
+    """The pentagonal tilings: one convex pentagon each, three of the fifteen
+    known types (see "Recipe: add a pentagonal tiling" in
+    docs/agents/board-recipes.md for why only these three ship)."""
+
+    # Each type's defining conditions as Wikipedia states them, over the
+    # angles A..E (degrees) and sides a..e, side x running into corner X.
+    # The whole family is not the point: what is checked is that the tile in
+    # the template is a member of the type its label claims.
+    CONDITIONS = {
+        "pentagon10": ("a == b", "b == c + e", "A == 90", "B + E == 180",
+                       "B + 2*C == 360"),
+        "pentagon13": ("d == 2*a", "a == e", "B == 90", "E == 90",
+                       "2*A + D == 360"),
+        "pentagon15": ("A == 150", "B == 60", "C == 135", "D == 105",
+                       "E == 90", "a == c", "c == e", "b == 2*a"),
+    }
+    # tiles in one rectangular domain: the lattice cell's (6, 8, 12) times the
+    # rectangle's index in the lattice (2, 1, 1)
+    DOMAIN_TILES = {"pentagon10": 12, "pentagon13": 8, "pentagon15": 12}
+
+    def test_the_family(self):
+        assert _PENTAGONAL == ["pentagon10", "pentagon13", "pentagon15"]
+        assert set(self.CONDITIONS) == set(_PENTAGONAL)
+
+    @staticmethod
+    def _measures(corners):
+        """Angles and sides of a pentagon given by its corners, labelled A..E
+        from the first, side x running into corner X."""
+        n = len(corners)
+        out = {}
+        for i in range(n):
+            before, point, after = corners[i - 1], corners[i], corners[(i + 1) % n]
+            v1 = (before[0] - point[0], before[1] - point[1])
+            v2 = (after[0] - point[0], after[1] - point[1])
+            out["ABCDE"[i]] = math.degrees(abs(math.atan2(
+                v1[0] * v2[1] - v1[1] * v2[0], v1[0] * v2[0] + v1[1] * v2[1])))
+            out["abcde"[i]] = math.dist(before, point)
+        return out
+
+    @pytest.mark.parametrize("mode", _PENTAGONAL)
+    def test_every_tile_is_a_convex_pentagon(self, mode):
+        """Five real corners, every one of them convex -- the points where a
+        neighbour's corner lands mid-side (all three tilings have them) are
+        T-vertices, not corners."""
+        board = archimedean_board(mode, 3, 3, 5)
+        for polygon in board.polygons.values():
+            corners = _corners(polygon)
+            assert len(corners) == 5
+            assert all(angle < math.pi - 1e-3 for _, angle in corners)
+
+    @pytest.mark.parametrize("mode", _PENTAGONAL)
+    def test_tile_meets_its_types_conditions(self, mode):
+        """Read round from some corner, one way or the other, every tile meets
+        the conditions that define its type -- so the board is the type its
+        label says, not a pentagon that merely looks like it."""
+        board = archimedean_board(mode, 3, 3, 5)
+        for polygon in board.polygons.values():
+            corners = [p for p, _ in _corners(polygon)]
+            unit = None
+            for ring in (corners, corners[::-1]):
+                for i in range(5):
+                    g = self._measures(ring[i:] + ring[:i])
+                    scale = g["a"]
+                    g.update({k: g[k] / scale for k in "abcde"})
+                    # vertex tags are rounded to 1e-6 of an edge before the
+                    # board is scaled up, which moves a side or an angle by
+                    # about as much; a tile of another type misses by degrees
+                    if all(abs(eval(lhs, {}, g) - eval(rhs, {}, g)) < 1e-4
+                           for lhs, rhs in (c.split("==") for c in self.CONDITIONS[mode])):
+                        unit = g
+            assert unit is not None, f"a {mode} tile is not of its type"
+
+    @pytest.mark.parametrize("mode", _PENTAGONAL)
+    def test_domain_is_covered_exactly(self, mode):
+        """The lattice cell's tiles fill the domain: their areas sum to its
+        own, and there are as many as the cell holds -- so the placements the
+        factory lists have no gap and no overlap."""
+        template = _arch_template(mode)
+        assert len(template.cells) == self.DOMAIN_TILES[mode]
+        area = 0.0
+        for _, refs in template.cells:
+            pts = [(tag[0] + dm * template.width, tag[1] + dn * template.height)
+                   for tag, dm, dn in refs]
+            area += abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                            in zip(pts, pts[1:] + pts[:1]))) / 2
+        assert area == pytest.approx(template.width * template.height)
+
+    @staticmethod
+    def _cell_kinds(mode, reach=8):
+        """The cells of a tiling as its adjacency sees them: each one's
+        neighbour count and how many neighbours it shares with each of them,
+        over the cells far from the rim of a board ``reach`` tiles across.
+
+        Two tilings whose boards play alike have isomorphic adjacency graphs,
+        and an isomorphism keeps both numbers, so tilings whose sets differ
+        cannot play alike. It is a one-way test -- equal sets prove nothing --
+        but for a *new* board one way is the one needed."""
+        template = _arch_template(mode)
+        tile = math.sqrt(template.width * template.height / len(template.cells))
+        span = 2 * reach + 4
+        board = archimedean_board(mode, span * tile / template.width,
+                                  span * tile / template.height, 5)
+        adjacency = {cell: set(ns) for cell, ns in board.adjacency.items()}
+        centre = {cell: (sum(x for x, _ in p) / len(p), sum(y for _, y in p) / len(p))
+                  for cell, p in board.polygons.items()}
+        xs = [x for x, _ in centre.values()]
+        ys = [y for _, y in centre.values()]
+        mid = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
+        inner = (max(xs) - min(xs)) / span * reach / 2
+        return frozenset(
+            (len(adjacency[cell]),
+             tuple(sorted(len(adjacency[cell] & adjacency[n]) for n in adjacency[cell])))
+            for cell in adjacency if math.dist(centre[cell], mid) < inner)
+
+    def test_each_is_a_new_board(self):
+        """No pentagonal board plays like a tiling that already ships, or like
+        another of the three. This is what dropped nine of the fifteen types:
+        types 2, 4 and 8 are the Cairo tiling's graph, 3 and 12 (and 1) the
+        hexagonal grid's, 5 floret's, 6 the prismatic pentagonal's, 7 and 9
+        the zigzag snub square dual's."""
+        kinds = {t.key: self._cell_kinds(t.key) for t in ARCH_TILINGS}
+        for mode in _PENTAGONAL:
+            assert len(kinds[mode]) >= 2  # every one is 2- or 3-isohedral
+            same = [other for other, k in kinds.items()
+                    if other != mode and k == kinds[mode]]
+            assert not same, f"{mode} plays like {same}"
+
+    # The bar the three were chosen at: no tile further from round than type
+    # 15's (0.77 of a regular pentagon -- about a 3:1 brick), and a hexagon's
+    # to a rhombille's number of neighbours, as for the 2-isohedral tilings.
+    # Types 11 (0.72), 12 (0.83, but the hexagonal grid's graph) and 14
+    # (0.80, with no rectangular period) are what it keeps out.
+    ROUNDNESS = 0.77
+
+    @pytest.mark.parametrize("mode", _PENTAGONAL)
+    def test_tiles_are_round_enough_and_neighbours_moderate(self, mode):
+        board = archimedean_board(mode, 3, 3, 5)
+        regular = math.pi / (5 * math.tan(math.pi / 5))
+        for polygon in board.polygons.values():
+            corners = [p for p, _ in _corners(polygon)]
+            area = abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                           in zip(corners, corners[1:] + corners[:1]))) / 2
+            perimeter = sum(math.dist(a, b) for a, b
+                            in zip(corners, corners[1:] + corners[:1]))
+            assert 4 * math.pi * area / perimeter ** 2 / regular > self.ROUNDNESS
+        degrees = [d for d, _ in self._cell_kinds(mode)]
+        assert 6 <= min(degrees) and max(degrees) <= 10
+
+
 class TestCubeFrame:
     """The cube-frame (level-1 Menger sponge) surface: a genus-5 polycube
     boundary tiled by unit squares."""

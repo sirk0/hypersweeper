@@ -65,11 +65,12 @@ const TILING_NOTATIONS = catalog.tilingNotations as Record<string, string>;
 // cut chosen); the 2-uniform tilings have cuts, and so a
 // cylinder and (all but the p6 studdedtri2) a Möbius strip, and a donut, which
 // needs no cut, but no Klein windows. Their duals, the 2-isohedral tilings,
-// are the plane alone for now, as "Other" is: no cut chosen.
-// Mirrors _FAMILY_SURFACES in catalog.py.
+// are the plane alone for now, as "Other" is: no cut chosen — and so are the
+// pentagonal tilings. Mirrors _FAMILY_SURFACES in catalog.py.
 const ARCH_FAMILY_SURFACES: Record<string, readonly string[]> = {
   "2-uniform": ["flat", "cylinder", "mobius", "torus"],
   "2-isohedral": ["flat"],
+  pentagonal: ["flat"],
   other: ["flat"],
 };
 
@@ -100,6 +101,7 @@ export const UNIFORM_ARCH = familyKeys("uniform");
 export const DUAL_ARCH = familyKeys("dual");
 export const TWO_UNIFORM_ARCH = familyKeys("2-uniform");
 export const TWO_ISOHEDRAL_ARCH = familyKeys("2-isohedral");
+export const PENTAGONAL_ARCH = familyKeys("pentagonal");
 export const ISOGONAL_ARCH = familyKeys("isogonal");
 export const RECTANGLE_ARCH = familyKeys("rectangle");
 export const OTHER_ARCH = familyKeys("other");
@@ -224,8 +226,8 @@ export const PICKER_REGULAR = MENU.pickerRegular as string[];
  * fractal board is a self-similar shape rather than a window. Isogonal and
  * rectangle wrap every surface their member tilings' chirality allows, just
  * like uniform and dual. The 2-uniform tilings (the plane, the cylinder, the
- * Möbius strip and the donut), their 2-isohedral duals, the rep-tiles and
- * Dürer's tiling (the plane alone) are in this list too,
+ * Möbius strip and the donut), their 2-isohedral duals, the pentagonal
+ * tilings, the rep-tiles and Dürer's tiling (the plane alone) are in this list too,
  * being tilings: `pickerFamilies` drops a family a surface has no row of
  * rather than naming it in two places. */
 export const PICKER_FAMILIES = [
@@ -234,6 +236,7 @@ export const PICKER_FAMILIES = [
   "dual",
   "2-uniform",
   "2-isohedral",
+  "pentagonal",
   "isogonal",
   "rectangle",
   "other",
@@ -265,6 +268,7 @@ const FAMILY_MEMBERS: Record<string, string[]> = {
   dual: DUAL_ARCH,
   "2-uniform": TWO_UNIFORM_ARCH,
   "2-isohedral": TWO_ISOHEDRAL_ARCH,
+  pentagonal: PENTAGONAL_ARCH,
   isogonal: ISOGONAL_ARCH,
   rectangle: RECTANGLE_ARCH,
   other: OTHER_ARCH,
@@ -324,7 +328,7 @@ export function familyRows(family: string, surfaceKey: string): FamilyRow[] {
  * is decided row by row in `familyRows`, by the three things that can stop a
  * tiling reaching it — a chiral tiling has no mirror to close a Möbius or
  * Klein seam with, a tiling whose family is held to some surfaces
- * (ARCH_FAMILY_SURFACES: "Other" and "2-isohedral" to the plane, "2-uniform"
+ * (ARCH_FAMILY_SURFACES: "Other", "2-isohedral" and "Pentagonal" to the plane, "2-uniform"
  * to the plane, the cylinder, the Möbius strip and the donut) has no windows
  * elsewhere yet,
  * and a surface restricted to an
@@ -500,6 +504,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   dual: "Their duals — one shape throughout",
   "2-uniform": "Regular shapes, two kinds of corner",
   "2-isohedral": "Their duals — two shapes throughout",
+  pentagonal: "One pentagon each, found 1975 to 2015",
   isogonal: "A corner meets the middle of an edge",
   rectangle: "Brick bonds, one rectangle throughout",
   // A grab-bag rather than a symmetry class, so the hint names its members

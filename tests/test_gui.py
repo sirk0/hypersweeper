@@ -579,7 +579,7 @@ class TestMenu:
         assert self.click_item(menu, "flat") is None
         assert menu.path == ["flat"]
         assert self.items(menu) == {
-            "regular", "uniform", "dual", "2-uniform", "2-isohedral",
+            "regular", "uniform", "dual", "2-uniform", "2-isohedral", "pentagonal",
             "isogonal", "rectangle", "other", "aperiodic", "spiral", "reptile",
             "fractal", "hyperbolic", "random",
         }

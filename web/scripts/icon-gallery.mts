@@ -16,6 +16,7 @@ import {
   SOLID_GROUPS,
   TWO_UNIFORM_ARCH,
   TWO_ISOHEDRAL_ARCH,
+  PENTAGONAL_ARCH,
   TILINGS_BY_KEY,
   UNIFORM_ARCH,
 } from "../src/modes/catalog";
@@ -42,6 +43,7 @@ const groups: [string, string[]][] = [
   ["Dual-uniform tilings", DUAL_ARCH],
   ["2-uniform tilings", TWO_UNIFORM_ARCH],
   ["2-isohedral tilings", TWO_ISOHEDRAL_ARCH],
+  ["Pentagonal tilings", PENTAGONAL_ARCH],
   ["Isogonal tilings", ISOGONAL_ARCH],
   ["Congruent rectangles", RECTANGLE_ARCH],
   ["Other", OTHER_ARCH],

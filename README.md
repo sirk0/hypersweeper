@@ -76,6 +76,10 @@ Pick a surface, then a tiling:
   ringing hexagons, kites beside trapezoids; seventeen close to regular with
   six to ten neighbours, and three, from the tilings with dodecagons, made of
   slivers — one of them all twins and so marked unplayable),
+  **Pentagonal** (one convex pentagon per tiling: three of the fifteen
+  types known, James's of 1975, Marjorie Rice's thirteenth of 1977 and the
+  fifteenth, found by computer in 2015 — the rest play like boards already
+  here),
   **Isogonal**
   (six tilings by regular polygons that are *not* edge to edge — a tile's
   corner in the middle of its neighbour's edge), **Congruent rectangles**,
@@ -87,7 +91,7 @@ Pick a surface, then a tiling:
   rhombic L, each split into four copies of itself level on level, and the
   isosceles right triangle, the 30-60-90 triangle, the T-tetromino and the
   five-triangle, split into two, three, sixteen and five),
-  **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform, 2-isohedral and the last six also wraps the
+  **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform, 2-isohedral, Pentagonal and the last six also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too
 - **Sphere (3D)** — boards rounded onto the sphere, growing with the
