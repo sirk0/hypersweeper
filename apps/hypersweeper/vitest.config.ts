@@ -1,4 +1,3 @@
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -15,11 +14,6 @@ export default defineConfig({
     // deployed stamp. Any pair will do — the tests supply the other side.
     __APP_VERSION__: '"0.0.0-test"',
     __APP_COMMIT__: '"testing"',
-  },
-  resolve: {
-    alias: {
-      "@data": fileURLToPath(new URL("../../data", import.meta.url)),
-    },
   },
   test: {
     environment: "node",

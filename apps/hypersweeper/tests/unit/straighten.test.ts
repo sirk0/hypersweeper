@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { archTemplate } from "../../src/boards/tilings";
+import { archTemplate } from "@tiling/geometry/tilings";
 import { buildBoard } from "../../src/modes/presets";
-import { isBoard3D } from "../../src/boards/core";
+import { isBoard3D } from "@tiling/geometry/core";
 import fixture from "./straighten.fixture.json";
 
 // The straightening rule (tilings.straightVertices / surfaces.straightenPositions)

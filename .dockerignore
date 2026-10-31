@@ -9,3 +9,5 @@
 !package-lock.json
 !apps/hypersweeper/package.json
 !apps/reptiles/package.json
+!packages/geometry/package.json
+!data/package.json

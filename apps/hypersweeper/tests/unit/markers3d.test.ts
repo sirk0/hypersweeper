@@ -5,7 +5,7 @@ import {
   type Marker,
   type MarkerSink,
 } from "../../src/render/markers3d";
-import type { Vec3 } from "../../src/boards/core";
+import type { Vec3 } from "@tiling/geometry/core";
 
 // The 3D pin and bomb. Each kind is generated once as a unit-space model and
 // then *placed* by transforming that template, so what needs guarding is that

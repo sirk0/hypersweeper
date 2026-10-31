@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "license": "MIT",
   "type": "module",
-  "description": "Rep-tiles: cover a region with tiles by drag and drop. Shares its geometry with Hypersweeper (../hypersweeper/src/boards).",
+  "description": "Rep-tiles: cover a region with tiles by drag and drop. Built on the shared board geometry (@tiling/geometry, packages/geometry).",
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
@@ -15,6 +15,10 @@
     "difficulty": "vite-node scripts/measure-difficulty.mts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@tiling/data": "*",
+    "@tiling/geometry": "*"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

@@ -1,5 +1,5 @@
 import { surfaceOf } from "../modes/catalog";
-import type { BoardSymmetry } from "../boards";
+import type { BoardSymmetry } from "@tiling/geometry";
 import { screens, type HudSlot } from "../config/screens";
 
 // The game header, rendered from the shared UI-screen config

@@ -16,7 +16,7 @@
 // `data/distortion.json` is the list, measured by
 // `scripts/difficulty/distortion.py` against each tiling's own flat shape.
 
-import raw from "@data/distortion.json";
+import raw from "@tiling/data/distortion.json";
 import { difficulty as difficultySpec, hasDifficulty } from "../config/screens";
 
 interface DistortedRow {

@@ -95,7 +95,7 @@ import {
   type Board,
   type Board3D,
   type Vec3,
-} from "../boards";
+} from "@tiling/geometry";
 import { FRACTAL_MODES, REPTILE_MODES, SHAPED_MODES, surfaceOf } from "../modes/catalog";
 import { hasMode, presetBoard } from "../modes/presets";
 import { DOMAINS } from "./backgroundPattern";

@@ -23,7 +23,7 @@ import {
   ARCH_TILINGS,
   archTemplate,
   templateCells,
-} from "../boards";
+} from "@tiling/geometry";
 import { distortionHint } from "../modes/distortion";
 import { fairnessHint, fairnessOf } from "../modes/fairness";
 import { classifyShapes, corners, type ShapeTone } from "../render/shapePalette";

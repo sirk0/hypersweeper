@@ -28,6 +28,8 @@
   "dependencies": {
     "@capacitor/core": "^8.5.3",
     "@capacitor/haptics": "^8.0.2",
+    "@tiling/data": "*",
+    "@tiling/geometry": "*",
     "three": "^0.171.0"
   },
   "devDependencies": {

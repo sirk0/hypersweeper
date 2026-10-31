@@ -22,11 +22,23 @@ FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.63.0-noble
 # Mac developer's own node_modules is built for their Mac: @esbuild/* and
 # @rollup/rollup-* are per-platform native binaries, and a Linux Vite cannot load
 # the darwin ones. scripts/e2e-docker-entrypoint.sh seeds these into the mounted
-# tree at run time. Installing here rather than straight into
-# /app/web/node_modules is what leaves the runtime volume genuinely empty, so
-# Docker's seed-only-when-empty rule never gets a say.
+# tree at run time. Installing here rather than straight into /app/node_modules
+# is what leaves the runtime volume genuinely empty, so Docker's
+# seed-only-when-empty rule never gets a say.
+#
+# The repo is one npm workspace (the root package.json's `workspaces`), so the
+# install needs the root manifest, the one lockfile and every workspace's
+# package.json at the same relative paths; everything lands hoisted in
+# node_modules at the root. A workspace's own source is not needed to install
+# it — npm only links it into node_modules, and the bind mount supplies the
+# folder at run time. tests/unit/dockerE2e.test.ts fails if a workspace is
+# missing here or from the root .dockerignore.
 WORKDIR /opt/web-deps
-COPY apps/hypersweeper/package.json package-lock.json ./
+COPY package.json package-lock.json ./
+COPY apps/hypersweeper/package.json apps/hypersweeper/
+COPY apps/reptiles/package.json apps/reptiles/
+COPY packages/geometry/package.json packages/geometry/
+COPY data/package.json data/
 RUN npm ci
 
 # Asserted here rather than discovered as a red suite an hour later: the pin

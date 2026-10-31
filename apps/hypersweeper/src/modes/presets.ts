@@ -7,8 +7,8 @@
 // for the Python builders, which take the mine count; the builders in
 // boards/ do not — the geometry knows nothing of mines — so `mineArg` names
 // which arg it is, and it is split out here (`presetMineCount`).
-import presetsData from "@data/presets.json";
-import windowsData from "@data/windows.json";
+import presetsData from "@tiling/data/presets.json";
+import windowsData from "@tiling/data/windows.json";
 import {
   ammannBeenkerBoard,
   brickRingsBoard,
@@ -110,7 +110,7 @@ import {
   doubleTorusHexBoard,
   doubleTorusTriangleBoard,
   torusTriangleBoard,
-} from "../boards";
+} from "@tiling/geometry";
 import { DIFFICULTIES } from "./catalog";
 
 // The Archimedean/Laves builders take the tiling key as their first argument,

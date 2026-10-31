@@ -21,9 +21,9 @@ import {
   trefoilBoard,
   trefoilHexBoard,
   trefoilTriangleBoard,
-} from "../../src/boards/surfaces";
+} from "@tiling/geometry/surfaces";
 import { buildBoard, MODES } from "../../src/modes/presets";
-import { c180Board, cubeBoard, sphereTriangleBoard } from "../../src/boards/solids";
+import { c180Board, cubeBoard, sphereTriangleBoard } from "@tiling/geometry/solids";
 import {
   fanTriangles,
   insideOccluder,
@@ -32,7 +32,7 @@ import {
   trianglesArea,
   trianglesBelow,
   type Tri,
-} from "../../src/boards/clipSolid";
+} from "@tiling/geometry/clipSolid";
 import {
   eulerCharacteristic,
   isAutomorphism,
@@ -41,7 +41,7 @@ import {
   type CellId,
   type SymmetryId,
   type Vec3,
-} from "../../src/boards/core";
+} from "@tiling/geometry/core";
 
 // Structural invariants of the wrapped surfaces, mirrored from the Python suite
 // (tests/test_boards.py TestKleinBottle / TestKleinTilings and the wrap

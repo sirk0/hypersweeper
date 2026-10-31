@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { HYPERBOLIC_MODES, surfaceOf } from "../../src/modes/catalog";
-import { isBoard3D } from "../../src/boards/core";
+import { isBoard3D } from "@tiling/geometry/core";
 import { buildBoard, MODES } from "../../src/modes/presets";
 import { boardFacts, shapeFacts } from "../../src/ui/boardFacts";
 

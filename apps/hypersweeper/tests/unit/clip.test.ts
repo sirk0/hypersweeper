@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { clipTriangles, fanTriangles, triangleCentroid, type Tri } from "../../src/render/clip";
-import { insideOccluder } from "../../src/boards/clipSolid";
-import { kleinBoard, torusBoard } from "../../src/boards/surfaces";
-import type { Vec3 } from "../../src/boards/core";
+import { insideOccluder } from "@tiling/geometry/clipSolid";
+import { kleinBoard, torusBoard } from "@tiling/geometry/surfaces";
+import type { Vec3 } from "@tiling/geometry/core";
 
 // The cut the 3D renderer makes where an immersion passes through itself: the
 // enclosed sheet is dropped so the hole can be looked down (Klein bottle).

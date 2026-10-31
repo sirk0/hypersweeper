@@ -12,8 +12,8 @@ import {
   subtractSolid,
   trianglesBelow,
   type Tri,
-} from "../../src/boards/clipSolid";
-import type { Vec3 } from "../../src/boards/core";
+} from "../src/clipSolid";
+import type { Vec3 } from "../src/core";
 
 // The enclosed region of a self-intersecting immersion, taken from the drawn
 // triangles rather than from the smooth surface behind them (see clipSolid.ts).

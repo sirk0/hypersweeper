@@ -24,7 +24,7 @@ import {
   soundVolume,
   unlockAudio,
 } from "./audio/sound";
-import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "./boards";
+import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "@tiling/geometry";
 import { fairnessOf, modeFairness } from "./modes/fairness";
 import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
 import { hasMode } from "./modes/presets";

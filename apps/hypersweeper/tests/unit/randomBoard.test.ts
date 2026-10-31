@@ -11,7 +11,7 @@ import {
 } from "../../src/modes/randomBoard";
 import { surfaceCaution, threeDMenuModes } from "../../src/modes/catalog";
 import { quickPlayEntries } from "../../src/ui/boardTree";
-import { isBoard3D } from "../../src/boards/core";
+import { isBoard3D } from "@tiling/geometry/core";
 import { buildBoard, MODES } from "../../src/modes/presets";
 
 // The pools the home page's Flat, 3D and Hyperbolic rows deal from, and the

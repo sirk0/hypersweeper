@@ -8,7 +8,7 @@ import {
   setIconPalette,
 } from "../../src/ui/icons";
 import { FRACTAL_MODES, MENU, SHAPED_MODES, SOLID_MODES } from "../../src/modes/catalog";
-import type { Board } from "../../src/boards/core";
+import type { Board } from "@tiling/geometry/core";
 import { presetBoard } from "../../src/modes/presets";
 import { theme } from "../../src/ui/theme";
 

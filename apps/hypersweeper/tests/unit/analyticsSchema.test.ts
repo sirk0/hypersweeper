@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { describe, expect, it } from "vitest";
-import catalog from "@data/catalog.json";
-import presets from "@data/presets.json";
+import catalog from "@tiling/data/catalog.json";
+import presets from "@tiling/data/presets.json";
 import { DATASET_BLOBS, DATASET_DOUBLES, boardInfo } from "../../src/analyticsEvent";
 import { fullModeLabel, surfaceOf, tilingOf, SOLID_MODES } from "../../src/modes/catalog";
 import { familyKeyOf } from "../../src/ui/boardFacts";

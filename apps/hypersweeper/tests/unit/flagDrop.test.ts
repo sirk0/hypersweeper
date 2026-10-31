@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CellId } from "../../src/boards/core";
+import type { CellId } from "@tiling/geometry/core";
 
 // Where a held flag's drop goes. The projective plane is drawn as the sphere
 // that covers it twice (`Board3D.faces`), so every game cell is painted on two
