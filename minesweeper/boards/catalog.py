@@ -253,8 +253,9 @@ APERIODIC_MODES = tuple(_MENU["aperiodic"])
 # that family keeps the substitution tilings alone; one-off, plane-only modes
 # like them.
 SPIRAL_MODES = tuple(_MENU["spiral"])
-# The rep-tile family: the sphinx, the chair, the L-tetromino, the P-pentomino
-# and the trapezoid, each a patch whose outline is the tile itself, scaled --
+# The rep-tile family: the sphinx, the chair, the L-tetromino, the P-pentomino,
+# the trapezoid, the right and half trapezoids, the stretched chair and the
+# rhombic L, each a patch whose outline is the tile itself, scaled --
 # four copies of the tile fill the tile doubled, level on level. Like the
 # aperiodic ones they are one-off modes rather than a tiling x surface
 # product, so they live on the plane only.

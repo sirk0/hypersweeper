@@ -737,15 +737,16 @@ tile is scaled up by the substitution's `factor` and refilled with copies of
 itself, `levels` times, so the patch is `len(children)**levels` tiles and its
 outline converges on a self-similar shape. The two families differ only in
 what the children do. A **rep-tile**'s children fill the scaled tile exactly,
-so the patch is the tile again: the sphinx and the trapezoid (triangular
-lattice) and the chair, the L-tetromino and the P-pentomino (square lattice),
-all rep-4. A **fractal**'s do not: the Sierpinski carpet's eight children
+so the patch is the tile again: the sphinx, the trapezoid, the half
+trapezoid and the rhombic L (triangular lattice) and the chair, the stretched
+chair, the L-tetromino, the P-pentomino and the right trapezoid (square
+lattice), all rep-4. A **fractal**'s do not: the Sierpinski carpet's eight children
 leave the middle ninth of the tripled square empty, the pentaflake's six leave
 a golden gnomon over per side, and the Gosper island's seven hexagons fill
 their flower with no gap but do not make a hexagon — so its patch outline is
 the Gosper island rather than the tile, and its inflation turns (√7 at
 19.106°, multiplication by the Eisenstein integer 2 + ζ) because no pure
-scaling by √7 stays on the lattice. Adding a ninth is one ``_Substitution``
+scaling by √7 stays on the lattice. Adding a thirteenth is one ``_Substitution``
 record plus its wiring:
 
 1. **The tile** — a `_Substitution(mode, outline, children, factor, order,
@@ -797,6 +798,13 @@ record plus its wiring:
    and its half turn always fill a parallelogram), to `DOMAINS` in
    `web/src/ui/backgroundPattern.ts`, keeping the outline's step vertices so
    no line is stroked twice.
+
+A tile need not be a union of the lattice's unit faces, only have its corners
+on the lattice: the right trapezoid's 45° side crosses unit squares
+diagonally and the half trapezoid's upright side cuts unit triangles down a
+median. Such a tile goes in `TestRepTiles._FINE`, which measures it on a finer
+grid of faces (quarter squares, sixths of triangles, the new corners held as
+exact `Fraction`s) so the exact-cover search still sees whole faces.
 
 `TestRepTiles` then covers a new rep-tile once it is in `REPTILES`: the dissection is exact
 and is one the exact-cover search finds (reflection-free where a reflection-free

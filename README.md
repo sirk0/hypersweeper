@@ -81,8 +81,9 @@ Pick a surface, then a tiling:
   **Other** (the sphinx and the L-tromino laid down in half-turned pairs
   rather than inflated, and regular pentagons with the rhombs that fill the
   gaps they leave, as Dürer drew it in 1525), **Aperiodic**, **Spirals**,
-  **Rep-tiles** (the sphinx, the chair, the L-tetromino, the P-pentomino and
-  the trapezoid, each split into four copies of itself level on level),
+  **Rep-tiles** (the sphinx, the chair, the L-tetromino, the P-pentomino, the
+  trapezoid, the right and half trapezoids, the stretched chair and the
+  rhombic L, each split into four copies of itself level on level),
   **Fractals** and **Hyperbolic**; every periodic family bar 2-uniform, 2-isohedral and the last six also wraps the
   cylinder and the torus below, and — unless the tiling is chiral — the
   Möbius strip and the Klein bottle too

@@ -46,6 +46,8 @@ const groups: [string, string[]][] = [
   ["Congruent rectangles", RECTANGLE_ARCH],
   ["Other", OTHER_ARCH],
   ["Aperiodic", MENU.aperiodic as string[]],
+  ["Spirals", MENU.spiral as string[]],
+  ["Rep-tiles", MENU.reptile as string[]],
   ["Fractal", MENU.fractal as string[]],
   ["Hyperbolic", MENU.hyperbolic as string[]],
   ...SOLID_GROUPS.map((group) => [group.label, [...group.modes]] as [string, string[]]),

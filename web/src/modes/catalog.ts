@@ -244,8 +244,9 @@ export const APERIODIC_MODES = MENU.aperiodic as string[];
 // spirals, the pentagonal spirals, the brick rings). One-off, plane-only modes
 // like the aperiodic ones, which they used to be filed under.
 export const SPIRAL_MODES = MENU.spiral as string[];
-// The rep-tile family: the sphinx, the chair, the L-tetromino, the P-pentomino
-// and the trapezoid, each a patch whose outline is the tile itself, scaled —
+// The rep-tile family: the sphinx, the chair, the L-tetromino, the P-pentomino,
+// the trapezoid, the right and half trapezoids, the stretched chair and the
+// rhombic L, each a patch whose outline is the tile itself, scaled —
 // four copies of the tile fill it doubled. One-off modes like the aperiodic ones.
 export const REPTILE_MODES = MENU.reptile as string[];
 // The fractal family: the boards inflated the same way whose patch is *not* the

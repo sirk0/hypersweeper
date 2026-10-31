@@ -69,13 +69,17 @@ export {
   carpetBoard,
   chairBoard,
   gosperBoard,
+  halfTrapezoidBoard,
   ltetrominoBoard,
   pentaflakeBoard,
   placePoint,
   ppentominoBoard,
+  rhombicLBoard,
+  rightTrapezoidBoard,
   sphinxBoard,
   substitutionPlacements,
   SUBSTITUTIONS,
+  stretchedChairBoard,
   trapezoidBoard,
 } from "./fractal";
 

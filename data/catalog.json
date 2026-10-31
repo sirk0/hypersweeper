@@ -185,6 +185,10 @@
     "ltetromino": "L-tetromino",
     "ppentomino": "P-pentomino",
     "trapezoid": "Trapezoid",
+    "righttrapezoid": "Right trapezoid",
+    "halftrapezoid": "Half trapezoid",
+    "stretchedchair": "Stretched chair",
+    "rhombicl": "Rhombic L",
     "carpet": "Sierpiński carpet",
     "pentaflake": "Pentaflake",
     "gosper": "Gosper island",
@@ -880,6 +884,12 @@
       "tiling": "",
       "surface": "solid",
       "family": "sphere"
+    },
+    "halftrapezoid": {
+      "label": "Half trapezoid",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
     },
     "herringbone": {
       "label": "Herringbone",
@@ -1685,6 +1695,12 @@
       "surface": "solid",
       "family": "catalan"
     },
+    "rhombicl": {
+      "label": "Rhombic L",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
+    },
     "rhombicosidodecasplit": {
       "label": "Rhombicosidodecahedron",
       "tiling": "",
@@ -1708,6 +1724,12 @@
       "tiling": "rhombitrihex",
       "surface": "flat",
       "family": "uniform"
+    },
+    "righttrapezoid": {
+      "label": "Right trapezoid",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
     },
     "rotatedhex": {
       "label": "Rotated hexagonal",
@@ -1894,6 +1916,12 @@
       "tiling": "",
       "surface": "solid",
       "family": "polyhedra"
+    },
+    "stretchedchair": {
+      "label": "Stretched chair",
+      "tiling": "",
+      "surface": "flat",
+      "family": "reptile"
     },
     "studdedtri": {
       "label": "Studded triangular",
@@ -2437,7 +2465,11 @@
       "chair",
       "ltetromino",
       "ppentomino",
-      "trapezoid"
+      "trapezoid",
+      "righttrapezoid",
+      "halftrapezoid",
+      "stretchedchair",
+      "rhombicl"
     ],
     "fractal": [
       "carpet",

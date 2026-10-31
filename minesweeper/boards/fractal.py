@@ -1,5 +1,6 @@
 """Self-similar flat boards, in two menu families. The **rep-tiles** -- the
-sphinx, the chair, the L-tetromino, the P-pentomino and the trapezoid -- and
+sphinx, the chair, the L-tetromino, the P-pentomino, the trapezoid, the right
+trapezoid, the half trapezoid, the stretched chair and the rhombic L -- and
 the **fractals** -- the Sierpinski carpet, the pentaflake and the Gosper
 island.
 
@@ -35,6 +36,17 @@ The substitutions:
   * The **trapezoid** is the triamond, half a regular hexagon, on the
     triangular lattice: three children round its edge and one upside down
     in the middle.
+  * The **right trapezoid** (a square and half a square, on the square
+    lattice) and the **half trapezoid** (a doubled triamond cut down its
+    mirror line, on the triangular one) are the two quadrilaterals: chiral,
+    each with one dissection, and each with a side that crosses the lattice's
+    unit faces (a square's diagonal, a triangle's median) rather than
+    running along them. The **stretched chair** (the chair drawn out into
+    dominoes) and the **rhombic L** (the L-tetromino sheared into rhombi)
+    are the two remaining rep-4 polyforms an exhaustive search turns up --
+    up to eleven squares and ten triangles -- once the triangles,
+    parallelograms and the four tiles above are set aside. All four
+    dissections are unique and all four reflect a child.
   * The **Sierpinski carpet** is the odd one out: the unit square tripled
     and refilled with eight copies -- the 3x3 block *minus its centre*. The
     children do not fill the inflated tile, and that missing middle ninth,
@@ -347,6 +359,94 @@ _TRAPEZOID_CHILDREN: tuple[_Placement, ...] = (
 TRAPEZOID = _Substitution("trapezoid", _TRAPEZOID_OUTLINE, _TRAPEZOID_CHILDREN,
                           2, 6, _tri_rotate, _tri_mirror, _times(2), _tri_to_xy)
 
+# The right trapezoid: a unit square with half a square (cut along its
+# diagonal) under it -- parallel sides 1 and 2, one slanted side at 45
+# degrees. It is the one rep-4 polyabolo (a shape of half-squares) that is
+# not a triangle or a parallelogram, and it is chiral. Its slanted side runs
+# corner to corner of a unit square, so it has no lattice point in between
+# to step through; the two square sides and the long side carry theirs.
+_RIGHT_TRAPEZOID_OUTLINE: tuple[Point, ...] = (
+    (0, 0), (1, 1), (1, 2), (0, 2), (0, 1),
+)
+
+# Its dissection is unique, and one child of the four is reflected.
+_RIGHT_TRAPEZOID_CHILDREN: tuple[_Placement, ...] = (
+    (0, 0, (0, 0)),
+    (0, 0, (1, 1)),
+    (0, 1, (0, 4)),
+    (3, 0, (0, 4)),
+)
+
+RIGHT_TRAPEZOID = _Substitution("righttrapezoid", _RIGHT_TRAPEZOID_OUTLINE,
+                                _RIGHT_TRAPEZOID_CHILDREN, 2, 4, _square_rotate,
+                                _square_mirror, _times(2), _square_to_xy)
+
+# The half trapezoid: a triamond twice the size, cut in two down its mirror
+# line -- parallel sides 2 and 1, two right angles, a 60-degree corner and a
+# 120-degree one. The cut halves unit triangles, so it is no polyiamond, but
+# every corner is still a lattice point (the cut runs from the middle of the
+# long base, a lattice point at that size, to the middle of the top). Like
+# the right trapezoid it is chiral. The upright side has no lattice point in
+# between; the base and the slanted side carry theirs.
+_HALF_TRAPEZOID_OUTLINE: tuple[Point, ...] = (
+    (0, 0), (1, 0), (2, 0), (1, 2), (0, 2), (0, 1),
+)
+
+# Its dissection is unique, and two children of the four are reflected.
+_HALF_TRAPEZOID_CHILDREN: tuple[_Placement, ...] = (
+    (0, 0, (2, 0)),
+    (0, 1, (0, 4)),
+    (1, 1, (0, 0)),
+    (4, 0, (0, 4)),
+)
+
+HALF_TRAPEZOID = _Substitution("halftrapezoid", _HALF_TRAPEZOID_OUTLINE,
+                               _HALF_TRAPEZOID_CHILDREN, 2, 6, _tri_rotate,
+                               _tri_mirror, _times(2), _tri_to_xy)
+
+# The stretched chair: the chair with each square drawn out into an upright
+# domino -- a 2x2 block with a column of two on its left. (Of the polyominoes
+# up to eleven squares, it and the chair stretched threefold are the only
+# rep-4 ones besides the chair, the L-tetromino and the P-pentomino.) Being
+# stretched it cannot use the chair's quarter turns: its unique dissection
+# turns one child a half turn and reflects two.
+_STRETCHED_CHAIR_OUTLINE: tuple[Point, ...] = (
+    (0, 0), (1, 0), (2, 0), (2, 1), (2, 2), (1, 2), (1, 3), (1, 4), (0, 4),
+    (0, 3), (0, 2), (0, 1),
+)
+
+_STRETCHED_CHAIR_CHILDREN: tuple[_Placement, ...] = (
+    (0, 0, (0, 0)),
+    (0, 0, (1, 2)),
+    (0, 1, (0, 8)),
+    (2, 1, (4, 0)),
+)
+
+STRETCHED_CHAIR = _Substitution("stretchedchair", _STRETCHED_CHAIR_OUTLINE,
+                                _STRETCHED_CHAIR_CHILDREN, 2, 4, _square_rotate,
+                                _square_mirror, _times(2), _square_to_xy)
+
+# The rhombic L: four 60-degree rhombi in the shape of the L-tetromino, three
+# up a column and one beside the top -- the L sheared onto the triangular
+# lattice, eight unit triangles. It is the one rep-4 polyiamond up to ten
+# triangles that is not a triangle, a parallelogram, the trapezoid or the
+# sphinx. Shearing kept no quarter turn, so it cannot reuse the L's
+# reflection-free dissection: its own is unique and reflects two children.
+_RHOMBIC_L_OUTLINE: tuple[Point, ...] = (
+    (0, 0), (1, 0), (1, 1), (1, 2), (2, 2), (2, 3), (1, 3), (0, 3), (0, 2),
+    (0, 1),
+)
+
+_RHOMBIC_L_CHILDREN: tuple[_Placement, ...] = (
+    (0, 0, (0, 1)),
+    (1, 1, (1, 4)),
+    (3, 0, (2, 3)),
+    (4, 1, (3, 6)),
+)
+
+RHOMBIC_L = _Substitution("rhombicl", _RHOMBIC_L_OUTLINE, _RHOMBIC_L_CHILDREN,
+                          2, 6, _tri_rotate, _tri_mirror, _times(2), _tri_to_xy)
+
 # The Sierpinski carpet: the unit square, tripled and refilled with the
 # eight subsquares of the 3x3 block that are not its centre. The children
 # leave the middle ninth empty -- the square is no rep-tile and this is no
@@ -432,7 +532,8 @@ GOSPER = _Substitution("gosper", _HEXAGON_OUTLINE, _GOSPER_CHILDREN,
 
 SUBSTITUTIONS = {tile.mode: tile
                  for tile in (SPHINX, CHAIR, LTETROMINO, PPENTOMINO, TRAPEZOID,
-                              CARPET, PENTAFLAKE, GOSPER)}
+                              RIGHT_TRAPEZOID, HALF_TRAPEZOID, STRETCHED_CHAIR,
+                              RHOMBIC_L, CARPET, PENTAFLAKE, GOSPER)}
 
 
 def _linear(tile: _Substitution, rot: int, mirrored: int, p: Point) -> Point:
@@ -537,6 +638,34 @@ def trapezoid_board(levels: int, mine_count: int, scale: float = 26) -> Board:
     4**levels trapezoids filling one trapezoid-shaped patch. ``scale`` is
     pixels per unit triangle edge."""
     return _substitution_board(TRAPEZOID, levels, mine_count, scale)
+
+
+def right_trapezoid_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The right trapezoid (a square and a half) rep-tile, inflated ``levels``
+    times: 4**levels trapezoids filling one trapezoid-shaped patch. ``scale``
+    is pixels per unit square edge."""
+    return _substitution_board(RIGHT_TRAPEZOID, levels, mine_count, scale)
+
+
+def half_trapezoid_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The half trapezoid (half a doubled triamond) rep-tile, inflated
+    ``levels`` times: 4**levels half trapezoids filling one patch of the same
+    shape. ``scale`` is pixels per unit triangle edge."""
+    return _substitution_board(HALF_TRAPEZOID, levels, mine_count, scale)
+
+
+def stretched_chair_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The stretched chair (an L of three upright dominoes) rep-tile, inflated
+    ``levels`` times: 4**levels of them filling one patch of the same shape.
+    ``scale`` is pixels per unit square edge."""
+    return _substitution_board(STRETCHED_CHAIR, levels, mine_count, scale)
+
+
+def rhombic_l_board(levels: int, mine_count: int, scale: float = 26) -> Board:
+    """The rhombic L (the L-tetromino sheared into four rhombi) rep-tile,
+    inflated ``levels`` times: 4**levels of them filling one L-shaped patch.
+    ``scale`` is pixels per unit triangle edge."""
+    return _substitution_board(RHOMBIC_L, levels, mine_count, scale)
 
 
 def carpet_board(levels: int, mine_count: int, scale: float = 26) -> Board:
