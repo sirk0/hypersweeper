@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 981 rows, 937 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 993 rows, 949 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 44 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -168,6 +168,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `floret` | 6.5 | 76c 8m (11%) 96% | 260c 33m (13%) 89% | 474c 80m (17%) 51% |
 | `gosper` | 5.5 | 49c 7m (14%) 99% | 343c 54m (16%) 86% | 343c 71m (21%) 49% |
 | `gp21` | 6.0 | 72c 13m (18%) 99% | 282c 64m (23%) 89% | 492c 125m (25%) 53% |
+| `halftrapezoid` | 7.6 | 64c 6m (9%) 96% | 256c 25m (10%) 85% | 256c 41m (16%) 54% |
 | `herringbone` | 5.6 | 84c 13m (15%) 95% | 265c 41m (15%) 91% | 480c 98m (20%) 49% |
 | `hex` | 5.6 | 80c 11m (14%) 97% | 255c 43m (17%) 87% | 480c 100m (21%) 49% |
 | `hexbands` | 8.7 | 74c 5m (7%) 96% | 276c 18m (7%) 87% | 488c 47m (10%) 55% |
@@ -299,10 +300,12 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `pythagorean` | 5.6 | 85c 9m (11%) 96% | 261c 28m (11%) 89% | 477c 73m (15%) 53% |
 | `quartic` | 6.1 | 80c 18m (22%) 94% | 248c 61m (25%) 83% | 444c 118m (27%) 54% |
 | `rhombicdodeca` | 7.9 | 108c 19m (18%) 98% | 300c 72m (24%) 86% | 432c 116m (27%) 53% |
+| `rhombicl` | 5.8 | 64c 7m (11%) 97% | 256c 34m (13%) 87% | 256c 49m (19%) 51% |
 | `rhombicosidodecasplit` | 10.4 | 62c 8m (13%) 98% | 440c 100m (23%) 85% | 440c 119m (27%) 48% |
 | `rhombictriaconta` | 8.0 | 120c 28m (23%) 93% | 270c 62m (23%) 89% | 480c 127m (26%) 53% |
 | `rhombille` | 9.2 | 82c 5m (6%) 80% ⚠ | 274c 10m (4%) 74% ⚠ | 486c 19m (4%) 52% |
 | `rhombitrihex` | 7.4 | 71c 5m (7%) 97% | 291c 25m (9%) 87% | 483c 66m (14%) 50% |
+| `righttrapezoid` | 7.5 | 64c 6m (9%) 99% | 256c 34m (13%) 87% | 256c 49m (19%) 52% |
 | `rotatedhex` | 5.6 | 90c 4m (4%) 94% | 250c 9m (4%) 90% | 504c 36m (7%) 55% |
 | `rotatedtri` | 5.7 | 80c 11m (14%) 97% | 246c 43m (17%) 85% | 537c 112m (21%) 52% |
 | `runningbond` | 5.6 | 84c 12m (14%) 94% | 264c 44m (17%) 89% | 480c 99m (21%) 53% |
@@ -328,6 +331,7 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `staggeredtri` | 7.5 | 84c 12m (14%) 98% | 240c 46m (19%) 85% | 476c 112m (24%) 47% |
 | `steppedbipyramid` | 8.1 | 102c 21m (21%) 95% | 198c 46m (23%) 90% | 486c 128m (26%) 52% |
 | `steppedpyramid` | 8.0 | 86c 18m (21%) 94% | 262c 59m (23%) 89% | 534c 138m (26%) 51% |
+| `stretchedchair` | 6.3 | 64c 7m (11%) 93% | 256c 34m (13%) 87% | 256c 48m (19%) 55% |
 | `studdedtri` | 9.9 | 80c 9m (11%) 97% | 224c 34m (15%) 86% | 470c 82m (17%) 51% |
 | `studdedtri2` | 10.2 | 80c 9m (11%) 94% | 246c 33m (13%) 86% | 488c 96m (20%) 55% |
 | `tetraframe` | 11.9 | 64c 7m (11%) 99% | 256c 37m (14%) 85% | 400c 83m (21%) 51% |

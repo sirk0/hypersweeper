@@ -38,7 +38,7 @@
 //    builders in boards/tilings.ts — so their domains are written out below, in
 //    the units and the orientation those builders use.
 //  * The **rep-tile** and **fractal** boards do not repeat, but their tiles do:
-//    the five rep-tiles all tile the plane in pairs, the Gosper island is plain
+//    the nine rep-tiles all tile the plane in pairs, the Gosper island is plain
 //    hexagons, and the Sierpinski carpet is built of unit squares. The pentaflake takes two tiles rather than one — regular
 //    pentagons do not tile the plane, but pentagons and 36° rhombs do.
 //  * The **aperiodic** and **spiral** boards are the same story. The
@@ -256,6 +256,61 @@ const TRAPEZOID_TILE: Vertex[] = [
   [0.5, H3],
 ];
 
+/** The right trapezoid (a square and a half), as boards/fractal.ts writes it:
+ * a vertex at every lattice step, the 45° side having none in between. */
+const RIGHT_TRAPEZOID_TILE: Vertex[] = [
+  [0, 0],
+  [1, 1],
+  [1, 2],
+  [0, 2],
+  [0, 1],
+];
+
+/** The half trapezoid, as boards/fractal.ts writes it, in the plane: a vertex
+ * at every lattice step along the base and the slanted side. */
+const HALF_TRAPEZOID_TILE: Vertex[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [2, ROOT3],
+  [1, ROOT3],
+  [0.5, H3],
+];
+
+/** The stretched chair — the chair with every square drawn out into an upright
+ * domino — as boards/fractal.ts writes it, a vertex at every lattice step. */
+const STRETCHED_CHAIR_TILE: Vertex[] = [
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [2, 1],
+  [2, 2],
+  [1, 2],
+  [1, 3],
+  [1, 4],
+  [0, 4],
+  [0, 3],
+  [0, 2],
+  [0, 1],
+];
+
+/** The rhombic L — the L-tetromino sheared into four 60° rhombi — as
+ * boards/fractal.ts writes it, taken into the plane. */
+const RHOMBIC_L_TILE: Vertex[] = (
+  [
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [1, 2],
+    [2, 2],
+    [2, 3],
+    [1, 3],
+    [0, 3],
+    [0, 2],
+    [0, 1],
+  ] as const
+).map(([a, b]): Vertex => [a + b / 2, b * H3]);
+
 /** The phyllotactic spiral's tile: the equilateral convex hexagon with angles
  * 72° and 144°, written the way boards/aperiodic.ts does — the partial sums of
  * three unit vectors 36° apart, so its opposite sides are equal and parallel.
@@ -403,6 +458,46 @@ export const DOMAINS: Record<string, () => Domain> = {
   // that line twice.)
   trapezoid: () =>
     latticeDomain([TRAPEZOID_TILE, halfTurn(TRAPEZOID_TILE, 1, 0)], [1.5, H3], [0, ROOT3]),
+
+  // A right trapezoid and its half turn about the middle of the 45° side fill a
+  // 1 x 3 rectangle, and so does a stretched chair with its half turn a 3 x 4
+  // one (the chair's own 3 x 2, drawn out).
+  righttrapezoid: () => ({
+    width: 1,
+    height: 3,
+    cells: [
+      shift(RIGHT_TRAPEZOID_TILE, 0, 1),
+      shift(halfTurn(RIGHT_TRAPEZOID_TILE, 0.5, 0.5), 0, 1),
+    ],
+  }),
+  stretchedchair: () => ({
+    width: 3,
+    height: 4,
+    cells: [STRETCHED_CHAIR_TILE, halfTurn(STRETCHED_CHAIR_TILE, 1.5, 2)],
+  }),
+
+  // Two half trapezoids, the second turned about the middle of the slanted
+  // side, make the 3 x √3 rectangle the doubled triamond would have been with
+  // its two halves swapped round.
+  halftrapezoid: () => ({
+    width: 3,
+    height: ROOT3,
+    cells: [shift(HALF_TRAPEZOID_TILE, 1, 0), shift(halfTurn(HALF_TRAPEZOID_TILE, 0.5, H3), 1, 0)],
+  }),
+
+  // A rhombic L and its half turn fill a 2 x 4 parallelogram of rhombi, which
+  // tiles the plane along its sides, (2, 0) and (2, 2√3). The smallest
+  // rectangle in that lattice is 2 x 2√3, but the L is 3.5 wide — more than a
+  // copy of margin past it — so the tile is the 4 x 2√3 one instead: two
+  // parallelograms side by side, (0, 2√3) being the second side less the first.
+  rhombicl: () => {
+    const pair = [RHOMBIC_L_TILE, halfTurn(RHOMBIC_L_TILE, 1.5, H3)];
+    return {
+      width: 4,
+      height: 2 * ROOT3,
+      cells: [...pair, ...pair.map((tile) => shift(tile, 2, 0))],
+    };
+  },
 
   // Two sphinxes — again, one upside down — fill the parallelogram spanned by
   // (3, 0) and (1, √3). That lattice is not rectangular, but it contains

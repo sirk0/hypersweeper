@@ -16061,5 +16061,193 @@
         "fill": 0.75
       }
     }
+  },
+  "halftrapezoid": {
+    "builder": "half_trapezoid_board",
+    "args": {
+      "medium": {
+        "args": [
+          4,
+          35,
+          20.0
+        ],
+        "cells": 256,
+        "score": 1.1507,
+        "distortionMean": 1.2589,
+        "distortionP90": 1.2589,
+        "indistinguishable": 0,
+        "aspect": 1.1547,
+        "fill": 0.75
+      },
+      "hard": {
+        "args": [
+          4,
+          48,
+          20.0
+        ],
+        "cells": 256,
+        "score": 14.0366,
+        "distortionMean": 1.2589,
+        "distortionP90": 1.2589,
+        "indistinguishable": 0,
+        "aspect": 1.1547,
+        "fill": 0.75
+      },
+      "easy": {
+        "args": [
+          3,
+          7,
+          22.0
+        ],
+        "cells": 64,
+        "score": 11.8574,
+        "distortionMean": 1.2589,
+        "distortionP90": 1.2589,
+        "indistinguishable": 0,
+        "aspect": 1.1547,
+        "fill": 0.75
+      }
+    }
+  },
+  "rhombicl": {
+    "builder": "rhombic_l_board",
+    "args": {
+      "easy": {
+        "args": [
+          3,
+          7,
+          12.6
+        ],
+        "cells": 64,
+        "score": 13.8288,
+        "distortionMean": 2.2211,
+        "distortionP90": 2.2211,
+        "indistinguishable": 0,
+        "aspect": 1.3472,
+        "fill": 0.381
+      },
+      "medium": {
+        "args": [
+          4,
+          35,
+          11.4
+        ],
+        "cells": 256,
+        "score": 3.1221,
+        "distortionMean": 2.2211,
+        "distortionP90": 2.2211,
+        "indistinguishable": 0,
+        "aspect": 1.3472,
+        "fill": 0.381
+      },
+      "hard": {
+        "args": [
+          4,
+          48,
+          11.4
+        ],
+        "cells": 256,
+        "score": 16.008,
+        "distortionMean": 2.2211,
+        "distortionP90": 2.2211,
+        "indistinguishable": 0,
+        "aspect": 1.3472,
+        "fill": 0.381
+      }
+    }
+  },
+  "righttrapezoid": {
+    "builder": "right_trapezoid_board",
+    "args": {
+      "easy": {
+        "args": [
+          3,
+          7,
+          22.0
+        ],
+        "cells": 64,
+        "score": 14.0547,
+        "distortionMean": 1.3449,
+        "distortionP90": 1.3449,
+        "indistinguishable": 0,
+        "aspect": 2.0,
+        "fill": 0.75
+      },
+      "medium": {
+        "args": [
+          4,
+          35,
+          20.0
+        ],
+        "cells": 256,
+        "score": 3.348,
+        "distortionMean": 1.3449,
+        "distortionP90": 1.3449,
+        "indistinguishable": 0,
+        "aspect": 2.0,
+        "fill": 0.75
+      },
+      "hard": {
+        "args": [
+          4,
+          48,
+          20.0
+        ],
+        "cells": 256,
+        "score": 16.2338,
+        "distortionMean": 1.3449,
+        "distortionP90": 1.3449,
+        "indistinguishable": 0,
+        "aspect": 2.0,
+        "fill": 0.75
+      }
+    }
+  },
+  "stretchedchair": {
+    "builder": "stretched_chair_board",
+    "args": {
+      "easy": {
+        "args": [
+          3,
+          7,
+          11.0
+        ],
+        "cells": 64,
+        "score": 14.0547,
+        "distortionMean": 1.866,
+        "distortionP90": 1.866,
+        "indistinguishable": 0,
+        "aspect": 2.0,
+        "fill": 0.75
+      },
+      "medium": {
+        "args": [
+          4,
+          35,
+          10.0
+        ],
+        "cells": 256,
+        "score": 3.348,
+        "distortionMean": 1.866,
+        "distortionP90": 1.866,
+        "indistinguishable": 0,
+        "aspect": 2.0,
+        "fill": 0.75
+      },
+      "hard": {
+        "args": [
+          4,
+          48,
+          10.0
+        ],
+        "cells": 256,
+        "score": 16.2338,
+        "distortionMean": 1.866,
+        "distortionP90": 1.866,
+        "indistinguishable": 0,
+        "aspect": 2.0,
+        "fill": 0.75
+      }
+    }
   }
 }

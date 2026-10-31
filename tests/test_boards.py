@@ -18,6 +18,7 @@ from minesweeper.boards import (
     DIFFICULTIES,
     FRACTAL_MODES,
     GOSPER,
+    HALF_TRAPEZOID,
     HYPERBOLIC_MODES,
     LTETROMINO,
     MODE_LABELS,
@@ -25,11 +26,14 @@ from minesweeper.boards import (
     PENTAFLAKE,
     PPENTOMINO,
     REPTILE_MODES,
+    RHOMBIC_L,
+    RIGHT_TRAPEZOID,
     ROOT3,
     SHAPED_MODES,
     SOLID_MODES,
     SPHINX,
     SPIRAL_MODES,
+    STRETCHED_CHAIR,
     SUBSTITUTIONS,
     SURFACE_LABELS,
     TILINGS,
@@ -72,6 +76,7 @@ from minesweeper.boards import (
     double_torus_triangle_board,
     gosper_board,
     gp21_board,
+    half_trapezoid_board,
     hex_board,
     hexhex_board,
     hextriangle_board,
@@ -94,6 +99,8 @@ from minesweeper.boards import (
     projective_board,
     projective_hex_board,
     projective_triangle_board,
+    rhombic_l_board,
+    right_trapezoid_board,
     solid_cube_board,
     spectre_board,
     sphere_board,
@@ -103,6 +110,7 @@ from minesweeper.boards import (
     square_board,
     square_diamond_board,
     stepped_bipyramid_board,
+    stretched_chair_board,
     substitution_placements,
     surface_of,
     tetrahedron_board,
@@ -1772,12 +1780,14 @@ class TestBrickRings:
         assert sum(map(len, corners_only.values())) < sum(map(len, full.values()))
 
 
-REPTILES = [SPHINX, CHAIR, LTETROMINO, PPENTOMINO, TRAPEZOID]
+REPTILES = [SPHINX, CHAIR, LTETROMINO, PPENTOMINO, TRAPEZOID, RIGHT_TRAPEZOID,
+            HALF_TRAPEZOID, STRETCHED_CHAIR, RHOMBIC_L]
 
 
 class TestRepTiles:
-    """The five rep-4 boards, the Rep-tiles family: the sphinx, the chair,
-    the L-tetromino, the P-pentomino and the trapezoid. (The fractal boards
+    """The nine rep-4 boards, the Rep-tiles family: the sphinx, the chair,
+    the L-tetromino, the P-pentomino, the trapezoid, the right and half
+    trapezoids, the stretched chair and the rhombic L. (The fractal boards
     inflate the same way but are no rep-tiles -- the carpet's and the
     pentaflake's substitutions leave holes, the Gosper island's supertile is
     not a hexagon -- so each has its own class.)
@@ -1790,10 +1800,17 @@ class TestRepTiles:
     of the size-2 tile by unit tiles), which is what pins them.
 
     Everything runs on the lattice's unit faces -- the unit triangles of the
-    sphinx and the trapezoid, the unit squares of the three polyominoes --
-    each held as the sorted tuple of its corner ids, so a placement moves a
-    face by integer arithmetic and coverage is exact set algebra.
+    triangular-lattice tiles, the unit squares of the polyominoes -- each
+    held as the sorted tuple of its corner ids, so a placement moves a face
+    by exact arithmetic and coverage is exact set algebra. The two
+    trapezoids have a side that crosses unit faces (a square's diagonal, a
+    triangle's median), so theirs are finer: each square cut into four
+    triangles about its centre, each triangle into six about its centroid,
+    the new corners held as exact fractions.
     """
+
+    # The tiles whose sides cut across the lattice's unit faces.
+    _FINE = {RIGHT_TRAPEZOID.mode, HALF_TRAPEZOID.mode}
 
     @staticmethod
     def _inside(x, y, polygon):
@@ -1819,14 +1836,31 @@ class TestRepTiles:
                         faces.add(tuple(sorted(corners)))
         return faces
 
-    @staticmethod
-    def _unit_faces(tile, a, b):
+    @classmethod
+    def _unit_faces(cls, tile, a, b):
         """The lattice's unit faces at cell (a, b): two triangles on the
-        triangular lattice, one square on the square lattice."""
+        triangular lattice, one square on the square lattice -- or, for a
+        tile in ``_FINE``, each of those cut into triangles about its
+        centre (four for a square, six for a triangle)."""
         if tile.order == 6:
-            return ([(a, b), (a + 1, b), (a, b + 1)],
-                    [(a + 1, b), (a, b + 1), (a + 1, b + 1)])
-        return ([(a, b), (a + 1, b), (a + 1, b + 1), (a, b + 1)],)
+            faces = ([(a, b), (a + 1, b), (a, b + 1)],
+                     [(a + 1, b), (a, b + 1), (a + 1, b + 1)])
+        else:
+            faces = ([(a, b), (a + 1, b), (a + 1, b + 1), (a, b + 1)],)
+        if tile.mode not in cls._FINE:
+            return faces
+        fine = []
+        for face in faces:
+            n = len(face)
+            centre = (Fraction(sum(x for x, _ in face), n),
+                      Fraction(sum(y for _, y in face), n))
+            for p, q in zip(face, face[1:] + face[:1]):
+                if n == 4:
+                    fine.append([p, q, centre])
+                else:
+                    middle = (Fraction(p[0] + q[0], 2), Fraction(p[1] + q[1], 2))
+                    fine += [[p, middle, centre], [middle, q, centre]]
+        return fine
 
     @classmethod
     def _placed(cls, tile, at):
@@ -1849,7 +1883,13 @@ class TestRepTiles:
 
     @pytest.mark.parametrize("tile,faces", [(SPHINX, 6), (CHAIR, 3),
                                             (LTETROMINO, 4), (PPENTOMINO, 5),
-                                            (TRAPEZOID, 3)])
+                                            (TRAPEZOID, 3),
+                                            # a square and a half, in quarters
+                                            (RIGHT_TRAPEZOID, 6),
+                                            # six triangles, in sixths
+                                            (HALF_TRAPEZOID, 36),
+                                            (STRETCHED_CHAIR, 6),
+                                            (RHOMBIC_L, 8)])
     def test_the_prototile_has_its_unit_faces(self, tile, faces):
         assert len(self._prototile(tile)) == faces
 
@@ -1875,7 +1915,11 @@ class TestRepTiles:
         # several equivalent guises and the table holds the reflection-free
         # one -- for the chair, the classic chair substitution. The L has four
         # different dissections and the table holds its one reflection-free
-        # one; the P has two, and neither is reflection-free.
+        # one; the P has two, and neither is reflection-free. The four
+        # newer tiles' dissections are each unique, and each reflects a
+        # child -- the two trapezoids are chiral, and the stretched chair
+        # and the rhombic L lost the quarter turns their unsheared
+        # originals dissect with.
         parent = self._region(tile, size=2)
         options = [(at, placed)
                    for rotation in range(tile.order)
@@ -1901,8 +1945,11 @@ class TestRepTiles:
         search(parent, [])
         assert all(len(found) == 4 for found in solutions)
         assert sorted(tile.children) in [sorted(found) for found in solutions]
-        if tile is SPHINX:
-            assert len(solutions) == 1  # the sphinx's dissection is unique
+        if tile in (SPHINX, RIGHT_TRAPEZOID, HALF_TRAPEZOID, STRETCHED_CHAIR,
+                    RHOMBIC_L):
+            assert len(solutions) == 1  # the dissection is unique
+            if tile is not SPHINX:
+                assert any(mirrored for _, mirrored, _ in tile.children)
         elif tile is PPENTOMINO:
             assert len(solutions) == 2
             assert all(any(mirrored for _, mirrored, _ in found)
@@ -1927,21 +1974,30 @@ class TestRepTiles:
     def test_cell_counts_are_powers_of_four(self):
         for levels in range(5):
             for builder in (sphinx_board, chair_board, ltetromino_board,
-                            ppentomino_board, trapezoid_board):
+                            ppentomino_board, trapezoid_board,
+                            right_trapezoid_board, half_trapezoid_board,
+                            stretched_chair_board, rhombic_l_board):
                 assert len(builder(levels, 1).adjacency) == 4 ** levels
 
     def test_every_tile_is_the_prototile(self):
         # each cell is a congruent copy of the tile -- the sphinx a pentagon
         # of sides 3, 1, 1, 1, 2 (six unit triangles), the chair an L of
         # three unit squares, the L-tetromino and the P-pentomino hexagons
-        # of four and five, the trapezoid three unit triangles -- once the
+        # of four and five, the trapezoid three unit triangles, the right
+        # trapezoid a square and a half, the half trapezoid six unit
+        # triangles' worth (half a doubled triamond), the stretched chair an L of three
+        # dominoes and the rhombic L eight unit triangles -- once the
         # collinear step vertices along its edges are dropped
         for board, sides, area in (
                 (sphinx_board(3, 10, scale=1), 5, 6 * ROOT3 / 4),
                 (chair_board(3, 10, scale=1), 6, 3),
                 (ltetromino_board(3, 10, scale=1), 6, 4),
                 (ppentomino_board(3, 10, scale=1), 6, 5),
-                (trapezoid_board(3, 10, scale=1), 4, 3 * ROOT3 / 4)):
+                (trapezoid_board(3, 10, scale=1), 4, 3 * ROOT3 / 4),
+                (right_trapezoid_board(3, 10, scale=1), 4, 1.5),
+                (half_trapezoid_board(3, 10, scale=1), 4, 3 * ROOT3 / 2),
+                (stretched_chair_board(3, 10, scale=1), 6, 6),
+                (rhombic_l_board(3, 10, scale=1), 6, 2 * ROOT3)):
             shapes = set()
             for polygon in board.polygons.values():
                 corners = [p for p, _ in _corners(polygon, tol=1e-6)]
