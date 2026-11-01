@@ -1,0 +1,18 @@
+{
+  "$comment": "How this game is shipped: its site (web: the Cloudflare Pages project the deploy and PR-preview workflows publish to), the files its packaged bundle must carry (bundledAssets, checked by scripts/check-offline-assets.mjs) and its desktop app (desktop, staged by scripts/stage-desktop.sh). The workflows list the games from these files (scripts/games.mjs). See docs/agents/new-game.md.",
+  "productName": "Rep-tiles",
+  "bundledAssets": [],
+  "web": {
+    "project": "rep-tiles",
+    "url": "https://rep-tiles.pages.dev/"
+  },
+  "desktop": {
+    "appId": "com.sirk0.reptiles",
+    "executableName": "rep-tiles",
+    "icon": "packaging/icon.png",
+    "userDataName": "Rep-tiles",
+    "backgroundColor": "#f4f1ea",
+    "smokeRoute": "?level=squares",
+    "smokePainted": "document.querySelectorAll('#home-picks > *, svg.board path.region').length"
+  }
+}

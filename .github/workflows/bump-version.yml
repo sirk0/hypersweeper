@@ -1,5 +1,22 @@
 name: Bump version
 
+# Each game's patch version goes up as its changes land on master, so the
+# version a build reports (its settings screen, its version.json) names a
+# deployed build exactly. The bumping is scripts/bump_version.py; this decides
+# which games a push bumps:
+#
+#   - Hypersweeper (pyproject.toml + apps/hypersweeper/package.json, which share
+#     a version with the pygame build): every push, as it always has been.
+#   - Every other game (apps/<game>/package.json — the games are listed from
+#     their packaging.json files by scripts/games.mjs): a push that changed what
+#     ships in it — its own folder, the packages it is built from, or data/.
+#
+# Either is skipped when the push set that game's version itself (a minor or
+# major release written by hand), so it lands as written rather than one patch
+# past it. "Changed" and "set" are measured against the commit master was at
+# before the push; if that cannot be read, Hypersweeper bumps as usual and the
+# other games do not.
+
 on:
   push:
     branches: [master]
@@ -14,60 +31,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # A push that sets the version itself — a minor or major release, written
-      # into pyproject.toml, apps/hypersweeper/package.json and the lockfile by
-      # hand — lands as written rather than one patch past it. Compared with the
-      # commit master was at before this push; if that cannot be read, bump as
-      # usual.
-      - name: Skip when this push already changed the version
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - name: Decide which games this push bumps
         id: check
         env:
           BEFORE: ${{ github.event.before }}
         run: |
           git fetch --quiet --depth=1 origin "$BEFORE" || true
-          old=$(git show "$BEFORE:pyproject.toml" 2>/dev/null | sed -n 's/^version = "\(.*\)"$/\1/p')
-          new=$(sed -n 's/^version = "\(.*\)"$/\1/p' pyproject.toml)
+          pyver() { sed -n 's/^version = "\(.*\)"$/\1/p'; }
+          pkgver() { python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])'; }
+
+          hs=true
+          old=$(git show "$BEFORE:pyproject.toml" 2>/dev/null | pyver || true)
+          new=$(pyver < pyproject.toml)
           if [ -n "$old" ] && [ "$old" != "$new" ]; then
-            echo "This push set the version to $new (was $old); not bumping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "This push set Hypersweeper's version to $new (was $old); not bumping it."
+            hs=false
           fi
-      - name: Increment the shared version (Python + TypeScript in sync)
-        id: bump
-        if: steps.check.outputs.skip != 'true'
-        run: |
-          new_version=$(python3 - <<'EOF'
-          import re
-          from pathlib import Path
 
-          # pyproject.toml is the source of truth; bump its patch level.
-          py = Path("pyproject.toml")
-          text = py.read_text()
-          m = re.search(r'^version = "(\d+)\.(\d+)\.(\d+)"$', text, re.M)
-          major, minor, patch = map(int, m.groups())
-          new = f"{major}.{minor}.{patch + 1}"
-          py.write_text(text[: m.start()] + f'version = "{new}"' + text[m.end():])
-
-          # Keep the TypeScript app (apps/hypersweeper/) locked to the same version.
-          pkg = Path("apps/hypersweeper/package.json")
-          pkg.write_text(
-              re.sub(r'("version":\s*")\d+\.\d+\.\d+(")', rf'\g<1>{new}\g<2>',
-                     pkg.read_text(), count=1)
-          )
-          lock = Path("package-lock.json")
-          lock.write_text(
-              re.sub(
-                  r'("name": "hypersweeper-web",\s*\n\s*"version": ")\d+\.\d+\.\d+(")',
-                  rf'\g<1>{new}\g<2>', lock.read_text())
-          )
-          print(new)
-          EOF
-          )
-          echo "version=$new_version" >> "$GITHUB_OUTPUT"
-      - name: Commit and push
-        if: steps.check.outputs.skip != 'true'
+          others=()
+          if changed=$(git diff --name-only "$BEFORE" HEAD 2>/dev/null); then
+            for game in $(node scripts/games.mjs others); do
+              grep -qE "^(apps/$game/|packages/|data/)" <<<"$changed" || continue
+              old=$(git show "$BEFORE:apps/$game/package.json" 2>/dev/null | pkgver || true)
+              new=$(pkgver < "apps/$game/package.json")
+              if [ -z "$old" ]; then
+                echo "$game is new in this push; it lands at its own version, $new."
+              elif [ "$old" != "$new" ]; then
+                echo "This push set $game's version to $new (was $old); not bumping it."
+              else
+                others+=("$game")
+              fi
+            done
+          fi
+          echo "hypersweeper=$hs" >> "$GITHUB_OUTPUT"
+          echo "games=${others[*]}" >> "$GITHUB_OUTPUT"
+      - name: Bump and push
+        if: steps.check.outputs.hypersweeper == 'true' || steps.check.outputs.games != ''
+        env:
+          HS: ${{ steps.check.outputs.hypersweeper }}
+          GAMES: ${{ steps.check.outputs.games }}
         run: |
+          args=()
+          [ "$HS" = true ] && args+=(--hypersweeper)
+          for game in $GAMES; do args+=(--game "$game"); done
+          subject=$(python scripts/bump_version.py "${args[@]}")
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml apps/hypersweeper/package.json package-lock.json
-          git commit -m "Bump version to ${{ steps.bump.outputs.version }}"
+          git add pyproject.toml package-lock.json apps/*/package.json
+          git commit -m "$subject"
           git push

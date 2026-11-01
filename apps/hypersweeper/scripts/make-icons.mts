@@ -10,9 +10,9 @@
 // edge, the shadows and the dark, tinted and clear renditions. So there is one
 // framing of the cell for all of them, not an iOS one and a Mac one:
 //
-//   ios/App/App/AppIcon.icon           (the primary icon — the pentagon)
-//   ios/App/App/AppIconHexagon.icon    (the alternate icons, by their
-//   ios/App/App/AppIconOctagon.icon     `setAlternateIconName` names)
+//   apps/hypersweeper/ios/App/App/AppIcon.icon           (the primary icon — the pentagon)
+//   apps/hypersweeper/ios/App/App/AppIconHexagon.icon    (the alternate icons, by their
+//   apps/hypersweeper/ios/App/App/AppIconOctagon.icon     `setAlternateIconName` names)
 //
 // Each document holds two layers this script draws — `Assets/cell.svg` and
 // `Assets/mine.svg`, on a 1024 canvas — and an `icon.json` that says how Icon
@@ -37,9 +37,9 @@
 //   apps/hypersweeper/public/icons/icon-192.png, -512.png   (the rounded icon, transparent
 //                                              corners — the PWA manifest)
 //   apps/hypersweeper/public/icons/maskable-512.png         (full-bleed — Android masks it)
-//   shells/desktop/resources/icon.png                (macOS grid: the 824 icon on a
+//   packaging/icon.png                         (the desktop app; macOS grid: the 824 icon on a
 //                                              1024 transparent canvas)
-//   ios/App/App/Assets.xcassets/Splash…       (the launch image)
+//   apps/hypersweeper/ios/App/App/Assets.xcassets/Splash…       (the launch image)
 //
 // Two things here are quotations from the game rather than icon art, and should
 // stay that way:
@@ -72,8 +72,8 @@ import { theme } from "../src/ui/theme";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = resolve(HERE, "../public");
-const DESKTOP = resolve(HERE, "../../../shells/desktop/resources");
-const IOS_APP = resolve(HERE, "../../../ios/App/App");
+const DESKTOP = resolve(HERE, "../packaging");
+const IOS_APP = resolve(HERE, "../ios/App/App");
 const SPLASH = join(IOS_APP, "Assets.xcassets/Splash.imageset");
 
 const ICTOOL =

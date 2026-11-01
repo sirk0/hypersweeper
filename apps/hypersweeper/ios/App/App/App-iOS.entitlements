@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- iPhone and iPad only (CODE_SIGN_ENTITLEMENTS[sdk=iphone*]); the Mac build
      signs with App.entitlements. Names the App Clip that ships inside this
-     app (ios/App/AppClip), which names this app back, turns on Game
+     app (apps/hypersweeper/ios/App/AppClip), which names this app back, turns on Game
      Center, where the achievements are reported (GameCenterPlugin.swift),
      and iCloud key-value storage, where the best times and the achievement
      record are kept in step (CloudRecordPlugin.swift). The store is named

@@ -1,0 +1,13 @@
+# Cloudflare Pages configuration for Rep-tiles (https://rep-tiles.pages.dev).
+#
+# `wrangler pages deploy` reads it from its working directory, which is why the
+# deploy and PR-preview workflows run wrangler from apps/reptiles/: `name` picks
+# the project and `pages_build_output_dir` the folder, so the command needs
+# neither. Rep-tiles has no Pages Functions (no functions/ folder) and no
+# bindings — Hypersweeper's wrangler.toml is the one with the analytics dataset.
+#
+# Inert everywhere else — the Vite build never reads it.
+
+name = "rep-tiles"              # must match the Pages project name
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"

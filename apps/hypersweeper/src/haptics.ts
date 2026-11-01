@@ -6,7 +6,7 @@ import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 // mechanism is chosen at call time by feature detection, because the platforms
 // disagree on what's available:
 //
-//   - The iOS app on an iPhone (`ios/`, a Capacitor WKWebView; the same app
+//   - The iOS app on an iPhone (`apps/hypersweeper/ios/`, a Capacitor WKWebView; the same app
 //     on an iPad or a Mac has no engine, see `hasTapticEngine`): the Taptic
 //     Engine through
 //     @capacitor/haptics — a real light impact for a flag, and the system's own
@@ -105,7 +105,7 @@ function isMobileBrowser(): boolean {
  * Mac, where the Haptics plugin resolves and nothing is felt. The page cannot
  * tell them apart itself, because an iPad and the Mac app both report a Mac
  * user agent. So the shell says which it is (`window.hypersweeperDevice`, set
- * before any script runs, ios/App/App/BridgeViewController.swift). If the flag
+ * before any script runs, apps/hypersweeper/ios/App/App/BridgeViewController.swift). If the flag
  * is missing, the shell predates it, and the old answer (every native device
  * buzzes) stands. */
 function hasTapticEngine(): boolean {

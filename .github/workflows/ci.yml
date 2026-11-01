@@ -69,17 +69,21 @@ jobs:
       - name: Check for drift
         run: git diff --exit-code data/
 
-  changes:
-    # Which TypeScript apps a pull request touches. Hypersweeper's web jobs are
-    # the long ones (four Playwright shards), so a pull request that changes
-    # nothing outside apps/reptiles/ skips them; anything else — Hypersweeper
-    # itself, data/, the root workspace files, the workflows — runs them, and so
-    # does every push to master. Rep-tiles and the packages are seconds of
-    # work, so their jobs run on every change.
-    # A skipped job counts as passed for a required check.
+  games:
+    # The games in this repo, read from apps/*/packaging.json by
+    # scripts/games.mjs, and the decision every PR needs: does it touch the
+    # flagship (Hypersweeper)? Its web jobs are the long ones (four Playwright
+    # shards), so a pull request that changes nothing outside the other games'
+    # folders skips them; anything else — Hypersweeper itself, packages/, data/,
+    # the root workspace files, the workflows — runs them, and so does every
+    # push to master. The other games' jobs (game-checks, game-e2e) are seconds
+    # of work and run on every change, one matrix entry per game, so a new game
+    # (scripts/new-game.mjs) needs no edit here. A skipped job counts as passed
+    # for a required check.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
+      others: ${{ steps.list.outputs.others }}
       hypersweeper: ${{ steps.diff.outputs.hypersweeper }}
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +91,8 @@ jobs:
           # A pull_request run checks out the merge commit; its first parent
           # is the base branch, so two commits are enough to diff against it.
           fetch-depth: 2
+      - id: list
+        run: node scripts/games.mjs github >> "$GITHUB_OUTPUT"
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
@@ -95,21 +101,20 @@ jobs:
             echo "hypersweeper=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          files=$(git diff --name-only HEAD^1 HEAD)
-          printf '%s\n' "$files"
-          if printf '%s\n' "$files" | grep -qv '^apps/reptiles/'; then
-            echo "hypersweeper=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hypersweeper=false" >> "$GITHUB_OUTPUT"
-          fi
+          git diff --name-only HEAD^1 HEAD | tee /dev/stderr \
+            | node scripts/games.mjs flagship-needed \
+            | sed 's/^/hypersweeper=/' >> "$GITHUB_OUTPUT"
+      # The listing and the new-game scaffold's own unit tests (plain node).
+      - name: Repo script tests
+        run: node --test "scripts/test/*.test.mjs"
 
   web-checks:
     # Hypersweeper (apps/hypersweeper/), everything that is not Playwright:
     # typecheck, unit tests, and the two packaged-shell guards. Runs alongside
     # web-e2e rather than before it — neither is an input to the other, and the
     # e2e shards build the bundle they serve themselves.
-    needs: changes
-    if: needs.changes.outputs.hypersweeper == 'true'
+    needs: games
+    if: needs.games.outputs.hypersweeper == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -135,7 +140,7 @@ jobs:
         run: npm run format:check
       - name: Unit tests
         run: npm run test
-      # The packaged apps (shells/desktop/ for macOS, ios/ for the iPhone) ship the
+      # The packaged apps (shells/desktop/ for macOS, apps/hypersweeper/ios/ for the iPhone) ship the
       # web bundle inside themselves, so the two properties that make them work
       # offline are guarded here rather than only on whoever's Mac runs
       # `make mac-app` / `make ios-app`: the packaged build must reference
@@ -151,14 +156,14 @@ jobs:
       - name: Desktop shell unit tests
         run: node --test "../../shells/desktop/test/*.test.mjs"
       # The iOS half of the same idea. Xcode and CocoaPods are macOS-only, but
-      # the sync — config resolved, bundle copied into ios/App, plugin list
+      # the sync — config resolved, bundle copied into apps/hypersweeper/ios/App, plugin list
       # rebuilt — is plain node and runs here, so a broken capacitor.config.json
       # or a webDir pointing at nothing fails on every push rather than on
       # whoever next opens Xcode.
       - name: iOS project syncs
         run: |
           npx cap sync ios
-          test -f ../../ios/App/App/public/index.html
+          test -f ios/App/App/public/index.html
 
   web-e2e:
     # The Playwright e2e + visual-regression suite under deterministic software
@@ -173,8 +178,8 @@ jobs:
     # Playwright's default of half the cores (2 on a 4-vCPU runner). Four shards
     # at four workers each is 8x the browsers. `fail-fast: false` because one
     # red shard must not cancel the other three and hide the rest of the picture.
-    needs: changes
-    if: needs.changes.outputs.hypersweeper == 'true'
+    needs: games
+    if: needs.games.outputs.hypersweeper == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -320,16 +325,23 @@ jobs:
       - name: Unit tests
         run: npm run test --workspace packages
 
-  reptiles-checks:
-    # Rep-tiles (apps/reptiles/): typecheck (which also checks the
-    # packages/geometry files it imports), formatting, unit tests —
-    # each level checked tile for tile against Hypersweeper's board — and a
-    # production build. A few seconds of work; it runs on every change.
+  game-checks:
+    # Every game but Hypersweeper (which has web-checks), one matrix entry per
+    # game from the games job: typecheck (which also checks the packages/
+    # files it imports), formatting, unit tests, a production build, and the
+    # packaged bundle the desktop shell stages — built with VITE_PACKAGED=1 and
+    # checked to reference nothing remote. Seconds each; runs on every change.
+    name: game-checks (${{ matrix.game }})
+    needs: games
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        game: ${{ fromJSON(needs.games.outputs.others) }}
     defaults:
       run:
-        working-directory: apps/reptiles
+        working-directory: apps/${{ matrix.game }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -348,3 +360,92 @@ jobs:
         run: npm run test
       - name: Production build
         run: npx vite build
+      - name: Packaged bundle is self-contained
+        run: |
+          VITE_PACKAGED=1 npx vite build
+          node ../../scripts/check-offline-assets.mjs dist
+      - name: Desktop shell unit tests
+        run: node --test "../../shells/desktop/test/*.test.mjs"
+
+  game-e2e:
+    # Each of those games' Playwright smoke test against its production bundle
+    # under `vite preview`: it boots under the deployed security policy (the
+    # shared preset applies public/_headers there) with no console errors and
+    # plays. The browser install is most of the job — the same Chromium
+    # headless shell, for the same reasons, as web-e2e above.
+    name: game-e2e (${{ matrix.game }})
+    needs: games
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        game: ${{ fromJSON(needs.games.outputs.others) }}
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.game }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        working-directory: .
+        run: npm ci
+      - name: Install Playwright Chromium headless shell
+        run: npx playwright install --only-shell chromium
+      - name: Smoke test
+        run: npx playwright test
+      - name: Upload Playwright report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.game }}-playwright-report
+          path: apps/${{ matrix.game }}/playwright-report/
+          retention-days: 7
+
+  template-check:
+    # The new-game scaffold (scripts/new-game.mjs, templates/game/) is only
+    # worth having while what it writes works. So every change scaffolds a
+    # throwaway game into this checkout and puts it through what a real game
+    # gets: install, typecheck, formatting, unit tests, build, the packaged
+    # offline check and its Playwright smoke test. A change to the preset, a
+    # package or the base tsconfig that breaks a new game fails here, on the PR
+    # that made it.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/template-check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      # The root install first, so Playwright's headless shell can go in before
+      # the scaffold, which draws the game's icons with it.
+      - name: Install dependencies
+        working-directory: .
+        run: npm ci
+      - name: Install Playwright Chromium headless shell
+        working-directory: .
+        run: npx playwright install --only-shell chromium
+      - name: Scaffold a game
+        working-directory: .
+        run: node scripts/new-game.mjs template-check "Template Check"
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Formatting
+        run: npm run format:check
+      - name: Unit tests
+        run: npm run test
+      - name: Packaged bundle is self-contained
+        run: |
+          VITE_PACKAGED=1 npx vite build
+          node ../../scripts/check-offline-assets.mjs dist
+      - name: Smoke test
+        run: npx playwright test

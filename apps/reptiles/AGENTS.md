@@ -58,15 +58,45 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 39 levels in four sections, not deployed yet** — named for their
+**Status: 39 levels in four sections, deployed at <https://rep-tiles.pages.dev/>** — named for their
 symmetry: *Flag-transitive* (the regular 4⁴, 3⁶, 6³), *Vertex-transitive*
 (the other eight uniform tilings, 3.6.3.6 to 4.6.12), *2-isogonal* (all
 twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
 [3⁶; 3⁴.6]₁) and *Face-transitive* (the eight Laves tilings, V4.8² to
 V4.6.12). Each board is as near square as its tiling allows at two or three
-dozen tiles. CI's `reptiles-checks` job typechecks, formats, tests and builds
-it on every change; there is no deploy and no packaging yet — the Pages deploy
-does not look at this folder.
+dozen tiles. CI's `game-checks (reptiles)` job typechecks, formats, tests and
+builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
+test against the production bundle. It packages as an offline desktop app through the
+shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
+— from `packaging.json` (see `shells/desktop/README.md`); its data lives in
+its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
+`apps/hypersweeper/ios/README.md`, "A second game's iPhone app").
+
+## Deploy
+
+Like Hypersweeper, and by the same workflows, one matrix entry each:
+
+- **Production:** `deploy-cloudflare.yml` builds this folder on every push to
+  `master` and publishes it to the `rep-tiles` Cloudflare Pages project
+  (`wrangler.toml` names it) at <https://rep-tiles.pages.dev/>.
+- **Previews:** `pr-preview.yml` publishes each pull request to
+  `https://pr-<number>.rep-tiles.pages.dev`, with its own sticky comment, and
+  deletes it when the PR closes.
+- **What the build adds** — all from the shared preset (`vite.config.ts`, see
+  `packages/vite-preset`):
+  - the link-preview tags (a text card: there is no `public/og.png`);
+  - the PWA: service worker, `manifest.webmanifest`, the icons in `public/`;
+  - the version stamp;
+  - `public/_headers` — Hypersweeper's security policy, applied at the edge
+    and, through the preset, by `vite dev` / `vite preview`.
+- **Versions:** `bump-version.yml` bumps this game's patch version (in
+  `package.json`) on every push to `master` that changes this folder,
+  `packages/` or `data/` (`scripts/bump_version.py`). A version set by hand
+  lands as written.
+- **Icons:** `npm run icons` redraws them (`scripts/make-icons.mts`): a
+  triangle as four half-size copies of itself, in the tile colours — the web
+  icons in `public/` and the desktop app's `packaging/icon.png`. Commit what
+  it writes.
 
 ## Build and run
 
@@ -77,10 +107,14 @@ npm run dev          # http://localhost:5174 (Hypersweeper's dev server is 5173)
 npm run typecheck    # tsc --noEmit, strict — also checks the packages/geometry files it imports
 npm run test         # vitest unit tests (a few seconds)
 npm run format       # Prettier (the root .prettierrc.json), in place; CI runs format:check
+npm run build        # typecheck + the production bundle (PWA included) into dist/
+npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run difficulty   # re-measure every level into src/difficulty.json
+npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
 
-or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`.
+or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`,
+`make reptiles-e2e`.
 `?level=<key>` opens a level directly. In dev builds `window.__reptiles.fill()`
 finishes the board — the quick way to see the win state.
 

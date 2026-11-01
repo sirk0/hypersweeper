@@ -1,43 +1,109 @@
-# Hypersweeper.app — the offline desktop build
+# The desktop shell — each game as an offline desktop app
 
-The TypeScript game (`apps/hypersweeper/`) packaged as a native macOS app that needs no
-internet connection: every asset it draws — the bundle, Three.js, the two
-fonts, the icons, the shared `data/*.json` — is compiled into the app, and
-the app asks the network for nothing at all.
+One Electron shell for every TypeScript game in `apps/`: a game is staged into
+it and packaged as a native macOS app that needs no internet connection. Every
+asset the game draws is compiled into the app — its bundle, its fonts, its
+icons, the shared `data/*.json`, Three.js for Hypersweeper — and the app asks
+the network for nothing at all.
+
+`GAME` picks the game; it defaults to `hypersweeper`, so the commands without it
+mean what they always did.
 
 ```sh
-make desktop-install  # install the shell's build tools (first time)
-make desktop-run      # build the bundle, stage it, run the shell — any OS
-make mac-app          # build build/desktop/mac*/Hypersweeper.app
-make mac-app-dmg      # …and a drag-to-Applications .dmg
-open build/desktop/mac-arm64/Hypersweeper.app
+make desktop-install               # install the shell's build tools (first time)
+make desktop-run                   # stage Hypersweeper, run the shell — any OS
+make desktop-run GAME=reptiles     # …the same for Rep-tiles
+make mac-app                       # build build/desktop/hypersweeper/mac*/Hypersweeper.app
+make mac-app GAME=reptiles         # build build/desktop/reptiles/mac*/Rep-tiles.app
+make mac-app-dmg GAME=reptiles     # …and a drag-to-Applications .dmg
+open build/desktop/hypersweeper/mac-arm64/Hypersweeper.app
 ```
 
-`make desktop-run` is the one to develop against: it runs `make desktop-build`
-(build `apps/hypersweeper/` with `VITE_PACKAGED=1`, check the bundle is self-contained, copy
-it to `shells/desktop/app/`) and then `npm start` in the shell. It needs no Mac.
+`make desktop-run` is the one to develop against. It runs `make desktop-build`,
+which is `scripts/stage-desktop.sh <game>`:
+
+1. build `apps/<game>/` with `VITE_PACKAGED=1`;
+2. check the bundle is self-contained (`scripts/check-offline-assets.mjs`);
+3. copy it to `shells/desktop/app/`, with the game's `packaging.json` as
+   `app.json` and its desktop icon as `resources/icon.png`.
+
+Then it runs `npm start` in the shell. It needs no Mac.
 
 `make mac-app` must run **on a Mac** — the `.app` is signed and (for a `.dmg`)
 imaged with tools only macOS has. Everything up to packaging works anywhere,
 which is what `make desktop-smoke` and CI use.
 
-`scripts/build-mac-app.sh` drives the whole thing: build `apps/hypersweeper/` with
-`VITE_PACKAGED=1`, assert the bundle is self-contained
-(`scripts/check-offline-assets.mjs`), stage it into `shells/desktop/app/`, package,
-ad-hoc sign, then launch the built `.app` to check it. `serve.mjs` is
-unit-tested in `shells/desktop/test/`.
+`scripts/build-mac-app.sh --game <game>` drives the whole thing:
+
+1. stage the game (as above);
+2. package it with electron-builder, naming and identifying the app from the
+   game's `packaging.json`;
+3. ad-hoc sign it;
+4. launch the built `.app` to check it.
+
+The shell is unit-tested in `shells/desktop/test/`.
+
+## A game's desktop app: `apps/<game>/packaging.json`
+
+The shell knows nothing about any game; each game describes its own app:
+
+```json
+{
+  "productName": "Rep-tiles",
+  "bundledAssets": [],
+  "desktop": {
+    "appId": "com.sirk0.reptiles",
+    "executableName": "rep-tiles",
+    "icon": "packaging/icon.png",
+    "userDataName": "Rep-tiles",
+    "backgroundColor": "#f4f1ea",
+    "smokeRoute": "?level=squares",
+    "smokePainted": "document.querySelectorAll('#home-picks > *, svg.board path.region').length"
+  }
+}
+```
+
+| Field | Used by | What it is |
+|---|---|---|
+| `productName` | electron-builder, `main.mjs` | the app's name (`Rep-tiles.app`), the window title, the `.dmg` title |
+| `bundledAssets` | `check-offline-assets.mjs` | files the packaged bundle must contain — Hypersweeper lists its two fonts. The iPhone build's check reads it too |
+| `web` | `scripts/games.mjs` → the deploy, PR-preview, CI and version-bump workflows | the game's Cloudflare Pages `project` and `url` (Hypersweeper's also `analytics` and `siteUrlVariable`) — not used by the desktop shell, listed here as part of the same file; see `docs/agents/new-game.md` |
+| `desktop.appId` | electron-builder | the bundle identifier |
+| `desktop.executableName` | electron-builder | the Linux binary's name |
+| `desktop.icon` | `stage-desktop.sh` | the 1024² icon on the macOS grid (the 824 rounded square on a transparent canvas), relative to the game's folder. Each game's `npm run icons` draws it |
+| `desktop.userDataName` | `main.mjs` | the folder the game's saved data (`localStorage`) lives in. Every game is served from the same `app://local` origin, so a second game **must** name one, or its records would share the first one's store. Hypersweeper names none: its data stays in `hypersweeper-desktop`, where it has always been (which is also why the shell's `package.json` keeps that name) |
+| `desktop.backgroundColor` | `main.mjs` | the window's colour before the first frame — the game's boot page colour |
+| `desktop.smokeRoute` | `main.mjs`, `build-mac-app.sh` | what a smoke run opens, so it shoots a real board |
+| `desktop.smokePainted` | `main.mjs` | an expression the smoke run evaluates in the page; 0 means a blank screen |
+
+Hypersweeper's icon (`apps/hypersweeper/packaging/icon.png`) is exported from
+the same Icon Composer document as the iPhone and Mac Catalyst icon
+(`apps/hypersweeper/ios/App/App/AppIcon.icon`) by
+`apps/hypersweeper/scripts/make-icons.mts` (`make desktop-icon`). It is always
+the default pentagon: the App icon setting has no row in the desktop app, since
+Finder would go on showing the pentagon whatever the dock did. Rep-tiles' is
+drawn by `apps/reptiles/scripts/make-icons.mts` with its other icons.
+
+A new game gets all of this from the scaffold (`node scripts/new-game.mjs`, see
+`docs/agents/new-game.md`). By hand, a game's desktop app is:
+
+1. a `packaging.json`;
+2. an icon;
+3. `body[data-ready]` set once the first screen is drawn — the signal the smoke
+   run waits for;
+4. `make desktop-smoke GAME=<game>` to prove it.
 
 ## How it works
 
-The shell is deliberately small — three files and no runtime dependencies:
+The shell is deliberately small — four files and no runtime dependencies:
 
 | File | What it is |
 |------|------------|
 | `main.mjs` | The Electron main process: registers the `app://` scheme, opens one window on it, blocks navigation, builds the menu bar. Also implements the `--smoke` self-check. |
 | `serve.mjs` | `app://` URL → file in the packaged build. The one security-sensitive piece, so it is separate and unit-tested. |
-| `electron-builder.yml` | Packaging: what goes in the bundle, the icon, the macOS metadata. |
-| `resources/icon.png` | The app icon, 1024², exported from the same Icon Composer document as the iPhone and Mac Catalyst icon (`ios/App/App/AppIcon.icon`) by `apps/hypersweeper/scripts/make-icons.mts` (`make desktop-icon`), and placed on the macOS grid: the 824 rounded square on a 1024 canvas. Always the default pentagon — the App icon setting has no row in this app, since Finder would go on showing the pentagon whatever the dock did. |
-| `app/` | The built web app, staged here by the build script. Not committed. |
+| `config.mjs` | Which game the shell runs: the staged `app/` + `app.json`, or — for `npm start` with nothing staged — `apps/$GAME/dist` and its `packaging.json`. Unit-tested. |
+| `electron-builder.yml` | Packaging: what every game's bundle shares (the file list, the macOS metadata). The per-game half comes from `packaging.json`, passed by `build-mac-app.sh`. |
+| `app/`, `app.json`, `resources/icon.png` | The staged game. Not committed. |
 
 ### Why `app://` and not `file://`
 
@@ -56,8 +122,8 @@ Chromium's file loader cannot.
 
 ### What the desktop build changes in the web app
 
-One flag, `VITE_PACKAGED=1` (see `apps/hypersweeper/vite.config.ts`) — shared with the iPhone
-app, which is packaged the same way (`ios/README.md`) — and it only removes
+One flag, `VITE_PACKAGED=1` (the shared build preset, `packages/vite-preset`) — shared with the iPhone
+app, which is packaged the same way (`apps/hypersweeper/ios/README.md`) — and it only removes
 things:
 
 - **no service worker.** Its job is to cache a *deployed* build for offline
@@ -81,21 +147,23 @@ being allowed to replace the game with a web page.
 ## Verifying it
 
 ```sh
-make desktop-test    # the app:// path resolver (traversal, schemes, encoding)
-make desktop-smoke   # build, then run the real app with the network cut
-make desktop-run     # build and just open it, to play with
+make desktop-test                  # the app:// path resolver, and which game the shell runs
+make desktop-smoke                 # stage Hypersweeper, then run the real app with the network cut
+make desktop-smoke GAME=reptiles   # …the same for Rep-tiles
+make desktop-run                   # stage and just open it, to play with
 ```
 
 `make desktop-smoke` is the interesting one: it launches Electron with
 **every off-bundle request cancelled** (`installOfflineGuard` in `main.mjs`),
 waits for the app to report `body[data-ready]`, checks something actually
-rendered, and screenshots it to `build/desktop-smoke.png`. It fails if the app
+rendered (the game's `desktop.smokePainted`), and screenshots it to
+`build/desktop-smoke-<game>.png`. It fails if the app
 asked for a single URL it does not carry — the failure mode that a build
 machine with working wifi would otherwise never notice. It runs headless under
 Xvfb with SwiftShader (the same software-WebGL switches as the Playwright
 suite), so it works on Linux and in CI.
 
-Pass a route to shoot a real board:
+It opens the game's `desktop.smokeRoute`; pass a route to shoot another board:
 
 ```sh
 scripts/desktop-smoke.sh build/board.png '?mode=hexhex&difficulty=easy&seed=7'
@@ -118,6 +186,7 @@ notarisation step; nothing else about the build changes.
 ## Other platforms
 
 The shell is not macOS-specific — `npx electron-builder --linux dir` (or
-`--win`) packages the same bundle, and the Linux target exists so the packaging
-itself can be exercised off a Mac. Only the macOS path is a supported,
+`--win`) packages the same bundle, given the per-game `-c.` overrides
+`build-mac-app.sh` passes, and the Linux target exists so the packaging itself
+can be exercised off a Mac. Only the macOS path is a supported,
 verified build.

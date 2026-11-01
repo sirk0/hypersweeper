@@ -1,4 +1,4 @@
-require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+require_relative '../../../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
 platform :ios, '18.0'
 use_frameworks!
@@ -10,9 +10,9 @@ use_frameworks!
 install! 'cocoapods', :disable_input_output_paths => false
 
 def capacitor_pods
-  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-  pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+  pod 'Capacitor', :path => '../../../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../../../node_modules/@capacitor/ios'
+  pod 'CapacitorHaptics', :path => '../../../../node_modules/@capacitor/haptics'
 end
 
 target 'App' do

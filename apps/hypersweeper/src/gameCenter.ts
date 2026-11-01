@@ -17,7 +17,7 @@ import {
 // runs and the game's own list is all there is.
 //
 // What decides it is the shell, not a build flag: the app registers a native
-// `GameCenter` plugin (ios/App/App/GameCenterPlugin.swift) and the page checks
+// `GameCenter` plugin (apps/hypersweeper/ios/App/App/GameCenterPlugin.swift) and the page checks
 // for it. The App Clip does not register it, and earns nothing anyway.
 //
 // **The record stays the game's.** `achievements.ts` still files every win and

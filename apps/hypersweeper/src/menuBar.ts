@@ -10,7 +10,7 @@ import { boardGroups, pickerFor, quickPlayEntries, type Group } from "./ui/board
 // the home menu's own (ui/boardTree.ts), so the two cannot disagree about
 // which boards there are or where they sit, and nothing about the catalogue
 // is written twice. At boot the page hands the tree to the `MenuBar` plugin
-// (ios/App/App/MenuBarPlugin.swift), which rebuilds the menu bar from it
+// (apps/hypersweeper/ios/App/App/MenuBarPlugin.swift), which rebuilds the menu bar from it
 // (AppDelegate.buildMenu). Each item carries a command string that comes back
 // as a `hypersweeper:command` event, like New Game and Settings… do, and
 // `App.onCommand` (main.ts) acts on it:

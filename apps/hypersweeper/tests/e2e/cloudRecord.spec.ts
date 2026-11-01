@@ -33,7 +33,7 @@ const CLOUD_METHODS: { name: string; rtype?: string }[] = [
   { name: "requestPermissions", rtype: "promise" },
   ...[
     ...readFileSync(
-      path.resolve(HERE, "../../../../ios/App/App/CloudRecordPlugin.swift"),
+      path.resolve(HERE, "../../ios/App/App/CloudRecordPlugin.swift"),
       "utf8",
     ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g),
   ].map((m) => ({

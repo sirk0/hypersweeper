@@ -15,3 +15,7 @@ tests/e2e/*-snapshots/
 package-lock.json
 *.md
 tests/unit/straighten.fixture.json
+
+# The Capacitor iPhone project: Xcode and CocoaPods files, and the synced web
+# build in ios/App/App/public — none of it Prettier's to format.
+ios/

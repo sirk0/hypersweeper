@@ -497,11 +497,11 @@ async function tiledHeader(browser: Browser, art: Art, file: string): Promise<vo
 // Messages — bubbles, the compose bar, the sticker drawer — with the stickers
 // sent in it. Nothing in it is a screenshot of Messages or carries Apple's
 // marks; it is plain HTML, drawn at each slot's point size and scale. The
-// stickers are read from the pack itself (ios/App/Stickers, written by
+// stickers are read from the pack itself (apps/hypersweeper/ios/App/Stickers, written by
 // make-stickers.mts), in the pack's order, so the pictures always show what
 // ships: render the stickers first.
 
-const STICKER_CATALOG = path.resolve(WEB, "../../ios/App/Stickers/Stickers.xcassets");
+const STICKER_CATALOG = path.resolve(WEB, "ios/App/Stickers/Stickers.xcassets");
 
 interface MessagesSlot {
   /** Output folder, and the `DEVICES` key that selects it. */

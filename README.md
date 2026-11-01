@@ -7,6 +7,13 @@ from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 (the TypeScript/WebGL app in [`apps/hypersweeper/`](apps/hypersweeper), deployed from master by GitHub
 Actions; installable, and it works offline once loaded)
 
+**Also in this repo — Rep-tiles:** <https://rep-tiles.pages.dev/>, a drag-and-drop
+puzzle built on the same tilings: cover each board exactly with its tiles
+([`apps/reptiles/`](apps/reptiles)). The repo is a set of games on one shared
+geometry ([`packages/`](packages)); a new one starts with
+`node scripts/new-game.mjs <key> "<Title>"` — see
+[`docs/agents/new-game.md`](docs/agents/new-game.md).
+
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Bright, domed, light</sub></td>
@@ -257,7 +264,7 @@ phone and plays offline — and, being native, can reach the **Taptic
 Engine**: a light tick when a flag lands, the system's sharp error buzz
 when you step on a mine, its success buzz when the board falls. No web API
 on iOS can ask for that. Building it needs a Mac with Xcode; a free Apple
-ID signs it for 7 days at a time. See [`ios/README.md`](ios/README.md).
+ID signs it for 7 days at a time. See [`apps/hypersweeper/ios/README.md`](apps/hypersweeper/ios/README.md).
 
 [`apps/hypersweeper/AGENTS.md`](apps/hypersweeper/AGENTS.md) is the guide to the code — the renderer,
 the board builders, themes, sound, and how to drive the app headless;

@@ -1,11 +1,15 @@
-// The macOS (and, incidentally, Linux/Windows) desktop shell for Hypersweeper.
+// The macOS (and, incidentally, Linux/Windows) desktop shell for the games in
+// apps/ — one game per build.
 //
-// It is a thin wrapper: the game is the TypeScript app in apps/hypersweeper/, built to
-// static files that are copied into `app/` next to this file (see
-// scripts/build-mac-app.sh) and served to a single window over the `app://`
-// scheme registered below. Nothing here knows about boards, and nothing here
-// talks to the network — a packaged build contains every asset it needs, which
-// is the whole point of the bundle: it plays on a plane with the wifi off.
+// It is a thin wrapper: the game is a TypeScript app in apps/<game>/, built to
+// static files that scripts/stage-desktop.sh copies into `app/` next to this
+// file, with the game's packaging.json beside them as `app.json` (config.mjs
+// reads both), and served to a single window over the `app://` scheme
+// registered below. Nothing here knows about boards or tiles — the window's
+// title and colour, and how the smoke run tells the page has painted, come
+// from that config — and nothing here talks to the network: a packaged build
+// contains every asset it needs, which is the whole point of the bundle: it
+// plays on a plane with the wifi off.
 //
 // Two rules keep it that way, and both are enforced rather than assumed:
 //   * the renderer gets no Node (`contextIsolation`, `sandbox`, no preload) —
@@ -15,22 +19,29 @@
 //     links on the settings page are handed to the system browser instead of
 //     being allowed to replace the game with a web page.
 import { app, BrowserWindow, Menu, protocol, session, shell } from "electron";
-import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, extname, join, resolve } from "node:path";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { loadGame } from "./config.mjs";
 import { APP_ORIGIN, APP_SCHEME, resolveAssetPath } from "./serve.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-/** The built web app. `app/` in a packaged build and in a staged local run;
- * ../../apps/hypersweeper/dist is the convenience fallback for `npm start`
- * straight after a plain `npm run build` in apps/hypersweeper/, with nothing
- * staged. */
-const DIST = [join(HERE, "app"), resolve(HERE, "../../apps/hypersweeper/dist")].find((dir) =>
-  existsSync(join(dir, "index.html")),
-);
+/** The built game and its packaging config. `app/` and `app.json` in a
+ * packaged build and in a staged local run; apps/<GAME>/dist (GAME defaulting
+ * to hypersweeper) is the convenience fallback for `npm start` straight after a
+ * plain `VITE_PACKAGED=1 npm run build` in that game's folder. */
+const { dist: DIST, packaging: PACKAGING } = loadGame(HERE);
+
+// A game with its own `userDataName` keeps its saved data (localStorage, under
+// the same app:// origin every game is served from) in a folder of its own, so
+// two games' records never mix. Hypersweeper names none: its folder is where it
+// has always been, and moving it would lose its players' best times.
+if (PACKAGING.desktop.userDataName) {
+  app.setName(PACKAGING.productName);
+  app.setPath("userData", join(app.getPath("appData"), PACKAGING.desktop.userDataName));
+}
 
 /** `--smoke=<file.png>`: load the app, wait for it to report itself ready,
  * screenshot it and quit. This is how the packaging is verified on a machine
@@ -38,10 +49,15 @@ const DIST = [join(HERE, "app"), resolve(HERE, "../../apps/hypersweeper/dist")].
  * loads over app:// with no network, which is the property that matters. */
 const smokeArg = process.argv.find((a) => a.startsWith("--smoke="));
 const SMOKE = smokeArg ? smokeArg.slice("--smoke=".length) : null;
-/** `--route=?mode=hexhex&difficulty=easy` — what the smoke run should open, so
- * it can shoot a real board (and its WebGL renderer) rather than the menu. */
+/** `--route=?mode=hexhex&difficulty=easy` — what to open, so a smoke run can
+ * shoot a real board (and its renderer) rather than the first screen. A smoke
+ * run with no `--route` takes the game's own `desktop.smokeRoute`. */
 const routeArg = process.argv.find((a) => a.startsWith("--route="));
-const ROUTE = routeArg ? routeArg.slice("--route=".length) : "";
+const ROUTE = routeArg
+  ? routeArg.slice("--route=".length)
+  : SMOKE
+    ? PACKAGING.desktop.smokeRoute
+    : "";
 
 // A privileged scheme, declared before the app is ready: `standard` gives it an
 // origin (so localStorage, history.replaceState and root-absolute URLs like
@@ -147,11 +163,11 @@ function createWindow() {
     height: 820,
     minWidth: 420,
     minHeight: 420,
-    title: "Hypersweeper",
+    title: PACKAGING.productName,
     show: false,
-    // The boot value of --bg in apps/hypersweeper/src/ui/styles.css, so the window opens in
-    // the app's colour instead of flashing white before the first frame.
-    backgroundColor: "#f2f2f7",
+    // The game's boot page colour (its packaging.json), so the window opens in
+    // it instead of flashing white before the first frame.
+    backgroundColor: PACKAGING.desktop.backgroundColor,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -306,12 +322,15 @@ async function runSmoke(win, blocked) {
     `new Promise((done) => requestAnimationFrame(() =>
        requestAnimationFrame(() => setTimeout(done, 300))))`,
   );
+  // The game says what "painted" means for it (packaging.json's
+  // desktop.smokePainted: an expression counting what is on screen — menu
+  // entries and board cells for Hypersweeper, level cards or a board outline
+  // for Rep-tiles). Zero is a blank screen.
   const painted = await win.webContents.executeJavaScript(
-    `({ entries: document.querySelectorAll('#ui .menu-entry').length,
-        cells: window.__ms ? window.__ms.cells().length : 0 })`,
+    `Number(${PACKAGING.desktop.smokePainted}) || 0`,
   );
-  if (painted.entries === 0 && painted.cells === 0) {
-    failures.push("nothing rendered: no menu entries and no board cells");
+  if (painted === 0) {
+    failures.push(`nothing rendered: ${PACKAGING.desktop.smokePainted} is 0`);
   }
 
   const image = await win.webContents.capturePage();
@@ -336,8 +355,8 @@ async function runSmoke(win, blocked) {
 app.whenReady().then(async () => {
   if (!DIST) {
     console.error(
-      "No built web app found. Run `make mac-app` (or, from apps/hypersweeper/, " +
-        "`VITE_PACKAGED=1 npm run build`) before starting the shell.",
+      `No built ${PACKAGING.productName} found. Run \`make desktop-build GAME=<game>\` ` +
+        "(or scripts/stage-desktop.sh <game>) before starting the shell.",
     );
     app.exit(1);
     return;

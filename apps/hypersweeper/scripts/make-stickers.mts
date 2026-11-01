@@ -6,8 +6,8 @@
 //   machine with no GPU — a cloud session — has to take)
 //
 // Writes straight into the sticker pack's asset catalog,
-// ios/App/Stickers/Stickers.xcassets (see "The sticker pack" in
-// ios/README.md):
+// apps/hypersweeper/ios/App/Stickers/Stickers.xcassets (see "The sticker pack" in
+// apps/hypersweeper/ios/README.md):
 //
 //   Sticker Pack.stickerpack/<name>.sticker/<name>.png   one per STICKERS entry
 //   iMessage App Icon.stickersiconset/*.png               the drawer icon
@@ -38,10 +38,10 @@ import { settle, stageBoard, waitForServer, type Staging } from "./shots-lib";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB = path.resolve(HERE, "..");
 const ROOT = path.resolve(WEB, "../..");
-const CATALOG = path.join(ROOT, "ios/App/Stickers/Stickers.xcassets");
+const CATALOG = path.join(ROOT, "apps/hypersweeper/ios/App/Stickers/Stickers.xcassets");
 const PACK = path.join(CATALOG, "Sticker Pack.stickerpack");
 const ICONSET = path.join(CATALOG, "iMessage App Icon.stickersiconset");
-const APP_ICON = path.join(ROOT, "ios/App/App/AppIcon.icon");
+const APP_ICON = path.join(ROOT, "apps/hypersweeper/ios/App/App/AppIcon.icon");
 const PORT = 4182;
 const BASE = `http://localhost:${PORT}/`;
 

@@ -1,7 +1,7 @@
 {
   "name": "rep-tiles",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.2",
   "license": "MIT",
   "type": "module",
   "description": "Rep-tiles: cover a region with tiles by drag and drop. Built on the shared board geometry (@tiling/geometry, packages/geometry).",
@@ -14,7 +14,9 @@
     "test:watch": "vitest",
     "difficulty": "vite-node scripts/measure-difficulty.mts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "icons": "vite-node scripts/make-icons.mts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@tiling/data": "*",
@@ -22,10 +24,12 @@
     "@tiling/platform": "*"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tiling/vite-preset": "*",
     "@types/node": "^22.20.1",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
+    "vite-plugin-pwa": "^0.21.0",
     "vitest": "^2.1.0"
   }
 }

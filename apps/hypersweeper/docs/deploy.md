@@ -116,6 +116,13 @@ Cloudflare Pages on every push to `master` — **it is the deployed game**; the
 pygbag build of the pygame version is no longer published (it is still
 buildable locally with `make web-package`).
 
+The workflow is a matrix with one entry per game. Rep-tiles is the other one:
+`apps/reptiles` goes to the `rep-tiles` project at <https://rep-tiles.pages.dev/>
+(see "Deploy" in `apps/reptiles/AGENTS.md`). The same holds for the PR
+previews below. A new game is a new entry in both workflows, plus a Pages
+project created once — like `hypersweeper`'s, with `master` as its production
+branch, or its deploys land as previews.
+
 It is served from the domain root, so the job sets no `VITE_BASE` and takes
 `vite.config.ts`'s default `"/"`. That path is baked into the bundle at build
 time — asset URLs, the PWA manifest, the service worker scope all derive from
@@ -330,7 +337,7 @@ container in `docker-compose.e2e.yml`.
 
 This same bundle ships inside the macOS app (`make mac-app`, see
 [`shells/desktop/README.md`](../../../shells/desktop/README.md)), where it is served from an `app://` scheme, and inside the
-iPhone app (`make ios-app`, see [`../../ios/README.md`](../../../ios/README.md)), where a Capacitor WKWebView
+iPhone app (`make ios-app`, see [`../../ios/README.md`](../ios/README.md)), where a Capacitor WKWebView
 serves it from `capacitor://localhost`. Two things about that are worth knowing
 while working here:
 
@@ -344,7 +351,7 @@ while working here:
   work in a browser tab and on a phone. What the page cannot detect, the shell
   tells it: the iOS shell sets `window.hypersweeperDevice` and, on the Mac,
   `window.hypersweeperShell` before any script runs; see
-  `ios/App/App/BridgeViewController.swift`. The App Clip is the same move: its
+  `apps/hypersweeper/ios/App/App/BridgeViewController.swift`. The App Clip is the same move: its
   shell sets `window.hypersweeperClip` — see "The App Clip" in
   [`ui.md`](ui.md).)
 - **The app must reference nothing remote.** No CDN, no web font, no remote

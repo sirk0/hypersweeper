@@ -1,6 +1,6 @@
 import { hasMode } from "./modes/presets";
 
-// The App Clip (ios/App/AppClip): the same bundle, run by a second native
+// The App Clip (apps/hypersweeper/ios/App/AppClip): the same bundle, run by a second native
 // target that opens one board and nothing else. The page cannot tell it is in
 // a clip — the clip's `ClipBridgeViewController` says so, the way the app says
 // which device it is on (`hypersweeperDevice`), by setting

@@ -4,11 +4,8 @@
   "license": "MIT",
   "description": "Games on flat, hyperbolic and 3D tilings — Hypersweeper (apps/hypersweeper) and Rep-tiles (apps/reptiles) — on shared geometry (packages/geometry).",
   "workspaces": [
-    "apps/hypersweeper",
-    "apps/reptiles",
-    "packages/geometry",
-    "packages/platform",
-    "packages/vite-preset",
+    "apps/*",
+    "packages/*",
     "data"
   ],
   "scripts": {

@@ -23,8 +23,8 @@ npm run e2e:docker  # …the whole suite on Linux, in a container (see below)
 npx vitest related --run src/game.ts      # only the unit tests that import a file
 npx playwright test hud.spec.ts -g "<title>"  # only one spec, or one test in it
 npm run screenshots # regenerate the README gallery (SHOTS=menu.png for one)
-npm run store-screenshots # the App Store shots for every device slot (see ios/README.md)
-npm run stickers    # the iMessage sticker pack (see "The sticker pack" in ios/README.md)
+npm run store-screenshots # the App Store shots for every device slot (see apps/hypersweeper/ios/README.md)
+npm run stickers    # the iMessage sticker pack (see "The sticker pack" in apps/hypersweeper/ios/README.md)
 npm run icons       # regenerate the app icons from the vector source
 npm run og          # regenerate the social card, public/og.png
 ```
@@ -157,7 +157,7 @@ Practical knowledge for verifying changes by actually running the app
   a solid or a surface immersion shows up here too.
 - **App icons**: `npm run icons` (or `make desktop-icon` from the repo root;
   macOS with Xcode only) writes every icon the app ships, one per entry in
-  `src/appIcon.ts` — the Icon Composer documents in `ios/App/App/*.icon`, then,
+  `src/appIcon.ts` — the Icon Composer documents in `apps/hypersweeper/ios/App/App/*.icon`, then,
   exported from those with Xcode's `ictool`, the favicons, the PWA, maskable
   and apple-touch PNGs, `shells/desktop/resources/icon.png` and the iOS launch image.
   Two parts of it are quotations from the game and should stay in step with

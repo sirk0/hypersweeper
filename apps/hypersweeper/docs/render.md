@@ -28,7 +28,7 @@ events, so the gesture path stands down while two touch points are down.
 
 The **Mac Catalyst** app gets neither: its viewport is `user-scalable=no`, and
 WebKit builds `gesture*` only from touches, so a trackpad pinch never reaches
-the page. `ios/App/App/BridgeViewController.swift` recognises it natively (a
+the page. `apps/hypersweeper/ios/App/App/BridgeViewController.swift` recognises it natively (a
 `UIPinchGestureRecognizer`, Catalyst builds only) and dispatches a
 `hypersweeper:pinch` event on `window` with `{phase, scale, x, y}`, which
 `attachControls` zooms by exactly as it does `gesture*`.

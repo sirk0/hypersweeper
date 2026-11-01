@@ -43,7 +43,7 @@ describe("UI screen config", () => {
 
   it("carries the ported pygame palettes plus the two web-only dark ones", () => {
     // `dark` and `classicDark` are the dark halves of the two pairs the themes
-    // compose (ios/dark, classic/classicDark); pygame has neither, since all
+    // compose (apps/hypersweeper/ios/dark, classic/classicDark); pygame has neither, since all
     // six of its presets are light.
     for (const key of [
       "ios",
