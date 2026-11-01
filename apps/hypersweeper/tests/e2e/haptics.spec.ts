@@ -38,7 +38,7 @@ const NATIVE_BRIDGE = fromPackage("@capacitor/ios", "Capacitor/Capacitor/assets/
 const HAPTICS_METHODS = [
   ...fromPackage(
     "@capacitor/haptics",
-    "apps/hypersweeper/ios/Sources/HapticsPlugin/HapticsPlugin.swift",
+    "ios/Sources/HapticsPlugin/HapticsPlugin.swift",
   ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g),
 ].map((m) => ({ name: m[1] as string, rtype: "promise" }));
 
