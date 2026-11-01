@@ -1,0 +1,18 @@
+{
+  "$comment": "How this game is shipped: its site (web: the Cloudflare Pages project the deploy and PR-preview workflows publish to), the files its packaged bundle must carry (bundledAssets, checked by scripts/check-offline-assets.mjs) and its desktop app (desktop, staged by scripts/stage-desktop.sh). The workflows list the games from these files (scripts/games.mjs). See docs/agents/new-game.md.",
+  "productName": "__TITLE__",
+  "bundledAssets": [],
+  "web": {
+    "project": "__KEY__",
+    "url": "https://__KEY__.pages.dev/"
+  },
+  "desktop": {
+    "appId": "__APP_ID__",
+    "executableName": "__KEY__",
+    "icon": "packaging/icon.png",
+    "userDataName": "__TITLE__",
+    "backgroundColor": "#f4f2ee",
+    "smokeRoute": "",
+    "smokePainted": "document.querySelectorAll('svg.board polygon.cell').length"
+  }
+}

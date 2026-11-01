@@ -1,0 +1,25 @@
+{
+  "name": "__KEY__",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "__TITLE__: a game on the shared tilings (@tiling/geometry).",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "e2e": "playwright test",
+    "icons": "vite-node scripts/make-icons.mts"
+  },
+  "dependencies": {
+    "@tiling/geometry": "*",
+    "@tiling/platform": "*"
+  },
+  "devDependencies": {}
+}

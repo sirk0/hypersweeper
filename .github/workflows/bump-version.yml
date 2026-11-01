@@ -7,14 +7,15 @@ name: Bump version
 #
 #   - Hypersweeper (pyproject.toml + apps/hypersweeper/package.json, which share
 #     a version with the pygame build): every push, as it always has been.
-#   - Rep-tiles (apps/reptiles/package.json): a push that changed what ships in
-#     it — its own folder, the packages it is built from, or data/.
+#   - Every other game (apps/<game>/package.json — the games are listed from
+#     their packaging.json files by scripts/games.mjs): a push that changed what
+#     ships in it — its own folder, the packages it is built from, or data/.
 #
 # Either is skipped when the push set that game's version itself (a minor or
 # major release written by hand), so it lands as written rather than one patch
 # past it. "Changed" and "set" are measured against the commit master was at
-# before the push; if that cannot be read, Hypersweeper bumps as usual and
-# Rep-tiles does not.
+# before the push; if that cannot be read, Hypersweeper bumps as usual and the
+# other games do not.
 
 on:
   push:
@@ -50,32 +51,35 @@ jobs:
             hs=false
           fi
 
-          rt=false
+          others=()
           if changed=$(git diff --name-only "$BEFORE" HEAD 2>/dev/null); then
-            if grep -qE '^(apps/reptiles/|packages/|data/)' <<<"$changed"; then
-              old=$(git show "$BEFORE:apps/reptiles/package.json" 2>/dev/null | pkgver || true)
-              new=$(pkgver < apps/reptiles/package.json)
-              if [ -n "$old" ] && [ "$old" != "$new" ]; then
-                echo "This push set Rep-tiles' version to $new (was $old); not bumping it."
+            for game in $(node scripts/games.mjs others); do
+              grep -qE "^(apps/$game/|packages/|data/)" <<<"$changed" || continue
+              old=$(git show "$BEFORE:apps/$game/package.json" 2>/dev/null | pkgver || true)
+              new=$(pkgver < "apps/$game/package.json")
+              if [ -z "$old" ]; then
+                echo "$game is new in this push; it lands at its own version, $new."
+              elif [ "$old" != "$new" ]; then
+                echo "This push set $game's version to $new (was $old); not bumping it."
               else
-                rt=true
+                others+=("$game")
               fi
-            fi
+            done
           fi
           echo "hypersweeper=$hs" >> "$GITHUB_OUTPUT"
-          echo "reptiles=$rt" >> "$GITHUB_OUTPUT"
+          echo "games=${others[*]}" >> "$GITHUB_OUTPUT"
       - name: Bump and push
-        if: steps.check.outputs.hypersweeper == 'true' || steps.check.outputs.reptiles == 'true'
+        if: steps.check.outputs.hypersweeper == 'true' || steps.check.outputs.games != ''
         env:
           HS: ${{ steps.check.outputs.hypersweeper }}
-          RT: ${{ steps.check.outputs.reptiles }}
+          GAMES: ${{ steps.check.outputs.games }}
         run: |
           args=()
           [ "$HS" = true ] && args+=(--hypersweeper)
-          [ "$RT" = true ] && args+=(--reptiles)
+          for game in $GAMES; do args+=(--game "$game"); done
           subject=$(python scripts/bump_version.py "${args[@]}")
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml apps/hypersweeper/package.json apps/reptiles/package.json package-lock.json
+          git add pyproject.toml package-lock.json apps/*/package.json
           git commit -m "$subject"
           git push

@@ -20,7 +20,9 @@ def repo(tmp_path: Path) -> Path:
         "pyproject.toml",
         "package-lock.json",
         "apps/hypersweeper/package.json",
+        "apps/hypersweeper/packaging.json",
         "apps/reptiles/package.json",
+        "apps/reptiles/packaging.json",
     ]:
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / rel, tmp_path / rel)
@@ -55,7 +57,7 @@ def test_the_repo_starts_consistent(repo: Path):
 
 def test_hypersweeper_only(repo: Path):
     before = versions(repo)
-    subject = bump_version.bump(repo, hypersweeper=True, reptiles=False)
+    subject = bump_version.bump(repo, hypersweeper=True, others=[])
     after = versions(repo)
     new = bump_version.next_patch(before["pyproject"])
     assert subject == f"Bump version to {new}"
@@ -65,7 +67,7 @@ def test_hypersweeper_only(repo: Path):
 
 def test_reptiles_only(repo: Path):
     before = versions(repo)
-    subject = bump_version.bump(repo, hypersweeper=False, reptiles=True)
+    subject = bump_version.bump(repo, hypersweeper=False, others=["reptiles"])
     after = versions(repo)
     new = bump_version.next_patch(before["reptiles"])
     assert subject == f"Bump version to Rep-tiles {new}"
@@ -76,13 +78,23 @@ def test_reptiles_only(repo: Path):
 
 def test_both_and_neither(repo: Path):
     before = versions(repo)
-    subject = bump_version.bump(repo, hypersweeper=True, reptiles=True)
+    subject = bump_version.bump(repo, hypersweeper=True, others=["reptiles"])
     hs = bump_version.next_patch(before["pyproject"])
     rt = bump_version.next_patch(before["reptiles"])
     assert subject == f"Bump version to {hs} (Rep-tiles {rt})"
-    assert bump_version.bump(repo, hypersweeper=False, reptiles=False) is None
+    assert bump_version.bump(repo, hypersweeper=False, others=[]) is None
 
 
 def test_the_lockfile_is_still_json(repo: Path):
-    bump_version.bump(repo, hypersweeper=True, reptiles=True)
+    bump_version.bump(repo, hypersweeper=True, others=["reptiles"])
     json.loads((repo / "package-lock.json").read_text())
+
+
+def test_games_are_read_from_their_manifests(repo: Path):
+    assert sorted(bump_version.games(repo)) == ["hypersweeper", "reptiles"]
+    assert bump_version.games(repo)["reptiles"] == ("apps/reptiles", "rep-tiles", "Rep-tiles")
+
+
+def test_the_flagship_only_bumps_through_pyproject(repo: Path):
+    with pytest.raises(SystemExit):
+        bump_version.bump_game(repo, "hypersweeper")

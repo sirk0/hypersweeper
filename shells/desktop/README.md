@@ -67,6 +67,7 @@ The shell knows nothing about any game; each game describes its own app:
 |---|---|---|
 | `productName` | electron-builder, `main.mjs` | the app's name (`Rep-tiles.app`), the window title, the `.dmg` title |
 | `bundledAssets` | `check-offline-assets.mjs` | files the packaged bundle must contain — Hypersweeper lists its two fonts. The iPhone build's check reads it too |
+| `web` | `scripts/games.mjs` → the deploy, PR-preview, CI and version-bump workflows | the game's Cloudflare Pages `project` and `url` (Hypersweeper's also `analytics` and `siteUrlVariable`) — not used by the desktop shell, listed here as part of the same file; see `docs/agents/new-game.md` |
 | `desktop.appId` | electron-builder | the bundle identifier |
 | `desktop.executableName` | electron-builder | the Linux binary's name |
 | `desktop.icon` | `stage-desktop.sh` | the 1024² icon on the macOS grid (the 824 rounded square on a transparent canvas), relative to the game's folder. Each game's `npm run icons` draws it |
@@ -83,7 +84,8 @@ the default pentagon: the App icon setting has no row in the desktop app, since
 Finder would go on showing the pentagon whatever the dock did. Rep-tiles' is
 drawn by `apps/reptiles/scripts/make-icons.mts` with its other icons.
 
-A new game's desktop app is therefore:
+A new game gets all of this from the scaffold (`node scripts/new-game.mjs`, see
+`docs/agents/new-game.md`). By hand, a game's desktop app is:
 
 1. a `packaging.json`;
 2. an icon;

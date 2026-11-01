@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 // The Docker runner (docker-compose.e2e.yml) is only trustworthy because its
@@ -41,11 +43,20 @@ describe("the Docker e2e runner tracks the Playwright pin", () => {
 // workspace added to the root package.json and not here fails `npm ci` in the
 // image, which nobody on Linux would notice until a Mac developer ran it.
 describe("the Docker e2e runner installs the whole workspace", () => {
+  // The root package.json lists workspaces as globs (apps/*, packages/*), so
+  // expand them the way npm does: every matching folder with a package.json.
+  const root = fileURLToPath(new URL("../../../../", import.meta.url));
   const workspaces = (
     JSON.parse(read("../../../../package.json")) as {
       workspaces: string[];
     }
-  ).workspaces;
+  ).workspaces.flatMap((pattern) =>
+    pattern.endsWith("/*")
+      ? readdirSync(join(root, pattern.slice(0, -2)))
+          .map((name) => `${pattern.slice(0, -2)}/${name}`)
+          .filter((dir) => existsSync(join(root, dir, "package.json")))
+      : [pattern],
+  );
   const dockerfile = read("../../Dockerfile.e2e");
   const ignore = read("../../../../.dockerignore").split("\n");
 
