@@ -64,9 +64,9 @@ symmetry: *Flag-transitive* (the regular 4⁴, 3⁶, 6³), *Vertex-transitive*
 twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
 [3⁶; 3⁴.6]₁) and *Face-transitive* (the eight Laves tilings, V4.8² to
 V4.6.12). Each board is as near square as its tiling allows at two or three
-dozen tiles. CI's `reptiles-checks` job typechecks, formats, tests and builds
-it on every change, and `reptiles-e2e` runs the Playwright smoke test against
-the production bundle. It packages as an offline desktop app through the
+dozen tiles. CI's `game-checks (reptiles)` job typechecks, formats, tests and
+builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
+test against the production bundle. It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
 its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in

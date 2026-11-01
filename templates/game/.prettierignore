@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dev-dist/
+test-results/
+playwright-report/
+
+# Prose is wrapped by hand
+*.md

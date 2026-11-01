@@ -1,0 +1,12 @@
+# Cloudflare Pages configuration for __TITLE__ (https://__KEY__.pages.dev).
+#
+# `wrangler pages deploy` reads it from its working directory, which is why the
+# deploy and PR-preview workflows run wrangler from apps/__KEY__/: `name` picks
+# the project and `pages_build_output_dir` the folder. Create the project once
+# in the Cloudflare dashboard (Workers & Pages → Create → Pages → direct upload,
+# named __KEY__, production branch master) before the first deploy — see
+# docs/agents/new-game.md. Inert everywhere else.
+
+name = "__KEY__"                # must match the Pages project name (and packaging.json web.project)
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"

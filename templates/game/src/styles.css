@@ -1,0 +1,91 @@
+/* Every colour is a var(--…) here, with the dark block kept in step. */
+:root {
+  --page: #f4f2ee;
+  --ink: #2a2926;
+  --muted: #6d6a63;
+  --cell: #e2ded5;
+  --cell-edge: #8d887d;
+  --lit: #e9b44c;
+  --lit-edge: #8a6418;
+  --button: #fffdf9;
+  --button-edge: #cdc7ba;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #1c1c1a;
+    --ink: #ebe8e0;
+    --muted: #a6a195;
+    --cell: #2f2d29;
+    --cell-edge: #6e6a61;
+    --lit: #e9b44c;
+    --lit-edge: #f6d48c;
+    --button: #2a2926;
+    --button-edge: #4a4740;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+header {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.75rem 1rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+#status {
+  margin: 0;
+  color: var(--muted);
+  flex: 1;
+}
+
+button {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--button-edge);
+  background: var(--button);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+#stage {
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.board {
+  width: min(92vw, 640px);
+  height: auto;
+}
+
+.cell {
+  fill: var(--cell);
+  stroke: var(--cell-edge);
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+
+.cell.lit {
+  fill: var(--lit);
+  stroke: var(--lit-edge);
+}

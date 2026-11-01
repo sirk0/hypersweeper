@@ -1,0 +1,28 @@
+# Response headers for the deployed game (__KEY__.pages.dev). Cloudflare Pages
+# reads this file from the root of the build output; Vite copies public/ into
+# dist/ verbatim, so committing it here is what ships it. It is the same policy
+# as Hypersweeper's (apps/hypersweeper/public/_headers, which explains each
+# choice and the format's traps at length):
+#
+#   - one `/*` rule only — Cloudflare merges every matching rule and browsers
+#     enforce every CSP they are sent, so a second rule could only narrow this
+#     one, never widen it for a subpath;
+#   - applied at the edge by Cloudflare, and to `vite dev` / `vite preview` by
+#     the shared preset's `securityHeaders` plugin (packages/vite-preset), which
+#     parses this very file — so the e2e smoke test runs under the real policy;
+#   - the PR preview inserts `X-Robots-Tag: noindex` into the `/*` block at
+#     deploy time (.github/workflows/pr-preview.yml), which is why the pattern
+#     line must stay exactly `/*`.
+#
+# The Cloudflare Web Analytics origins are allowed, as in Hypersweeper's, so
+# turning that on in the dashboard needs no policy change. No extension, so the
+# service worker's precache glob does not pick it up.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

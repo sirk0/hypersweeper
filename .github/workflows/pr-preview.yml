@@ -5,7 +5,8 @@ name: PR preview
 # one fixed URL per game — https://pr-<number>.hypersweeper.pages.dev and
 # https://pr-<number>.rep-tiles.pages.dev — that every push to it redeploys,
 # and closing or merging the PR deletes them again. One matrix entry per game, as in
-# deploy-cloudflare.yml; each keeps its own sticky comment.
+# deploy-cloudflare.yml, read from the games' packaging.json files; each keeps its
+# own sticky comment.
 #
 # It is the production deploy (deploy-cloudflare.yml) with three differences.
 # `--branch` is `pr-<number>` rather than `master`: Cloudflare decides
@@ -55,8 +56,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  games:
+    # Every game with a site, from its apps/<game>/packaging.json
+    # (scripts/games.mjs): its Pages project, and the sticky comment's title
+    # and marker — Hypersweeper keeps the marker this workflow always used, so
+    # open PRs keep their comment. The deploy job previews the PR's own games
+    # (a game added by this PR included); after a PR closes its merge ref can
+    # be gone, so the teardown reads the list from the base branch instead.
+    # The same guard as the jobs below.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.list.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.action == 'closed' && github.event.pull_request.base.ref || '' }}
+      - id: list
+        run: node scripts/games.mjs github >> "$GITHUB_OUTPUT"
+
   deploy:
     name: deploy (${{ matrix.app }})
+    needs: games
     # Same-repo PRs only, for two independent reasons, either sufficient: a fork
     # cannot push a branch here, and a `pull_request` run from a fork is handed
     # no `secrets.*`, so the deploy could not authenticate even with this guard
@@ -73,17 +96,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # `marker` keeps each game's sticky comment its own. Hypersweeper's is
-          # the one this workflow always used, so open PRs keep their comment.
-          - app: hypersweeper
-            project: hypersweeper
-            title: Play this PR
-            marker: "<!-- pr-preview -->"
-          - app: reptiles
-            project: rep-tiles
-            title: Play this PR in Rep-tiles
-            marker: "<!-- pr-preview:rep-tiles -->"
+        include: ${{ fromJSON(needs.games.outputs.deploy) }}
     permissions:
       contents: read
       pull-requests: write # the sticky comment carrying the URL
@@ -212,21 +225,19 @@ jobs:
   destroy:
     # The same guard as `deploy`, for the same two reasons. No checkout: after a
     # PR closes its merge ref can be gone, and this job needs no files anyway —
-    # which is also why it asks for no `contents` permission.
+    # which is also why it asks for no `contents` permission. (Its matrix, the
+    # games job's, was read from the base branch.)
     if: >-
       github.event.action == 'closed'
       && github.event.pull_request.head.repo.full_name == github.repository
       && github.actor != 'dependabot[bot]'
     name: destroy (${{ matrix.project }})
+    needs: games
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - project: hypersweeper
-            marker: "<!-- pr-preview -->"
-          - project: rep-tiles
-            marker: "<!-- pr-preview:rep-tiles -->"
+        include: ${{ fromJSON(needs.games.outputs.deploy) }}
     permissions:
       pull-requests: write # to edit the comment the deploy job left
     steps:

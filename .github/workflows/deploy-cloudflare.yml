@@ -6,11 +6,13 @@ name: Deploy to Cloudflare Pages
 #   apps/hypersweeper  ->  the `hypersweeper` project, https://hypersweeper.pages.dev
 #   apps/reptiles      ->  the `rep-tiles` project,    https://rep-tiles.pages.dev
 #
-# Each entry builds its game and runs wrangler from the game's folder, whose
-# wrangler.toml names the project. This is the only thing that publishes them;
-# the pygame build stays in the repo as the reference implementation and goes
-# nowhere. A new game is a new matrix entry (and a Pages project created once in
-# the Cloudflare dashboard, with `master` as its production branch).
+# The matrix comes from the games' own packaging.json files (scripts/games.mjs,
+# the `games` job below). Each entry builds its game and runs wrangler from the
+# game's folder, whose wrangler.toml names the project. This is the only thing
+# that publishes them; the pygame build stays in the repo as the reference
+# implementation and goes nowhere. A new game needs no edit here — only its
+# Pages project, created once in the Cloudflare dashboard with `master` as its
+# production branch (docs/agents/new-game.md).
 #
 # Each game is served from its domain root, which is `VITE_BASE`'s default, so
 # nothing here sets it. That path is baked into the bundle at build time —
@@ -37,26 +39,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  games:
+    # Every game with a site, read from its apps/<game>/packaging.json (`web`:
+    # its Pages project and URL; Hypersweeper's also `analytics` — it carries
+    # the anonymous play counter, and this is the one host that serves the
+    # Pages Function it posts to — and `siteUrlVariable`, the repository
+    # variable a custom domain overrides its URL with). A new game is a new
+    # folder, not an edit here.
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to')
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.list.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: node scripts/games.mjs github >> "$GITHUB_OUTPUT"
+
   deploy:
     name: deploy (${{ matrix.app }})
+    needs: games
     runs-on: ubuntu-latest
     strategy:
-      # One game's failed deploy must not cancel the other's.
+      # One game's failed deploy must not cancel another's.
       fail-fast: false
       matrix:
-        include:
-          # Hypersweeper carries the anonymous play counter, and this is the one
-          # host that serves the Pages Function it posts to (functions/api/tally.ts);
-          # elsewhere the post would 404 and the browser would log it. Its URL
-          # can be overridden from a custom domain with the repository variable
-          # SITE_URL, which takes no code change.
-          - app: hypersweeper
-            analytics: "1"
-            site: https://hypersweeper.pages.dev/
-          # Rep-tiles has no counter and no Functions.
-          - app: reptiles
-            analytics: ""
-            site: https://rep-tiles.pages.dev/
+        include: ${{ fromJSON(needs.games.outputs.deploy) }}
     # Skip the automated version-bump commits. Belt and braces: bump-version.yml
     # pushes with the default GITHUB_TOKEN, and a GITHUB_TOKEN push triggers no
     # workflow, so that commit does not reach here anyway — but it would the day
@@ -79,7 +86,7 @@ jobs:
           # a crawler runs no JavaScript, so these are fixed at build time. The
           # fallback is the Pages project's own domain, so this is right with no
           # configuration.
-          VITE_SITE_URL: ${{ (matrix.app == 'hypersweeper' && vars.SITE_URL) || matrix.site }}
+          VITE_SITE_URL: ${{ (matrix.siteUrlVariable != '' && vars[matrix.siteUrlVariable]) || matrix.site }}
         run: |
           # The npm workspace (every app in apps/) installs from the repo root.
           (cd ../.. && npm ci)

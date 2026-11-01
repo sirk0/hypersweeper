@@ -1,7 +1,13 @@
 {
-  "$comment": "How this game is packaged: the files its packaged bundle must carry (scripts/check-offline-assets.mjs fails without them) and its desktop app (shells/desktop, staged by scripts/stage-desktop.sh). See shells/desktop/README.md.",
+  "$comment": "How this game is shipped: its site (web: the Cloudflare Pages project the deploy and PR-preview workflows publish to), the files its packaged bundle must carry (bundledAssets, checked by scripts/check-offline-assets.mjs) and its desktop app (desktop, staged by scripts/stage-desktop.sh). The workflows list the games from these files (scripts/games.mjs). See docs/agents/new-game.md.",
   "productName": "Hypersweeper",
   "bundledAssets": ["fonts/Rubik-Bold.ttf", "fonts/DSEG7Classic-Bold.ttf"],
+  "web": {
+    "project": "hypersweeper",
+    "url": "https://hypersweeper.pages.dev/",
+    "analytics": true,
+    "siteUrlVariable": "SITE_URL"
+  },
   "desktop": {
     "appId": "com.sirk0.hypersweeper",
     "executableName": "hypersweeper",
