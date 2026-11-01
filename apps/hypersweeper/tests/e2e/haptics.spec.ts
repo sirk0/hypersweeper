@@ -36,10 +36,9 @@ const NATIVE_BRIDGE = fromPackage("@capacitor/ios", "Capacitor/Capacitor/assets/
 /** The plugin's method list, read off its `pluginMethods` table in Swift —
  * the same source the native side builds the real headers from. */
 const HAPTICS_METHODS = [
-  ...fromPackage(
-    "@capacitor/haptics",
-    "ios/Sources/HapticsPlugin/HapticsPlugin.swift",
-  ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g),
+  ...fromPackage("@capacitor/haptics", "ios/Sources/HapticsPlugin/HapticsPlugin.swift").matchAll(
+    /CAPPluginMethod\(name: "(\w+)"/g,
+  ),
 ].map((m) => ({ name: m[1] as string, rtype: "promise" }));
 
 interface BridgeCall {
