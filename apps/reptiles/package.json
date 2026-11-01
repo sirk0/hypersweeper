@@ -1,7 +1,7 @@
 {
   "name": "rep-tiles",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "type": "module",
   "description": "Rep-tiles: cover a region with tiles by drag and drop. Built on the shared board geometry (@tiling/geometry, packages/geometry).",
