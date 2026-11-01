@@ -13,7 +13,7 @@
 // automated proof that the collector really was compiled out of this build.
 //
 //   node scripts/check-offline-assets.mjs apps/hypersweeper/dist
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
 /** Remote URLs that are *not* loads:
@@ -96,13 +96,20 @@ for (const file of walk(root)) {
   }
 }
 
-// The one thing whose absence is as bad as a remote URL: the fonts the UI and
-// the LED counters are drawn in, which must travel with the bundle.
-for (const font of ["fonts/Rubik-Bold.ttf", "fonts/DSEG7Classic-Bold.ttf"]) {
+// The one thing whose absence is as bad as a remote URL: the files a game
+// cannot draw without — Hypersweeper's UI and LED-counter fonts, say — which
+// must travel with the bundle. Each game names them in its own packaging.json
+// (`bundledAssets`), beside the dist/ this was pointed at; a game without one
+// requires nothing extra.
+const manifest = join(root, "..", "packaging.json");
+const bundled = existsSync(manifest)
+  ? (JSON.parse(readFileSync(manifest, "utf8")).bundledAssets ?? [])
+  : [];
+for (const asset of bundled) {
   try {
-    statSync(join(root, font));
+    statSync(join(root, asset));
   } catch {
-    problems.push(`missing bundled asset: ${font}`);
+    problems.push(`missing bundled asset: ${asset}`);
   }
 }
 

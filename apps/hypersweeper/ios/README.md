@@ -512,6 +512,31 @@ far inside (a few kilobytes per device, at most ~60 KB of best times).
   itself needs real devices signed in to one Apple ID (simulators sync too, but
   slowly; *Debug → Trigger iCloud Sync* nudges one).
 
+## A second game's iPhone app
+
+This project is Hypersweeper's alone — its App Clip, Game Center
+achievements, iCloud record and sticker pack are all this game's — which is why
+it lives under `apps/hypersweeper/`. Another game gets an iPhone app of its
+own, not a target in this one. Nothing is built for one yet; when it is:
+
+1. **Capacitor in the game's folder.** In `apps/<game>/`, run `npx cap init`
+   to write its `capacitor.config.json` (its own `appId`, `webDir: "dist"`,
+   and `backgroundColor` from its `packaging.json`), then `npx cap add ios`.
+   That creates `apps/<game>/ios/`, Capacitor's default location. Add
+   `@capacitor/core` and `@capacitor/ios` to the game's `package.json`; npm
+   hoists them to the root `node_modules`, which the generated Podfile then
+   points to.
+2. **Build packaged, then sync.** `VITE_PACKAGED=1 npm run build`, run
+   `node scripts/check-offline-assets.mjs apps/<game>/dist` (it reads the
+   game's `bundledAssets`), then `npx cap sync ios`. That is what
+   `scripts/build-ios-app.sh` does for Hypersweeper; give it a game argument
+   the way `build-mac-app.sh` has `--game`, rather than copying it.
+3. **Its own App Store record and bundle ID**, its own icons (drawn by the
+   game's `npm run icons`), and — if it should ship from CI — a matrix entry
+   in `app-store.yml`, which today archives only this project.
+4. **CI:** a cap-sync step like `web-checks`' for Hypersweeper, so a broken
+   config fails on every push rather than on whoever next opens Xcode.
+
 ## Releasing
 
 Builds reach App Store Connect through one workflow,

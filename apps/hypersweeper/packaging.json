@@ -1,0 +1,13 @@
+{
+  "$comment": "How this game is packaged: the files its packaged bundle must carry (scripts/check-offline-assets.mjs fails without them) and its desktop app (shells/desktop, staged by scripts/stage-desktop.sh). See shells/desktop/README.md.",
+  "productName": "Hypersweeper",
+  "bundledAssets": ["fonts/Rubik-Bold.ttf", "fonts/DSEG7Classic-Bold.ttf"],
+  "desktop": {
+    "appId": "com.sirk0.hypersweeper",
+    "executableName": "hypersweeper",
+    "icon": "packaging/icon.png",
+    "backgroundColor": "#f2f2f7",
+    "smokeRoute": "?mode=hexhex&difficulty=easy&seed=7",
+    "smokePainted": "document.querySelectorAll('#ui .menu-entry').length + (window.__ms ? window.__ms.cells().length : 0)"
+  }
+}

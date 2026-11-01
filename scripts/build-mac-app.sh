@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
-# Build Hypersweeper.app — the TypeScript game packaged as a macOS app that
-# runs with no internet connection.
+# Build a game's macOS app — the TypeScript game packaged so it runs with no
+# internet connection. Hypersweeper.app by default; any game in apps/ with a
+# packaging.json (Rep-tiles.app with --game reptiles).
 #
-# The pieces: apps/hypersweeper/ builds to static files, those files are staged into
-# shells/desktop/app/, and electron-builder wraps the shells/desktop/ shell (which serves
-# them over the app:// scheme) into a bundle. Every asset the game needs —
-# fonts, icons, the shared data/*.json, Three.js — is compiled into that
-# bundle, and scripts/check-offline-assets.mjs refuses to let the build past
-# if anything in it still points at a URL.
+# The pieces: scripts/stage-desktop.sh builds apps/<game>/ to static files and
+# stages them, with the game's packaging.json and icon, into shells/desktop/;
+# electron-builder wraps that shell (which serves them over the app:// scheme)
+# into a bundle named and identified from the packaging.json. Every asset the
+# game needs is compiled into that bundle, and scripts/check-offline-assets.mjs
+# refuses to let the build past if anything in it still points at a URL.
 #
-#   scripts/build-mac-app.sh [--dmg] [--zip] [--arm64|--x64|--universal]
+#   scripts/build-mac-app.sh [--game <name>] [--dmg] [--zip]
+#                            [--arm64|--x64|--universal]
 #                            [--open] [--skip-web] [--no-verify]
 #
-# Output: build/desktop/mac*/Hypersweeper.app (plus the installers asked for).
+# Output: build/desktop/<game>/mac*/<productName>.app (plus the installers
+# asked for).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+GAME="${GAME:-hypersweeper}"
 TARGETS=()
 ARCH=()
 OPEN=0
@@ -26,6 +30,7 @@ VERIFY=1
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    --game) shift; GAME="${1:?--game needs a name}" ;;
     --dmg) TARGETS+=(dmg) ;;
     --zip) TARGETS+=(zip) ;;
     --app|--dir) TARGETS+=(dir) ;;
@@ -33,7 +38,7 @@ while [ $# -gt 0 ]; do
     --x64) ARCH+=(--x64) ;;
     --universal) ARCH+=(--universal) ;;
     --open) OPEN=1 ;;
-    --skip-web) SKIP_WEB=1 ;;   # reuse the existing apps/hypersweeper/dist
+    --skip-web) SKIP_WEB=1 ;;   # reuse the game's existing dist/
     --no-verify) VERIFY=0 ;;    # skip launching the built app to check it
     # The header comment above, up to the first line that is not one.
     -h|--help) awk 'NR>1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "${BASH_SOURCE[0]}"; exit 0 ;;
@@ -56,25 +61,21 @@ if [ "$(uname -s)" != "Darwin" ] && [ "${HYPERSWEEPER_ALLOW_CROSS_BUILD:-0}" != 
        testing the packaging itself), use: make desktop-smoke"
 fi
 
-# --- 1. the game ------------------------------------------------------------
-if [ "$SKIP_WEB" = 0 ]; then
-  scripts/ensure-web-deps.sh
-  step "Building the web app (VITE_PACKAGED=1)"
-  # VITE_PACKAGED drops the service worker and the update check: inside a
-  # bundle there is no deployed build to update from. See apps/hypersweeper/vite.config.ts.
-  (cd apps/hypersweeper && VITE_PACKAGED=1 npm run build)
-fi
-[ -f apps/hypersweeper/dist/index.html ] || die "apps/hypersweeper/dist is empty — build the web app first"
+# --- 1. the game, staged into the shell -------------------------------------
+STAGE=(scripts/stage-desktop.sh "$GAME")
+if [ "$SKIP_WEB" = 1 ]; then STAGE+=(--skip-web); fi
+"${STAGE[@]}"
 
-step "Checking the bundle needs no network"
-node scripts/check-offline-assets.mjs apps/hypersweeper/dist
+# What the bundle is called and how it identifies itself: the game's own.
+PACKAGING="apps/$GAME/packaging.json"
+field() { node -p "require('./$PACKAGING').$1"; }
+NAME="$(field productName)"
+APP_ID="$(field desktop.appId)"
+EXECUTABLE="$(field desktop.executableName)"
+SMOKE_ROUTE="$(field "desktop.smokeRoute ?? ''")"
+OUT="build/desktop/$GAME"
 
-# --- 2. stage it into the shell ---------------------------------------------
-step "Staging the build into shells/desktop/app"
-rm -rf shells/desktop/app
-cp -R apps/hypersweeper/dist shells/desktop/app
-
-# --- 3. package --------------------------------------------------------------
+# --- 2. package --------------------------------------------------------------
 step "Installing the desktop shell's build tools"
 if [ -f shells/desktop/package-lock.json ]; then
   (cd shells/desktop && npm ci)
@@ -85,21 +86,22 @@ fi
 step "Running the shell's unit tests"
 (cd shells/desktop && npm test)
 
-[ -f shells/desktop/resources/icon.png ] || die "shells/desktop/resources/icon.png is missing — run: make desktop-icon"
-
-step "Packaging Hypersweeper.app"
+step "Packaging $NAME.app"
 # The ${arr[@]+"${arr[@]}"} dance is for macOS's own bash 3.2, where `set -u`
-# treats an empty array expansion as an unbound variable.
+# treats an empty array expansion as an unbound variable. The -c.* overrides
+# are the per-game half of electron-builder.yml.
 (cd shells/desktop && npx --no-install electron-builder --mac \
+  "-c.appId=$APP_ID" "-c.productName=$NAME" "-c.dmg.title=$NAME" \
+  "-c.linux.executableName=$EXECUTABLE" "-c.directories.output=../../$OUT" \
   ${TARGETS[@]+"${TARGETS[@]}"} ${ARCH[@]+"${ARCH[@]}"})
 
-# --- 4. make it launchable ---------------------------------------------------
+# --- 3. make it launchable ---------------------------------------------------
 # An app with no signature at all will not start on Apple Silicon; an ad-hoc
 # signature (the "-" identity) is enough for one you built yourself, and costs
 # nothing. Locally built apps carry no quarantine attribute, so Gatekeeper does
 # not prompt — copying the .app to *another* Mac is what needs a real
 # Developer ID certificate and notarisation.
-APP="$(find build/desktop -maxdepth 2 -name 'Hypersweeper.app' -print -quit || true)"
+APP="$(find "$OUT" -maxdepth 2 -name "$NAME.app" -print -quit || true)"
 if [ -n "$APP" ] && command -v codesign >/dev/null; then
   if ! codesign --verify --deep --strict "$APP" >/dev/null 2>&1; then
     step "Ad-hoc signing the bundle"
@@ -108,16 +110,15 @@ if [ -n "$APP" ] && command -v codesign >/dev/null; then
   codesign --verify --deep --strict "$APP" || die "the bundle is not validly signed"
 fi
 
-# --- 5. check the thing that was built --------------------------------------
+# --- 4. check the thing that was built --------------------------------------
 # Launch the bundle itself with every off-bundle request cancelled: it has to
 # start, report ready and draw a board without asking the network for anything.
 # This is what catches a file left out of the bundle, a broken signature, or an
 # asset that only resolved because the dev server was serving it.
 if [ -n "$APP" ] && [ "$VERIFY" = 1 ]; then
   step "Verifying the bundle runs offline"
-  SHOT="$ROOT/build/desktop/verify.png"
-  "$APP/Contents/MacOS/Hypersweeper" \
-    "--smoke=$SHOT" "--route=?mode=hexhex&difficulty=easy&seed=7"
+  SHOT="$ROOT/$OUT/verify.png"
+  "$APP/Contents/MacOS/$NAME" "--smoke=$SHOT" "--route=$SMOKE_ROUTE"
   echo "  screenshot: $SHOT"
 fi
 
@@ -129,4 +130,4 @@ if [ -n "$APP" ]; then
   echo "  Install it:  cp -R '$APP' /Applications/"
   if [ "$OPEN" = 1 ]; then open "$APP"; fi
 fi
-find build/desktop -maxdepth 1 \( -name '*.dmg' -o -name '*.zip' \) -print 2>/dev/null || true
+find "$OUT" -maxdepth 1 \( -name '*.dmg' -o -name '*.zip' \) -print 2>/dev/null || true

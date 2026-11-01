@@ -84,34 +84,35 @@ web-run: web-prepare  ## serve the web version at http://localhost:8000
 	$(PY) -m pygbag --ume_block 0 $(WEB_STAGE)
 
 # --- desktop app -------------------------------------------------------------
-# The TypeScript app packaged as a native macOS app that plays offline: the
-# built web app is staged into the Electron shell in shells/desktop/ and served from
-# the app:// scheme inside the bundle. See shells/desktop/README.md.
+# A game packaged as a native macOS app that plays offline: the game's packaged
+# build is staged into the Electron shell in shells/desktop/ (with its
+# apps/<game>/packaging.json and icon) and served from the app:// scheme inside
+# the bundle. GAME picks the game — `make mac-app GAME=reptiles` — and
+# defaults to hypersweeper. See shells/desktop/README.md.
+GAME ?= hypersweeper
 
-mac-app:         ## build Hypersweeper.app into build/desktop (macOS only)
-	scripts/build-mac-app.sh
+mac-app:         ## build $(GAME)'s .app into build/desktop/$(GAME) (macOS only; GAME=hypersweeper|reptiles)
+	scripts/build-mac-app.sh --game $(GAME)
 
-mac-app-dmg:     ## build Hypersweeper.app plus a .dmg installer (macOS only)
-	scripts/build-mac-app.sh --dmg
+mac-app-dmg:     ## build $(GAME)'s .app plus a .dmg installer (macOS only)
+	scripts/build-mac-app.sh --game $(GAME) --dmg
 
 desktop-install: ## install the Electron shell's build tools
 	cd shells/desktop && npm install
 
-desktop-build:   ## build the offline web bundle and stage it into the shell
-	cd apps/hypersweeper && VITE_PACKAGED=1 npm run build
-	node scripts/check-offline-assets.mjs apps/hypersweeper/dist
-	rm -rf shells/desktop/app && cp -R apps/hypersweeper/dist shells/desktop/app
+desktop-build:   ## build $(GAME)'s offline bundle and stage it into the shell
+	scripts/stage-desktop.sh $(GAME)
 
-desktop-run: desktop-build  ## run the packaged game in the Electron shell
+desktop-run: desktop-build  ## run $(GAME) in the Electron shell
 	cd shells/desktop && npm start
 
-desktop-test:    ## unit-test the shell's app:// path resolution
+desktop-test:    ## unit-test the shell (app:// path resolution, which game it runs)
 	cd shells/desktop && npm test
 
-desktop-smoke:   ## launch the shell with the network cut, and screenshot it
-	scripts/desktop-smoke.sh
+desktop-smoke:   ## launch $(GAME) in the shell with the network cut, and screenshot it
+	GAME=$(GAME) scripts/desktop-smoke.sh
 
-desktop-icon:    ## regenerate every app icon from the shared vector source (macOS + Xcode)
+desktop-icon:    ## regenerate Hypersweeper's icons, the desktop one included (macOS + Xcode)
 	cd apps/hypersweeper && npm run icons
 
 # --- iOS app -----------------------------------------------------------------
@@ -151,4 +152,4 @@ reptiles-e2e:    ## Rep-tiles' Playwright smoke test against its production bund
 	cd apps/reptiles && npm run e2e
 
 clean:           ## remove build artifacts
-	rm -rf build shells/desktop/app apps/hypersweeper/ios/App/App/public
+	rm -rf build shells/desktop/app shells/desktop/app.json shells/desktop/resources apps/hypersweeper/ios/App/App/public

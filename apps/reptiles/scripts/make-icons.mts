@@ -1,8 +1,8 @@
-// Rep-tiles' icons: the favicon (SVG) and the PNGs the web manifest and iOS
-// ask for, all drawn from one picture — a rep-tile. An equilateral triangle is
-// four half-size copies of itself, which is what the game's name means; the
-// four pieces take the game's tile colours (src/styles.css), on its page
-// colour.
+// Rep-tiles' icons: the favicon (SVG), the PNGs the web manifest and iOS ask
+// for, and the desktop app's, all drawn from one picture — a rep-tile. An
+// equilateral triangle is four half-size copies of itself, which is what the
+// game's name means; the four pieces take the game's tile colours
+// (src/styles.css), on its page colour.
 //
 //   cd apps/reptiles && npm run icons
 //
@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), "../public");
+const PACKAGING = join(dirname(fileURLToPath(import.meta.url)), "../packaging");
 
 const PAGE = "#f4f1ea";
 const INK = "#2b2a27";
@@ -79,5 +80,16 @@ await png("apple-touch-icon.png", 180, true);
 await png("icons/icon-192.png", 192, false);
 await png("icons/icon-512.png", 512, false);
 await png("icons/maskable-512.png", 512, true);
+
+// The desktop app's icon (packaging/icon.png, staged into shells/desktop by
+// scripts/stage-desktop.sh): macOS's grid, the rounded square at 824 px in the
+// middle of a transparent 1024 px canvas, as Apple's own icons sit.
+await page.setViewportSize({ width: 1024, height: 1024 });
+await page.setContent(
+  `<html><body style="margin:0;background:transparent;display:grid;place-items:center;height:1024px">${svg(
+    false,
+  ).replace("<svg ", `<svg width="824" height="824" `)}</body></html>`,
+);
+await page.screenshot({ path: join(PACKAGING, "icon.png"), omitBackground: true });
 await browser.close();
-console.log(`wrote favicon.svg and four PNGs to ${PUBLIC}`);
+console.log(`wrote favicon.svg and four PNGs to ${PUBLIC}, and the desktop icon to ${PACKAGING}`);

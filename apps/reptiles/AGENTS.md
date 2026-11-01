@@ -66,7 +66,11 @@ twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
 V4.6.12). Each board is as near square as its tiling allows at two or three
 dozen tiles. CI's `reptiles-checks` job typechecks, formats, tests and builds
 it on every change, and `reptiles-e2e` runs the Playwright smoke test against
-the production bundle. No desktop or iPhone packaging yet.
+the production bundle. It packages as an offline desktop app through the
+shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
+— from `packaging.json` (see `shells/desktop/README.md`); its data lives in
+its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
+`apps/hypersweeper/ios/README.md`, "A second game's iPhone app").
 
 ## Deploy
 
@@ -90,8 +94,9 @@ Like Hypersweeper, and by the same workflows, one matrix entry each:
   `packages/` or `data/` (`scripts/bump_version.py`). A version set by hand
   lands as written.
 - **Icons:** `npm run icons` redraws them (`scripts/make-icons.mts`): a
-  triangle as four half-size copies of itself, in the tile colours. Commit
-  what it writes.
+  triangle as four half-size copies of itself, in the tile colours — the web
+  icons in `public/` and the desktop app's `packaging/icon.png`. Commit what
+  it writes.
 
 ## Build and run
 
@@ -105,7 +110,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run difficulty   # re-measure every level into src/difficulty.json
-npm run icons        # redraw public/favicon.svg and the PNG icons
+npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
 
 or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`,

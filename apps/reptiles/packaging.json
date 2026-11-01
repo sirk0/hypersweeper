@@ -1,0 +1,14 @@
+{
+  "$comment": "How this game is packaged: the files its packaged bundle must carry (scripts/check-offline-assets.mjs fails without them) and its desktop app (shells/desktop, staged by scripts/stage-desktop.sh). See shells/desktop/README.md.",
+  "productName": "Rep-tiles",
+  "bundledAssets": [],
+  "desktop": {
+    "appId": "com.sirk0.reptiles",
+    "executableName": "rep-tiles",
+    "icon": "packaging/icon.png",
+    "userDataName": "Rep-tiles",
+    "backgroundColor": "#f4f1ea",
+    "smokeRoute": "?level=squares",
+    "smokePainted": "document.querySelectorAll('#home-picks > *, svg.board path.region').length"
+  }
+}

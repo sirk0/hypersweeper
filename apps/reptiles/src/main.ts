@@ -193,6 +193,9 @@ setInterval(() => {
 window.addEventListener("popstate", route);
 
 route();
+// The first screen is up: the signal the desktop shell's smoke run waits for
+// (shells/desktop/main.mjs), as Hypersweeper's main.ts sets it.
+requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
 
 // A seam for checking the game by hand or from a script, in dev builds only:
 // `__reptiles.fill()` finishes the board (backtracking where it must).

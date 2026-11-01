@@ -37,7 +37,7 @@
 //   apps/hypersweeper/public/icons/icon-192.png, -512.png   (the rounded icon, transparent
 //                                              corners — the PWA manifest)
 //   apps/hypersweeper/public/icons/maskable-512.png         (full-bleed — Android masks it)
-//   shells/desktop/resources/icon.png                (macOS grid: the 824 icon on a
+//   packaging/icon.png                         (the desktop app; macOS grid: the 824 icon on a
 //                                              1024 transparent canvas)
 //   apps/hypersweeper/ios/App/App/Assets.xcassets/Splash…       (the launch image)
 //
@@ -72,7 +72,7 @@ import { theme } from "../src/ui/theme";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = resolve(HERE, "../public");
-const DESKTOP = resolve(HERE, "../../../shells/desktop/resources");
+const DESKTOP = resolve(HERE, "../packaging");
 const IOS_APP = resolve(HERE, "../ios/App/App");
 const SPLASH = join(IOS_APP, "Assets.xcassets/Splash.imageset");
 

@@ -1,8 +1,12 @@
-# Packaging config for the desktop shell. Driven by scripts/build-mac-app.sh,
-# which stages the built web app into `app/` first — everything the bundle
-# needs is inside it, so the packaged app never asks the network for anything.
-appId: com.sirk0.hypersweeper
-productName: Hypersweeper
+# Packaging config for the desktop shell: what every game's desktop app shares.
+# Driven by scripts/build-mac-app.sh, which stages one game into the shell first
+# (scripts/stage-desktop.sh: its packaged build into `app/`, its packaging.json
+# as `app.json`, its icon as resources/icon.png) — everything the bundle needs
+# is inside it, so the packaged app never asks the network for anything.
+#
+# What differs per game is not here. build-mac-app.sh passes it on the command
+# line from apps/<game>/packaging.json: appId, productName, dmg.title,
+# linux.executableName, and the output folder (build/desktop/<game>).
 copyright: Copyright © 2026 Sergiy Tsymbal
 
 directories:
@@ -12,12 +16,14 @@ directories:
   output: ../../build/desktop
   buildResources: resources
 
-# The shell is three files plus the staged web build; node_modules holds only
+# The shell is four files plus the staged game; node_modules holds only
 # devDependencies (electron and the builder itself), which must not ship.
 files:
   - main.mjs
   - serve.mjs
+  - config.mjs
   - package.json
+  - app.json
   - app/**/*
 asar: true
 
@@ -48,7 +54,7 @@ mac:
     NSHumanReadableCopyright: Copyright © 2026 Sergiy Tsymbal
 
 dmg:
-  title: Hypersweeper
+  # The title (the game's productName) comes from the command line.
   # The usual drag-to-Applications window.
   contents:
     - x: 140
@@ -63,6 +69,6 @@ linux:
   # Not a shipping target — it exists so the packaging itself (the file list,
   # the asar, the icon) can be exercised on a machine that is not a Mac.
   target: dir
-  executableName: hypersweeper
+  # executableName comes from the command line (packaging.json).
   category: Game
   icon: resources/icon.png
