@@ -1,3 +1,8 @@
 node_modules/
 dist/
 *.tsbuildinfo
+dev-dist/
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/

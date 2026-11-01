@@ -7,6 +7,10 @@ from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 (the TypeScript/WebGL app in [`apps/hypersweeper/`](apps/hypersweeper), deployed from master by GitHub
 Actions; installable, and it works offline once loaded)
 
+**Also in this repo — Rep-tiles:** <https://rep-tiles.pages.dev/>, a drag-and-drop
+puzzle built on the same tilings: cover each board exactly with its tiles
+([`apps/reptiles/`](apps/reptiles)).
+
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/c180.png" width="380"><br>Goldberg GP(3,0) on a sphere <sub>· Bright, domed, light</sub></td>
