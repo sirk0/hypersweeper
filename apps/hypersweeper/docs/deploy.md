@@ -337,7 +337,7 @@ container in `docker-compose.e2e.yml`.
 
 This same bundle ships inside the macOS app (`make mac-app`, see
 [`shells/desktop/README.md`](../../../shells/desktop/README.md)), where it is served from an `app://` scheme, and inside the
-iPhone app (`make ios-app`, see [`../../ios/README.md`](../../../ios/README.md)), where a Capacitor WKWebView
+iPhone app (`make ios-app`, see [`../../ios/README.md`](../ios/README.md)), where a Capacitor WKWebView
 serves it from `capacitor://localhost`. Two things about that are worth knowing
 while working here:
 
@@ -351,7 +351,7 @@ while working here:
   work in a browser tab and on a phone. What the page cannot detect, the shell
   tells it: the iOS shell sets `window.hypersweeperDevice` and, on the Mac,
   `window.hypersweeperShell` before any script runs; see
-  `ios/App/App/BridgeViewController.swift`. The App Clip is the same move: its
+  `apps/hypersweeper/ios/App/App/BridgeViewController.swift`. The App Clip is the same move: its
   shell sets `window.hypersweeperClip` — see "The App Clip" in
   [`ui.md`](ui.md).)
 - **The app must reference nothing remote.** No CDN, no web font, no remote

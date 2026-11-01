@@ -2,14 +2,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-// The App Store listing, ios/AppStore/*.txt, is pasted into App Store Connect by
+// The App Store listing, apps/hypersweeper/ios/AppStore/*.txt, is pasted into App Store Connect by
 // hand. App Store Connect rejects text over its limits only at the moment of
 // pasting, and nothing there notices when the catalogue shrinks under the
 // "more than N boards" the listing promises. Both are checked here.
 
 const ROOT = path.resolve(__dirname, "../../../..");
 const read = (file: string): string =>
-  readFileSync(path.join(ROOT, "ios/AppStore", file), "utf8").trim();
+  readFileSync(path.join(ROOT, "apps/hypersweeper/ios/AppStore", file), "utf8").trim();
 
 /** App Store Connect's limits, in characters. */
 const LIMITS: Record<string, number> = {

@@ -116,9 +116,9 @@ desktop-icon:    ## regenerate every app icon from the shared vector source (mac
 
 # --- iOS app -----------------------------------------------------------------
 # The TypeScript app packaged as an iPhone app: the built bundle is synced into
-# the Capacitor project in ios/ and Xcode signs and installs it. This is the
+# the Capacitor project in apps/hypersweeper/ios/ and Xcode signs and installs it. This is the
 # build that can buzz — @capacitor/haptics reaches the Taptic Engine, which no
-# web API on iOS can. Needs a Mac with Xcode; see ios/README.md.
+# web API on iOS can. Needs a Mac with Xcode; see apps/hypersweeper/ios/README.md.
 
 ios-app:         ## build the game and open the iPhone project in Xcode (macOS)
 	scripts/build-ios-app.sh --open
@@ -126,7 +126,7 @@ ios-app:         ## build the game and open the iPhone project in Xcode (macOS)
 ios-run:         ## build and install straight onto a connected iPhone (macOS)
 	scripts/build-ios-app.sh --run
 
-ios-prepare:     ## build the bundle and sync it into ios/ (works anywhere)
+ios-prepare:     ## build the bundle and sync it into apps/hypersweeper/ios/ (works anywhere)
 	scripts/build-ios-app.sh --prepare-only
 
 ios-install:     ## install the Capacitor tooling (the npm workspace at the repo root)
@@ -151,4 +151,4 @@ reptiles-e2e:    ## Rep-tiles' Playwright smoke test against its production bund
 	cd apps/reptiles && npm run e2e
 
 clean:           ## remove build artifacts
-	rm -rf build shells/desktop/app ios/App/App/public
+	rm -rf build shells/desktop/app apps/hypersweeper/ios/App/App/public

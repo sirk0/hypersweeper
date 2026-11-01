@@ -10,8 +10,11 @@ import { APP_ICONS, DEFAULT_APP_ICON, appIconUrls, resolveAppIcon } from "../../
 // only there), and the PNG and SVG the web serves for each icon.
 
 const ROOT = resolve(__dirname, "../../../..");
-const IOS_APP = resolve(ROOT, "ios/App/App");
-const PBXPROJ = readFileSync(resolve(ROOT, "ios/App/App.xcodeproj/project.pbxproj"), "utf8");
+const IOS_APP = resolve(ROOT, "apps/hypersweeper/ios/App/App");
+const PBXPROJ = readFileSync(
+  resolve(ROOT, "apps/hypersweeper/ios/App/App.xcodeproj/project.pbxproj"),
+  "utf8",
+);
 
 describe("app icons", () => {
   it("has unique keys and bundle names, the default first", () => {
@@ -42,9 +45,9 @@ describe("app icons", () => {
     const primary = APP_ICONS.find((i) => i.key === DEFAULT_APP_ICON)!.bundle;
     const settings = (key: string): string[] =>
       [...PBXPROJ.matchAll(new RegExp(`${key} = "?([^";]*)"?;`, "g"))].map((m) => m[1]!);
-    // Debug and Release of the app and of its App Clip (ios/App/AppClip), and
+    // Debug and Release of the app and of its App Clip (apps/hypersweeper/ios/App/AppClip), and
     // all four must say the same: the clip wears the app's primary icon. The
-    // sticker pack's two (ios/App/Stickers) name its own iMessage icon set,
+    // sticker pack's two (apps/hypersweeper/ios/App/Stickers) name its own iMessage icon set,
     // drawn from that same primary document (scripts/make-stickers.mts).
     expect(settings("ASSETCATALOG_COMPILER_APPICON_NAME")).toEqual([
       primary,

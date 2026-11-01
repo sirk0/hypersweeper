@@ -3,9 +3,9 @@
 //   npm run gamecenter                     (the list and every image)
 //   MANIFEST_ONLY=1 npm run gamecenter     (just the list; no browser needed)
 //
-// Writes ios/GameCenter/achievements.json (see scripts/gamecenter-lib.ts) and
-// ios/GameCenter/images/<achievement id>.png, and deletes any image no
-// achievement names any more. See "Game Center" in ios/README.md for what to do
+// Writes apps/hypersweeper/ios/GameCenter/achievements.json (see scripts/gamecenter-lib.ts) and
+// apps/hypersweeper/ios/GameCenter/images/<achievement id>.png, and deletes any image no
+// achievement names any more. See "Game Center" in apps/hypersweeper/ios/README.md for what to do
 // with them.
 //
 // An image is the achievement's own menu badge (`menuIcon`, the drawing the

@@ -16,7 +16,7 @@ import { shellKind } from "./device";
 // only offered where it does something (`appIconSupported`):
 //
 //   - The iOS app: `UIApplication.setAlternateIconName`, through the small
-//     native plugin in ios/App/App/AppIconPlugin.swift. iOS confirms the
+//     native plugin in apps/hypersweeper/ios/App/App/AppIconPlugin.swift. iOS confirms the
 //     change with its own alert. The shell says, before the page runs, whether
 //     the device can switch at all and which icon it wears now
 //     (`window.hypersweeperAppIcon`, BridgeViewController.swift) — the OS is
@@ -38,7 +38,7 @@ export interface AppIconSpec {
    * Sand palette gives it. */
   sides: number;
   label: string;
-  /** The Icon Composer document in ios/App/App (`<bundle>.icon`). The default
+  /** The Icon Composer document in apps/hypersweeper/ios/App/App (`<bundle>.icon`). The default
    * icon's is the project's primary `AppIcon`; the others are the names
    * `setAlternateIconName` takes. */
   bundle: string;

@@ -11,13 +11,14 @@ import {
 } from "../../scripts/gamecenter-lib";
 
 // The Game Center list is registered by hand in App Store Connect from
-// ios/GameCenter/, and a live achievement can never be taken back. So the
+// apps/hypersweeper/ios/GameCenter/, and a live achievement can never be taken back. So the
 // committed list has to be exactly what the code would report: an achievement
 // the catalogue grows has to show up as a diff to this file, where somebody
 // decides to register it, rather than be reported to a Game Center that has
 // never heard of it.
 
-const REGENERATE = "run `npm run gamecenter` in apps/hypersweeper/ and commit ios/GameCenter/";
+const REGENERATE =
+  "run `npm run gamecenter` in apps/hypersweeper/ and commit apps/hypersweeper/ios/GameCenter/";
 
 /** A PNG's width, height and colour type, off its IHDR chunk. */
 function pngHeader(file: string): { width: number; height: number; colourType: number } {

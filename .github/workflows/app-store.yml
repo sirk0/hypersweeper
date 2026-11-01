@@ -1,9 +1,9 @@
 name: App Store upload
 
-# Builds the native app (ios/, the apps/hypersweeper/ game inside Capacitor) and uploads it to
+# Builds the native app (apps/hypersweeper/ios/, the apps/hypersweeper/ game inside Capacitor) and uploads it to
 # App Store Connect, where it appears in TestFlight. Submitting a build for
 # review is still done by hand in App Store Connect. See "Releasing" in
-# ios/README.md for the one-time setup and how to run this.
+# apps/hypersweeper/ios/README.md for the one-time setup and how to run this.
 #
 # Started by hand only (Actions → App Store upload → Run workflow), from master.
 # It never runs on a push or a pull request, and there is deliberately no iOS
@@ -16,10 +16,10 @@ name: App Store upload
 # Xcode's automatic cloud signing (-allowProvisioningUpdates with that key):
 # there are no certificates or profiles in the secrets.
 #
-# The iOS build carries the App Clip (ios/App/AppClip): an App Clip is not
+# The iOS build carries the App Clip (apps/hypersweeper/ios/App/AppClip): an App Clip is not
 # uploaded on its own, App Store Connect reads it out of its app's build. So
 # `ios` (and `both`) uploads the clip too, and the Mac build never has one.
-# The iMessage sticker pack (ios/App/Stickers) is carried the same way.
+# The iMessage sticker pack (apps/hypersweeper/ios/App/Stickers) is carried the same way.
 #
 # The build number is the git commit count (scripts/build-ios-app.sh), so this
 # needs the full history, and every upload needs a commit that has not been
@@ -74,7 +74,7 @@ jobs:
       # CocoaPods (Ruby) crashes under a non-UTF-8 locale.
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
-      WORKSPACE: ios/App/App.xcworkspace
+      WORKSPACE: apps/hypersweeper/ios/App/App.xcworkspace
       SCHEME: App
     steps:
       - name: Only from master
@@ -149,25 +149,25 @@ jobs:
           fi
           pod --version
 
-      - name: Build the game and sync it into ios/ (prepare only)
+      - name: Build the game and sync it into apps/hypersweeper/ios/ (prepare only)
         # --prepare-only: build apps/hypersweeper/ with VITE_PACKAGED=1, run the offline-assets
         # check, `cap sync ios`, and stamp Version.generated.xcconfig. It does
         # not open Xcode.
         run: make ios-prepare
 
       - name: Install the pods
-        working-directory: ios/App
+        working-directory: apps/hypersweeper/ios/App
         run: pod install
 
       - name: Read the version, build number and team
         id: meta
         run: |
-          gen=ios/App/Version.generated.xcconfig
+          gen=apps/hypersweeper/ios/App/Version.generated.xcconfig
           version="$(sed -n 's/^MARKETING_VERSION = //p' "$gen")"
           build="$(sed -n 's/^CURRENT_PROJECT_VERSION = //p' "$gen")"
           # The team comes from the project's own DEVELOPMENT_TEAM, not from a
           # secret or this file, so it is written down in one place only.
-          team="$(xcodebuild -project ios/App/App.xcodeproj -target App \
+          team="$(xcodebuild -project apps/hypersweeper/ios/App/App.xcodeproj -target App \
             -configuration Release -showBuildSettings -json 2>/dev/null \
             | jq -r '.[0].buildSettings.DEVELOPMENT_TEAM // empty')"
           if [ -z "$version" ] || [ -z "$build" ]; then
@@ -223,7 +223,7 @@ jobs:
 
           # The checked-in export options plus the team read from the project.
           options="$BUILD_DIR/ExportOptions.plist"
-          cp ios/ExportOptions.plist "$options"
+          cp apps/hypersweeper/ios/ExportOptions.plist "$options"
           /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$options"
 
           # xcodebuild's output is thousands of lines; it goes to a log file
