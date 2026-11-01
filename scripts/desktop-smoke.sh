@@ -1,37 +1,34 @@
 #!/usr/bin/env bash
-# Prove the packaged game runs with no network — on any OS, including the
-# Linux/CI machines that cannot build a .app.
+# Prove a game's packaged desktop build runs with no network — on any OS,
+# including the Linux/CI machines that cannot build a .app.
 #
-# It builds the desktop bundle, stages it into the shell, and launches the real
-# Electron app with every off-bundle request cancelled (see installOfflineGuard
-# in shells/desktop/main.mjs). The run passes only if the app reports itself ready,
-# logs no errors, and asked for nothing it does not carry. The screenshot it
-# leaves behind is what to look at when something renders wrong.
+# It stages the game into the desktop shell (scripts/stage-desktop.sh: build,
+# offline check, copy) and launches the real Electron app with every
+# off-bundle request cancelled (see installOfflineGuard in
+# shells/desktop/main.mjs). The run passes only if the app reports itself
+# ready, has painted something (the game's desktop.smokePainted), logs no
+# errors, and asked for nothing it does not carry. The screenshot it leaves
+# behind is what to look at when something renders wrong.
 #
 #   scripts/desktop-smoke.sh [output.png] [route]
 #
-# e.g. scripts/desktop-smoke.sh shot.png '?mode=hexhex&difficulty=easy&seed=7'
+# GAME=<game> picks the game (default hypersweeper); the route defaults to the
+# game's desktop.smokeRoute. e.g.
+#   scripts/desktop-smoke.sh shot.png '?mode=hexhex&difficulty=easy&seed=7'
+#   GAME=reptiles scripts/desktop-smoke.sh build/reptiles-smoke.png
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-OUT="${1:-build/desktop-smoke.png}"
+GAME="${GAME:-hypersweeper}"
+OUT="${1:-build/desktop-smoke-$GAME.png}"
 ROUTE="${2:-}"
 mkdir -p "$(dirname "$OUT")"
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
-scripts/ensure-web-deps.sh
-step "Building the web app (VITE_PACKAGED=1)"
-(cd apps/hypersweeper && VITE_PACKAGED=1 npm run build)
-
-step "Checking the bundle needs no network"
-node scripts/check-offline-assets.mjs apps/hypersweeper/dist
-
-step "Staging the build into shells/desktop/app"
-rm -rf shells/desktop/app
-cp -R apps/hypersweeper/dist shells/desktop/app
+scripts/stage-desktop.sh "$GAME"
 
 step "Installing the desktop shell"
 if [ ! -d shells/desktop/node_modules ]; then
@@ -39,9 +36,9 @@ if [ ! -d shells/desktop/node_modules ]; then
 fi
 (cd shells/desktop && npm test)
 
-step "Launching the app offline"
+step "Launching $GAME offline"
 # A headless box has no X server and no GPU: Xvfb supplies the display, and
-# main.mjs switches on SwiftShader for the WebGL board when --smoke is passed.
+# main.mjs switches on SwiftShader for a WebGL board when --smoke is passed.
 RUN=(npx --no-install electron . "--smoke=$ROOT/$OUT")
 if [ -n "$ROUTE" ]; then RUN+=("--route=$ROUTE"); fi
 # Chromium's sandbox cannot run as root, which is how CI containers run. This

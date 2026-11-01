@@ -257,7 +257,7 @@ phone and plays offline — and, being native, can reach the **Taptic
 Engine**: a light tick when a flag lands, the system's sharp error buzz
 when you step on a mine, its success buzz when the board falls. No web API
 on iOS can ask for that. Building it needs a Mac with Xcode; a free Apple
-ID signs it for 7 days at a time. See [`ios/README.md`](ios/README.md).
+ID signs it for 7 days at a time. See [`apps/hypersweeper/ios/README.md`](apps/hypersweeper/ios/README.md).
 
 [`apps/hypersweeper/AGENTS.md`](apps/hypersweeper/AGENTS.md) is the guide to the code — the renderer,
 the board builders, themes, sound, and how to drive the app headless;

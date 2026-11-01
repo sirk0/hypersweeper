@@ -33,12 +33,12 @@
           "What a play count holds");
         - what apps/hypersweeper/functions/api/_tally.ts stores about a request (nothing);
         - analytics being compiled out of packaged builds (VITE_PACKAGED=1 in
-          apps/hypersweeper/vite.config.ts), which is what ios/App/App/PrivacyInfo.xcprivacy
+          apps/hypersweeper/vite.config.ts), which is what apps/hypersweeper/ios/App/App/PrivacyInfo.xcprivacy
           and the App Store "Data Not Collected" label rest on;
         - what the App Store apps send Game Center (apps/hypersweeper/src/gameCenter.ts:
           achievement ids and percentages, and only once Game Center says the
           player is signed in) and what they read back from it
-          (ios/App/App/GameCenterPlugin.swift: only whether the player is
+          (apps/hypersweeper/ios/App/App/GameCenterPlugin.swift: only whether the player is
           signed in). Apple collects that, not us, which is why the label
           stays "Data Not Collected".
         - what the App Store apps keep in iCloud (apps/hypersweeper/src/cloudRecord.ts: the

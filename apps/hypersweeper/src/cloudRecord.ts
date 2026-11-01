@@ -17,7 +17,7 @@ import { readObject, storage } from "@tiling/platform";
 // The same app runs on an iPhone, an iPad and a Mac, and the best times and
 // the achievement record live in each one's `localStorage` — one device's, and
 // gone with the app when it is deleted. In the App Store builds the native
-// `CloudRecord` plugin (ios/App/App/CloudRecordPlugin.swift) hands the page
+// `CloudRecord` plugin (apps/hypersweeper/ios/App/App/CloudRecordPlugin.swift) hands the page
 // iCloud's key-value store, the same few keys on every device signed in to the
 // player's account and kept through a reinstall, and this mirrors the record
 // (and the starred boards, `favourites.ts`) there and merges back what the

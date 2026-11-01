@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// The App Clip (ios/App/AppClip): the same bundle, told by its native side
+// The App Clip (apps/hypersweeper/ios/App/AppClip): the same bundle, told by its native side
 // which one board to play (`window.hypersweeperClip`) and listening for wins on
 // a `hypersweeperClip` message handler (src/appClip.ts). Both are faked here
 // before the bundle runs, as ClipBridgeViewController.swift does on a device;

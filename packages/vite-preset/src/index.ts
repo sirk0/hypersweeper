@@ -34,7 +34,7 @@ export interface BuildFlags {
   readonly base: string;
   /** VITE_PACKAGED=1: the bundle that ships *inside* an app rather than on a
    * server — the macOS shell (shells/desktop/, served from `app://`) and the iOS
-   * app (ios/, a Capacitor WKWebView served from `capacitor://localhost`). Both
+   * app (apps/hypersweeper/ios/, a Capacitor WKWebView served from `capacitor://localhost`). Both
    * keep the base at "/"; what changes is that there is no service worker (its
    * whole job is caching a *deployed* build for offline use, and inside a
    * bundle whose files are already on disk it would only add a second, staler

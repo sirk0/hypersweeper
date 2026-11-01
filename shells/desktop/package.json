@@ -3,16 +3,14 @@
   "private": true,
   "version": "0.2.45",
   "license": "MIT",
-  "description": "Electron shell that packages the Hypersweeper web app as an offline macOS app.",
+  "description": "Electron shell that packages one game from apps/ as an offline desktop app (scripts/stage-desktop.sh, scripts/build-mac-app.sh). Its name stays hypersweeper-desktop because Hypersweeper's saved data lives under it.",
   "author": "Sergiy Tsymbal",
   "repository": "https://github.com/sirk0/hypersweeper",
   "type": "module",
   "main": "main.mjs",
   "scripts": {
     "start": "electron .",
-    "test": "node --test \"test/*.test.mjs\"",
-    "pack": "electron-builder --mac dir",
-    "dist": "electron-builder --mac"
+    "test": "node --test \"test/*.test.mjs\""
   },
   "devDependencies": {
     "electron": "^43.2.0",

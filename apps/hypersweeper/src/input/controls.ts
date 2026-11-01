@@ -440,7 +440,7 @@ export function attachControls(canvas: HTMLCanvasElement, handlers: ControlHandl
   //   - Safari's own gesturestart/change/end, with the position as clientX/Y;
   //   - the Mac Catalyst app, where WebKit builds no gesture events for a
   //     trackpad at all: the native shell recognises the pinch and dispatches
-  //     `hypersweeper:pinch` on window (ios/App/App/BridgeViewController.swift).
+  //     `hypersweeper:pinch` on window (apps/hypersweeper/ios/App/App/BridgeViewController.swift).
   // On a touchscreen WebKit fires gesture* *as well as* the pointer events the
   // two-finger pinch above already handles, so ignore them while two touch
   // points are down rather than zoom twice.

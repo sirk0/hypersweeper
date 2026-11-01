@@ -95,7 +95,7 @@ describe("menu bar tree", () => {
 
   it("is registered in the app's sources and not the App Clip's", () => {
     const pbx = readFileSync(
-      resolve(__dirname, "../../../../ios/App/App.xcodeproj/project.pbxproj"),
+      resolve(__dirname, "../../ios/App/App.xcodeproj/project.pbxproj"),
       "utf8",
     );
     const phases = [

@@ -135,7 +135,7 @@ jobs:
         run: npm run format:check
       - name: Unit tests
         run: npm run test
-      # The packaged apps (shells/desktop/ for macOS, ios/ for the iPhone) ship the
+      # The packaged apps (shells/desktop/ for macOS, apps/hypersweeper/ios/ for the iPhone) ship the
       # web bundle inside themselves, so the two properties that make them work
       # offline are guarded here rather than only on whoever's Mac runs
       # `make mac-app` / `make ios-app`: the packaged build must reference
@@ -151,14 +151,14 @@ jobs:
       - name: Desktop shell unit tests
         run: node --test "../../shells/desktop/test/*.test.mjs"
       # The iOS half of the same idea. Xcode and CocoaPods are macOS-only, but
-      # the sync — config resolved, bundle copied into ios/App, plugin list
+      # the sync — config resolved, bundle copied into apps/hypersweeper/ios/App, plugin list
       # rebuilt — is plain node and runs here, so a broken capacitor.config.json
       # or a webDir pointing at nothing fails on every push rather than on
       # whoever next opens Xcode.
       - name: iOS project syncs
         run: |
           npx cap sync ios
-          test -f ../../ios/App/App/public/index.html
+          test -f ios/App/App/public/index.html
 
   web-e2e:
     # The Playwright e2e + visual-regression suite under deterministic software
@@ -348,6 +348,15 @@ jobs:
         run: npm run test
       - name: Production build
         run: npx vite build
+      # The bundle the desktop shell packages (scripts/stage-desktop.sh): built
+      # with VITE_PACKAGED=1 and checked to reference nothing remote, the
+      # property a packaged app depends on — as web-checks does for Hypersweeper.
+      - name: Packaged bundle is self-contained
+        run: |
+          VITE_PACKAGED=1 npx vite build
+          node ../../scripts/check-offline-assets.mjs dist
+      - name: Desktop shell unit tests
+        run: node --test "../../shells/desktop/test/*.test.mjs"
 
   reptiles-e2e:
     # Rep-tiles' Playwright smoke test against its production bundle under

@@ -1,3 +1,6 @@
-# The web build staged into the bundle by scripts/build-mac-app.sh.
+# Staged by scripts/stage-desktop.sh: the game's packaged build, its
+# packaging.json and its desktop icon. The shell holds no game of its own.
 app/
+app.json
+resources/
 node_modules/

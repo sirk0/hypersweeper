@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // The native menu bar (the Mac app, and an iPad's ⌘ shortcuts) reaches the
-// page as `hypersweeper:command` events (ios/App/App/AppDelegate.swift →
+// page as `hypersweeper:command` events (apps/hypersweeper/ios/App/App/AppDelegate.swift →
 // BridgeViewController.swift → App.onCommand). The native half cannot run
 // here; the page's half is what these pin. The File menu's boards and
 // difficulties carry the commands the page handed it (src/menuBar.ts; the tree

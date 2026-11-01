@@ -4,7 +4,7 @@
 # the Taptic Engine (which no web API on iOS can reach).
 #
 # The pieces: apps/hypersweeper/ builds to static files, `npx cap sync ios` copies them into
-# ios/App/App/public and refreshes the CocoaPods the native project links
+# apps/hypersweeper/ios/App/App/public and refreshes the CocoaPods the native project links
 # against, and Xcode signs and installs the result on the phone. Every asset the
 # game needs — fonts, icons, the shared data/*.json, Three.js — is compiled into
 # that bundle, and scripts/check-offline-assets.mjs refuses to let the build
@@ -14,7 +14,7 @@
 #
 # Default: build, sync, and open the project in Xcode (--open), where ⌘R
 # installs it on a connected iPhone. The first run needs a signing team picked
-# once under Signing & Capabilities; see ios/README.md.
+# once under Signing & Capabilities; see apps/hypersweeper/ios/README.md.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -78,10 +78,10 @@ step "Checking the bundle needs no network"
 node scripts/check-offline-assets.mjs apps/hypersweeper/dist
 
 # --- 2. into the native project ----------------------------------------------
-# `cap sync` = copy (web assets -> ios/App/App/public, config -> the project)
+# `cap sync` = copy (web assets -> apps/hypersweeper/ios/App/App/public, config -> the project)
 # plus update (the plugin list and, on a Mac, `pod install`). It is the one
 # command that has to run after *either* half changes.
-step "Syncing the bundle into ios/App"
+step "Syncing the bundle into apps/hypersweeper/ios/App"
 if [ "$MAC" = 1 ] && ! command -v pod >/dev/null; then
   die "CocoaPods is required to link the native plugins (Capacitor's own pod
        and @capacitor/haptics). Install it with:  brew install cocoapods
@@ -89,7 +89,7 @@ if [ "$MAC" = 1 ] && ! command -v pod >/dev/null; then
 fi
 (cd apps/hypersweeper && npx cap sync ios)
 
-[ -f ios/App/App/public/index.html ] || die "the sync copied no web assets"
+[ -f apps/hypersweeper/ios/App/App/public/index.html ] || die "the sync copied no web assets"
 
 # The app's version, from the one place it is kept: apps/hypersweeper/package.json's
 # "version" for the version the store shows, and the git commit count for the
@@ -102,7 +102,7 @@ if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
   note "shallow clone — build number $BUILD is not the real commit count;
       do not upload this build (git fetch --unshallow first)"
 fi
-cat > ios/App/Version.generated.xcconfig <<EOF
+cat > apps/hypersweeper/ios/App/Version.generated.xcconfig <<EOF
 // Written by scripts/build-ios-app.sh — do not edit, do not commit.
 MARKETING_VERSION = $VERSION
 CURRENT_PROJECT_VERSION = $BUILD
@@ -128,7 +128,7 @@ if [ "$OPEN" = 1 ]; then
   (cd apps/hypersweeper && npx cap open ios)
   cat <<'EOF'
 
-Xcode is opening ios/App/App.xcworkspace. To put the game on your iPhone:
+Xcode is opening apps/hypersweeper/ios/App/App.xcworkspace. To put the game on your iPhone:
 
   1. Plug the phone in and pick it in the device menu (next to the ▶ button).
   2. Once, under the App target -> Signing & Capabilities: tick "Automatically
@@ -140,6 +140,6 @@ Xcode is opening ios/App/App.xcworkspace. To put the game on your iPhone:
      Management -> trust your developer certificate.
 
 A free account's app stops launching after 7 days — re-run ⌘R to renew it.
-A paid Apple Developer account lasts a year. See ios/README.md.
+A paid Apple Developer account lasts a year. See apps/hypersweeper/ios/README.md.
 EOF
 fi

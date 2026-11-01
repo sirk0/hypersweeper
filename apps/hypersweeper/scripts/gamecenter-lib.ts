@@ -5,7 +5,7 @@
 // that way: its list is registered in App Store Connect, and once an
 // achievement is live there its id and points are permanent and it cannot be
 // deleted. So the list Game Center knows is a committed file,
-// `ios/GameCenter/achievements.json`, generated from `GAME_CENTER_ACHIEVEMENTS`
+// `apps/hypersweeper/ios/GameCenter/achievements.json`, generated from `GAME_CENTER_ACHIEVEMENTS`
 // by `scripts/make-gamecenter.mts`, beside one badge image per achievement.
 //
 // `tests/unit/gameCenterManifest.test.ts` regenerates the JSON and fails on any
@@ -23,7 +23,7 @@ import { ACHIEVEMENTS_BY_ID, GAME_CENTER_ACHIEVEMENTS } from "../src/achievement
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-export const GAME_CENTER_DIR = path.resolve(HERE, "../../../ios/GameCenter");
+export const GAME_CENTER_DIR = path.resolve(HERE, "../ios/GameCenter");
 export const MANIFEST_PATH = path.join(GAME_CENTER_DIR, "achievements.json");
 
 /** App Store Connect's achievement image: a square this many pixels, RGB. */

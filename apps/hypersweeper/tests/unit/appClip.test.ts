@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { clipBoard, tellClip } from "../../src/appClip";
 
 // The App Clip's native side names its board on `window.hypersweeperClip`
-// (ios/App/AppClip/ClipBridgeViewController.swift), and the page tells it about
+// (apps/hypersweeper/ios/App/AppClip/ClipBridgeViewController.swift), and the page tells it about
 // wins through a `hypersweeperClip` message handler. Both halves are read off
 // the ambient `window`, stubbed here.
 

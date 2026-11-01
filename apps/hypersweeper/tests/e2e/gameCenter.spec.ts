@@ -42,7 +42,7 @@ const GAME_CENTER_METHODS: { name: string; rtype?: string }[] = [
   { name: "requestPermissions", rtype: "promise" },
   ...[
     ...readFileSync(
-      path.resolve(HERE, "../../../../ios/App/App/GameCenterPlugin.swift"),
+      path.resolve(HERE, "../../ios/App/App/GameCenterPlugin.swift"),
       "utf8",
     ).matchAll(/CAPPluginMethod\(name: "(\w+)"/g),
   ].map((m) => ({

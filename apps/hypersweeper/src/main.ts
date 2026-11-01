@@ -884,7 +884,7 @@ class App {
   }
 
   /** A command from the native menu bar (the Mac app, and the ⌘ shortcuts an
-   * iPad shows; ios/App/App/AppDelegate.swift). New Game re-deals the board
+   * iPad shows; apps/hypersweeper/ios/App/App/AppDelegate.swift). New Game re-deals the board
    * in play, as the smiley does. Settings and How to Play are pages of the
    * home screen, so from a game they go home first, which leaves the board the
    * way the header's back arrow does: without asking.

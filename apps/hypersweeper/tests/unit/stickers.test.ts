@@ -2,13 +2,13 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-// The iMessage sticker pack (ios/App/Stickers) is rendered by
+// The iMessage sticker pack (apps/hypersweeper/ios/App/Stickers) is rendered by
 // scripts/make-stickers.mts, which also writes every Contents.json. Nothing
 // builds the iOS app in CI, so a sticker missing from disk, a file over Apple's
 // size limit or an icon slot with no image would first show up as an Xcode or
 // App Store Connect error. These pin what the catalog has to hold.
 
-const CATALOG = resolve(__dirname, "../../../../ios/App/Stickers/Stickers.xcassets");
+const CATALOG = resolve(__dirname, "../../ios/App/Stickers/Stickers.xcassets");
 const PACK = resolve(CATALOG, "Sticker Pack.stickerpack");
 const ICONSET = resolve(CATALOG, "iMessage App Icon.stickersiconset");
 
