@@ -17,7 +17,7 @@ launches flat squares; Flat (the plane) and each flat manifold (cylinder,
 Möbius, Klein, torus) open a shared tiling picker — the Regular / Uniform
 / Laves family submenus, Isogonal and Congruent rectangles on every
 surface, 2-uniform on every surface but the Klein bottle, 2-isohedral,
-Other, Aperiodic, Spirals, Rep-tiles, Fractals and Hyperbolic on the plane only, and a random option
+Pentagonal, Other, Aperiodic, Spirals, Rep-tiles, Fractals and Hyperbolic on the plane only, and a random option
 — parameterised by the surface it was reached through. The last four are
 **solid groups**: a flat list of finished boards, one click from the home
 page, all four declared by one `menu.solidGroups` table in

@@ -63,7 +63,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(355);
+    expect(MODES.length).toBe(358);
   });
 
   it("follows the tiling, not the surface", () => {

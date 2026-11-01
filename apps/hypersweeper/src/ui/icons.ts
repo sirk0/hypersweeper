@@ -1107,6 +1107,9 @@ const FAMILY_TILINGS: Record<string, string> = {
   // most of the family is made of (the 2-uniform row's tiling is one of the
   // three whose duals do not ship)
   "2-isohedral": "elongated2dual",
+  // type 15, the last pentagon found (2015) and the most distinctive patch —
+  // long tiles in staggered columns, half of them mirror images
+  pentagonal: "pentagon15",
   // rotated hexagonal, the clearest picture of what the family is — tiles
   // sliding along each other's edges rather than meeting them, with the gaps
   // that opens filled by a second shape

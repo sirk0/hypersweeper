@@ -46,7 +46,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | Module | Responsibility |
 |--------|----------------|
 | `core.py` | `Board` / `Board3D`, the `_shared_vertex_adjacency` neighbour rule, `_build` (lattice→pixels) and `_finalize_flat` (float→pixels), 3D vector helpers, and the topology invariants `euler_characteristic` / `boundary_components` / `corner_fans`. |
-| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, all twenty 2-uniform tilings (three cut or merged from a uniform tiling, seventeen written down from one translation cell by `_cell_template`), the twenty 2-isohedral duals of those (derived by `_with_two_isohedral`), and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
+| `tilings.py` | Regular flat builders (square/triangle/trigrid/hex/hexhex/hextri/hextriangle/squarediamond), the `_ArchTemplate` system, the eight Archimedean `_*_template()` factories plus their eight Laves duals (built by `_dual_template`), the six isogonal (non-edge-to-edge) ones, the five congruent-rectangle bonds, the two rep-tile patterns and Dürer's pentagon tiling, all twenty 2-uniform tilings (three cut or merged from a uniform tiling, seventeen written down from one translation cell by `_cell_template`), the twenty 2-isohedral duals of those (derived by `_with_two_isohedral`), three of the fifteen convex pentagon tilings (by `_pentagon_template`), and the **`ARCH_TILINGS`** registry (the one place any of them is declared, with `_FAMILY_TRAITS` saying what each family is). |
 | `fractal.py` | The self-similar boards, in two menu families: the rep-tiles (the sphinx, the chair, the L-tetromino, the P-pentomino, the trapezoid, the right trapezoid, the half trapezoid, the stretched chair, the rhombic L, the isosceles right triangle, the 30-60-90 triangle, the T-tetromino and the five-triangle) and the fractals (the Sierpinski carpet, the pentaflake and the Gosper island). One `_Substitution` record per tile — unit outline, the tiles filling the inflated copy, the inflation factor, lattice ops — and the shared inflation (`substitution_placements`) all twelve `*_board` builders run. The first nine are rep-tiles (their children fill the tile); the carpet's and the pentaflake's leave holes, which is what makes them fractals with holes rather than shapes; the Gosper island's fill it with no hole at all and put the fractal in the *outline* instead. Four lattices are integer; the pentaflake's is ℤ[ζ10], since five-fold symmetry needs rank 4. The Gosper island's inflation is the one that is not a pure scaling: multiplication by 2 + ζ, a spiral similarity of √7 at 19.106°. |
 | `aperiodic.py` | Penrose's rhombi (P3) and his kites and darts (P2), Ammann–Beenker (squares and 45° rhombi, eight-fold), the Spectre (Tile(1,1), the chiral monotile), the phyllotactic spiral, Klaassen's spiral monotile and his three pentagonal spirals (5-, 6- and 7-fold, one convex pentagon each), each with exact-arithmetic vertex ids — ℤ[ζ5] for both Penrose boards and the spiral, ℤ[ζ8] for Ammann–Beenker, ℤ[ζ12] for the Spectre. The Spectre's ring is *dense* in the plane, so unlike Penrose's discrete lattice there is no lattice to snap a float vertex back to: its placements are carried as exact `(rotation, mirror, translation)` triples and no floating point enters the substitution at all. The spiral is the odd one out — no substitution, just ten 36° wedges of the tile's own translation lattice, the odd ones offset a step; nonperiodic because its five-fold centre forbids any translation. The **brick rings** are nonperiodic the same way — by symmetry rather than by a substitution — and are the plainest board here: 2x1 bricks on the integer square lattice in concentric square rings about a 2x2 core, ring k being the boundary of the 2k x 2k square with horizontal bricks along its rows and vertical ones up its sides. Every run is even, so every tile is a whole brick and only an even-sided square is tileable at all. A brick's corner lands in the middle of a neighbour's long side, so `_brick_outline` splits each edge at the lattice points that are genuinely some tile's corner — the 2D twin of `solids._split_at_lattice_points`, and *conditional*, unlike the fractal outlines, which carry a vertex at every step. |
 | `hyperbolic.py` | The regular {p,q} tilings of the hyperbolic plane, drawn in the Poincaré disc: {8,3} octagons, {7,3} heptagons, {6,4} hexagons, {5,4} and {5,5} pentagons, {4,5} and {4,6} squares, {3,7} and {3,8} triangles. Built combinatorially ring by ring with integer vertex ids (the triangles as the duals of {7,3} and {8,3}), placed afterwards by disc isometries, edges drawn as geodesic arcs, trimmed by hyperbolic-distance shells. See "The hyperbolic boards" below. Their uniform tilings come off the same walk by Wythoff's construction (`ambo`, `zip`, `expand`, `bevel`, `truncate`; see "The uniform hyperbolic boards"). Also Böröczky's binary tiling, drawn in the upper half-plane as a rectangle (`binary_board`); see "The binary tiling" below. |
@@ -242,6 +242,28 @@ a dual's `vertex_types` as its two *tiles* (`metrics.tile_types_shown`, the
 number of tiles at each corner read round a tile) rather than as two kinds of
 vertex.
 
+The eighth family, `family="pentagonal"`, is tilings by **one convex
+pentagon**. Fifteen types are known and the list is complete (Rao, 2017); three
+ship — type 10 (James, 1975), type 13 (Rice, 1977) and type 15 (Mann, McLoud
+and Von Derau, 2015) — because those are the three whose adjacency is not a
+board already here and whose tiles stay round enough to number (0.77 or better
+of a regular pentagon) with a rectangular period. Nine of the others play
+exactly like Cairo, prismatic pentagonal, floret, the hexagonal grid or a
+2-isohedral dual; the remaining three are too thin, or have no rectangular
+period. Each factory is a table of exact placements of one tile
+(`_pentagon_template`): the tile from its angles and sides, each copy mirrored
+or not, turned about its corner A and moved. None of the three is edge to
+edge — a corner lands in the middle of a neighbour's side, which
+`_insert_t_vertices` records as for the isogonal family — so `_FAMILY_TRAITS`
+claims only that the family is monohedral, and
+`TestArchimedean.test_tiles_are_congruent` checks it, mirror images included.
+The family is held to the plane (`_FAMILY_SURFACES`). `TestPentagonal` checks
+each tile against its type's defining conditions and proves each board new
+(cells told apart by neighbour count and shared neighbours, which an
+isomorphism keeps). What the other twelve measured, and what adding one would
+take, is "Recipe: add a pentagonal tiling" in
+[`board-recipes.md`](board-recipes.md).
+
 The menu's shared
 tiling picker is a list of family
 submenus: **Regular** (the three regular tilings, plus on the plane the
@@ -249,13 +271,13 @@ shaped boards cut from them), **Uniform** (the eight non-regular uniform
 tilings, `family="uniform"` in `ARCH_TILINGS`), **Laves** (their
 eight duals), **Isogonal**, **Congruent rectangles**, **2-uniform** (the
 plane, the cylinder, the Möbius strip and the torus) and, on the plane only,
-**2-isohedral**, **Other**, **Aperiodic**,
+**2-isohedral**, **Pentagonal**, **Other**, **Aperiodic**,
 **Spirals**, **Rep-tiles**, **Fractals** and **Hyperbolic**.
 Every family is offered on every surface its members allow:
 `picker_families` in `catalog.py` (and its mirror in
 `apps/hypersweeper/src/modes/catalog.ts`) drops a family a surface has no enabled row of
-— the one-off flat-only families, "Other" and "2-isohedral" everywhere but
-the plane, and "2-uniform" everywhere but the plane, the cylinder, the Möbius
+— the one-off flat-only families, "Other", "2-isohedral" and "Pentagonal"
+everywhere but the plane, and "2-uniform" everywhere but the plane, the cylinder, the Möbius
 strip and the torus — and everything else a surface refuses it refuses one row at a time, in
 `family_rows`, on chirality. **Congruent rectangles** was the last gap,
 off the torus/Möbius/Klein bottle because the wrap squashed its bricks;

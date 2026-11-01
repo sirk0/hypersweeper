@@ -2238,10 +2238,165 @@ function squaretrihex2Template(): ArchTemplate {
   ], { centre: [[]], cut: 2 / 5 });
 }
 
+// -- the pentagonal tilings ---------------------------------------------------
+//
+// Periodic tilings by one convex pentagon. Fifteen types are known, the list
+// proved complete by Rao in 2017; three ship — types 10, 13 and 15, the ones
+// that are new boards (an adjacency no tiling here already has), twin-free, with
+// a rectangular period and tiles at least 0.77 as round as a regular pentagon.
+// Why the other twelve do not is "Recipe: add a pentagonal tiling" in
+// docs/agents/board-recipes.md. Ports of the factories of the same names in
+// boards/tilings.py, which explain each tiling; every number is exact.
+
+/** Corners A..E of a convex pentagon from its five angles (degrees) and five
+ * sides, A at the origin and AB along +x; side x runs into corner X (a = EA,
+ * b = AB, …), and `a` closes the walk. */
+interface PentagonAngles {
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  E: number;
+}
+interface PentagonSides {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+}
+
+function pentagon(angles: PentagonAngles, sides: PentagonSides): Vertex[] {
+  const walk: [keyof PentagonAngles, keyof PentagonSides][] = [
+    ["B", "b"],
+    ["C", "c"],
+    ["D", "d"],
+    ["E", "e"],
+  ];
+  const points: Vertex[] = [[0, 0]];
+  let [x, y] = [0, 0];
+  let heading = 0;
+  for (const [corner, side] of walk) {
+    x += sides[side] * Math.cos(heading * DEG);
+    y += sides[side] * Math.sin(heading * DEG);
+    points.push([x, y]);
+    heading += 180 - angles[corner];
+  }
+  return points;
+}
+
+/** `tile` reflected in the y axis if `mirror`, turned `turn` degrees about its
+ * corner A (the origin) and moved so A lands on `at`; a mirrored tile is listed
+ * backwards, so every tile runs anticlockwise. */
+function placed(tile: Vertex[], mirror: boolean, turn: number, at: Vertex): Vertex[] {
+  const points = mirror ? [...tile].reverse().map(([x, y]): Vertex => [-x, y]) : tile;
+  return points.map((p) => {
+    const [x, y] = rotate2(p, turn);
+    return [x + at[0], y + at[1]];
+  });
+}
+
+/** One pentagonal tiling: the tile, its placements on one lattice cell
+ * (mirror, turn, A's position), the lattice `v1`/`v2`, and the rectangle the
+ * domain is — two lattice vectors at right angles, as integer combinations of
+ * v1 and v2 — turned by `turn` degrees to lie along the axes. */
+function pentagonTemplate(
+  angles: PentagonAngles,
+  sides: PentagonSides,
+  placements: [boolean, number, Vertex][],
+  v1: Vertex,
+  v2: Vertex,
+  rect: [[number, number], [number, number]],
+  turn: number,
+  centre: Vertex,
+  mirrored = false,
+): ArchTemplate {
+  const tile = pentagon(angles, sides);
+  const polygons = placements.map(([mirror, spin, at]): [string, Vertex[]] => [
+    "pent",
+    placed(tile, mirror, spin, at),
+  ]);
+  const [[m1, n1], [m2, n2]] = rect;
+  const width = Math.hypot(m1 * v1[0] + n1 * v2[0], m1 * v1[1] + n1 * v2[1]);
+  const height = Math.hypot(m2 * v1[0] + n2 * v2[0], m2 * v1[1] + n2 * v2[1]);
+  return template([5], width, height, periodicDomain(v1, v2, width, height, polygons, turn), {
+    mirrored,
+    centre,
+  });
+}
+
+const ROOT6 = Math.sqrt(6);
+
+/** Type 10 (James, 1975), cmm, at B = 90: a unit square with a corner cut off. */
+function pentagon10Template(): ArchTemplate {
+  // prettier-ignore
+  return pentagonTemplate(
+    { A: 90, B: 90, C: 135, D: 135, E: 90 },
+    { a: 1, b: 1, c: 1 / 2, d: ROOT2 / 2, e: 1 / 2 },
+    [
+      [false, 0, [0, 0]], [false, -90, [0, 0]], [false, 180, [0, 0]],
+      [false, 90, [3 / 2, -3 / 2]], [false, 180, [1 / 2, -1]],
+      [false, 0, [-3 / 2, -3 / 2]],
+    ],
+    [3 / 2, -3 / 2], [-5 / 2, -1], [[1, 2], [-1, 0]], -45, [0, 0], true,
+  );
+}
+
+/** Type 13 (Rice, 1977), pgg, at A = 120: every angle 90 or 120. */
+function pentagon13Template(): ArchTemplate {
+  // prettier-ignore
+  return pentagonTemplate(
+    { A: 120, B: 90, C: 120, D: 120, E: 90 },
+    { a: 1, b: (3 * ROOT3 - 1) / 2, c: (ROOT3 - 1) / 2, d: 2, e: 1 },
+    [
+      [false, 0, [0, 0]], [true, 180, [0, 0]],
+      [true, 0, [2 * ROOT3 - 1, -ROOT3]], [false, 180, [2 * ROOT3 - 1, -ROOT3]],
+      [true, 90, [(5 * ROOT3 - 1) / 2, (-1 - ROOT3) / 2]],
+      [false, -90, [(3 * ROOT3 - 1) / 2, (-1 - 3 * ROOT3) / 2]],
+      [false, 90, [(5 * ROOT3 - 1) / 2, (1 - 7 * ROOT3) / 2]],
+      [true, -90, [(5 * ROOT3 - 1) / 2, (1 - 7 * ROOT3) / 2]],
+    ],
+    [-ROOT3, -ROOT3], [3 * ROOT3, -3 * ROOT3], [[1, 0], [0, 1]], -45,
+    [(ROOT6 - ROOT2) / 4, (3 * ROOT6 + ROOT2) / 4],
+  );
+}
+
+/** Type 15 (Mann, McLoud and Von Derau, 2015), pgg: rigid, no free parameter. */
+function pentagon15Template(): ArchTemplate {
+  // prettier-ignore
+  return pentagonTemplate(
+    { A: 150, B: 60, C: 135, D: 105, E: 90 },
+    { a: 1, b: 2, c: 1, d: (ROOT6 + ROOT2) / 2, e: 1 },
+    [
+      [false, 0, [0, 0]],
+      [true, 90, [(-1 - ROOT3) / 2, (1 - ROOT3) / 2]],
+      [true, 60, [(1 - ROOT3) / 2, (1 + ROOT3) / 2]],
+      [true, -90, [(-2 - 3 * ROOT3) / 2, -3 / 2]],
+      [false, 180, [(-3 - 4 * ROOT3) / 2, (-2 - ROOT3) / 2]],
+      [false, 90, [(-2 - 3 * ROOT3) / 2, -3 / 2]],
+      [false, 150, [(-7 - 4 * ROOT3) / 2, (-2 - ROOT3) / 2]],
+      [true, -120, [(-5 - 4 * ROOT3) / 2, -ROOT3 / 2]],
+      [true, -30, [(-7 - 4 * ROOT3) / 2, (-2 - ROOT3) / 2]],
+      [false, -90, [-1 - ROOT3, 2]],
+      [false, -30, [(-6 - 7 * ROOT3) / 2, (-3 - 2 * ROOT3) / 2]],
+      [true, 150, [(-6 - 7 * ROOT3) / 2, (-3 - 2 * ROOT3) / 2]],
+    ],
+    [(-1 - ROOT3) / 2, (3 + ROOT3) / 2], [(-9 - 6 * ROOT3) / 2, (-6 - 3 * ROOT3) / 2],
+    [[-1, 0], [0, 1]], 60, [1 / 2 + ROOT3 / 4, 5 / 4 + ROOT3],
+  );
+}
+
 // -- registry ----------------------------------------------------------------
 
 export type ArchFamily =
-  "uniform" | "dual" | "2-uniform" | "2-isohedral" | "isogonal" | "rectangle" | "other";
+  | "uniform"
+  | "dual"
+  | "2-uniform"
+  | "2-isohedral"
+  | "pentagonal"
+  | "isogonal"
+  | "rectangle"
+  | "other";
 
 export interface ArchTiling {
   key: string;
@@ -2252,7 +2407,8 @@ export interface ArchTiling {
   /** "uniform" (Archimedean), "dual" (Laves), "2-uniform" (regular polygons
    * edge to edge, with two kinds of vertex), "2-isohedral" (the 2-uniform
    * tilings' duals: two kinds of tile), "isogonal" (not edge to edge),
-   * "rectangle" (a bond of congruent rectangles, not edge to edge either), or
+   * "rectangle" (a bond of congruent rectangles, not edge to edge either),
+   * "pentagonal" (one convex pentagon per tiling, mirror images included), or
    * "other" — the tilings that answer to none of those, and so claim nothing
    * as a family: two rep-tile patterns (one congruent polyform in half-turned
    * pairs, not edge to edge) and Dürer's (a pentagon *and* a rhomb, edge to
@@ -2384,6 +2540,9 @@ export const ARCH_TILINGS: ArchTiling[] = withTwoIsohedral([
   { key: "sphinxpairs", label: "Sphinx pairs", config: [5], edgeDirections: 3, template: sphinxpairsTemplate, family: "other", halfTurn: true },
   { key: "tromino", label: "L-tromino", config: [6], edgeDirections: 2, template: trominoTemplate, family: "other", halfTurn: true },
   { key: "durer", label: "Dürer pentagonal", config: [5, 4], edgeDirections: 5, template: durerTemplate, family: "other", halfTurn: true },
+  { key: "pentagon10", label: "Type 10 (James, 1975)", config: [5], edgeDirections: 4, template: pentagon10Template, family: "pentagonal", halfTurn: true },
+  { key: "pentagon13", label: "Type 13 (Rice, 1977)", config: [5], edgeDirections: 6, template: pentagon13Template, family: "pentagonal", halfTurn: true },
+  { key: "pentagon15", label: "Type 15 (Mann et al., 2015)", config: [5], edgeDirections: 10, template: pentagon15Template, family: "pentagonal", halfTurn: true },
 ]);
 
 const ARCH_BY_KEY = new Map(ARCH_TILINGS.map((t) => [t.key, t]));
