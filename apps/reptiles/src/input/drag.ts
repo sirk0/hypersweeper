@@ -21,7 +21,9 @@
 // second finger landing mid-drag puts that tile back and starts the pinch), one
 // finger on bare board or page pans it once zoomed, and a wheel or a trackpad
 // pinch zooms about the pointer. Safari's own page pinch is cancelled so only
-// the board zooms.
+// the board zooms. The tray's shelf of tiles is drawn at the board's scale, so
+// it can run longer than the screen: a drag on the strip's bare background, or
+// the wheel over it, scrolls it along.
 
 import type { Cyc } from "../geometry/cyclotomic";
 import { centroid, signedArea, type XY } from "../geometry/shape";
@@ -72,7 +74,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   const touches = new Map<number, XY>();
   /** A pan (one pointer) or a pinch (two) in progress: the pointers, and their
    * distance and midpoint at the last move. */
-  let gesture: { ids: number[]; dist: number; mid: XY } | null = null;
+  let gesture: { ids: number[]; dist: number; mid: XY; shelf?: boolean } | null = null;
 
   const spread = (ids: number[]): { dist: number; mid: XY } => {
     const [a, b] = ids.map((id) => touches.get(id)!);
@@ -201,9 +203,11 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       c = centroid(xy);
       outline = xy.map(([x, y]): XY => [x - c[0], y - c[1]]);
     } else {
-      // Bare board or page: a pan, once zoomed in.
+      // The tray strip's bare background scrolls the shelf; bare board or
+      // page pans, once zoomed in.
       ev.preventDefault();
       startGesture([ev.pointerId]);
+      if (target.classList.contains("tray-zone") && gesture) gesture.shelf = true;
       return;
     }
     ev.preventDefault();
@@ -228,9 +232,12 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     touches.set(ev.pointerId, [ev.clientX, ev.clientY]);
     if (gesture && gesture.ids.includes(ev.pointerId)) {
       const { dist, mid } = spread(gesture.ids);
-      if (gesture.ids.length === 2 && gesture.dist > 0 && dist > 0)
-        board.zoomAt(dist / gesture.dist, mid[0], mid[1]);
-      board.panBy(mid[0] - gesture.mid[0], mid[1] - gesture.mid[1]);
+      if (gesture.shelf) board.scrollTray(mid[0] - gesture.mid[0], mid[1] - gesture.mid[1]);
+      else {
+        if (gesture.ids.length === 2 && gesture.dist > 0 && dist > 0)
+          board.zoomAt(dist / gesture.dist, mid[0], mid[1]);
+        board.panBy(mid[0] - gesture.mid[0], mid[1] - gesture.mid[1]);
+      }
       gesture.dist = dist;
       gesture.mid = mid;
       return;
@@ -304,8 +311,14 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     "wheel",
     (ev) => {
       ev.preventDefault();
-      const per = ev.ctrlKey ? PINCH_WHEEL : WHEEL;
       const lines = ev.deltaMode === 1 ? 16 : 1;
+      // Over the tray, the wheel (or a two-finger swipe) scrolls the shelf.
+      if (!ev.ctrlKey && board.overTray(ev.clientX, ev.clientY)) {
+        const d = (Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : ev.deltaY) * lines;
+        board.scrollTray(-d, -d);
+        return;
+      }
+      const per = ev.ctrlKey ? PINCH_WHEEL : WHEEL;
       board.zoomAt(Math.exp(-ev.deltaY * lines * per), ev.clientX, ev.clientY);
     },
     { passive: false },

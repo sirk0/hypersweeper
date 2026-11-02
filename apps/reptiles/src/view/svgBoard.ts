@@ -8,10 +8,11 @@
 // one transform, the camera: fitted to the room the tray leaves at zoom 1, and
 // pinched or wheeled in to four times that about any point (`zoomAt`, `panBy`).
 // The *tray* sits on a strip pinned along the bottom (portrait) or the right
-// (landscape), in board units too, at the board's own scale for as long as the
-// strip can take it — so zooming in grows the tray tiles with the board, which
-// is what makes them easier to pick up. The floating tile is drawn over both,
-// in world units. The pointer maps back to the world with one
+// (landscape): a *shelf* of tiles at the board's own scale — so a tray tile is
+// exactly the size it lands at, and zooming in grows them with the board —
+// which scrolls along the strip when it is longer than the room (`scrollTray`),
+// and the controls, at a fixed size, pinned at the strip's end. The floating
+// tile is drawn over all of it, in world units. The pointer maps back to the world with one
 // getScreenCTM().inverse(), and a turn counter-clockwise in board units reads
 // counter-clockwise on screen.
 
@@ -41,8 +42,12 @@ const TRAY_PAD = 0.3;
 /** How far in the board zooms, from fitted. */
 export const MAX_ZOOM = 4;
 /** The most of the screen's height (portrait) or width (landscape) the tray
- * strip grows to as the board zooms in. */
-const TRAY_SHARE = 0.38;
+ * strip grows to as the board zooms in: past it, the shelf stops growing. */
+const TRAY_SHARE = 0.45;
+/** A control knob's diameter on screen, in pixels, where the screen has room. */
+const KNOB_PX = 48;
+/** Each board's own id for its shelf's clip path. */
+let boards = 0;
 /** The room left above the fitted board for the level's name, which is drawn
  * on the page behind it (`.board-name`), in pixels. */
 const LABEL_ROOM = 22;
@@ -109,21 +114,31 @@ export class SvgBoard {
    * everything: both under the camera's transform. */
   private still: SVGGElement;
   private moving: SVGGElement;
-  /** The tray strip (screen pixels) and the tray on it (board units). */
+  /** The tray strip (screen pixels); on it, the shelf of tiles (board units,
+   * clipped to its room) and the controls. */
   private zone: SVGRectElement;
-  private tray: SVGGElement;
+  private shelf: SVGGElement;
+  private shelfClip: SVGRectElement;
+  private knobs: SVGGElement;
   /** Where each tray kind sits, centroid in tray units. */
   trayAt: XY[] = [];
   /** The camera: how far in from fitted, and the board point at the middle of
    * the room the tray leaves (null: the board's own middle). */
   private zoom = 1;
   private centre: XY | null = null;
-  /** Pixels per board unit for the world and for the tray, the room the
-   * board is framed in, the tray strip, and the two layers' offsets. */
+  /** Pixels per board unit for the world, the shelf and the controls; the
+   * room the board is framed in, the tray strip, and the shelf's room on it. */
   private scale = 1;
-  private trayScale = 1;
+  private shelfScale = 1;
+  private knobScale = 1;
   private view: Box = [0, 0, 0, 0];
   private strip: Box = [0, 0, 0, 0];
+  private shelfRoom: Box = [0, 0, 0, 0];
+  /** Where the shelf's own (0, 0) and the controls' land on screen. */
+  private shelfAt: XY = [0, 0];
+  private knobsAt: XY = [0, 0];
+  /** How far the shelf is scrolled along the strip, in pixels. */
+  private scrolled = 0;
   private landscape = false;
   /** How far every tray tile is turned from resting flat, as a power of ζ —
    * the one rotate control turns them all together. */
@@ -131,8 +146,9 @@ export class SvgBoard {
   /** Whether every tray tile is held mirrored — the flip control, on a level
    * whose board uses some kind both ways round. */
   flip = false;
-  /** The tray's contents (tiles and controls, padded), in tray units. */
-  private trayBox: Box = [0, 0, 0, 0];
+  /** The shelf's tiles and the controls, each padded, in their own units. */
+  private shelfBox: Box = [0, 0, 0, 0];
+  private knobBox: Box = [0, 0, 0, 0];
   /** The region's bounding box, in board units. */
   private regionBox: Box = [0, 0, 0, 0];
   /** Where each control sits. */
@@ -156,7 +172,12 @@ export class SvgBoard {
     host.appendChild(this.svg);
     this.still = el("g", { class: "world" }, this.svg);
     this.zone = el("rect", { class: "tray-zone" }, this.svg);
-    this.tray = el("g", { class: "tray-layer" }, this.svg);
+    const clipId = `shelf-clip-${++boards}`;
+    const clip = el("clipPath", { id: clipId, clipPathUnits: "userSpaceOnUse" }, this.svg);
+    this.shelfClip = el("rect", {}, clip);
+    const room = el("g", { "clip-path": `url(#${clipId})` }, this.svg);
+    this.shelf = el("g", { class: "tray-layer" }, room);
+    this.knobs = el("g", { class: "tray-controls" }, this.svg);
     this.moving = el("g", {}, this.svg);
     this.radius = puzzle.level.tiles.map((_, kind) =>
       Math.max(...this.outline(kind, 0).map(([x, y]) => Math.hypot(x, y))),
@@ -189,8 +210,15 @@ export class SvgBoard {
    * from the tray starts. */
   trayCentre(kind: number): XY {
     const [px, py] = this.trayAt[kind]!;
-    const [sx, sy] = this.trayToScreen([px, py]);
-    return this.screenToWorld([sx, sy]);
+    const [ox, oy] = this.shelfAt;
+    return this.screenToWorld([ox + this.shelfScale * px, oy - this.shelfScale * py]);
+  }
+
+  /** Scroll the shelf by a drag of (dx, dy) screen pixels — the part along
+   * the strip. */
+  scrollTray(dx: number, dy: number): void {
+    this.scrolled -= this.landscape ? dy : dx;
+    this.place();
   }
 
   /** A kind's outline, mirrored if `flip`, turned by ζ^rot, about its own
@@ -215,13 +243,12 @@ export class SvgBoard {
     return out;
   }
 
-  /** Lay the tray out and fit everything to the element. The tray is a row
-   * of circles in portrait, its controls two to a row at the row's end; a
-   * column in landscape, the controls two to a row at its foot. */
+  /** Lay the tray out and fit everything to the element. The shelf is a row
+   * of circles in portrait, a column in landscape; the controls are two to a
+   * row, at the row's end or the column's foot. */
   layout(): void {
     const { width, height } = this.svg.getBoundingClientRect();
     this.landscape = width > height;
-    const kinds = this.radius.map((_, kind) => kind);
     const controls = this.controls();
     // A control's own box: the knob and its label underneath.
     const knobH = 2 * KNOB + LABEL;
@@ -230,78 +257,102 @@ export class SvgBoard {
     const gridW = cols * 2 * KNOB + (cols - 1) * KNOB_GAP;
     const gridH = rows * knobH + (rows - 1) * KNOB_GAP;
     this.trayAt = [];
-    this.controlsAt.clear();
     let along = 0;
-    for (const kind of kinds) {
+    this.radius.forEach((_, kind) => {
       const r = this.trayRadius(kind);
-      if (this.landscape) {
-        this.trayAt.push([0, along - r]);
-        along -= 2 * r + TRAY_GAP;
-      } else {
-        this.trayAt.push([along + r, 0]);
-        along += 2 * r + TRAY_GAP;
-      }
-    }
+      this.trayAt.push(this.landscape ? [0, -(along + r)] : [along + r, 0]);
+      along += 2 * r + TRAY_GAP;
+    });
+    const shelfBoxes: Box[] = this.trayAt.map(([cx, cy], kind) => {
+      const r = this.trayRadius(kind);
+      return [cx - r, cy - r, cx + r, cy + r];
+    });
+    this.shelfBox = [
+      Math.min(...shelfBoxes.map((b) => b[0])) - TRAY_PAD,
+      Math.min(...shelfBoxes.map((b) => b[1])) - TRAY_PAD,
+      Math.max(...shelfBoxes.map((b) => b[2])) + TRAY_PAD,
+      Math.max(...shelfBoxes.map((b) => b[3])) + TRAY_PAD,
+    ];
+    this.controlsAt.clear();
     controls.forEach((control, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      if (this.landscape) {
-        // under the column, centred on it
-        const kx = -gridW / 2 + KNOB + col * (2 * KNOB + KNOB_GAP);
-        this.controlsAt.set(control, [kx, along - KNOB - row * (knobH + KNOB_GAP)]);
-      } else {
-        // at the end of the row, centred on it
-        const kx = along + KNOB + col * (2 * KNOB + KNOB_GAP);
-        this.controlsAt.set(control, [kx, gridH / 2 - KNOB - row * (knobH + KNOB_GAP)]);
-      }
+      const kx = -gridW / 2 + KNOB + col * (2 * KNOB + KNOB_GAP);
+      this.controlsAt.set(control, [kx, gridH / 2 - KNOB - row * (knobH + KNOB_GAP)]);
     });
-    const boxes: Box[] = [];
-    this.trayAt.forEach(([cx, cy], kind) => {
-      const r = this.trayRadius(kind);
-      boxes.push([cx - r, cy - r, cx + r, cy + r]);
-    });
-    for (const [kx, ky] of this.controlsAt.values())
-      boxes.push([kx - KNOB, ky - KNOB - LABEL, kx + KNOB, ky + KNOB]);
-    this.trayBox = [
-      Math.min(...boxes.map((b) => b[0])) - TRAY_PAD,
-      Math.min(...boxes.map((b) => b[1])) - TRAY_PAD,
-      Math.max(...boxes.map((b) => b[2])) + TRAY_PAD,
-      Math.max(...boxes.map((b) => b[3])) + TRAY_PAD,
+    this.knobBox = [
+      -gridW / 2 - TRAY_PAD,
+      -gridH / 2 - TRAY_PAD,
+      gridW / 2 + TRAY_PAD,
+      gridH / 2 + TRAY_PAD,
     ];
     this.place();
     this.draw();
   }
 
-  /** The scales, the board's room and the tray strip, for the zoom as it is:
-   * the world fitted to what the tray leaves at zoom 1, the tray at the
-   * world's scale as far as the strip allows. */
+  /** The scales, the board's room, the tray strip and the shelf's room on it,
+   * for the zoom as it is. The shelf is at the world's scale, up to
+   * `TRAY_SHARE` of the screen; the controls at a fixed size; the strip as
+   * thick as the thicker of the two; and the world fitted, at zoom 1, to what
+   * that strip leaves. */
   private frame(width: number, height: number): void {
     const [x0, y0, x1, y1] = this.regionBox;
-    const [t0, u0, t1, u1] = this.trayBox;
-    const bw = x1 - x0 + 2 * MARGIN;
-    const bh = y1 - y0 + 2 * MARGIN;
-    const tw = t1 - t0;
-    const th = u1 - u0;
-    // The tray's scale with the board fitted (its own, if the board's will not
-    // fit the strip), then the fit in what that strip leaves.
+    const [s0, t0, s1, t1] = this.shelfBox;
+    const [k0, l0, k1, l1] = this.knobBox;
+    // Along the strip and across it: the screen, the board, the shelf, the controls.
+    const across = this.landscape ? width : height;
+    const length = this.landscape ? height : width;
+    const boardAcross = (this.landscape ? x1 - x0 : y1 - y0) + 2 * MARGIN;
+    const boardAlong = (this.landscape ? y1 - y0 : x1 - x0) + 2 * MARGIN;
+    const shelfAcross = this.landscape ? s1 - s0 : t1 - t0;
+    const shelfAlong = this.landscape ? t1 - t0 : s1 - s0;
+    const knobsAcross = this.landscape ? k1 - k0 : l1 - l0;
+    const knobsAlong = this.landscape ? l1 - l0 : k1 - k0;
+    this.knobScale = Math.min(KNOB_PX / (2 * KNOB), (0.13 * Math.min(width, height)) / (2 * KNOB));
+    const cap = (TRAY_SHARE * across) / shelfAcross;
+    const thickness = (scale: number): number =>
+      Math.max(Math.min(scale, cap) * shelfAcross, this.knobScale * knobsAcross);
+    // The largest fit that leaves the board and the strip both on screen: the
+    // strip grows with the scale, so search for it.
+    // The label's room comes off the screen's height: across the strip in
+    // portrait, along it in landscape.
+    const roomAlong = this.landscape ? length - LABEL_ROOM : length;
+    const roomAcross = this.landscape ? across : across - LABEL_ROOM;
+    let lo = 0;
+    let hi = Math.min(roomAlong / boardAlong, roomAcross / boardAcross);
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (mid * boardAcross + thickness(mid) <= roomAcross) lo = mid;
+      else hi = mid;
+    }
+    this.scale = lo * this.zoom;
+    this.shelfScale = Math.min(this.scale, cap);
+    const strip = thickness(this.scale);
+    const knobsLen = this.knobScale * knobsAlong;
+    const shelfLen = this.shelfScale * shelfAlong;
+    const shelfRoomLen = length - knobsLen;
+    const overflow = Math.max(0, shelfLen - shelfRoomLen);
+    this.scrolled = Math.min(overflow, Math.max(0, this.scrolled));
+    // Where the shelf starts along the strip: centred in its room while it
+    // fits, scrolled once it does not.
+    const start = overflow > 0 ? -this.scrolled : (shelfRoomLen - shelfLen) / 2;
+    const ss = this.shelfScale;
     if (this.landscape) {
-      const s0 = Math.min((height - LABEL_ROOM) / bh, width / (bw + tw));
-      const ts0 = Math.min(s0, height / th);
-      const fit = Math.min((height - LABEL_ROOM) / bh, (width - ts0 * tw) / bw);
-      this.scale = fit * this.zoom;
-      this.trayScale = Math.min(this.scale, height / th, Math.max(ts0, (TRAY_SHARE * width) / tw));
-      const strip = this.trayScale * tw;
-      this.view = [0, LABEL_ROOM, width - strip, height];
-      this.strip = [width - strip, 0, width, height];
+      const sx0 = width - strip;
+      this.view = [0, LABEL_ROOM, sx0, height];
+      this.strip = [sx0, 0, width, height];
+      this.shelfRoom = [sx0, 0, width, shelfRoomLen];
+      const mid = (sx0 + width) / 2;
+      this.shelfAt = [mid - ss * ((s0 + s1) / 2), start + ss * t1];
+      this.knobsAt = [mid, shelfRoomLen + knobsLen / 2];
     } else {
-      const s0 = Math.min(width / bw, (height - LABEL_ROOM) / (bh + th));
-      const ts0 = Math.min(s0, width / tw);
-      const fit = Math.min(width / bw, (height - LABEL_ROOM - ts0 * th) / bh);
-      this.scale = fit * this.zoom;
-      this.trayScale = Math.min(this.scale, width / tw, Math.max(ts0, (TRAY_SHARE * height) / th));
-      const strip = this.trayScale * th;
-      this.view = [0, LABEL_ROOM, width, height - strip];
-      this.strip = [0, height - strip, width, height];
+      const sy0 = height - strip;
+      this.view = [0, LABEL_ROOM, width, sy0];
+      this.strip = [0, sy0, width, height];
+      this.shelfRoom = [0, sy0, shelfRoomLen, height];
+      const mid = (sy0 + height) / 2;
+      this.shelfAt = [start - ss * s0, mid + ss * ((t0 + t1) / 2)];
+      this.knobsAt = [shelfRoomLen + knobsLen / 2, mid];
     }
   }
 
@@ -329,13 +380,6 @@ export class SvgBoard {
     return [(sx - tx) / this.scale, (ty - sy) / this.scale];
   }
 
-  private trayToScreen([px, py]: XY): XY {
-    const [t0, u0, t1, u1] = this.trayBox;
-    const [z0, w0, z1, w1] = this.strip;
-    const ts = this.trayScale;
-    return [(z0 + z1) / 2 + ts * (px - (t0 + t1) / 2), (w0 + w1) / 2 - ts * (py - (u0 + u1) / 2)];
-  }
-
   /** Size the SVG to its element and set both layers' transforms and the
    * strip — everything a zoom or a pan changes, and nothing it does not. */
   private place(): void {
@@ -351,11 +395,19 @@ export class SvgBoard {
     const [z0, w0, z1, w1] = this.strip;
     for (const [k, v] of Object.entries({ x: z0, y: w0, width: z1 - z0, height: w1 - w0 }))
       this.zone.setAttribute(k, String(v));
-    const [t0, u0, t1, u1] = this.trayBox;
-    const ts = this.trayScale;
-    const ox = (z0 + z1) / 2 - ts * ((t0 + t1) / 2);
-    const oy = (w0 + w1) / 2 + ts * ((u0 + u1) / 2);
-    this.tray.setAttribute("transform", `matrix(${ts},0,0,${-ts},${ox},${oy})`);
+    const [r0, q0, r1, q1] = this.shelfRoom;
+    for (const [k, v] of Object.entries({ x: r0, y: q0, width: r1 - r0, height: q1 - q0 }))
+      this.shelfClip.setAttribute(k, String(v));
+    const ss = this.shelfScale;
+    this.shelf.setAttribute(
+      "transform",
+      `matrix(${ss},0,0,${-ss},${this.shelfAt[0]},${this.shelfAt[1]})`,
+    );
+    const ks = this.knobScale;
+    this.knobs.setAttribute(
+      "transform",
+      `matrix(${ks},0,0,${-ks},${this.knobsAt[0]},${this.knobsAt[1]})`,
+    );
   }
 
   /** Zoom by `factor` about a client point, which stays put on the board. */
@@ -412,10 +464,11 @@ export class SvgBoard {
         this.still,
       );
     }
-    this.tray.replaceChildren();
+    this.shelf.replaceChildren();
+    this.knobs.replaceChildren();
     this.trayAt.forEach(([cx, cy], kind) => {
       const r = this.trayRadius(kind);
-      el("circle", { cx, cy, r, class: "tray", "data-tray": kind }, this.tray);
+      el("circle", { cx, cy, r, class: "tray", "data-tray": kind }, this.shelf);
       el(
         "polygon",
         {
@@ -425,7 +478,7 @@ export class SvgBoard {
           class: `tile sides-${this.sides(kind)} in-tray`,
           "data-tray": kind,
         },
-        this.tray,
+        this.shelf,
       );
       // The pile's count: how many more the board was cut with. Past zero it
       // shows how many extra are down — allowed, but it costs a star.
@@ -435,14 +488,14 @@ export class SvgBoard {
       const badge = el(
         "g",
         { class: `pile${left < 0 ? " over" : left === 0 ? " done" : ""}`, "data-tray": kind },
-        this.tray,
+        this.shelf,
       );
       el("circle", { cx: bx, cy: by, r: PILE }, badge);
       const text = el("text", { x: bx, y: -by, transform: "scale(1,-1)" }, badge);
       text.textContent = left < 0 ? `+${-left}` : String(left);
     });
     for (const [control, [kx, ky]] of this.controlsAt) {
-      const knob = el("g", { class: `knob knob-${control}` }, this.tray);
+      const knob = el("g", { class: `knob knob-${control}` }, this.knobs);
       el("circle", { cx: kx, cy: ky, r: KNOB }, knob);
       let label: string;
       if (control === "rotate-ccw" || control === "rotate-cw") {

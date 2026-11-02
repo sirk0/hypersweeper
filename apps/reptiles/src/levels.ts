@@ -253,29 +253,38 @@ export function hexCells(rows: number, cols: number): Cyc[][] {
   return cells;
 }
 
-/** The families the levels come in, in the order the list shows them, each
- * named for the symmetry that makes it one: what the tiling's own symmetries
- * can carry onto what. */
+/** Hypersweeper's names for its tiling families (`menu.familyLabels` in the
+ * shared data), by its keys — its Laves family is keyed `dual`. */
+const FAMILY_LABELS = catalog.menu.familyLabels as Record<string, string>;
+
+const familyLabel = (key: string): string => {
+  const label = FAMILY_LABELS[key];
+  if (!label) throw new Error(`no family label for ${key} in data/catalog.json`);
+  return label;
+};
+
+/** The families the levels come in, in the order the catalog shows them,
+ * named as Hypersweeper names them, with its plain-words hints. */
 export const GROUPS = [
   {
     key: "regular",
-    name: "Flag-transitive",
-    hint: "The regular tilings: any vertex, with an edge at it and a tile on that edge, can be carried onto any other",
+    name: familyLabel("regular"),
+    hint: "One regular shape throughout: triangles, squares or hexagons",
   },
   {
     key: "uniform",
-    name: "Vertex-transitive",
-    hint: "The uniform tilings: regular polygons, every vertex carried onto every other",
+    name: familyLabel("uniform"),
+    hint: "Two or three shapes, same at every corner",
   },
   {
     key: "2-uniform",
-    name: "2-isogonal",
-    hint: "The 2-uniform tilings: regular polygons, and the vertices fall into two kinds, each carried onto its own",
+    name: familyLabel("2-uniform"),
+    hint: "Regular shapes, two kinds of corner",
   },
   {
     key: "laves",
-    name: "Face-transitive",
-    hint: "The Laves tilings, duals of the uniform ones: one tile, every tile carried onto every other",
+    name: familyLabel("dual"),
+    hint: "The uniform tilings' duals — one shape throughout",
   },
 ] as const;
 

@@ -63,7 +63,7 @@
   --tray: rgba(64, 35, 16, 0.06);
   /* The tray's strip along the bottom (or the right), over a board zoomed in
      under it. */
-  --tray-strip: rgba(249, 244, 237, 0.92);
+  --tray-strip: #f9f4ed;
   --button: var(--panel);
   --button-edge: var(--border);
   --scrim: rgba(30, 28, 24, 0.45);
@@ -116,7 +116,7 @@
     --remove: #d0574d;
     --remove-edge: #ffb3ab;
     --tray: rgba(255, 255, 255, 0.06);
-    --tray-strip: rgba(46, 43, 37, 0.92);
+    --tray-strip: #2e2b25;
     --scrim: rgba(0, 0, 0, 0.55);
   }
 }
@@ -568,6 +568,7 @@ button:disabled {
 }
 
 .won-card {
+  position: relative;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -912,4 +913,11 @@ button.settings-row:active {
   position: absolute;
   top: max(var(--hud-pad), env(safe-area-inset-top));
   left: var(--hud-pad);
+}
+
+/* The win card's ✕, in its top-right corner: closes it to look at the board. */
+.won-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }

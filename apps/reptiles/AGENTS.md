@@ -36,10 +36,14 @@ some back off.
 - **Zoom.** Two fingers pinch the board in, up to four times fitted, about
   their midpoint (a second finger landing mid-drag puts that tile back first;
   one on a control still turns or flips it); one finger on bare board pans it
-  once zoomed; a wheel or a trackpad pinch zooms about the pointer. The tray
-  stays pinned on its strip and its tiles grow with the board until the strip
-  is full, so they are easier to pick up. Safari's own page pinch is
-  cancelled.
+  once zoomed; a wheel or a trackpad pinch zooms about the pointer. Safari's
+  own page pinch is cancelled.
+- **The tray** is a strip along the bottom (portrait) or the right
+  (landscape): a shelf of tiles at the board's own scale — a tray tile is the
+  size it lands at, zoomed in or not (up to the strip taking 45% of the
+  screen) — and the controls, at a fixed size, pinned at its end. A shelf
+  longer than the strip scrolls: drag the strip's bare background, or wheel
+  over it.
 
 **Screens**, in Hypersweeper's Sand look (its `sand`/`sandDark` palettes,
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
@@ -55,8 +59,9 @@ home, the clock against the three-star limit, restart, and a die that deals
 another level of the same difficulty as this one — then the level's name and
 coverage as a faint label on the page behind the board, which fills the rest
 of the screen, the tray on a strip along the bottom (portrait) or the right
-(landscape). The win card has Play again, Next level and Exit, which closes it
-to look at the finished board (as do Escape and a tap outside it). Each move
+(landscape). The win card has Play again and Next level, and an ✕ in its
+corner that closes it to look at the finished board (as do Escape and a tap
+outside it). Each move
 is a history entry, so the browser's Back works.
 
 **Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
@@ -77,17 +82,16 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 39 levels in four sections, deployed at <https://rep-tiles.pages.dev/>** — named for their
-symmetry: *Flag-transitive* (the regular 4⁴, 3⁶, 6³), *Vertex-transitive*
-(the other eight uniform tilings, 3.6.3.6 to 4.6.12), *2-isogonal* (all
-twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
-[3⁶; 3⁴.6]₁) and *Face-transitive* (the eight Laves tilings, V4.8² to
-V4.6.12). Each board is as near square as its tiling allows at two or three
+**Status: 39 levels in four sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
+*Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
+4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
+[3⁶; 3⁴.6]₁) and *Laves* (the eight Laves tilings, V4.8² to V4.6.12). Each board is as near square as its tiling allows at two or three
 dozen tiles. CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
-settings, the header, rotating both ways, wheel and pinch zoom, a won board
-and its Exit). It packages as an offline desktop app through the
+settings, the header, rotating both ways, wheel and pinch zoom, the tray at
+board scale and scrolling, the family names, a won board and its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
 its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
@@ -208,8 +212,9 @@ finishes the board — the quick way to see the win state.
   the open corner with the fewest placements.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
-  camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and the tray on its
-  pinned strip under its own, at the world's scale while the strip can take it.
+  camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's
+  pinned strip the shelf (at the world's scale, clipped to its room,
+  `scrollTray`) and the controls (a fixed size).
 - `src/view/home.ts`, `src/view/catalog.ts`, `src/view/settings.ts` — the
   first screen, the catalog and the settings; `src/view/icons.ts` the pictures
   they share (board outline, tray tile, the three bars, a star row) and the

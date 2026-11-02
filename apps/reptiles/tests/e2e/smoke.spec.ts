@@ -125,6 +125,35 @@ test("the wheel zooms the board in, and the tray tiles grow with it", async ({ p
 test.describe("on a touchscreen", () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
 
+  test("the tray's tiles scroll along the strip, and the controls stay put", async ({
+    page,
+    context,
+  }) => {
+    // 4.6.12: a square, a hexagon and a dodecagon at the board's own size
+    // run longer than a phone is wide.
+    await page.goto("/?level=trunctrihex");
+    const zone = (await page.locator("svg.board rect.tray-zone").boundingBox())!;
+    const tile = page.locator("svg.board polygon.in-tray").first();
+    const knob = page.locator('[data-turn="1"]');
+    const before = (await tile.boundingBox())!;
+    const knobBefore = (await knob.boundingBox())!;
+    const cdp = await context.newCDPSession(page);
+    const y = zone.y + 4;
+    const x = zone.x + zone.width / 2;
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y, id: 0 }],
+    });
+    for (let i = 1; i <= 8; i++)
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x: x - i * 15, y, id: 0 }],
+      });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    expect((await tile.boundingBox())!.x).toBeLessThan(before.x - 20);
+    expect((await knob.boundingBox())!.x).toBeCloseTo(knobBefore.x, 0);
+  });
+
   test("two fingers pinch the board in", async ({ page, context }) => {
     await page.goto("/?level=rhombille");
     const r = (await page.locator("svg.board path.region").boundingBox())!;
@@ -177,4 +206,31 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   await expect(page.locator("#won")).toBeHidden();
   await expect(page.locator("#count")).toHaveText("100%");
   expect(errors).toEqual([]);
+});
+
+/** The x scale of a group's transform: pixels per board unit. */
+async function scaleOf(page: Page, selector: string): Promise<number> {
+  const transform = (await page.locator(selector).getAttribute("transform")) ?? "";
+  return Number(/matrix\(([^,]+),/.exec(transform)?.[1]);
+}
+
+test("tray tiles are the size they land at, zoomed in or not", async ({ page }) => {
+  await page.goto("/?level=cairo");
+  expect(await scaleOf(page, "svg.board g.tray-layer")).toBeCloseTo(
+    await scaleOf(page, "svg.board g.world"),
+    6,
+  );
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 3);
+  await page.mouse.wheel(0, -200);
+  expect(await scaleOf(page, "svg.board g.world")).toBeGreaterThan(0);
+  expect(await scaleOf(page, "svg.board g.tray-layer")).toBeCloseTo(
+    await scaleOf(page, "svg.board g.world"),
+    6,
+  );
+});
+
+test("the catalog's families are named as Hypersweeper names them", async ({ page }) => {
+  await page.goto("/?catalog");
+  await expect(page.locator(".family h2")).toHaveText(["Regular", "Uniform", "2-uniform", "Laves"]);
 });

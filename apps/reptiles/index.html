@@ -88,13 +88,28 @@
     </div>
     <div class="won" id="won" hidden>
       <div class="won-card">
+        <button
+          type="button"
+          id="exit"
+          class="menu-header-btn won-close"
+          title="Close"
+          aria-label="Close"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6 6 L18 18 M18 6 L6 18"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
         <p class="won-title">Tiled!</p>
         <p class="won-stars" id="won-stars"></p>
         <ul class="won-detail" id="won-detail"></ul>
         <div class="won-actions">
           <button type="button" id="again">Play again</button>
           <button type="button" id="next" class="primary">Next level</button>
-          <button type="button" id="exit">Exit</button>
         </div>
       </div>
     </div>
