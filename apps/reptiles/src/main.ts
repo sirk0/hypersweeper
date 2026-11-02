@@ -35,13 +35,7 @@ function show(screen: Screen): void {
 
 function goHome(push = true): void {
   if (push) history.pushState(null, "", location.pathname);
-  renderHome(
-    byId("home-picks"),
-    tally,
-    playBand,
-    () => goCatalog(),
-    () => goSettings(),
-  );
+  renderHome(byId("home-picks"), tally, playBand, () => goCatalog());
   show("home");
 }
 
@@ -193,6 +187,9 @@ function dismiss(): void {
 }
 
 byId("restart").addEventListener("click", restart);
+document
+  .querySelector("#home [data-action=settings]")
+  ?.addEventListener("click", () => goSettings());
 // Another level of the same difficulty as this one, however it was picked.
 byId("random").addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));

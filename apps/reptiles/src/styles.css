@@ -636,6 +636,7 @@ button:disabled {
 }
 
 .home {
+  position: relative;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
@@ -878,9 +879,37 @@ button.settings-row:active {
   font-variant-numeric: tabular-nums;
 }
 
-.settings-glyph {
-  width: 40px;
-  height: 40px;
-  flex: none;
+/* The settings gear in the home screen's top-left corner, drawn like
+   Hypersweeper's menu header buttons: a bare glyph in the muted ink, lit in
+   the accent when pressed. */
+.menu-header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(32px, 10vw, 40px);
+  height: clamp(32px, 10vw, 40px);
+  min-height: 0;
+  padding: 0;
   color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+}
+
+.menu-header-btn svg {
+  display: block;
+  width: 60%;
+  height: 60%;
+}
+
+.menu-header-btn:hover,
+.menu-header-btn:active {
+  color: var(--accent);
+  background: var(--selected);
+}
+
+.home-settings {
+  position: absolute;
+  top: max(var(--hud-pad), env(safe-area-inset-top));
+  left: var(--hud-pad);
 }

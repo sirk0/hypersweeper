@@ -46,9 +46,10 @@ grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
 `public/fonts`). Home (no query): Easy, Medium and Hard each deal a random
 level of that difficulty, Catalog opens the catalog (`?catalog`): each family a
 row of level cards scrolling sideways — board outline, tiles, name,
-difficulty as Hypersweeper's three bars, stars — and Settings (`?settings`)
-shows the version and checks for updates (the shared check in
-`@tiling/platform`; left out of a packaged build). Levels are picked in the
+difficulty as Hypersweeper's three bars, stars — and the gear in its top-left
+corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
+version and checks for updates (the shared check in `@tiling/platform`; left
+out of a packaged build). Levels are picked in the
 catalog only. A level is `?level=<key>`: one header row, Hypersweeper's —
 home, the clock against the three-star limit, restart, and a die that deals
 another level of the same difficulty as this one — then the level's name and

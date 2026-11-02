@@ -19,7 +19,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
   const response = await page.goto("/");
   expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
   await expect(page.locator("#home")).toBeVisible();
-  await expect(page.locator("#home-picks > *")).toHaveCount(5);
+  await expect(page.locator("#home-picks > *")).toHaveCount(4);
   // The deployed extras the shared preset adds.
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",
@@ -72,7 +72,7 @@ test("a square dragged into the corner of the squares level lands there", async 
 test("settings report the version and check for updates", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/");
-  await page.locator("#home-picks .settings-pick").click();
+  await page.locator('#home [data-action="settings"]').click();
   await expect(page.locator("#settings")).toBeVisible();
   await expect(page.locator('[data-value="version"]')).toHaveText(/^\d+\.\d+\.\d+/);
   await page.locator('[data-action="check-updates"]').click();

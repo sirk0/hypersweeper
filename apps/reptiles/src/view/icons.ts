@@ -101,7 +101,7 @@ export function starRow(earned: number): HTMLSpanElement {
 const STROKE = `stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
 
 /** The header's and home screen's glyphs, on a 24-unit square: home, restart,
- * a die for a new random level (Hypersweeper's), and a gear for settings. */
+ * a die for a new random level and the settings gear (both Hypersweeper's). */
 export const GLYPHS: Record<string, string> = {
   home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
     <path d="M6.2 9.4 V19.6 H17.8 V9.4" ${STROKE}/>
@@ -113,14 +113,8 @@ export const GLYPHS: Record<string, string> = {
     <circle cx="8.3" cy="8.3" r="1.55" fill="currentColor"/>
     <circle cx="12" cy="12" r="1.55" fill="currentColor"/>
     <circle cx="15.7" cy="15.7" r="1.55" fill="currentColor"/>`,
-  settings: `<circle cx="12" cy="12" r="3" ${STROKE}/>
-    <circle cx="12" cy="12" r="6.6" ${STROKE}/>
-    ${Array.from({ length: 8 }, (_, i) => {
-      const a = (i * Math.PI) / 4;
-      const p = (r: number): string =>
-        `${(12 + r * Math.cos(a)).toFixed(2)} ${(12 + r * Math.sin(a)).toFixed(2)}`;
-      return `<path d="M${p(6.6)} L${p(9.6)}" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>`;
-    }).join("")}`,
+  // Hypersweeper's own gear (apps/hypersweeper/src/ui/settings.ts GEAR_ICON).
+  settings: `<path fill="currentColor" fill-rule="evenodd" d="M21.48 10.50A9.6 9.6 0 0 1 21.48 13.50L18.60 13.65A6.8 6.8 0 0 1 17.83 15.50L19.77 17.64A9.6 9.6 0 0 1 17.64 19.77L15.50 17.83A6.8 6.8 0 0 1 13.65 18.60L13.50 21.48A9.6 9.6 0 0 1 10.50 21.48L10.35 18.60A6.8 6.8 0 0 1 8.50 17.83L6.36 19.77A9.6 9.6 0 0 1 4.23 17.64L6.17 15.50A6.8 6.8 0 0 1 5.40 13.65L2.52 13.50A9.6 9.6 0 0 1 2.52 10.50L5.40 10.35A6.8 6.8 0 0 1 6.17 8.50L4.23 6.36A9.6 9.6 0 0 1 6.36 4.23L8.50 6.17A6.8 6.8 0 0 1 10.35 5.40L10.50 2.52A9.6 9.6 0 0 1 13.50 2.52L13.65 5.40A6.8 6.8 0 0 1 15.50 6.17L17.64 4.23A9.6 9.6 0 0 1 19.77 6.36L17.83 8.50A6.8 6.8 0 0 1 18.60 10.35L21.48 10.50ZM8.6 12A3.4 3.4 0 1 0 15.4 12A3.4 3.4 0 1 0 8.6 12Z"/>`,
 };
 
 /** Fill every `<svg data-icon="…">` under `root` with its glyph. */
@@ -129,11 +123,4 @@ export function fillGlyphs(root: ParentNode): void {
     const glyph = GLYPHS[svg.dataset["icon"] ?? ""];
     if (glyph) svg.innerHTML = glyph;
   }
-}
-
-/** A glyph as its own element, for a button built in code. */
-export function glyphIcon(name: string, className: string): SVGSVGElement {
-  const svg = svgIn(className, [0, 0, 24, 24]);
-  svg.innerHTML = GLYPHS[name] ?? "";
-  return svg;
 }

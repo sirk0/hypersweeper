@@ -1,8 +1,9 @@
-// The first screen: a level of a chosen difficulty, dealt at random, the
-// catalog to pick one by hand, or the settings.
+// The first screen: a level of a chosen difficulty, dealt at random, or the
+// catalog to pick one by hand. (The settings gear is in the screen's corner,
+// in index.html.)
 
 import { BARS, type Band } from "../difficulty";
-import { barsIcon, glyphIcon } from "./icons";
+import { barsIcon } from "./icons";
 
 const BANDS: { band: Band; label: string; hint: string }[] = [
   { band: "easy", label: "Easy", hint: "One tile laid over and over, hardly a turn" },
@@ -16,7 +17,6 @@ export function renderHome(
   tally: (band: Band) => { levels: number; stars: number },
   play: (band: Band) => void,
   catalog: () => void,
-  settings: () => void,
 ): void {
   host.replaceChildren();
   for (const { band, label, hint } of BANDS) {
@@ -36,15 +36,6 @@ export function renderHome(
   grid.setAttribute("aria-hidden", "true");
   grid.textContent = "▦";
   host.appendChild(pick("catalog-pick", grid, "Catalog", "Every level, by family", catalog));
-  host.appendChild(
-    pick(
-      "settings-pick",
-      glyphIcon("settings", "settings-glyph"),
-      "Settings",
-      "Version, updates",
-      settings,
-    ),
-  );
 }
 
 function pick(
