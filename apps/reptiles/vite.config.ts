@@ -29,8 +29,8 @@ export default defineConfig(
         name: "Rep-tiles",
         short_name: "Rep-tiles",
         description: DESCRIPTION,
-        theme_color: "#f4f1ea",
-        background_color: "#f4f1ea",
+        theme_color: "#f5ead8",
+        background_color: "#f5ead8",
         display: "standalone",
         orientation: "any",
         icons: [
@@ -45,7 +45,7 @@ export default defineConfig(
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,json}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,json,ttf}"],
         // The version stamp names the build the *server* is on; a copy in the
         // precache could only ever name the build that installed the worker.
         // Keeping workbox's own default beside it.

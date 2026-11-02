@@ -46,7 +46,7 @@ extends) and `.prettierrc.json`.
 | `apps/hypersweeper/` | Hypersweeper, the deployed TypeScript game (was `web/`) |
 | `apps/reptiles/` | Rep-tiles, the tiling game |
 | `packages/geometry/` | `@tiling/geometry` — the boards both games are built on: tilings, solids, surfaces, adjacency (was `apps/hypersweeper/src/boards/`) |
-| `packages/platform/` | `@tiling/platform` — what a game needs from the browser, guarded: today, `localStorage` |
+| `packages/platform/` | `@tiling/platform` — what a game needs from the browser, guarded: `localStorage`, and the update check both games' settings run |
 | `packages/vite-preset/` | `@tiling/vite-preset` — the build every game shares: `VITE_BASE`/`VITE_PACKAGED`/`VITE_NO_SW`, the version stamp, link-preview tags, dev-server security headers, PWA. A game's `vite.config.ts` is a `gameConfig({...})` call |
 | `shells/desktop/` | the Electron shell that packages any game as an offline macOS app — `make mac-app GAME=reptiles` — from the game's `apps/<game>/packaging.json` (its own `npm` project, outside the workspace — Electron is a 300 MB download nothing else needs) |
 | `apps/hypersweeper/ios/` | the Capacitor iPhone project — Hypersweeper's own (App Clip, Game Center, iCloud, stickers); a second game's would be `apps/<game>/ios/` |
@@ -68,7 +68,7 @@ package in its `dependencies` (`"*"`) and imports it by name. The rules:
 
 - **Promote on the second user.** Code moves into a package when a second game
   needs it, not before. Rep-tiles' exact geometry (`apps/reptiles/src/geometry/`)
-  stays in Rep-tiles until then; so do Hypersweeper's update check, haptics,
+  stays in Rep-tiles until then; so do Hypersweeper's haptics,
   share links and shape colours (Rep-tiles' tile colours are its own hex values,
   not Hypersweeper's OkLCh palette).
 - **Games import a package through its index** (`@tiling/geometry`). Only unit

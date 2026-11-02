@@ -1,5 +1,5 @@
-// The catalog: every level, a family to a row — named for its symmetry, as the
-// level list is — each row scrolling sideways through its levels' cards. A
+// The catalog: every level, a family to a row — named for its symmetry —
+// each row scrolling sideways through its levels' cards. A
 // card shows what a player starts with (the board's outline, the tray's
 // tiles), the level's name, its difficulty as Hypersweeper's three bars, and
 // the stars earned on it.

@@ -12,15 +12,15 @@ some back off.
   will land and a dot marks each of its corners that meets the edge (the rim
   or a placed tile), wherever along it.
 - Every tray tile starts resting on a flat side. A tile lands only as it is
-  held, and there is **one** rotate control, at
-  the end of the tray (or R): it turns *every* tray tile, and the one in hand,
-  clockwise by the level's step — the largest that reaches, from flat, every
-  way any kind sits: 60° for triangles, 30° for the pointy-top hexagons, 30° on
-  3.4.6.4, where the squares need it too, so its
-  triangles and hexagons pass through turns they fit nowhere at. Turning one
-  kind into place can turn another out of it. The control draws its step as an
-  axis, a fixed ray, the ray turned one step and the arrow between, and is left
-  out where nothing ever needs turning.
+  held, and there is **one** rotate step, with a control for each direction at
+  the end of the tray (R clockwise; Shift+R or E anticlockwise): it turns
+  *every* tray tile, and the one in hand, by the level's step — the largest
+  that reaches, from flat, every way any kind sits: 60° for triangles, 30° for
+  the pointy-top hexagons, 30° on 3.4.6.4, where the squares need it too, so
+  its triangles and hexagons pass through turns they fit nowhere at. Turning
+  one kind into place can turn another out of it. Each control draws its step
+  as an axis, a fixed ray, the ray turned one step and the arrow between, and
+  both are left out where nothing ever needs turning.
 - Where a board uses a tile both ways round (the kisrhombille's triangles),
   a flip control (or F) mirrors every tray tile and the one in hand; a tile
   lands only on its own side.
@@ -32,19 +32,37 @@ some back off.
   from still to go (past zero, how many extra). Finishing at all is one star;
   with no more tiles than that, two; and within the level's time limit
   (`seconds`, five a tile), three. The clock starts with the first tile down.
-  The best per level is kept in `localStorage` and shown in the level list.
+  The best per level is kept in `localStorage` and shown in the catalog.
+- **Zoom.** Two fingers pinch the board in, up to four times fitted, about
+  their midpoint (a second finger landing mid-drag puts that tile back first;
+  one on a control still turns or flips it); one finger on bare board pans it
+  once zoomed; a wheel or a trackpad pinch zooms about the pointer. The tray
+  stays pinned on its strip and its tiles grow with the board until the strip
+  is full, so they are easier to pick up. Safari's own page pinch is
+  cancelled.
 
-**Screens.** Home (no query): Easy, Medium and Hard each deal a random level
-of that difficulty, Catalog opens the catalog (`?catalog`): each family a
+**Screens**, in Hypersweeper's Sand look (its `sand`/`sandDark` palettes,
+grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
+`public/fonts`). Home (no query): Easy, Medium and Hard each deal a random
+level of that difficulty, Catalog opens the catalog (`?catalog`): each family a
 row of level cards scrolling sideways — board outline, tiles, name,
-difficulty as Hypersweeper's three bars, stars. A level is `?level=<key>`,
-with ‹ Home in its header and the level list on its right. Each move is a
-history entry, so the browser's Back works.
+difficulty as Hypersweeper's three bars, stars — and Settings (`?settings`)
+shows the version and checks for updates (the shared check in
+`@tiling/platform`; left out of a packaged build). Levels are picked in the
+catalog only. A level is `?level=<key>`: one header row, Hypersweeper's —
+home, the clock against the three-star limit, restart, and a die that deals
+another level of the same difficulty as this one — then the level's name and
+coverage as a faint label on the page behind the board, which fills the rest
+of the screen, the tray on a strip along the bottom (portrait) or the right
+(landscape). The win card has Play again, Next level and Exit, which closes it
+to look at the finished board (as do Escape and a tap outside it). Each move
+is a history entry, so the browser's Back works.
 
 **Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
 player lays the board the level was cut from, always taking a tile it can
 snap down now that needs the fewest rotate/flip presses from how the tray is
-held, so it groups tiles by orientation as a person would. The score is its
+held (turning whichever way round is shorter), so it groups tiles by
+orientation as a person would. The score is its
 presses per tile, each weighted √(90°/step) — a 15° press counts 2.4, a 90°
 one 1 — plus flips, plus 0.15 per extra tile kind and tiles/200. Bands split
 at 0.45 and 1.0 (`MEDIUM`, `HARD`), set so that every flag-transitive level,
@@ -66,7 +84,9 @@ twenty 2-uniform tilings, named as Hypersweeper's catalog writes them,
 V4.6.12). Each board is as near square as its tiling allows at two or three
 dozen tiles. CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
-test against the production bundle. It packages as an offline desktop app through the
+test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
+settings, the header, rotating both ways, wheel and pinch zoom, a won board
+and its Exit). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
 its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
@@ -185,17 +205,20 @@ finishes the board — the quick way to see the win state.
   depends on how the board is finished), `used`, `stars`, and `solve`, a
   budgeted backtracking fill for the tests and the dev seam that always works
   the open corner with the fewest placements.
-- `src/view/svgBoard.ts` — the SVG drawing (board units, y up, one flip).
-- `src/view/home.ts`, `src/view/catalog.ts` — the first screen and the
-  catalog; `src/view/icons.ts` the pictures they and the level list share
-  (board outline, tray tile, the three bars, a star row).
-- `src/view/levelList.ts` — the level list on the right. It shows only what
-  a player starts with: the board's outline, the tray's tiles, the vertex
-  configuration as the name (`notation`: 4⁴, 3.4.6.4), and the best stars —
-  never a picture of the tiling, which would give the puzzle away. The
-  descriptive label is only a tooltip.
-- `src/input/drag.ts` — pointer drag and drop, rotate and flip, and the ✕
-  remove mode.
+- `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
+  the world (region, tiles, the tile in hand; board units, y up) under one
+  camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and the tray on its
+  pinned strip under its own, at the world's scale while the strip can take it.
+- `src/view/home.ts`, `src/view/catalog.ts`, `src/view/settings.ts` — the
+  first screen, the catalog and the settings; `src/view/icons.ts` the pictures
+  they share (board outline, tray tile, the three bars, a star row) and the
+  header's glyphs. The catalog shows only what a player starts with: the
+  board's outline, the tray's tiles, the vertex configuration as the name
+  (`notation`: 4⁴, 3.4.6.4), and the best stars — never a picture of the
+  tiling, which would give the puzzle away. The descriptive label is only a
+  tooltip.
+- `src/input/drag.ts` — pointer drag and drop, rotate and flip, the ✕
+  remove mode, and pinch, pan and wheel zoom.
 
 The geometry is the `@tiling/geometry` workspace package (`packages/geometry`)
 and the shared data the `@tiling/data` one (`data/`) — both listed in

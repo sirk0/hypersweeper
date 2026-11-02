@@ -7,7 +7,8 @@
 // person would: at each step, of the tiles it could snap down right now, the
 // one that needs the fewest presses of rotate and flip from how the tray is
 // held — so it lays everything one way round before turning, wherever the
-// board lets it — breaking ties by staying near the last tile. What it has to
+// board lets it, turning whichever way round is shorter (there is a control
+// for each direction) — breaking ties by staying near the last tile. What it has to
 // press along the way is the measure.
 //
 // A press is weighted by how fine its step is — √(90°/step): one 90° turn is
@@ -99,13 +100,18 @@ export function measure(level: Level): Measure {
   }));
   const reach = 1e-3;
 
-  /** Presses from tray turn `t` until kind `kind` sits at `rot`; -1 never. */
-  const pressesTo = (t: number, kind: number, rot: number): number => {
+  /** Presses from tray turn `t` until kind `kind` sits at `rot`, the shorter
+   * way round — there is a control for each direction — as a signed count
+   * (negative: the other way); null never. */
+  const pressesTo = (t: number, kind: number, rot: number): number | null => {
     const p = period[kind]!;
-    if (turn === 0) return (((rot - t) % p) + p) % p === 0 ? 0 : -1;
-    for (let k = 0; k * turn < ring.n; k++)
-      if ((((t + k * turn - rot) % p) + p) % p === 0) return k;
-    return -1;
+    const at = (k: number): boolean => (((t + k * turn - rot) % p) + p) % p === 0;
+    if (turn === 0) return at(0) ? 0 : null;
+    for (let k = 0; k * turn < ring.n; k++) {
+      if (at(k)) return k;
+      if (at(-k)) return -k;
+    }
+    return null;
   };
 
   let t = 0;
@@ -117,8 +123,8 @@ export function measure(level: Level): Measure {
     let best: { i: number; cost: number; dist: number; k: number } | null = null;
     left.forEach((c, i) => {
       const k = pressesTo(t, c.kind, c.rot);
-      if (k < 0) return;
-      const cost = k + (c.flip !== flip ? 1 : 0);
+      if (k === null) return;
+      const cost = Math.abs(k) + (c.flip !== flip ? 1 : 0);
       const dist = last ? Math.hypot(c.at[0] - last[0], c.at[1] - last[1]) : c.at[0] + c.at[1];
       if (best && (cost > best.cost || (cost === best.cost && dist >= best.dist))) return;
       // can it be snapped down there now, held that way?
@@ -128,9 +134,9 @@ export function measure(level: Level): Measure {
     if (!best) throw new Error(`${level.key}: the simulated player got stuck`);
     const { i, k } = best as { i: number; k: number };
     const c = left[i]!;
-    presses += k;
+    presses += Math.abs(k);
     if (c.flip !== flip) flips++;
-    t = (t + k * turn) % ring.n;
+    t = (((t + k * turn) % ring.n) + ring.n) % ring.n;
     flip = c.flip;
     puzzle.place(c.kind, c.verts, c.rot, c.flip);
     last = c.at;

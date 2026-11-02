@@ -1,3 +1,4 @@
+import { checkForUpdate, loadDeployedBuild } from "@tiling/platform";
 import { QUALITY_PREFS, type QualityPref } from "../render/quality";
 import { ACHIEVEMENTS, earned as earnedIds, loadProgress } from "../achievements";
 import { APP_ICONS, appIcon, appIconSupported, appIconUrls, type AppIconKey } from "../appIcon";
@@ -16,7 +17,6 @@ import {
 } from "../input/hold";
 import { allBestTimes } from "../leaderboard";
 import { animationsEnabled } from "../settings";
-import { checkForUpdate, loadDeployedBuild } from "../update";
 import { boardShape, SHAPE_KEYS } from "../render/cellStyle";
 import {
   activeScheme,
@@ -355,7 +355,7 @@ function buttonRow(
 }
 
 /** Ask the *server* which build it is serving, and get onto it if it is not
- * this one (`src/update.ts`, where the whole rule and the reason for it live).
+ * this one (`update.ts` in `@tiling/platform`, packages/platform, where the whole rule and the reason for it live).
  *
  * The state of the service worker is deliberately not part of the answer: it
  * updates itself silently on launch, so "nothing is installing" says nothing
@@ -364,7 +364,10 @@ function buttonRow(
  * was closed and reopened. */
 async function checkForUpdates(status: HTMLElement): Promise<void> {
   status.textContent = "Checking…";
-  const found = await checkForUpdate();
+  const found = await checkForUpdate(
+    { version: __APP_VERSION__, commit: __APP_COMMIT__ },
+    import.meta.env.BASE_URL,
+  );
   if (found.state === "unreachable") {
     status.textContent = "Could not check for updates.";
     return;

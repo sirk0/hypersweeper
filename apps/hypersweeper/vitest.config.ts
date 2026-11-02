@@ -10,8 +10,8 @@ export default defineConfig({
   define: {
     __APP_PACKAGED__: false,
     __APP_ANALYTICS__: true,
-    // What `update.ts` calls this build when it compares itself with the
-    // deployed stamp. Any pair will do — the tests supply the other side.
+    // The build's own stamp, which settings.ts hands the update check
+    // (@tiling/platform). Any pair will do.
     __APP_VERSION__: '"0.0.0-test"',
     __APP_COMMIT__: '"testing"',
   },

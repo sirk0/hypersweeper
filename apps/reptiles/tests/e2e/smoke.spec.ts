@@ -19,7 +19,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
   const response = await page.goto("/");
   expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
   await expect(page.locator("#home")).toBeVisible();
-  await expect(page.locator("#home-picks > *")).toHaveCount(4);
+  await expect(page.locator("#home-picks > *")).toHaveCount(5);
   // The deployed extras the shared preset adds.
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",
@@ -66,5 +66,115 @@ test("a square dragged into the corner of the squares level lands there", async 
 
   await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
   await expect(count).not.toHaveText(before ?? "");
+  expect(errors).toEqual([]);
+});
+
+test("settings report the version and check for updates", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/");
+  await page.locator("#home-picks .settings-pick").click();
+  await expect(page.locator("#settings")).toBeVisible();
+  await expect(page.locator('[data-value="version"]')).toHaveText(/^\d+\.\d+\.\d+/);
+  await page.locator('[data-action="check-updates"]').click();
+  await expect(page.locator('[data-action="check-updates"] .settings-hint')).toHaveText(
+    "You are on the latest build.",
+  );
+  expect(errors).toEqual([]);
+});
+
+test("the level screen: one header row, no level list, a random level of the same band", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=cairo");
+  await expect(page.locator("#game .hud .hud-btn")).toHaveCount(3);
+  await expect(page.locator("#game nav, #levels")).toHaveCount(0);
+  await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
+  // Cairo is hard; the die deals another hard level.
+  const hard = ["snubsquare", "snubelongated", "cairo", "floret", "kisrhombille"];
+  await page.locator("#random").click();
+  await expect(page).not.toHaveURL(/level=cairo/);
+  const key = new URL(page.url()).searchParams.get("level");
+  expect(hard).toContain(key);
+  expect(errors).toEqual([]);
+});
+
+test("rotate turns the tray either way", async ({ page }) => {
+  await page.goto("/?level=cairo");
+  const tile = page.locator("svg.board polygon.in-tray").first();
+  const start = await tile.getAttribute("points");
+  await page.locator('[data-turn="1"]').click();
+  const turned = await tile.getAttribute("points");
+  expect(turned).not.toEqual(start);
+  await page.locator('[data-turn="-1"]').click();
+  await expect(tile).toHaveAttribute("points", start!);
+});
+
+test("the wheel zooms the board in, and the tray tiles grow with it", async ({ page }) => {
+  await page.goto("/?level=rhombille");
+  const tray = page.locator("svg.board polygon.in-tray").first();
+  const before = (await tray.boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  await page.mouse.wheel(0, -400);
+  const after = (await page.locator("svg.board path.region").boundingBox())!;
+  expect(after.width).toBeGreaterThan(r.width * 1.5);
+  expect((await tray.boundingBox())!.width).toBeGreaterThan(before.width);
+});
+
+test.describe("on a touchscreen", () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+
+  test("two fingers pinch the board in", async ({ page, context }) => {
+    await page.goto("/?level=rhombille");
+    const r = (await page.locator("svg.board path.region").boundingBox())!;
+    const cx = r.x + r.width / 2;
+    const cy = r.y + r.height / 2;
+    const cdp = await context.newCDPSession(page);
+    const touch = (type: "touchStart" | "touchMove" | "touchEnd", pts: [number, number][]) =>
+      cdp.send("Input.dispatchTouchEvent", {
+        type,
+        touchPoints: pts.map(([x, y], id) => ({ x, y, id })),
+      });
+    await touch("touchStart", [
+      [cx - 30, cy],
+      [cx + 30, cy],
+    ]);
+    for (let i = 1; i <= 8; i++)
+      await touch("touchMove", [
+        [cx - 30 - i * 6, cy],
+        [cx + 30 + i * 6, cy],
+      ]);
+    await touch("touchEnd", []);
+    const after = (await page.locator("svg.board path.region").boundingBox())!;
+    expect(after.width).toBeGreaterThan(r.width * 1.5);
+  });
+});
+
+test("the win card's Exit closes it, leaving the finished board", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  // Lay the 4×4 squares row by row from the bottom-left: each dropped on its
+  // own cell snaps to the corner the cells before it left open.
+  const tray = page.locator("svg.board polygon.in-tray").first();
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      const t = (await tray.boundingBox())!;
+      const r = (await page.locator("svg.board path.region").boundingBox())!;
+      await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(
+        r.x + ((col + 0.5) * r.width) / 4,
+        r.y + r.height - ((row + 0.5) * r.height) / 4,
+        { steps: 4 },
+      );
+      await page.mouse.up();
+    }
+  }
+  await expect(page.locator("svg.board [data-tile]")).toHaveCount(16);
+  await expect(page.locator("#won")).toBeVisible();
+  await page.locator("#exit").click();
+  await expect(page.locator("#won")).toBeHidden();
+  await expect(page.locator("#count")).toHaveText("100%");
   expect(errors).toEqual([]);
 });

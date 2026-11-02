@@ -1021,7 +1021,7 @@ something (`appIconSupported`).
 - **The Electron app** has no row: the dock icon could be swapped at runtime,
   but Finder would go on showing the pentagon.
 
-### Check for updates (`src/update.ts`)
+### Check for updates (`update.ts` in `@tiling/platform`)
 
 The About block's update row, and the one part of the settings page that is a
 question about the *world* rather than about a stored preference.
@@ -1083,7 +1083,7 @@ update. (That row therefore no longer reports "running from source": a preview
 build can now genuinely tell you whether the push you are looking at is the
 latest one, which on the URL a PR reuses across pushes is worth more.)
 
-`tests/unit/update.test.ts` pins the comparison, the stamp parsing and every
+`packages/platform/tests/update.test.ts` pins the comparison, the stamp parsing and every
 branch of the settle-then-reload path against a hand-driven fake worker;
 `tests/e2e/settings.spec.ts` pins the three outcomes the row can show, driving a
 "deploy" by fulfilling the `version.json` request once with a newer stamp.

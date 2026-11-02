@@ -50,7 +50,7 @@ const ALLOWED = [
  * what proves that, and it is the whole reason the app can promise those builds
  * talk to nothing.
  *
- * `version.json` is the second: `apps/hypersweeper/src/update.ts` fetches it to ask the
+ * `version.json` is the second: `packages/platform/src/update.ts` (the update check every game uses) fetches it to ask the
  * server which build is deployed, and a packaged app has no server and no
  * update row (`__APP_PACKAGED__` again), so the fetch has to be compiled out
  * along with the row that calls it. */

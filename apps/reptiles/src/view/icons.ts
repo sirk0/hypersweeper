@@ -1,6 +1,7 @@
-// The small pictures the level list, the catalog and the home screen share:
-// a board's outline, a tray tile, the three-bar difficulty ladder (drawn as
-// Hypersweeper draws its own), and a row of stars.
+// The small pictures the catalog and the home screen share: a board's
+// outline, a tray tile, the three-bar difficulty ladder (drawn as Hypersweeper
+// draws its own), and a row of stars; and the header's and home screen's
+// glyphs, stroked in `currentColor` so they follow the theme.
 
 import { centroid, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
@@ -95,4 +96,44 @@ export function starRow(earned: number): HTMLSpanElement {
     row.appendChild(star);
   }
   return row;
+}
+
+const STROKE = `stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+
+/** The header's and home screen's glyphs, on a 24-unit square: home, restart,
+ * a die for a new random level (Hypersweeper's), and a gear for settings. */
+export const GLYPHS: Record<string, string> = {
+  home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
+    <path d="M6.2 9.4 V19.6 H17.8 V9.4" ${STROKE}/>
+    <path d="M10.2 19.6 V14.4 H13.8 V19.6" ${STROKE}/>`,
+  restart: `<path d="M4.5 12 A7.5 7.5 0 1 0 12 4.5" ${STROKE}/>
+    <path d="M15.1 1.4 L11.4 4.5 L15.1 7.6" ${STROKE}/>`,
+  random: `<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="4.4" stroke="currentColor"
+      stroke-width="1.8" fill="none"/>
+    <circle cx="8.3" cy="8.3" r="1.55" fill="currentColor"/>
+    <circle cx="12" cy="12" r="1.55" fill="currentColor"/>
+    <circle cx="15.7" cy="15.7" r="1.55" fill="currentColor"/>`,
+  settings: `<circle cx="12" cy="12" r="3" ${STROKE}/>
+    <circle cx="12" cy="12" r="6.6" ${STROKE}/>
+    ${Array.from({ length: 8 }, (_, i) => {
+      const a = (i * Math.PI) / 4;
+      const p = (r: number): string =>
+        `${(12 + r * Math.cos(a)).toFixed(2)} ${(12 + r * Math.sin(a)).toFixed(2)}`;
+      return `<path d="M${p(6.6)} L${p(9.6)}" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>`;
+    }).join("")}`,
+};
+
+/** Fill every `<svg data-icon="…">` under `root` with its glyph. */
+export function fillGlyphs(root: ParentNode): void {
+  for (const svg of root.querySelectorAll<SVGSVGElement>("svg[data-icon]")) {
+    const glyph = GLYPHS[svg.dataset["icon"] ?? ""];
+    if (glyph) svg.innerHTML = glyph;
+  }
+}
+
+/** A glyph as its own element, for a button built in code. */
+export function glyphIcon(name: string, className: string): SVGSVGElement {
+  const svg = svgIn(className, [0, 0, 24, 24]);
+  svg.innerHTML = GLYPHS[name] ?? "";
+  return svg;
 }

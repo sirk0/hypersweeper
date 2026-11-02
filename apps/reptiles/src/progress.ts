@@ -1,4 +1,4 @@
-// The best this player has done on each level — the stars in the level list,
+// The best this player has done on each level — the stars in the catalog,
 // 1 to 3. Kept in localStorage, which can be missing or throw (a private
 // window, blocked site data), so every access goes through the shared guard
 // (`@tiling/platform`) and the game works without it: the stars then last until
