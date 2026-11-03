@@ -309,6 +309,36 @@
     "presses": 14,
     "flips": 4
   },
+  "offsetsquare": {
+    "score": 0.115,
+    "presses": 0,
+    "flips": 0
+  },
+  "staggeredtri": {
+    "score": 0.315,
+    "presses": 4,
+    "flips": 0
+  },
+  "pythagorean": {
+    "score": 0.255,
+    "presses": 0,
+    "flips": 0
+  },
+  "rotatedhex": {
+    "score": 0.345,
+    "presses": 1,
+    "flips": 0
+  },
+  "rotatedtri": {
+    "score": 0.33,
+    "presses": 1,
+    "flips": 0
+  },
+  "threescaletri": {
+    "score": 0.572,
+    "presses": 3,
+    "flips": 0
+  },
   "stackedbond": {
     "score": 0.105,
     "presses": 0,

@@ -197,17 +197,24 @@ function windowLevel(tiling: string, box: number): Level {
   const spec = ARCH_TILINGS.find((t) => t.key === tiling);
   if (!spec) throw new Error(`unknown tiling ${tiling}`);
   const t = archTemplate(tiling);
-  const { ring, cells, turned } = templateWindow(tiling, box);
+  // (an isogonal window can leave a lone tile at a corner, touching nothing
+  // else kept: the rotated hexagonal does at every box up to 85 tiles)
+  const { ring, cells, turned } = templateWindow(tiling, box, {
+    dropStrays: spec.family === "isogonal",
+  });
   const window = { tiling, nx: box / t.width, ny: box / t.height, turned };
   if (spec.family === "uniform") {
     return { ...makeLevel(tiling, spec.label, ring, cells, "uniform", [spec.config]), window };
   }
-  if (spec.family === "rectangle" || spec.family === "pentagonal") {
+  if (spec.family === "rectangle" || spec.family === "pentagonal" || spec.family === "isogonal") {
     // A bond has no vertex configuration to be named by (a brick corner can
     // land part-way along a neighbour's side), nor has a pentagonal tiling
     // one (its corners are of two or three kinds, three or four tiles round
     // each), so each goes by Hypersweeper's name for it, and its config is the
-    // tile, as Hypersweeper's is.
+    // tile, as Hypersweeper's is. An isogonal tiling's vertices are all alike,
+    // but its config counts the tiles round one — the one whose side runs
+    // through it among them — not corners in order, and two of the family
+    // share each count (4.4.4, 3⁴), so it goes by Hypersweeper's name too.
     const level = makeLevel(
       tiling,
       spec.label,
@@ -341,6 +348,11 @@ export const GROUPS = [
     key: "pentagonal",
     name: familyLabel("pentagonal"),
     hint: "One convex pentagon throughout, found 1975 to 2015",
+  },
+  {
+    key: "isogonal",
+    name: familyLabel("isogonal"),
+    hint: "Regular shapes, every corner alike — but a corner can meet mid-side",
   },
   {
     key: "rectangle",
@@ -517,6 +529,23 @@ const PENTAGONAL: [string, number][] = [
   ["pentagon15", 9.55],
 ];
 
+/** The isogonal tilings, in Hypersweeper's order — regular polygons, every
+ * vertex alike, but not edge to edge: at each, one tile's side runs straight
+ * through (90 + 90 + 180, 60 + 120 + 180, …), its edges a half of the unit —
+ * and each one's window (`box`, in the unit side): the squarest near two or
+ * three dozen tiles with one outline, found by scanning sizes. The rotated
+ * hexagonal leaves a lone tile at a corner of every window under 85 tiles,
+ * dropped (`windowLevel`); the three-scale triangular's windows either side
+ * of 30 tiles are two or three pieces. */
+const ISOGONAL: [string, number][] = [
+  ["offsetsquare", 5],
+  ["staggeredtri", 4.8],
+  ["pythagorean", 4],
+  ["rotatedhex", 6.1],
+  ["rotatedtri", 4.5],
+  ["threescaletri", 4.5],
+];
+
 /** The congruent-rectangle bonds — one brick, 1 by ½ (by ⅓ in the 3×3 basket
  * weave), not edge to edge but the stacked bond — and each one's window
  * (`box`, in brick lengths): the squarest near two or three dozen tiles with
@@ -656,6 +685,9 @@ export const LEVELS: Level[] = [
   ...TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralLevel(primal, box)).sort(byEase),
   // The three pentagonal tilings: one convex pentagon, turned and mirrored.
   ...PENTAGONAL.map(([tiling, box]) => windowLevel(tiling, box)),
+  // The six isogonal tilings: regular polygons, every vertex alike, a corner
+  // meeting the middle of a side at each.
+  ...ISOGONAL.map(([tiling, box]) => windowLevel(tiling, box)),
   // The five congruent-rectangle bonds: one brick, laid in rows staggered or
   // turned.
   ...RECTANGLES.map(([tiling, box]) => windowLevel(tiling, box)),
