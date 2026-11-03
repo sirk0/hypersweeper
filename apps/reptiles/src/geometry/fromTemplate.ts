@@ -14,6 +14,16 @@
 // of unit vectors ζ^k — exact — and a vertex reached two ways must come out the
 // same, which is checked.
 //
+// The congruent-rectangle bonds are not edge to edge: a brick's corner lands
+// part-way along its neighbour's side, which the template records as a
+// T-vertex splitting that side, so their edges are a half or a third of a
+// brick long. Those are read the same way — each edge a whole number of a
+// common fraction of the unit (the smallest that makes every edge whole: 1 for
+// every regular-polygon tiling, 2 or 3 for the bonds), built at that scale in a
+// ring whose `unit` draws it back at true size. The T-vertices name points as
+// any vertex does, so the walk runs through them; a cell keeps only its real
+// corners, so a brick is the four-cornered rectangle the tray holds.
+//
 // The window is chosen as `archimedeanBoard` chooses it (the unit tests compare
 // the two tile for tile), and y is flipped on the way in: Hypersweeper draws y
 // down, this game y up, so the level looks as the Hypersweeper board does.
@@ -32,6 +42,10 @@ const ORDERS = [4, 6, 8, 12, 24];
  * chooses among are 15° apart. Only which direction an edge runs in is read
  * this way; the walk that follows is exact and checks itself. */
 const TOLERANCE = 1e-4;
+
+/** The scales tried for a tiling whose edges are not all one unit: the
+ * fraction of the unit every edge is a whole number of. */
+const SCALES = [1, 2, 3, 4, 6, 12];
 
 export interface Window {
   ring: Ring;
@@ -93,7 +107,6 @@ export function templateWindow(
     n = ringFor(alpha);
   }
   if (n === undefined) throw new Error(`templateWindow: ${tiling} has edges at no 15° multiple`);
-  const ring = cyclotomic(n);
   const [ca, sa] = [Math.cos(-alpha), Math.sin(-alpha)];
   const frame = ([x, y]: XY): XY => [x * ca + y * sa, x * sa - y * ca];
 
@@ -106,16 +119,19 @@ export function templateWindow(
     ids: string[];
     pts: XY[];
     centroid: XY;
+    /** Per corner, whether it is a real one — false at a T-vertex, where a
+     * neighbour's corner splits this tile's side. */
+    real: boolean[];
   }
   const grown: Grown[] = [];
   for (let m = 0; m < spread[0]!; m++) {
     for (let k = 0; k < spread[1]!; k++) {
-      for (const { refs } of t.cells) {
+      for (const { refs, real } of t.cells) {
         const ids = refs.map((r) => `${m + r.dm},${k + r.dn},${r.tag}`);
         const pts = refs.map((r) => frame(at(m + r.dm, k + r.dn, r.tag)));
         const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
         const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
-        grown.push({ ids, pts, centroid: [cx, cy] });
+        grown.push({ ids, pts, centroid: [cx, cy], real });
       }
     }
   }
@@ -144,14 +160,21 @@ export function templateWindow(
   );
   if (kept.length === 0)
     throw new Error(`templateWindow: nothing fits a ${box}-edge window of ${tiling}`);
-  for (const g of kept) {
-    g.pts.forEach((p, i) => {
+  // Every edge's length, and the scale at which each is a whole number.
+  const lengths = kept.flatMap((g) =>
+    g.pts.map((p, i) => {
       const q = g.pts[(i + 1) % g.pts.length]!;
-      if (Math.abs(Math.hypot(q[0] - p[0], q[1] - p[1]) - 1) > TOLERANCE) {
-        throw new Error(`templateWindow: ${tiling} has an edge that is not one unit long`);
-      }
-    });
+      return Math.hypot(q[0] - p[0], q[1] - p[1]);
+    }),
+  );
+  const unit = SCALES.find((s) =>
+    lengths.every((l) => Math.round(l * s) > 0 && Math.abs(l * s - Math.round(l * s)) < TOLERANCE),
+  );
+  if (unit === undefined) {
+    throw new Error(`templateWindow: ${tiling} has an edge that is no whole fraction of the unit`);
   }
+  const ring = cyclotomic(n, unit);
+  const steps = (p: XY, q: XY): number => Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) * unit);
   const dirOf = (p: XY, q: XY): number =>
     Math.round((Math.atan2(q[1] - p[1], q[0] - p[0]) * n) / (2 * Math.PI));
 
@@ -178,7 +201,11 @@ export function templateWindow(
         const i = (start + j) % m;
         const i1 = (i + 1) % m;
         const here = exact.get(g.ids[i]!)!;
-        const there = ring.add(here, ring.zeta(dirOf(g.pts[i]!, g.pts[i1]!)));
+        const step = ring.zeta(dirOf(g.pts[i]!, g.pts[i1]!));
+        const there = ring.add(
+          here,
+          step.map((x) => x * steps(g.pts[i]!, g.pts[i1]!)),
+        );
         const known = exact.get(g.ids[i1]!);
         if (known && !ring.eq(known, there)) {
           throw new Error(`templateWindow: ${tiling} does not close up exactly at ${g.ids[i1]}`);
@@ -196,5 +223,7 @@ export function templateWindow(
     pending = next;
   }
   const placed = kept.filter((g) => g.ids.every((id) => exact.has(id)));
-  return { ring, cells: placed.map((g) => g.ids.map((id) => exact.get(id)!)), turned: alpha };
+  // a cell's corners: the real ones, not the T-vertices its sides run through
+  const cells = placed.map((g) => g.ids.filter((_, i) => g.real[i]).map((id) => exact.get(id)!));
+  return { ring, cells, turned: alpha };
 }

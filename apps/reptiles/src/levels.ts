@@ -184,6 +184,21 @@ function windowLevel(tiling: string, box: number): Level {
   if (spec.family === "uniform") {
     return { ...makeLevel(tiling, spec.label, ring, cells, "uniform", [spec.config]), window };
   }
+  if (spec.family === "rectangle") {
+    // A bond has no vertex configuration to be named by (a brick corner can
+    // land part-way along a neighbour's side), so it goes by Hypersweeper's
+    // name for it, and its config is the tile, as Hypersweeper's is.
+    const level = makeLevel(
+      tiling,
+      spec.label,
+      ring,
+      cells,
+      "rectangle",
+      [spec.config],
+      spec.label,
+    );
+    return { ...level, window };
+  }
   const written = NOTATIONS[tiling];
   if (!written) throw new Error(`no notation for ${tiling} in data/catalog.json`);
   return {
@@ -301,6 +316,11 @@ export const GROUPS = [
     key: "2-isohedral",
     name: familyLabel("2-isohedral"),
     hint: "The 2-uniform tilings' duals — two shapes, neither regular",
+  },
+  {
+    key: "rectangle",
+    name: familyLabel("rectangle"),
+    hint: "One brick throughout, laid in a bond — corners can meet mid-side",
   },
 ] as const;
 
@@ -445,6 +465,22 @@ const TWO_ISOHEDRAL: [string, number][] = [
   ["dodecarhombitrihex", 7.65],
 ];
 
+/** The congruent-rectangle bonds — one brick, 1 by ½ (by ⅓ in the 3×3 basket
+ * weave), not edge to edge but the stacked bond — and each one's window
+ * (`box`, in brick lengths): the squarest near two or three dozen tiles with
+ * one outline, found by scanning sizes. A bond's window is centred on a
+ * brick, so the stacked bond comes in odd counts of columns and rows: 3 by 7
+ * bricks, 0.86 square, its next 5 by 9 at 45. The basket weaves are whole
+ * squares of blocks, 4 by 4: the 3×3's smaller windows are a lopsided
+ * pinwheel of 20 bricks, so it takes 48. */
+const RECTANGLES: [string, number][] = [
+  ["stackedbond", 3.5],
+  ["runningbond", 4.5],
+  ["basketweave", 4],
+  ["basketweave3", 4],
+  ["herringbone", 4.5],
+];
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -478,6 +514,9 @@ export const LEVELS: Level[] = [
   // The twenty 2-isohedral tilings, the 2-uniform tilings' duals: two kinds
   // of tile, neither regular.
   ...TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralLevel(primal, box)).sort(byEase),
+  // The five congruent-rectangle bonds: one brick, laid in rows staggered or
+  // turned.
+  ...RECTANGLES.map(([tiling, box]) => windowLevel(tiling, box)),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,

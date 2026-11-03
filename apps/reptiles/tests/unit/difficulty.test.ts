@@ -9,7 +9,9 @@ describe("difficulty", () => {
     (key) => {
       const stored = (measured as Record<string, { score: number }>)[key];
       expect(stored, "run npm run difficulty").toBeDefined();
-      expect(measure(levelByKey(key)!).score).toBeCloseTo(stored!.score, 3);
+      // rounded as scripts/measure-difficulty.mts writes it: a score on a
+      // half-thousandth (0.3025) is a float-noise miss for toBeCloseTo
+      expect(Number(measure(levelByKey(key)!).score.toFixed(3))).toBe(stored!.score);
     },
   );
 
