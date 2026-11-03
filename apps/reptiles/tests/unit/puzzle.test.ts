@@ -161,11 +161,11 @@ describe("puzzle", () => {
   });
 
   // (a bond, a pentagonal tiling, a rep-tile, a spiral or an aperiodic tiling
-  // has no one vertex configuration)
+  // has no one vertex configuration, and an isogonal one is not edge to edge)
   const ofPolygons = LEVELS.filter(
     (l) =>
       !isDual(l.group) &&
-      !["rectangle", "pentagonal", "reptile", "spiral", "aperiodic"].includes(l.group),
+      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic"].includes(l.group),
   ).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
@@ -260,6 +260,65 @@ describe("puzzle", () => {
     const junctions = inner.filter((r) => r.sides > 0).length;
     if (key === "stackedbond") expect(junctions).toBe(0);
     else expect(junctions).toBeGreaterThan(0);
+  });
+
+  // The isogonal tilings: regular polygons, not edge to edge, and every point
+  // inside the board alike — some tiles' corners there and one tile's side
+  // running straight through, the tiles Hypersweeper's config counts.
+  const isogonal = LEVELS.filter((l) => l.group === "isogonal");
+  it("has Hypersweeper's isogonal tilings, in its order", () => {
+    const theirs = ARCH_TILINGS.filter((t) => t.family === "isogonal");
+    expect(isogonal.map((l) => l.key)).toEqual(theirs.map((t) => t.key));
+    expect(isogonal.map((l) => l.name)).toEqual(theirs.map((t) => t.label));
+  });
+  const ISOGONAL_KINDS: Record<string, number> = {
+    offsetsquare: 1,
+    staggeredtri: 1,
+    pythagorean: 2,
+    rotatedhex: 2,
+    rotatedtri: 2,
+    threescaletri: 3,
+  };
+  it.each(isogonal.map((l) => l.key))("%s: every inner point alike, a side through it", (key) => {
+    const level = levelByKey(key)!;
+    const { ring } = level;
+    const config = ARCH_TILINGS.find((t) => t.key === key)!.config;
+    expect(level.region).toHaveLength(1);
+    expect(level.tiles).toHaveLength(ISOGONAL_KINDS[key]!);
+    expect(level.mirror).toBe(false);
+    // round each point: the polygons whose corner is there, and those whose
+    // side runs through it, and how much of the turn they fill between them
+    const tiles = level.cells.map((c) => ccw(ring, c));
+    const round = new Map<string, { corners: number[]; sides: number[]; spanned: number }>();
+    for (const tile of tiles) {
+      // (every tile is regular, so each corner spans what its side count says)
+      for (const v of tile) {
+        const k = ring.key(v);
+        const at = round.get(k) ?? { corners: [], sides: [], spanned: 0 };
+        at.corners.push(tile.length);
+        at.spanned += span(ring.n, tile.length);
+        round.set(k, at);
+      }
+    }
+    const points = new Map(tiles.flat().map((v) => [ring.key(v), v]));
+    for (const tile of tiles) {
+      tile.forEach((a, i) => {
+        const b = tile[(i + 1) % tile.length]!;
+        for (const [k, p] of points) {
+          if (!strictlyBetween(ring, a, b, p)) continue;
+          const at = round.get(k)!;
+          at.sides.push(tile.length);
+          at.spanned += ring.n / 2;
+        }
+      });
+    }
+    const inner = [...round.values()].filter((r) => r.spanned === ring.n);
+    expect(inner.length).toBeGreaterThan(0);
+    const sorted = (xs: number[]): number[] => xs.slice().sort((x, y) => x - y);
+    for (const r of inner) {
+      expect(r.sides).toHaveLength(1);
+      expect(sorted([...r.corners, ...r.sides])).toEqual(sorted(config));
+    }
   });
 
   // The rep-tiles: every one of Hypersweeper's but the five-triangle (the
@@ -504,17 +563,20 @@ describe("puzzle", () => {
     expect(levelByKey("hexrowsdual")!.colours).toEqual(["sides-4", "sides-4 twin"]);
     const twins = LEVELS.filter((l) => l.colours.some((c) => c.includes("twin")));
     // and the aperiodic tilings of two quadrilaterals: Penrose's two rhombi,
-    // his kite and dart, Ammann–Beenker's square and rhombus
+    // his kite and dart, Ammann–Beenker's square and rhombus; and the isogonal
+    // tilings of one polygon in two or three sizes
     expect(twins.map((l) => l.key).sort()).toEqual([
       "ammannbeenker",
       "hexringsdual",
       "hexrowsdual",
       "kitedart",
       "penrose",
+      "pythagorean",
       "snubelongated2dual",
       "snubelongateddual",
       "squaretrihex2dual",
       "squaretrihexdual",
+      "threescaletri",
     ]);
   });
 
