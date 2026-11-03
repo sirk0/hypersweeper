@@ -12,6 +12,7 @@ import { ARCH_TILINGS, archTemplate } from "@tiling/geometry";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
+import { repTilePatch } from "./geometry/repTile";
 import { ccw, outline } from "./geometry/outline";
 import { posed, restFlat, selfTurns, signedArea, turnsOnto, type Shape } from "./geometry/shape";
 
@@ -54,7 +55,8 @@ export interface Level {
   /** The tiling's vertex configurations — the polygons round a vertex, in
    * order: [[4, 4, 4, 4]] for squares, [[3, 4, 6, 4]] for the
    * rhombitrihexagonal; a 2-uniform tiling has two. A dual's are the
-   * primal's — what its tiles' corners follow. Not enforced. */
+   * primal's — what its tiles' corners follow. None for a rep-tile, whose
+   * tiles meet part-way along each other's sides. Not enforced. */
   configs: number[][];
   /** What the game calls the level: its configuration (`notation`), 3.4.6.4,
    * or for a 2-uniform tiling both, as Hypersweeper's catalog writes them,
@@ -75,6 +77,10 @@ export interface Level {
   /** For a Laves level, the uniform tiling it is the dual of; for a
    * 2-isohedral one, the 2-uniform tiling. */
   dualOf?: string;
+  /** For a rep-tile level, how many times Hypersweeper's tile (`SUBSTITUTIONS`
+   * in @tiling/geometry, keyed as the level is) was inflated — the board its
+   * builder makes with that many `levels`. */
+  inflations?: number;
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -322,6 +328,11 @@ export const GROUPS = [
     name: familyLabel("rectangle"),
     hint: "One brick throughout, laid in a bond — corners can meet mid-side",
   },
+  {
+    key: "reptile",
+    name: familyLabel("reptile"),
+    hint: "One tile, filled with smaller copies of itself",
+  },
 ] as const;
 
 export type GroupKey = (typeof GROUPS)[number]["key"];
@@ -481,6 +492,41 @@ const RECTANGLES: [string, number][] = [
   ["herringbone", 4.5],
 ];
 
+/** The rep-tiles, in Hypersweeper's order (`menu.reptile` in the shared data),
+ * and how many times each is inflated: the count nearest two dozen tiles —
+ * twice for the rep-4 tiles (16), five times for the rep-2 isosceles right
+ * triangle (32), three for the rep-3 30-60-90 triangle (27), once for the
+ * rep-16 T-tetromino. Hypersweeper's last, the five-triangle, is left out: it
+ * is the pinwheel, whose children turn by atan(½) — no power of ζ — so its
+ * tiles cannot be held in a tray that turns by steps. */
+const REPTILES: [string, number][] = [
+  ["sphinx", 2],
+  ["chair", 2],
+  ["ltetromino", 2],
+  ["ppentomino", 2],
+  ["trapezoid", 2],
+  ["righttrapezoid", 2],
+  ["halftrapezoid", 2],
+  ["stretchedchair", 2],
+  ["rhombicl", 2],
+  ["rightisosceles", 5],
+  ["drafter", 3],
+  ["ttetromino", 1],
+];
+
+const MODE_INFO = catalog.modeInfo as Record<string, { label: string }>;
+
+/** A rep-tile level: Hypersweeper's rep-tile board `mode`, inflated
+ * `inflations` times (see `repTilePatch`) — a big copy of the tile to fill with
+ * small ones. A rep-tile has no vertex configuration (its tiles meet part-way
+ * along each other's sides), so it goes by Hypersweeper's name for it. */
+function repTileLevel(mode: string, inflations: number): Level {
+  const label = MODE_INFO[mode]?.label;
+  if (!label) throw new Error(`no label for ${mode} in data/catalog.json`);
+  const { ring, cells } = repTilePatch(mode, inflations);
+  return { ...makeLevel(mode, label, ring, cells, "reptile", [], label), inflations };
+}
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -517,6 +563,8 @@ export const LEVELS: Level[] = [
   // The five congruent-rectangle bonds: one brick, laid in rows staggered or
   // turned.
   ...RECTANGLES.map(([tiling, box]) => windowLevel(tiling, box)),
+  // The rep-tiles: one tile, a big copy of it to fill with small ones.
+  ...REPTILES.map(([mode, inflations]) => repTileLevel(mode, inflations)),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,

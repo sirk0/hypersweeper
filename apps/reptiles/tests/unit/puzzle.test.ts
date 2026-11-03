@@ -1,10 +1,23 @@
+import catalog from "@tiling/data/catalog.json";
 import {
   archimedeanBoard,
   archTemplate,
+  chairBoard,
+  drafterBoard,
+  halfTrapezoidBoard,
   hexBoard,
+  ltetrominoBoard,
+  ppentominoBoard,
+  rhombicLBoard,
+  rightIsoscelesBoard,
+  rightTrapezoidBoard,
+  sphinxBoard,
   squareBoard,
+  stretchedChairBoard,
   templateCells,
+  trapezoidBoard,
   triangleGridBoard,
+  ttetrominoBoard,
 } from "@tiling/geometry";
 import type { Board } from "@tiling/geometry";
 import { describe, expect, it } from "vitest";
@@ -58,9 +71,26 @@ describe("puzzle", () => {
     triangles: () => triangleGridBoard(4, 6, 1),
     hexagons: () => hexBoard(5, 4, 1),
   };
+  /** Hypersweeper's rep-tile builders, by mode: (levels, scale) → Board. */
+  const REPTILE_BUILDERS: Record<string, (levels: number, scale: number) => Board> = {
+    sphinx: sphinxBoard,
+    chair: chairBoard,
+    ltetromino: ltetrominoBoard,
+    ppentomino: ppentominoBoard,
+    trapezoid: trapezoidBoard,
+    righttrapezoid: rightTrapezoidBoard,
+    halftrapezoid: halfTrapezoidBoard,
+    stretchedchair: stretchedChairBoard,
+    rhombicl: rhombicLBoard,
+    rightisosceles: rightIsoscelesBoard,
+    drafter: drafterBoard,
+    ttetromino: ttetrominoBoard,
+  };
   const builderFor = (key: string): Board => {
-    const { window } = levelByKey(key)!;
-    return window ? archimedeanBoard(window.tiling, window.nx, window.ny, 1) : BUILDERS[key]!();
+    const { window, inflations } = levelByKey(key)!;
+    if (window) return archimedeanBoard(window.tiling, window.nx, window.ny, 1);
+    if (inflations !== undefined) return REPTILE_BUILDERS[key]!(inflations, 1);
+    return BUILDERS[key]!();
   };
   const centroids = (polys: XY[][]): XY[] => {
     const all = polys.flat();
@@ -96,9 +126,9 @@ describe("puzzle", () => {
     sameTiles(centroids(ours), centroids(theirs));
   });
 
-  const ofPolygons = LEVELS.filter((l) => !isDual(l.group) && l.group !== "rectangle").map(
-    (l) => l.key,
-  );
+  const ofPolygons = LEVELS.filter(
+    (l) => !isDual(l.group) && l.group !== "rectangle" && l.group !== "reptile",
+  ).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
     const { ring, configs } = level;
@@ -192,6 +222,49 @@ describe("puzzle", () => {
     const junctions = inner.filter((r) => r.sides > 0).length;
     if (key === "stackedbond") expect(junctions).toBe(0);
     else expect(junctions).toBeGreaterThan(0);
+  });
+
+  // The rep-tiles: every one of Hypersweeper's but the five-triangle (the
+  // pinwheel, whose turns are no power of ζ), each a big copy of its one tile.
+  const reptiles = LEVELS.filter((l) => l.group === "reptile");
+  it("has Hypersweeper's rep-tiles, in its order", () => {
+    const theirs = (catalog.menu.reptile as string[]).filter((m) => m !== "fivetriangle");
+    expect(reptiles.map((l) => l.key)).toEqual(theirs);
+    expect(reptiles.map((l) => l.name)).toEqual(
+      theirs.map((m) => (catalog.modeInfo as Record<string, { label: string }>)[m]!.label),
+    );
+  });
+  it.each(reptiles.map((l) => l.key))("%s: one tile, filling a bigger copy of itself", (key) => {
+    const level = levelByKey(key)!;
+    const { ring } = level;
+    expect(level.tiles).toHaveLength(1);
+    expect(level.need).toEqual([level.cells.length]);
+    expect(level.cells.length).toBeGreaterThanOrEqual(16);
+    expect(level.cells.length).toBeLessThanOrEqual(32);
+    expect(level.region).toHaveLength(1);
+    // the region, its corners only, is the tile scaled by √(cells) — the same
+    // side lengths in the same turning order, from some corner, either way round
+    const xy = (verts: Cyc[]): XY[] => verts.map((v) => ring.toXY(v));
+    const turning = (pts: XY[]): XY[] =>
+      pts.filter((p, i) => {
+        const a = pts[(i - 1 + pts.length) % pts.length]!;
+        const b = pts[(i + 1) % pts.length]!;
+        return Math.abs((p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0])) > 1e-9;
+      });
+    const sides = (pts: XY[]): number[] =>
+      pts.map((p, i) =>
+        Math.hypot(pts[(i + 1) % pts.length]![0] - p[0], pts[(i + 1) % pts.length]![1] - p[1]),
+      );
+    const big = sides(turning(xy(level.region[0]!)));
+    const small = sides(xy(level.tiles[0]!.verts)).map((s) => s * Math.sqrt(level.cells.length));
+    expect(big).toHaveLength(small.length);
+    const rotations = (a: number[]): number[][] =>
+      a.map((_, i) => [...a.slice(i), ...a.slice(0, i)]);
+    const mirrored = [...small].reverse();
+    const matches = [...rotations(small), ...rotations(mirrored)].some((r) =>
+      r.every((s, i) => Math.abs(s - big[i]!) < 1e-9),
+    );
+    expect(matches, `region sides ${big.map((s) => s.toFixed(3))}`).toBe(true);
   });
 
   // The Laves and 2-isohedral levels: each tile is one of Hypersweeper's dual
@@ -312,18 +385,25 @@ describe("puzzle", () => {
   });
 
   it("flips only where the board uses a tile both ways round", () => {
-    // the kisrhombille's triangles, and the 2-isohedral tilings whose tiles
-    // come in mirror pairs
+    // the kisrhombille's triangles, the 2-isohedral tilings whose tiles
+    // come in mirror pairs, and the rep-tiles whose dissection reflects a child
     expect(
       LEVELS.filter((l) => l.mirror)
         .map((l) => l.key)
         .sort(),
     ).toEqual([
       "dodecarhombitrihexdual",
+      "drafter",
+      "halftrapezoid",
       "hexringsdual",
       "kisrhombille",
+      "ppentomino",
+      "rhombicl",
+      "righttrapezoid",
+      "sphinx",
       "squaretrihex2dual",
       "squaretrihexdual",
+      "stretchedchair",
       "tritrunctrihexdual",
     ]);
     const p = new Puzzle(levelByKey("kisrhombille")!);
@@ -337,7 +417,9 @@ describe("puzzle", () => {
     expect(p.orientations(0).some((rot) => p.snap(0, centre, 0.2, rot, true))).toBe(true);
   });
 
-  it.each(LEVELS.map((l) => l.key))("%s is about as wide as it is tall", (key) => {
+  // (not a rep-tile: its board is the shape of its tile)
+  const windows = LEVELS.filter((l) => l.group !== "reptile").map((l) => l.key);
+  it.each(windows)("%s is about as wide as it is tall", (key) => {
     const { ring, region } = levelByKey(key)!;
     const xy = region.flat().map((v) => ring.toXY(v));
     const span = (i: 0 | 1): number =>

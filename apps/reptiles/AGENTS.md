@@ -85,16 +85,20 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 64 levels in six sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 76 levels in seven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
 [3⁶; 3⁴.6]₁), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
 *2-isohedral* (the twenty 2-uniform tilings' duals, two kinds of tile each,
-named V and the primal's pair, V[3⁶; 3⁴.6]₁) and *Congruent rectangles* (the five
+named V and the primal's pair, V[3⁶; 3⁴.6]₁), *Congruent rectangles* (the five
 brick bonds — stacked, running, basket weave, 3×3 basket weave, herringbone —
 one brick each, named as Hypersweeper labels them: a bond has no vertex
-configuration, and but for the stacked bond is not edge to edge). Each board is as near square as its tiling allows at two or three
+configuration, and but for the stacked bond is not edge to edge) and
+*Rep-tiles* (twelve of Hypersweeper's thirteen — the sphinx to the
+T-tetromino — each a big copy of its one tile to fill with small ones, 16 to
+32 of them; the five-triangle is left out, being the pinwheel, whose tiles
+turn by no power of ζ). Each window board is as near square as its tiling allows at two or three
 dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 20 tiles, its next square window 60; and the 3×3 basket weave, 48, a whole
 square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
@@ -197,6 +201,11 @@ finishes the board — the quick way to see the win state.
   scaled by the face sizes' lcm, so the board is built at that scale in a ring
   whose `unit` draws it back at true size. Tiles the square cuts off from the
   rest are dropped: the board is the largest piece joined edge to edge.
+- `src/geometry/repTile.ts` — a rep-tile patch: Hypersweeper's substitution
+  tile (`SUBSTITUTIONS`, `substitutionPlacements`) inflated `levels` times,
+  its lattice points read exactly into ℤ[ζ4] or ℤ[ζ12] and turned by the
+  same upright turn Hypersweeper draws the right triangles at, each cell cut
+  to its real corners (the tiles meet at T-junctions, as the bonds do).
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -207,7 +216,9 @@ finishes the board — the quick way to see the win state.
   of vertex inside, the bonds' in `RECTANGLES`.
   `lavesLevel` and `twoIsohedralLevel` make the duals, from `LAVES` and
   `TWO_ISOHEDRAL` (the latter keyed by the 2-uniform primal; the level is
-  `<primal>dual`, Hypersweeper's key).
+  `<primal>dual`, Hypersweeper's key). `repTileLevel` makes a rep-tile from
+  `REPTILES` (Hypersweeper's mode key and how many inflations); the tests check
+  it tile for tile against Hypersweeper's builder at that many `levels`.
   `makeLevel` reads everything off a level's
   cells: the tray (one tile per kind — cells alike up to a turn, or a turn and
   a mirror — resting flat on its longest side, `restFlat`), whether a kind is

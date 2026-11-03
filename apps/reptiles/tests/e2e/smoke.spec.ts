@@ -273,5 +273,6 @@ test("the catalog's families are named as Hypersweeper names them", async ({ pag
     "Laves",
     "2-isohedral",
     "Congruent rectangles",
+    "Rep-tiles",
   ]);
 });
