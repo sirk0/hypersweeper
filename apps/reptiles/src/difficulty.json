@@ -318,5 +318,65 @@
     "score": 0.22,
     "presses": 2,
     "flips": 0
+  },
+  "sphinx": {
+    "score": 0.789,
+    "presses": 6,
+    "flips": 4
+  },
+  "chair": {
+    "score": 0.455,
+    "presses": 6,
+    "flips": 0
+  },
+  "ltetromino": {
+    "score": 0.33,
+    "presses": 4,
+    "flips": 0
+  },
+  "ppentomino": {
+    "score": 0.767,
+    "presses": 6,
+    "flips": 5
+  },
+  "trapezoid": {
+    "score": 0.692,
+    "presses": 8,
+    "flips": 0
+  },
+  "righttrapezoid": {
+    "score": 0.642,
+    "presses": 5,
+    "flips": 4
+  },
+  "halftrapezoid": {
+    "score": 0.9,
+    "presses": 5,
+    "flips": 7
+  },
+  "stretchedchair": {
+    "score": 0.642,
+    "presses": 5,
+    "flips": 4
+  },
+  "rhombicl": {
+    "score": 1.019,
+    "presses": 9,
+    "flips": 4
+  },
+  "rightisosceles": {
+    "score": 0.41,
+    "presses": 8,
+    "flips": 0
+  },
+  "drafter": {
+    "score": 0.84,
+    "presses": 9,
+    "flips": 8
+  },
+  "ttetromino": {
+    "score": 0.517,
+    "presses": 7,
+    "flips": 0
   }
 }
