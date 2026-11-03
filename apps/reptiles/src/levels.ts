@@ -14,6 +14,7 @@ import { templateWindow } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
 import { repTilePatch } from "./geometry/repTile";
 import { spiralPatch } from "./geometry/spiral";
+import { aperiodicPatch } from "./geometry/aperiodic";
 import { ccw, outline } from "./geometry/outline";
 import { posed, restFlat, selfTurns, signedArea, turnsOnto, type Shape } from "./geometry/shape";
 
@@ -87,6 +88,11 @@ export interface Level {
    * level is) makes it with: how far the spiral is grown, and how many of its
    * centremost tiles are kept. */
   spiral?: { rings: number; keep: number };
+  /** For an aperiodic level, the arguments Hypersweeper's builder for it
+   * (`penroseBoard`, `kiteDartBoard`, `ammannBeenkerBoard`, `spectreBoard`,
+   * keyed as the level is) makes it with: how many substitutions grow the
+   * patch, and how many tiles its centred window keeps. */
+  aperiodic?: { depth: number; keep: number };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -351,6 +357,11 @@ export const GROUPS = [
     name: familyLabel("spiral"),
     hint: "One tile, wound round a centre in spiral arms",
   },
+  {
+    key: "aperiodic",
+    name: familyLabel("aperiodic"),
+    hint: "A window onto a tiling that repeats nowhere",
+  },
 ] as const;
 
 export type GroupKey = (typeof GROUPS)[number]["key"];
@@ -584,6 +595,32 @@ function spiralLevel(mode: string, rings: number, keep: number): Level {
   return { ...makeLevel(mode, label, ring, cells, "spiral", [], label), spiral: { rings, keep } };
 }
 
+/** The aperiodic tilings, in Hypersweeper's order (`menu.aperiodic` in the
+ * shared data), each with how many substitutions its builder grows the patch
+ * by (its easy board's) and how many tiles the centred window keeps — the
+ * patch's sun or star in the middle: the squarest near two or three dozen with
+ * one outline, found by scanning sizes. */
+const APERIODIC: [string, number, number][] = [
+  ["penrose", 5, 29],
+  ["kitedart", 4, 33],
+  ["ammannbeenker", 3, 24],
+  ["spectre", 3, 33],
+];
+
+/** An aperiodic level: the centred window of Hypersweeper's board `mode`,
+ * grown `depth` substitutions, `keep` tiles (see `aperiodicPatch`). An
+ * aperiodic tiling has no one vertex configuration (that is the point), so
+ * it goes by Hypersweeper's name for it. */
+function aperiodicLevel(mode: string, depth: number, keep: number): Level {
+  const label = MODE_INFO[mode]?.label;
+  if (!label) throw new Error(`no label for ${mode} in data/catalog.json`);
+  const { ring, cells } = aperiodicPatch(mode, depth, keep);
+  return {
+    ...makeLevel(mode, label, ring, cells, "aperiodic", [], label),
+    aperiodic: { depth, keep },
+  };
+}
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -626,6 +663,8 @@ export const LEVELS: Level[] = [
   ...REPTILES.map(([mode, inflations]) => repTileLevel(mode, inflations)),
   // The spirals: one tile, wound round a centre.
   ...SPIRALS.map(([mode, rings, keep]) => spiralLevel(mode, rings, keep)),
+  // The aperiodic tilings: a window onto a tiling that repeats nowhere.
+  ...APERIODIC.map(([mode, depth, keep]) => aperiodicLevel(mode, depth, keep)),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,

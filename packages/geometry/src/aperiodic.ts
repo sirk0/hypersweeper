@@ -366,6 +366,37 @@ function windowRows(
   return centred; // unreachable: index 0 is always a board
 }
 
+/** `windowRows` on tiles given by their exact corners: each tile's vertex ids
+ * are its coefficient tuples and its centroid the mean of its corners drawn by
+ * `toXy`. The tiles kept, in the window's order. */
+function windowTiles<T extends { verts: readonly (readonly number[])[] }>(
+  cells: readonly T[],
+  toXy: (p: readonly number[]) => Vertex,
+  tiebreak: (a: T, b: T) => number,
+  keep: number | null,
+  variant: number,
+): T[] {
+  const vertexIds = cells.map((cell) => cell.verts.map((v) => v.join(",")));
+  const centroids: Vertex[] = cells.map((cell) => {
+    let cx = 0;
+    let cy = 0;
+    for (const v of cell.verts) {
+      const [x, y] = toXy(v);
+      cx += x;
+      cy += y;
+    }
+    return [cx / cell.verts.length, cy / cell.verts.length];
+  });
+  const kept = windowRows(
+    vertexIds,
+    centroids,
+    (a, b) => tiebreak(cells[a]!, cells[b]!),
+    keep,
+    variant,
+  );
+  return kept.map((i) => cells[i]!);
+}
+
 /**
  * An aperiodic Penrose tiling (P3): thick and thin rhombi. Starts from a wheel
  * of ten half-rhombus Robinson triangles, deflates `subdivisions` times, then
@@ -385,6 +416,25 @@ export function penroseBoard(
   keep: number | null = null,
   variant = 0,
 ): Board {
+  const rows = penroseKept(subdivisions, keep, variant).map((cell) => ({
+    id: cid(cell.color, cell.index),
+    ids: cell.verts,
+  }));
+  return exactBoard("penrose", rows, (p) => zToXy(p as ZPoint), scale);
+}
+
+/** The rhombi `penroseBoard(subdivisions, _, keep, variant)` draws, exact in
+ * ℤ[ζ10]. Their edges are 1/φ^subdivisions: the wheel deflates inward. */
+export function penroseExact(
+  subdivisions: number,
+  keep: number | null = null,
+  variant = 0,
+): ExactTiles {
+  return { order: 10, cells: penroseKept(subdivisions, keep, variant).map((c) => [...c.verts]) };
+}
+
+/** The rhombi the Penrose board keeps, in its cell order. */
+function penroseKept(subdivisions: number, keep: number | null, variant: number): PenroseCell[] {
   const zero: ZPoint = [0, 0, 0, 0];
   const powers: ZPoint[] = [[1, 0, 0, 0]];
   for (let i = 0; i < 10; i++) powers.push(zetaMul(powers[powers.length - 1]!));
@@ -440,38 +490,15 @@ export function penroseBoard(
     }
   }
 
-  const vertexIds = cells.map((cell) => cell.verts.map(zKey));
-  const centroids: Vertex[] = cells.map((cell) => {
-    let cx = 0;
-    let cy = 0;
-    for (const v of cell.verts) {
-      const [x, y] = zToXy(v);
-      cx += x;
-      cy += y;
-    }
-    return [cx / 4, cy / 4];
-  });
   // The tie-break at the cut rank is the cell id, as it always was: a rhombus's
   // colour, then the order the merge made it.
-  const kept = windowRows(
-    vertexIds,
-    centroids,
-    (a, b) => cells[a]!.color - cells[b]!.color || cells[a]!.index - cells[b]!.index,
+  return windowTiles(
+    cells,
+    (p) => zToXy(p as ZPoint),
+    (a, b) => a.color - b.color || a.index - b.index,
     keep,
     variant,
   );
-
-  const cellMap = new Map<CellId, string[]>();
-  const positions = new Map<string, Vertex>();
-  for (const i of kept) {
-    const cell = cells[i]!;
-    cell.verts.forEach((v, j) => {
-      const k = vertexIds[i]![j]!;
-      if (!positions.has(k)) positions.set(k, zToXy(v));
-    });
-    cellMap.set(cid(cell.color, cell.index), vertexIds[i]!);
-  }
-  return finalizeFlat("penrose", cellMap, positions, scale);
 }
 
 // -- Penrose kites and darts (P2) --------------------------------------------
@@ -554,6 +581,32 @@ export function kiteDartBoard(
   keep: number | null = null,
   variant = 0,
 ): Board {
+  const rows = kiteDartKept(subdivisions, keep, variant).map((cell) => ({
+    id: cid(cell.color, cell.index),
+    ids: cell.verts,
+  }));
+  const board = exactBoard("kitedart", rows, (p) => zToXy(p as ZPoint), scale);
+  const glyphAnchor = new Map<CellId, Vertex>();
+  for (const [cell, polygon] of board.polygons) {
+    // a cell id is "color,index", as `cid` made it above
+    glyphAnchor.set(cell, kiteDartGlyphAnchor(Number(cell.split(",")[0]), polygon));
+  }
+  return { ...board, glyphAnchor };
+}
+
+/** The kites (colour 0) and darts (1) `kiteDartBoard(subdivisions, _, keep,
+ * variant)` draws, exact in ℤ[ζ10]: a kite's long edges, and a dart's, are
+ * 1/φ^subdivisions, their short ones 1/φ of that. */
+export function kiteDartExact(
+  subdivisions: number,
+  keep: number | null = null,
+  variant = 0,
+): ExactTiles {
+  return { order: 10, cells: kiteDartKept(subdivisions, keep, variant).map((c) => [...c.verts]) };
+}
+
+/** The kites and darts the board keeps, in its cell order. */
+function kiteDartKept(subdivisions: number, keep: number | null, variant: number): PenroseCell[] {
   const waiting = new Map<string, ZPoint>();
   const cells: PenroseCell[] = [];
   for (const [color, apex, side, axis] of kiteDartTriangles(subdivisions)) {
@@ -570,42 +623,13 @@ export function kiteDartBoard(
     }
   }
 
-  const vertexIds = cells.map((cell) => cell.verts.map(zKey));
-  const centroids: Vertex[] = cells.map((cell) => {
-    let cx = 0;
-    let cy = 0;
-    for (const v of cell.verts) {
-      const [x, y] = zToXy(v);
-      cx += x;
-      cy += y;
-    }
-    return [cx / 4, cy / 4];
-  });
-  const kept = windowRows(
-    vertexIds,
-    centroids,
-    (a, b) => cells[a]!.color - cells[b]!.color || cells[a]!.index - cells[b]!.index,
+  return windowTiles(
+    cells,
+    (p) => zToXy(p as ZPoint),
+    (a, b) => a.color - b.color || a.index - b.index,
     keep,
     variant,
   );
-
-  const cellMap = new Map<CellId, string[]>();
-  const positions = new Map<string, Vertex>();
-  for (const i of kept) {
-    const cell = cells[i]!;
-    cell.verts.forEach((v, j) => {
-      const k = vertexIds[i]![j]!;
-      if (!positions.has(k)) positions.set(k, zToXy(v));
-    });
-    cellMap.set(cid(cell.color, cell.index), vertexIds[i]!);
-  }
-  const board = finalizeFlat("kitedart", cellMap, positions, scale);
-  const glyphAnchor = new Map<CellId, Vertex>();
-  for (const [cell, polygon] of board.polygons) {
-    // a cell id is "color,index", as `cid` made it above
-    glyphAnchor.set(cell, kiteDartGlyphAnchor(Number(cell.split(",")[0]), polygon));
-  }
-  return { ...board, glyphAnchor };
 }
 
 /** The centre of the biggest circle a kite or a dart holds — port of
@@ -1172,10 +1196,8 @@ function spectreLeaves(levels: number): [string, Placement][] {
 
 interface SpectreRow {
   label: string;
-  ids: Z12Point[];
+  verts: Z12Point[];
   sortedIds: Z12Point[];
-  cx: number;
-  cy: number;
 }
 
 /** Lexicographic order on two tiles' sorted vertex-id lists (equal length). */
@@ -1205,6 +1227,21 @@ export function spectreBoard(
   scale = 21,
   variant = 0,
 ): Board {
+  const rows = spectreKept(levels, keep, variant).map((row, i) => ({
+    id: cid(row.label, i),
+    ids: row.verts,
+  }));
+  return exactBoard("spectre", rows, (p) => z12ToXy(p as Z12Point), scale);
+}
+
+/** The Spectres `spectreBoard(levels, keep, _, variant)` draws, exact in
+ * ℤ[ζ12], unit edges — each its 14 corners, the flat one included. */
+export function spectreExact(levels: number, keep: number | null = null, variant = 0): ExactTiles {
+  return { order: 12, cells: spectreKept(levels, keep, variant).map((row) => [...row.verts]) };
+}
+
+/** The Spectres the board keeps, in its cell order (which numbers them). */
+function spectreKept(levels: number, keep: number | null, variant: number): SpectreRow[] {
   const rows: SpectreRow[] = [];
   const seen = new Set<string>();
   for (const [label, at] of spectreLeaves(levels)) {
@@ -1213,19 +1250,12 @@ export function spectreBoard(
     const fs = sortedIds.map(z12Key).join(";");
     if (seen.has(fs)) continue; // defensive: a single cluster produces no dups
     seen.add(fs);
-    let cx = 0;
-    let cy = 0;
-    for (const v of ids) {
-      const [x, y] = z12ToXy(v);
-      cx += x;
-      cy += y;
-    }
-    rows.push({ label, ids, sortedIds, cx: cx / ids.length, cy: cy / ids.length });
+    rows.push({ label, verts: ids, sortedIds });
   }
 
   if (import.meta.env.DEV) {
     for (const row of rows) {
-      for (const v of row.ids) {
+      for (const v of row.verts) {
         for (const coeff of v) {
           if (!Number.isSafeInteger(coeff)) {
             throw new Error(`Spectre ℤ[ζ12] coefficient overflow: ${coeff}`);
@@ -1239,25 +1269,13 @@ export function spectreBoard(
   // tie-break at the cut rank is the tile's own sorted vertex ids — cell ids do
   // not exist yet here, the trim being what puts the tiles in the order they
   // are numbered in.
-  const vertexIds = rows.map((row) => row.ids.map(z12Key));
-  const kept = windowRows(
-    vertexIds,
-    rows.map((row): Vertex => [row.cx, row.cy]),
-    (a, b) => cmpSortedZ12(rows[a]!.sortedIds, rows[b]!.sortedIds),
+  return windowTiles(
+    rows,
+    (p) => z12ToXy(p as Z12Point),
+    (a, b) => cmpSortedZ12(a.sortedIds, b.sortedIds),
     keep,
     variant,
   );
-
-  const cellMap = new Map<CellId, string[]>();
-  const positions = new Map<string, Vertex>();
-  kept.forEach((row, i) => {
-    rows[row]!.ids.forEach((v, j) => {
-      const k = vertexIds[row]![j]!;
-      if (!positions.has(k)) positions.set(k, z12ToXy(v));
-    });
-    cellMap.set(cid(rows[row]!.label, i), vertexIds[row]!);
-  });
-  return finalizeFlat("spectre", cellMap, positions, scale);
 }
 
 // -- Ammann–Beenker: squares and 45° rhombi -----------------------------------
@@ -1470,6 +1488,25 @@ export function ammannBeenkerBoard(
   keep: number | null = null,
   variant = 0,
 ): Board {
+  const rows = ammannBeenkerKept(levels, keep, variant).map((cell) => ({
+    id: cid(cell.kind, cell.index),
+    ids: cell.verts,
+  }));
+  return exactBoard("ammannbeenker", rows, (p) => z8ToXy(p as Z8Point), scale);
+}
+
+/** The rhombi (kind 0) and squares (1) `ammannBeenkerBoard(levels, _, keep,
+ * variant)` draws, exact in ℤ[ζ8], unit edges. */
+export function ammannBeenkerExact(
+  levels: number,
+  keep: number | null = null,
+  variant = 0,
+): ExactTiles {
+  return { order: 8, cells: ammannBeenkerKept(levels, keep, variant).map((c) => [...c.verts]) };
+}
+
+/** The tiles the Ammann–Beenker board keeps, in its cell order. */
+function ammannBeenkerKept(levels: number, keep: number | null, variant: number): AbCell[] {
   const cells = abCells(levels);
 
   if (import.meta.env.DEV) {
@@ -1484,38 +1521,15 @@ export function ammannBeenkerBoard(
     }
   }
 
-  const vertexIds = cells.map((cell) => cell.verts.map(z8Key));
-  const centroids: Vertex[] = cells.map((cell) => {
-    let cx = 0;
-    let cy = 0;
-    for (const v of cell.verts) {
-      const [x, y] = z8ToXy(v);
-      cx += x;
-      cy += y;
-    }
-    return [cx / 4, cy / 4];
-  });
   // The tie-break at the cut rank is the cell id: rhombus or square, then the
   // order the substitution made it.
-  const kept = windowRows(
-    vertexIds,
-    centroids,
-    (a, b) => cells[a]!.kind - cells[b]!.kind || cells[a]!.index - cells[b]!.index,
+  return windowTiles(
+    cells,
+    (p) => z8ToXy(p as Z8Point),
+    (a, b) => a.kind - b.kind || a.index - b.index,
     keep,
     variant,
   );
-
-  const cellMap = new Map<CellId, string[]>();
-  const positions = new Map<string, Vertex>();
-  for (const i of kept) {
-    const cell = cells[i]!;
-    cell.verts.forEach((v, j) => {
-      const k = vertexIds[i]![j]!;
-      if (!positions.has(k)) positions.set(k, z8ToXy(v));
-    });
-    cellMap.set(cid(cell.kind, cell.index), vertexIds[i]!);
-  }
-  return finalizeFlat("ammannbeenker", cellMap, positions, scale);
 }
 
 // -- the brick rings ---------------------------------------------------------

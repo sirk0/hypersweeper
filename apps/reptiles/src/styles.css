@@ -42,8 +42,9 @@
   --open: #7b4fd0;
   /* Tiles take Hypersweeper's shape hues, by side count: 3 red, 4 orange,
      5 yellow, 6 green, 7 sea green (between, as Hypersweeper's hue ramp puts
-     it: Klaassen's heptagon), 8 teal, 12 blue — and rose for a second kind with as
-     many sides as another (a 2-isohedral level's two quadrilaterals). */
+     it: Klaassen's heptagon), 8 teal, 12 blue, 13 violet (the Spectre) — and
+     rose for a second kind with as many sides as another (a 2-isohedral
+     level's two quadrilaterals, and three of the aperiodic tilings' two). */
   --tile-3: #e07f72;
   --tile-3-edge: #8f3a2f;
   --tile-4: #e9a85a;
@@ -58,6 +59,8 @@
   --tile-8-edge: #23625b;
   --tile-12: #6e9fca;
   --tile-12-edge: #2f5679;
+  --tile-13: #a98bc0;
+  --tile-13-edge: #5f4771;
   --tile-twin: #d68aa6;
   --tile-twin-edge: #7d3453;
   --stick: #7b4fd0;
@@ -117,6 +120,8 @@
     --tile-8-edge: #b2e0da;
     --tile-12: #5f8db8;
     --tile-12-edge: #b8d4ee;
+    --tile-13: #987bae;
+    --tile-13-edge: #dac8e8;
     --tile-twin: #b8708c;
     --tile-twin-edge: #f2c0d2;
     --stick: #b394ff;
@@ -399,6 +404,11 @@ button.primary {
 .tile.sides-12 {
   fill: var(--tile-12);
   stroke: var(--tile-12-edge);
+}
+
+.tile.sides-13 {
+  fill: var(--tile-13);
+  stroke: var(--tile-13-edge);
 }
 
 .tile.twin {

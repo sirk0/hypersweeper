@@ -1,5 +1,6 @@
 import catalog from "@tiling/data/catalog.json";
 import {
+  ammannBeenkerBoard,
   ARCH_TILINGS,
   archimedeanBoard,
   archTemplate,
@@ -7,8 +8,10 @@ import {
   drafterBoard,
   halfTrapezoidBoard,
   hexBoard,
+  kiteDartBoard,
   klaassenBoard,
   ltetrominoBoard,
+  penroseBoard,
   pentaSpiral5Board,
   pentaSpiral6Board,
   pentaSpiral7Board,
@@ -17,6 +20,7 @@ import {
   rhombicLBoard,
   rightIsoscelesBoard,
   rightTrapezoidBoard,
+  spectreBoard,
   sphinxBoard,
   squareBoard,
   stretchedChairBoard,
@@ -27,6 +31,7 @@ import {
 } from "@tiling/geometry";
 import type { Board } from "@tiling/geometry";
 import { describe, expect, it } from "vitest";
+import { aperiodicShrink } from "../../src/geometry/aperiodic";
 import { strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
 import { centroid, posed, turnsOnto, type XY } from "../../src/geometry/shape";
@@ -100,11 +105,25 @@ describe("puzzle", () => {
     pentaspiral6: pentaSpiral6Board,
     pentaspiral7: pentaSpiral7Board,
   };
+  /** Hypersweeper's aperiodic builders, by mode: (depth, keep, scale) → the
+   * centred window (variant 0). `scale` draws the builder's edge one unit
+   * long: the Penrose patches deflate, so theirs is φ^depth. */
+  const APERIODIC_BUILDERS: Record<string, (depth: number, keep: number, scale: number) => Board> =
+    {
+      penrose: (depth, keep, scale) => penroseBoard(depth, scale, keep),
+      kitedart: (depth, keep, scale) => kiteDartBoard(depth, scale, keep),
+      ammannbeenker: (depth, keep, scale) => ammannBeenkerBoard(depth, scale, keep),
+      spectre: (depth, keep, scale) => spectreBoard(depth, keep, scale),
+    };
   const builderFor = (key: string): Board => {
-    const { window, inflations, spiral } = levelByKey(key)!;
+    const { window, inflations, spiral, aperiodic } = levelByKey(key)!;
     if (window) return archimedeanBoard(window.tiling, window.nx, window.ny, 1);
     if (inflations !== undefined) return REPTILE_BUILDERS[key]!(inflations, 1);
     if (spiral) return SPIRAL_BUILDERS[key]!(spiral.rings, spiral.keep, 1);
+    if (aperiodic) {
+      const { depth, keep } = aperiodic;
+      return APERIODIC_BUILDERS[key]!(depth, keep, 1 / aperiodicShrink(key, depth));
+    }
     return BUILDERS[key]!();
   };
   const centroids = (polys: XY[][]): XY[] => {
@@ -141,10 +160,12 @@ describe("puzzle", () => {
     sameTiles(centroids(ours), centroids(theirs));
   });
 
-  // (a bond, a pentagonal tiling, a rep-tile or a spiral has no vertex
-  // configuration)
+  // (a bond, a pentagonal tiling, a rep-tile, a spiral or an aperiodic tiling
+  // has no one vertex configuration)
   const ofPolygons = LEVELS.filter(
-    (l) => !isDual(l.group) && !["rectangle", "pentagonal", "reptile", "spiral"].includes(l.group),
+    (l) =>
+      !isDual(l.group) &&
+      !["rectangle", "pentagonal", "reptile", "spiral", "aperiodic"].includes(l.group),
   ).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
@@ -416,6 +437,39 @@ describe("puzzle", () => {
     expect(level.tiles[0]!.verts).toHaveLength(sides);
   });
 
+  // The aperiodic tilings: every one of Hypersweeper's, each the centred
+  // window of its builder's patch.
+  const aperiodic = LEVELS.filter((l) => l.group === "aperiodic");
+  it("has Hypersweeper's aperiodic tilings, in its order", () => {
+    const theirs = catalog.menu.aperiodic as string[];
+    expect(aperiodic.map((l) => l.key)).toEqual(theirs);
+    expect(aperiodic.map((l) => l.name)).toEqual(
+      theirs.map((m) => (catalog.modeInfo as Record<string, { label: string }>)[m]!.label),
+    );
+  });
+  /** Each tiling's tiles, by side count, and its rotate step in degrees: 36°
+   * on ℤ[ζ10] (a thin rhombus sits at every tenth of a turn), 45° on ℤ[ζ8],
+   * 30° on ℤ[ζ12]. */
+  const APERIODIC_TILES: Record<string, [number[], number]> = {
+    penrose: [[4, 4], 36],
+    kitedart: [[4, 4], 36],
+    ammannbeenker: [[4, 4], 45],
+    spectre: [[13], 30],
+  };
+  it.each(aperiodic.map((l) => l.key))("%s: its tiles, two or three dozen, one outline", (key) => {
+    const level = levelByKey(key)!;
+    const [sides, degrees] = APERIODIC_TILES[key]!;
+    expect(level.tiles.map((t) => t.verts.length)).toEqual(sides);
+    expect(level.need.reduce((a, b) => a + b)).toBe(level.cells.length);
+    expect(level.cells.length).toBeGreaterThanOrEqual(24);
+    expect(level.cells.length).toBeLessThanOrEqual(36);
+    expect(level.region).toHaveLength(1);
+    // every tile here is mirror-symmetric, but for the Spectre, which the
+    // tiling never turns over
+    expect(level.mirror).toBe(false);
+    expect((level.turn * 360) / level.ring.n).toBe(degrees);
+  });
+
   const pentagonal = LEVELS.filter((l) => l.group === "pentagonal");
   it("has Hypersweeper's pentagonal tilings, in its order", () => {
     const theirs = ARCH_TILINGS.filter((t) => t.family === "pentagonal");
@@ -449,9 +503,14 @@ describe("puzzle", () => {
     expect(levelByKey("trihex")!.colours).toEqual(["sides-3", "sides-6"]);
     expect(levelByKey("hexrowsdual")!.colours).toEqual(["sides-4", "sides-4 twin"]);
     const twins = LEVELS.filter((l) => l.colours.some((c) => c.includes("twin")));
+    // and the aperiodic tilings of two quadrilaterals: Penrose's two rhombi,
+    // his kite and dart, Ammann–Beenker's square and rhombus
     expect(twins.map((l) => l.key).sort()).toEqual([
+      "ammannbeenker",
       "hexringsdual",
       "hexrowsdual",
+      "kitedart",
+      "penrose",
       "snubelongated2dual",
       "snubelongateddual",
       "squaretrihex2dual",
