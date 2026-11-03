@@ -294,6 +294,21 @@
     "presses": 10,
     "flips": 7
   },
+  "pentagon10": {
+    "score": 0.525,
+    "presses": 9,
+    "flips": 0
+  },
+  "pentagon13": {
+    "score": 0.742,
+    "presses": 7,
+    "flips": 4
+  },
+  "pentagon15": {
+    "score": 1.394,
+    "presses": 14,
+    "flips": 4
+  },
   "stackedbond": {
     "score": 0.105,
     "presses": 0,

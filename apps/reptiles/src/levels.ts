@@ -190,16 +190,18 @@ function windowLevel(tiling: string, box: number): Level {
   if (spec.family === "uniform") {
     return { ...makeLevel(tiling, spec.label, ring, cells, "uniform", [spec.config]), window };
   }
-  if (spec.family === "rectangle") {
+  if (spec.family === "rectangle" || spec.family === "pentagonal") {
     // A bond has no vertex configuration to be named by (a brick corner can
-    // land part-way along a neighbour's side), so it goes by Hypersweeper's
-    // name for it, and its config is the tile, as Hypersweeper's is.
+    // land part-way along a neighbour's side), nor has a pentagonal tiling
+    // one (its corners are of two or three kinds, three or four tiles round
+    // each), so each goes by Hypersweeper's name for it, and its config is the
+    // tile, as Hypersweeper's is.
     const level = makeLevel(
       tiling,
       spec.label,
       ring,
       cells,
-      "rectangle",
+      spec.family,
       [spec.config],
       spec.label,
     );
@@ -322,6 +324,11 @@ export const GROUPS = [
     key: "2-isohedral",
     name: familyLabel("2-isohedral"),
     hint: "The 2-uniform tilings' duals — two shapes, neither regular",
+  },
+  {
+    key: "pentagonal",
+    name: familyLabel("pentagonal"),
+    hint: "One convex pentagon throughout, found 1975 to 2015",
   },
   {
     key: "rectangle",
@@ -476,6 +483,18 @@ const TWO_ISOHEDRAL: [string, number][] = [
   ["dodecarhombitrihex", 7.65],
 ];
 
+/** The pentagonal tilings, in Hypersweeper's order — one convex pentagon each,
+ * its edges short reals of the ring (√2/2, 2cos 15°) — and each one's window
+ * (`box`, in the tile's unit side): the squarest near two or three dozen tiles
+ * with one outline, found by scanning sizes and taken mid-range. Type 10's
+ * 24-tile window is 0.88 square, so it takes the next, 38 tiles and square;
+ * types 13 and 15 are 22 tiles each, 1.00 and 1.04. */
+const PENTAGONAL: [string, number][] = [
+  ["pentagon10", 6.7],
+  ["pentagon13", 8.8],
+  ["pentagon15", 9.55],
+];
+
 /** The congruent-rectangle bonds — one brick, 1 by ½ (by ⅓ in the 3×3 basket
  * weave), not edge to edge but the stacked bond — and each one's window
  * (`box`, in brick lengths): the squarest near two or three dozen tiles with
@@ -560,6 +579,8 @@ export const LEVELS: Level[] = [
   // The twenty 2-isohedral tilings, the 2-uniform tilings' duals: two kinds
   // of tile, neither regular.
   ...TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralLevel(primal, box)).sort(byEase),
+  // The three pentagonal tilings: one convex pentagon, turned and mirrored.
+  ...PENTAGONAL.map(([tiling, box]) => windowLevel(tiling, box)),
   // The five congruent-rectangle bonds: one brick, laid in rows staggered or
   // turned.
   ...RECTANGLES.map(([tiling, box]) => windowLevel(tiling, box)),
