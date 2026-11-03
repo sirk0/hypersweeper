@@ -55,7 +55,7 @@ export function tileIcon(level: Level, kind: number): SVGSVGElement {
   const svg = svgIn("level-tile", [-r, -r, 2 * r, 2 * r]);
   const poly = document.createElementNS(NS, "polygon");
   poly.setAttribute("points", xy.map(([x, y]) => `${x - cx},${cy - y}`).join(" "));
-  poly.setAttribute("class", `tile sides-${xy.length}`);
+  poly.setAttribute("class", `tile ${level.colours[kind]}`);
   poly.setAttribute("stroke-width", String(r * 0.1));
   svg.appendChild(poly);
   return svg;

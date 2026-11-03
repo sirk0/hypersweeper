@@ -193,5 +193,105 @@
     "score": 1.07,
     "presses": 11,
     "flips": 7
+  },
+  "dodecasquaredual": {
+    "score": 1.895,
+    "presses": 19,
+    "flips": 0
+  },
+  "elongated2dual": {
+    "score": 0.703,
+    "presses": 6,
+    "flips": 0
+  },
+  "dodecarhombitrihexdual": {
+    "score": 1.03,
+    "presses": 10,
+    "flips": 6
+  },
+  "snubelongateddual": {
+    "score": 2.724,
+    "presses": 25,
+    "flips": 0
+  },
+  "fannedhexdual": {
+    "score": 1.632,
+    "presses": 21,
+    "flips": 0
+  },
+  "snubelongated2dual": {
+    "score": 1.311,
+    "presses": 16,
+    "flips": 0
+  },
+  "hexrowsdual": {
+    "score": 0.512,
+    "presses": 5,
+    "flips": 0
+  },
+  "trirhombitrihexdual": {
+    "score": 1.218,
+    "presses": 15,
+    "flips": 0
+  },
+  "squaretrihex2dual": {
+    "score": 1.363,
+    "presses": 15,
+    "flips": 5
+  },
+  "studdedtri2dual": {
+    "score": 0.935,
+    "presses": 11,
+    "flips": 0
+  },
+  "hexringsdual": {
+    "score": 1.49,
+    "presses": 16,
+    "flips": 8
+  },
+  "squaretrihexdual": {
+    "score": 1.333,
+    "presses": 15,
+    "flips": 5
+  },
+  "dissectedtrunchexdual": {
+    "score": 1.23,
+    "presses": 17,
+    "flips": 0
+  },
+  "squarerows2dual": {
+    "score": 0.336,
+    "presses": 1,
+    "flips": 0
+  },
+  "studdedtridual": {
+    "score": 0.982,
+    "presses": 13,
+    "flips": 0
+  },
+  "elongated3dual": {
+    "score": 0.626,
+    "presses": 6,
+    "flips": 0
+  },
+  "hexbandsdual": {
+    "score": 0.572,
+    "presses": 7,
+    "flips": 0
+  },
+  "squarerows3dual": {
+    "score": 0.341,
+    "presses": 1,
+    "flips": 0
+  },
+  "dissectedtrunchex2dual": {
+    "score": 1.148,
+    "presses": 17,
+    "flips": 0
+  },
+  "tritrunctrihexdual": {
+    "score": 0.98,
+    "presses": 10,
+    "flips": 7
   }
 }

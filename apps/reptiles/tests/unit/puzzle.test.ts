@@ -10,7 +10,7 @@ import type { Board } from "@tiling/geometry";
 import { describe, expect, it } from "vitest";
 import type { Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
-import { centroid, turnsOnto, type XY } from "../../src/geometry/shape";
+import { centroid, posed, turnsOnto, type XY } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
 import { LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
@@ -24,14 +24,25 @@ function fill(p: Puzzle): number {
 describe("puzzle", () => {
   it.each(LEVELS.map((l) => l.key))("%s: the board it was cut from fills it exactly", (key) => {
     const p = new Puzzle(levelByKey(key)!);
-    const kindOf = (sides: number): number =>
-      p.level.tiles.findIndex((t) => t.verts.length === sides);
-    for (const cell of p.level.cells) {
+    const { ring, tiles } = p.level;
+    // a cell's kind: the tray tile it is a turn of, or a turn of mirrored
+    const kindOf = (cell: Cyc[]): number =>
+      tiles.findIndex(
+        (t) =>
+          turnsOnto(t, cell).length > 0 ||
+          turnsOnto({ ring, verts: posed(t, { rot: 0, flip: true, t: ring.zero }) }, cell).length >
+            0,
+      );
+    for (const raw of p.level.cells) {
       expect(p.coverage).toBeLessThan(1);
-      p.place(kindOf(cell.length), ccw(p.level.ring, cell), 0);
+      const cell = ccw(ring, raw);
+      const kind = kindOf(cell);
+      expect(kind).toBeGreaterThanOrEqual(0);
+      p.place(kind, cell, 0);
     }
     expect(p.won).toBe(true);
     expect(p.coverage).toBe(1);
+    expect(p.level.tiles.map((_, k) => p.used(k))).toEqual(p.level.need);
   });
 
   it.each(LEVELS.map((l) => l.key))("%s can be finished by search from empty", (key) => {
@@ -75,7 +86,8 @@ describe("puzzle", () => {
 
   // A tiling turned to lay its edges on the ring (the snub hexagonal) is cut
   // in its own frame, not Hypersweeper's; the vertex test below covers it.
-  const unturned = LEVELS.filter((l) => !l.window?.turned && l.group !== "laves").map((l) => l.key);
+  const isDual = (group: string): boolean => group === "laves" || group === "2-isohedral";
+  const unturned = LEVELS.filter((l) => !l.window?.turned && !isDual(l.group)).map((l) => l.key);
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const ours = p.level.cells.map((c) => c.map((v) => p.level.ring.toXY(v)));
@@ -84,7 +96,7 @@ describe("puzzle", () => {
     sameTiles(centroids(ours), centroids(theirs));
   });
 
-  const ofPolygons = LEVELS.filter((l) => l.group !== "laves").map((l) => l.key);
+  const ofPolygons = LEVELS.filter((l) => !isDual(l.group)).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
     const { ring, configs } = level;
@@ -111,10 +123,10 @@ describe("puzzle", () => {
     expect(seen.size).toBe(configs.length);
   });
 
-  // The Laves levels: each tile is Hypersweeper's dual tile, and at each of a
-  // tile's corners inside the board the right number of tiles meet, in order
-  // round it — the V in V3.4.6.4.
-  const laves = LEVELS.filter((l) => l.group === "laves").map((l) => l.key);
+  // The Laves and 2-isohedral levels: each tile is one of Hypersweeper's dual
+  // tiles, and at each of a tile's corners inside the board the right number
+  // of tiles meet, in order round it — the V in V3.4.6.4.
+  const duals = LEVELS.filter((l) => isDual(l.group)).map((l) => l.key);
   /** A polygon's interior angles and its sides over its longest, in order,
    * counter-clockwise. */
   const signature = (raw: XY[]): { angles: number[]; sides: number[] } => {
@@ -158,16 +170,22 @@ describe("puzzle", () => {
     return false;
   };
 
-  it.each(laves)("%s: every tile is Hypersweeper's dual tile", (key) => {
+  it.each(duals)("%s: every tile is one of Hypersweeper's dual tiles", (key) => {
     const level = levelByKey(key)!;
-    const theirs = templateCells(archTemplate(key), 0, 0)[0]!.pts.map(([x, y]): XY => [x, y]);
+    const theirs = templateCells(archTemplate(key), 0, 0).map(({ pts }) =>
+      pts.map(([x, y]): XY => [x, y]),
+    );
+    // each kind matches some tile of the template, and each tile of it some kind
+    const kinds = level.tiles.map((t) => t.verts.map((v) => level.ring.toXY(v)));
     for (const cell of level.cells) {
       const ours = ccw(level.ring, cell).map((v) => level.ring.toXY(v));
-      expect(similar(ours, theirs)).toBe(true);
+      expect(theirs.some((t) => similar(ours, t))).toBe(true);
     }
+    for (const t of theirs) expect(kinds.some((k) => similar(k, t))).toBe(true);
+    expect(level.tiles).toHaveLength(level.configs.length);
   });
 
-  it.each(laves)("%s: one outline, and round each tile its configuration", (key) => {
+  it.each(duals)("%s: one outline, and round each tile its configuration", (key) => {
     const level = levelByKey(key)!;
     const { ring } = level;
     expect(level.region).toHaveLength(1);
@@ -181,8 +199,9 @@ describe("puzzle", () => {
         meet.set(ring.key(v), { count: at.count + 1, angle: at.angle + angles[i]! });
       });
     }
-    const config = level.configs[0]!;
-    const m = config.length;
+    // a tile follows one configuration, the one of its own corner count —
+    // the 2-isohedral levels' two have different counts, but for those with
+    // two quadrilaterals or two pentagons, where it may follow either
     let checked = 0;
     for (const tile of tiles) {
       // a corner on the rim has tiles missing; it reads as anything
@@ -192,17 +211,50 @@ describe("puzzle", () => {
       });
       const inner = degrees.filter((d) => d !== null).length;
       if (inner === 0) continue;
-      const fits = [config, [...config].reverse()].some((seq) =>
-        seq.some((_, k) => degrees.every((d, i) => d === null || d === seq[(i + k) % m])),
+      const fits = level.configs.some(
+        (config) =>
+          config.length === tile.length &&
+          [config, [...config].reverse()].some((seq) =>
+            seq.some((_, k) =>
+              degrees.every((d, i) => d === null || d === seq[(i + k) % config.length]),
+            ),
+          ),
       );
-      expect(fits, `degrees ${degrees.join(",")} against V${config.join(".")}`).toBe(true);
+      expect(fits, `degrees ${degrees.join(",")} against ${level.name}`).toBe(true);
       checked += inner;
     }
     expect(checked).toBeGreaterThan(0);
   });
 
+  it("colours a second kind with as many sides as another apart", () => {
+    expect(levelByKey("trihex")!.colours).toEqual(["sides-3", "sides-6"]);
+    expect(levelByKey("hexrowsdual")!.colours).toEqual(["sides-4", "sides-4 twin"]);
+    const twins = LEVELS.filter((l) => l.colours.some((c) => c.includes("twin")));
+    expect(twins.map((l) => l.key).sort()).toEqual([
+      "hexringsdual",
+      "hexrowsdual",
+      "snubelongated2dual",
+      "snubelongateddual",
+      "squaretrihex2dual",
+      "squaretrihexdual",
+    ]);
+  });
+
   it("flips only where the board uses a tile both ways round", () => {
-    expect(LEVELS.filter((l) => l.mirror).map((l) => l.key)).toEqual(["kisrhombille"]);
+    // the kisrhombille's triangles, and the 2-isohedral tilings whose tiles
+    // come in mirror pairs
+    expect(
+      LEVELS.filter((l) => l.mirror)
+        .map((l) => l.key)
+        .sort(),
+    ).toEqual([
+      "dodecarhombitrihexdual",
+      "hexringsdual",
+      "kisrhombille",
+      "squaretrihex2dual",
+      "squaretrihexdual",
+      "tritrunctrihexdual",
+    ]);
     const p = new Puzzle(levelByKey("kisrhombille")!);
     const { ring, tiles } = p.level;
     // lay the board, then take out one triangle that is the tray's mirror image
@@ -324,6 +376,14 @@ describe("puzzle", () => {
       "V4.6.12",
     ]);
     expect(new Set(named("2-uniform")).size).toBe(20); // the subscripts keep them apart
+    // the 2-isohedral levels: V and their primal's name, its pair their configs
+    expect(named("2-isohedral")).toHaveLength(20);
+    expect(new Set(named("2-isohedral")).size).toBe(20);
+    for (const level of LEVELS.filter((l) => l.group === "2-isohedral")) {
+      const primal = levelByKey(level.dualOf!)!;
+      expect(level.name).toBe(`V${primal.name}`);
+      expect(level.configs).toEqual(primal.configs);
+    }
     for (const level of LEVELS) {
       if (level.group === "regular" || level.group === "uniform")
         expect(level.name).toBe(notation(level.configs[0]!));

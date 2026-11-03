@@ -21,7 +21,8 @@ some back off.
   one kind into place can turn another out of it. Each control draws its step
   as an axis, a fixed ray, the ray turned one step and the arrow between, and
   both are left out where nothing ever needs turning.
-- Where a board uses a tile both ways round (the kisrhombille's triangles),
+- Where a board uses a tile both ways round (the kisrhombille's triangles,
+  five of the 2-isohedral levels' tiles),
   a flip control (or F) mirrors every tray tile and the one in hand; a tile
   lands only on its own side.
 - Taking tiles off: drag a placed tile back over the tray (it turns red on
@@ -84,12 +85,15 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 39 levels in four sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 59 levels in five sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
-[3⁶; 3⁴.6]₁) and *Laves* (the eight Laves tilings, V4.8² to V4.6.12). Each board is as near square as its tiling allows at two or three
-dozen tiles. CI's `game-checks (reptiles)` job typechecks, formats, tests and
+[3⁶; 3⁴.6]₁), *Laves* (the eight Laves tilings, V4.8² to V4.6.12) and
+*2-isohedral* (the twenty 2-uniform tilings' duals, two kinds of tile each,
+named V and the primal's pair, V[3⁶; 3⁴.6]₁). Each board is as near square as its tiling allows at two or three
+dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
+20 tiles, its next square window 60. CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 settings, the header, rotating both ways, wheel and pinch zoom, the tray at
@@ -178,9 +182,11 @@ finishes the board — the quick way to see the win state.
   square cut in the turned frame — the tray's tiles rest flat, so the board's
   must too; `turned` records it.
 - `src/geometry/laves.ts` — a Laves tiling as the exact dual of a uniform
-  patch: a tile on every whole vertex, its corners the face centres round it.
-  Centres are exact once scaled by the face sizes' lcm, so the board is built
-  at that scale in a ring whose `unit` draws it back at true size.
+  patch, or a 2-isohedral one of a 2-uniform patch: a tile on every whole
+  vertex, its corners the face centres round it. Centres are exact once
+  scaled by the face sizes' lcm, so the board is built at that scale in a ring
+  whose `unit` draws it back at true size. Tiles the square cuts off from the
+  rest are dropped: the board is the largest piece joined edge to edge.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -188,12 +194,17 @@ finishes the board — the quick way to see the win state.
   in. `windowLevel` makes a level from a tiling key and a box size (uniform or
   2-uniform, by the tiling's family); the 2-uniform boxes are in
   `TWO_UNIFORM`, the windows that also have both kinds of vertex inside.
+  `lavesLevel` and `twoIsohedralLevel` make the duals, from `LAVES` and
+  `TWO_ISOHEDRAL` (the latter keyed by the 2-uniform primal; the level is
+  `<primal>dual`, Hypersweeper's key).
   `makeLevel` reads everything off a level's
   cells: the tray (one tile per kind — cells alike up to a turn, or a turn and
   a mirror — resting flat on its longest side, `restFlat`), whether a kind is
   used both ways round (`mirror`, which brings a flip control), each
   kind's rotate step from flat (`turns`) and pile (`need`), the time limit
-  (`seconds`), the region, and keeps the cells
+  (`seconds`), each kind's colour classes (`colours`: by side count, plus
+  `twin` on a second kind with as many sides as another — the two
+  quadrilaterals of V[3².6²; 3.6.3.6]), the region, and keeps the cells
   themselves as one known solution; `turn` is the one rotate step for them all
   (the gcd of the kinds' steps). Every level carries its vertex
   configurations (`configs`, one or two — not enforced) and its `name`: the
@@ -212,7 +223,8 @@ finishes the board — the quick way to see the win state.
   `won`, `coverage` (a share of the area, not a tile count — the count
   depends on how the board is finished), `used`, `stars`, and `solve`, a
   budgeted backtracking fill for the tests and the dev seam that always works
-  the open corner with the fewest placements.
+  the open corner with the fewest placements, trying the board's own tile
+  there first (blind, it gets lost on V[3.4².6; 3.6.3.6]).
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's
@@ -249,7 +261,9 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   publish their exact coordinates, so a level can be read off a `Board`.
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
-  side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues.
+  side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues, and a
+  second kind with as many sides as another in rose (`.twin`) — read a kind's
+  classes from `level.colours`, never from its side count.
 - Import the geometry as `@tiling/geometry` (its index) and nothing from
   `apps/hypersweeper/` (renderer, UI, game rules) — that is Hypersweeper's own.
   A name the geometry has but does not export gets a line in

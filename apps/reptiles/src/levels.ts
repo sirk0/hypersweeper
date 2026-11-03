@@ -21,9 +21,13 @@ export interface Level {
   ring: Ring;
   /** Outer loop counter-clockwise, any holes clockwise. */
   region: Cyc[][];
-  /** The tray: one regular polygon per tile kind, fewest sides first, each
-   * always in supply. */
+  /** The tray: one polygon per tile kind, fewest sides first, each always in
+   * supply — regular, but for the Laves and 2-isohedral levels. */
   tiles: Shape[];
+  /** Per kind, its tiles' CSS classes: `sides-<n>`, coloured by side count,
+   * and `twin` too on a kind with as many sides as one before it (the two
+   * quadrilaterals of a 2-isohedral level), so the two look apart. */
+  colours: string[];
   /** Tiles may be mirrored as well as turned. */
   mirror: boolean;
   /** Per kind, the step between the ways the board turns it, as a power of ζ
@@ -49,7 +53,8 @@ export interface Level {
   cells: Cyc[][];
   /** The tiling's vertex configurations — the polygons round a vertex, in
    * order: [[4, 4, 4, 4]] for squares, [[3, 4, 6, 4]] for the
-   * rhombitrihexagonal; a 2-uniform tiling has two. Not enforced. */
+   * rhombitrihexagonal; a 2-uniform tiling has two. A dual's are the
+   * primal's — what its tiles' corners follow. Not enforced. */
   configs: number[][];
   /** What the game calls the level: its configuration (`notation`), 3.4.6.4,
    * or for a 2-uniform tiling both, as Hypersweeper's catalog writes them,
@@ -67,7 +72,8 @@ export interface Level {
    * be `turned` (radians) to lay its edges on the ring, when the window is cut
    * in the turned frame instead. */
   window?: { tiling: string; nx: number; ny: number; turned: number };
-  /** For a Laves level, the uniform tiling it is the dual of. */
+  /** For a Laves level, the uniform tiling it is the dual of; for a
+   * 2-isohedral one, the 2-uniform tiling. */
   dualOf?: string;
 }
 
@@ -129,6 +135,10 @@ function makeLevel(
     (a, b) => a.shape.verts.length - b.shape.verts.length || area(a.shape) - area(b.shape),
   );
   const tiles = kinds.map((k) => k.shape);
+  const colours = tiles.map((t, i) => {
+    const twin = tiles.slice(0, i).some((u) => u.verts.length === t.verts.length);
+    return `sides-${t.verts.length}${twin ? " twin" : ""}`;
+  });
   // A kind's rotate step: the largest that reaches, from resting flat, every
   // way the board turns it (`period` turns it back to itself).
   const turns = kinds.map(({ shape, ks }) => {
@@ -147,6 +157,7 @@ function makeLevel(
     ring,
     region,
     tiles,
+    colours,
     mirror,
     turns,
     turn,
@@ -286,6 +297,11 @@ export const GROUPS = [
     name: familyLabel("dual"),
     hint: "The uniform tilings' duals — one shape throughout",
   },
+  {
+    key: "2-isohedral",
+    name: familyLabel("2-isohedral"),
+    hint: "The 2-uniform tilings' duals — two shapes, neither regular",
+  },
 ] as const;
 
 export type GroupKey = (typeof GROUPS)[number]["key"];
@@ -361,6 +377,31 @@ function lavesLevel(dual: string, box: number): Level {
   return { ...level, dualOf: of.key };
 }
 
+/** A 2-isohedral level: the dual of 2-uniform tiling `primal`, cut `box` of
+ * its edges square, built as a Laves board is (`lavesWindow`) — the primal's
+ * two kinds of vertex are its two kinds of tile. Keyed and labelled as
+ * Hypersweeper's tiling is (`<primal>dual`), and named as its catalog writes
+ * it, V[3⁶; 3⁴.6]₁: the configurations its tiles' corners follow, the
+ * primal's. */
+function twoIsohedralLevel(primal: string, box: number): Level {
+  const key = `${primal}dual`;
+  const spec = ARCH_TILINGS.find((t) => t.key === key && t.family === "2-isohedral");
+  const written = NOTATIONS[key];
+  const configs = NOTATIONS[primal];
+  if (!spec || !written || !configs) throw new Error(`no 2-isohedral tiling ${key}`);
+  const { ring, cells } = lavesWindow(primal, box);
+  const level = makeLevel(
+    key,
+    spec.label,
+    ring,
+    cells,
+    "2-isohedral",
+    parseNotation(configs),
+    written,
+  );
+  return { ...level, dualOf: primal };
+}
+
 /** The Laves tilings and each one's window (`box`, in the uniform tiling's
  * edges): the squarest near two or three dozen tiles with one outline. The
  * three with hexagonal symmetry — rhombille, triakis, kisrhombille — come no
@@ -374,6 +415,34 @@ const LAVES: [string, number][] = [
   ["floret", 6.4],
   ["deltoidal", 7.1],
   ["kisrhombille", 8.2],
+];
+
+/** The 2-isohedral tilings, by their 2-uniform primals, and each one's window
+ * (`box`, in the primal's edges): the squarest near two or three dozen tiles
+ * with one outline, found by scanning sizes and taken mid-range. The
+ * dodecagons' duals have a corner twelve tiles meet at, so their windows are
+ * coarse: V[3.4.3.12; 3.12²] is 20 tiles, its next square one 60. */
+const TWO_ISOHEDRAL: [string, number][] = [
+  ["studdedtri", 6.7],
+  ["studdedtri2", 6.65],
+  ["elongated2", 5.9],
+  ["elongated3", 6.5],
+  ["trirhombitrihex", 6.08],
+  ["tritrunctrihex", 9],
+  ["fannedhex", 6.65],
+  ["hexbands", 7.5],
+  ["snubelongated2", 6],
+  ["snubelongated", 6],
+  ["dissectedtrunchex2", 7],
+  ["squarerows2", 6.5],
+  ["squarerows3", 6.5],
+  ["dissectedtrunchex", 7],
+  ["hexrows", 6.45],
+  ["dodecasquare", 9.35],
+  ["hexrings", 6.9],
+  ["squaretrihex", 6.85],
+  ["squaretrihex2", 6.85],
+  ["dodecarhombitrihex", 7.65],
 ];
 
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
@@ -406,6 +475,9 @@ export const LEVELS: Level[] = [
   // The eight Laves tilings with more than one kind of vertex (the regular
   // tilings are their own Laves duals, already above).
   ...LAVES.map(([dual, box]) => lavesLevel(dual, box)),
+  // The twenty 2-isohedral tilings, the 2-uniform tilings' duals: two kinds
+  // of tile, neither regular.
+  ...TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralLevel(primal, box)).sort(byEase),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,

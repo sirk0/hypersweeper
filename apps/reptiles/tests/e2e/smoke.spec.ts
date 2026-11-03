@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 
 // The deployed build, end to end: it boots under the real security policy, its
 // screens open, and a tile dragged onto the board lands. Unit tests cover the
@@ -91,7 +92,14 @@ test("the level screen: one header row, no level list, a random level of the sam
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
   // Cairo is hard; the die deals another hard level.
-  const hard = ["snubsquare", "snubelongated", "cairo", "floret", "kisrhombille"];
+  // every level measured hard: from `HARD` (1.0, src/difficulty.ts) up
+  const measured = JSON.parse(
+    readFileSync(new URL("../../src/difficulty.json", import.meta.url), "utf8"),
+  ) as Record<string, { score: number }>;
+  const hard = Object.entries(measured)
+    .filter(([, m]) => m.score >= 1.0)
+    .map(([key]) => key);
+  expect(hard).toContain("cairo");
   await page.locator("#random").click();
   await expect(page).not.toHaveURL(/level=cairo/);
   const key = new URL(page.url()).searchParams.get("level");
@@ -258,5 +266,11 @@ test("tray tiles are the size they land at, zoomed in or not", async ({ page }) 
 
 test("the catalog's families are named as Hypersweeper names them", async ({ page }) => {
   await page.goto("/?catalog");
-  await expect(page.locator(".family h2")).toHaveText(["Regular", "Uniform", "2-uniform", "Laves"]);
+  await expect(page.locator(".family h2")).toHaveText([
+    "Regular",
+    "Uniform",
+    "2-uniform",
+    "Laves",
+    "2-isohedral",
+  ]);
 });

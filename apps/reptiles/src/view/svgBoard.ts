@@ -214,10 +214,6 @@ export class SvgBoard {
     this.layout();
   }
 
-  private sides(kind: number): number {
-    return this.puzzle.level.tiles[kind]!.verts.length;
-  }
-
   /** Whether a client (screen) point is over the tray strip. */
   overTray(clientX: number, clientY: number): boolean {
     const r = this.svg.getBoundingClientRect();
@@ -533,7 +529,7 @@ export class SvgBoard {
         "polygon",
         {
           points: points(tile.verts.map((v) => ring.toXY(v))),
-          class: `tile sides-${tile.verts.length}`,
+          class: `tile ${this.puzzle.level.colours[tile.kind]}`,
           "data-tile": tile.id,
         },
         this.still,
@@ -557,7 +553,7 @@ export class SvgBoard {
           points: points(
             this.outline(kind, this.turn, this.flip).map(([x, y]): XY => [x + cx, y + cy]),
           ),
-          class: `tile sides-${this.sides(kind)} in-tray`,
+          class: `tile ${this.puzzle.level.colours[kind]} in-tray`,
           "data-tray": kind,
         },
         this.shelf,
@@ -698,7 +694,7 @@ export class SvgBoard {
       "polygon",
       {
         points: points(moved),
-        class: `tile sides-${this.sides(kind)} floating${discard ? " discard" : ""}`,
+        class: `tile ${this.puzzle.level.colours[kind]} floating${discard ? " discard" : ""}`,
       },
       this.moving,
     );

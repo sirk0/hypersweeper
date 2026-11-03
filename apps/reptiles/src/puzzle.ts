@@ -198,14 +198,24 @@ export class Puzzle {
   /** Fill what is left — a test and dev aid. Each step works the open corner
    * with the fewest ways to fill it, so a corner nothing fits is found at once
    * and a forced one is taken without a guess, and backtracks out of dead
-   * ends. False if the board cannot be finished from here, or not within
+   * ends. Of the ways to fill a corner it tries the board's own tile first
+   * (`level.cells`): blind, the search gets lost on some 2-isohedral boards,
+   * where two quadrilaterals fit a corner many ways that fail only much
+   * later. False if the board cannot be finished from here, or not within
    * `budget` placements. */
   solve(budget = 20000): boolean {
-    const left = { budget };
-    return this.search(left);
+    const own = new Set(this.level.cells.map((c) => this.spotKey(c)));
+    return this.search({ budget }, (spot) => own.has(this.spotKey(spot)));
   }
 
-  private search(left: { budget: number }): boolean {
+  private spotKey(verts: Cyc[]): string {
+    return verts
+      .map((v) => this.level.ring.key(v))
+      .sort()
+      .join(",");
+  }
+
+  private search(left: { budget: number }, isOwn: (spot: Cyc[]) => boolean): boolean {
     if (this.won) return true;
     if (left.budget-- <= 0) return false;
     const { ring } = this.level;
@@ -215,9 +225,10 @@ export class Puzzle {
       if (!best || here.length < best.length) best = here;
       if (best.length <= 1) break;
     }
-    for (const { kind, rot, flip, spot } of best ?? []) {
+    const order = (best ?? []).sort((a, b) => Number(isOwn(b.spot)) - Number(isOwn(a.spot)));
+    for (const { kind, rot, flip, spot } of order) {
       const tile = this.place(kind, spot, rot, flip);
-      if (this.search(left)) return true;
+      if (this.search(left, isOwn)) return true;
       this.lift(tile.id);
     }
     return false;
