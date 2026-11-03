@@ -6,3 +6,4 @@
 // the root AGENTS.md); until then it stays in the game that has it.
 
 export { readObject, storage } from "./storage";
+export { checkForUpdate, loadDeployedBuild, type BuildStamp, type UpdateCheck } from "./update";

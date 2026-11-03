@@ -1,9 +1,44 @@
+/* The Sand look, Hypersweeper's default theme: a cream ground with its grain
+   and light, warm neutrals, a terracotta accent, 20px corners on the cards,
+   Space Grotesk for the interface and Caprasimo for the title alone. The
+   colours are its `sand` / `sandDark` palettes (data/ui/screens.json), as
+   Hypersweeper's apps/hypersweeper/src/ui/styles.css boots them; the two fonts
+   are its own files, bundled here (public/fonts) so nothing reaches a CDN. */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-Variable.ttf") format("truetype-variations");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Caprasimo";
+  src: url("/fonts/Caprasimo-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --page: #f4f1ea;
-  --ink: #2b2a27;
-  --muted: #6f6a60;
-  --region: #e3ddd0;
-  --region-edge: #8b8374;
+  color-scheme: light;
+  --page: #f5ead8;
+  --page-texture:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 0%, #fffaf0 0%, #fffaf000 55%),
+    radial-gradient(140% 110% at 50% 100%, #a1978644 0%, #a1978600 60%);
+  --panel: #f9f4ed;
+  --ink: #2e2b25;
+  --muted: #82796a;
+  --accent: #c67139;
+  --on-accent: #ffffff;
+  --selected: #ffe1d0;
+  --border: #dcd3c4;
+  --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
+  --radius: 20px;
+  --counter-bg: #2e2b25;
+  --counter-ink: #f9f4ed;
+  --region: #fbf6ee;
+  --region-edge: #a1978a;
   --open: #7b4fd0;
   /* Tiles take Hypersweeper's shape hues, by side count: 3 red, 4 orange,
      5 yellow, 6 green, 8 teal, 12 blue. */
@@ -25,19 +60,41 @@
   --fits: #2f9e5b;
   --remove: #c9463d;
   --remove-edge: #7a1f19;
-  --tray: rgba(0, 0, 0, 0.05);
-  --button: #fffdf8;
-  --button-edge: #cfc7b6;
+  --tray: rgba(64, 35, 16, 0.06);
+  /* The tray's strip along the bottom (or the right), over a board zoomed in
+     under it. */
+  --tray-strip: #f9f4ed;
+  --button: var(--panel);
+  --button-edge: var(--border);
   --scrim: rgba(30, 28, 24, 0.45);
-  --card: #fffdf8;
+  --card: var(--panel);
+  /* Header controls, on Hypersweeper's scale: every button a fraction of
+     `--hud-btn`, which is 44px (Apple's touch target) wherever that fits. */
+  --hud-pad: clamp(6px, 2vw, 14px);
+  --hud-btn: clamp(36px, 11vw, 48px);
+  --hud-icon: calc(var(--hud-btn) * 0.565);
+  --hud-gap: calc(var(--hud-btn) * 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page: #1d1c1a;
-    --ink: #ece8df;
-    --muted: #a8a294;
-    --region: #2e2c28;
+    color-scheme: dark;
+    --page: #191712;
+    --page-texture:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
+      radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%),
+      radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%);
+    --panel: #2e2b25;
+    --ink: #f9f4ed;
+    --muted: #a19786;
+    --accent: #f6a06b;
+    --on-accent: #2e2b25;
+    --selected: #8c491a55;
+    --border: #474238;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    --counter-bg: #000000;
+    --counter-ink: #f9f4ed;
+    --region: #2a2721;
     --region-edge: #8b8374;
     --open: #b394ff;
     --tile-3: #c9665a;
@@ -59,10 +116,8 @@
     --remove: #d0574d;
     --remove-edge: #ffb3ab;
     --tray: rgba(255, 255, 255, 0.06);
-    --button: #2a2926;
-    --button-edge: #4a4740;
+    --tray-strip: #2e2b25;
     --scrim: rgba(0, 0, 0, 0.55);
-    --card: #2a2926;
   }
 }
 
@@ -74,43 +129,60 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--page);
+  background: var(--page-texture), var(--page);
   color: var(--ink);
   font:
-    16px/1.4 system-ui,
+    16px/1.4 "Space Grotesk",
+    system-ui,
     -apple-system,
     "Segoe UI",
     sans-serif;
+  overscroll-behavior: none;
+  /* No double-tap page zoom and no text selection or iOS callout anywhere: a
+     game is all taps and drags, and the board has its own pinch zoom. */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 body {
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
+/* -- the header: one row, Hypersweeper's ------------------------------------
+   Three columns, the sides equal, so whatever sits in the middle (the clock,
+   a screen's title) is on the screen's exact centre. */
 .hud {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--hud-gap);
+  padding: max(var(--hud-pad), env(safe-area-inset-top)) var(--hud-pad) var(--hud-pad);
+}
+
+.hud-cluster {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  flex-wrap: wrap;
+  gap: var(--hud-gap);
+  min-width: 0;
 }
 
-.hud h1 {
-  font-size: 1.1rem;
+.hud-left {
+  justify-self: start;
+}
+
+.hud-right {
+  justify-self: end;
+}
+
+.hud-title {
+  font-size: 1.15rem;
+  font-weight: 600;
   margin: 0;
-}
-
-.hud .level {
-  color: var(--muted);
-}
-
-.hud .count {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
 }
 
 button {
@@ -118,78 +190,125 @@ button {
   color: var(--ink);
   background: var(--button);
   border: 1px solid var(--button-edge);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 6px 14px;
-  min-height: 36px;
+  min-height: 40px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
-.play {
-  flex: 1;
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.hud-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--hud-btn);
+  height: var(--hud-btn);
   min-height: 0;
-  display: flex;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--hud-btn) * 0.38);
+  box-shadow: var(--shadow);
 }
 
+.hud-btn:active {
+  border-color: var(--accent);
+  background: var(--selected);
+  box-shadow: none;
+}
+
+.hud-btn svg {
+  display: block;
+  width: var(--hud-icon);
+  height: var(--hud-icon);
+}
+
+/* The clock: Hypersweeper's counter panel, as tall as the buttons. */
+.hud-counter {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35em;
+  height: var(--hud-btn);
+  min-width: calc(var(--hud-btn) * 2.4);
+  padding: 0 calc(var(--hud-btn) * 0.28);
+  line-height: var(--hud-btn);
+  background: var(--counter-bg);
+  color: var(--counter-ink);
+  border-radius: calc(var(--hud-btn) * 0.28);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.clock-time {
+  font-size: calc(var(--hud-btn) * 0.46);
+}
+
+.clock-limit {
+  font-size: calc(var(--hud-btn) * 0.3);
+  opacity: 0.6;
+}
+
+.hud-counter.over .clock-time {
+  color: #ff5c5c;
+}
+
+/* -- a level: the board fills everything under the header ------------------ */
 #stage {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  padding: 0 16px 16px;
+  position: relative;
 }
 
-.levels {
-  flex: 0 0 auto;
-  width: 220px;
-  padding: 0 16px 16px 12px;
-  border-left: 1px solid var(--button-edge);
-  overflow-y: auto;
+#board-host {
+  position: absolute;
+  inset: 0;
 }
 
-.levels h2 {
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 4px 0 8px;
-}
-
-.levels ol {
-  list-style: none;
+/* The level's name and coverage: a label on the page behind the board, not a
+   row of its own — it takes no room from the board, and a tap on it is a tap
+   on the board drawn over it. */
+.board-name {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.level-group h3 {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  padding: 0 16px;
+  text-align: center;
   color: var(--muted);
-  margin: 10px 0 4px;
-  cursor: help;
+  font-size: clamp(12px, 3.6vw, 15px);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
 }
 
-.level-group:first-child h3 {
-  margin-top: 0;
+.board-name .count::before {
+  content: "· ";
 }
 
-.level-pick {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-align: left;
-  border-color: transparent;
-  background: transparent;
-  padding: 6px 8px;
+.star {
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
-.level-pick[aria-current="true"] {
-  background: var(--button);
-  border-color: var(--button-edge);
+.star.done {
+  color: var(--star);
 }
 
 .level-outline {
@@ -204,93 +323,9 @@ button {
   stroke-linejoin: round;
 }
 
-.level-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.level-name {
-  font-variant-numeric: tabular-nums;
-  line-height: 1.25;
-  /* a 2-uniform name, [3³.4²; 3².4.3.4]₁, wraps after its semicolon */
-  overflow-wrap: anywhere;
-}
-
-.level-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.level-tiles {
-  display: inline-flex;
-  gap: 2px;
-}
-
 .level-tile {
   width: 14px;
   height: 14px;
-}
-
-.star {
-  color: var(--muted);
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.star.done {
-  color: var(--star);
-}
-
-@media (max-width: 560px) {
-  .levels {
-    width: 72px;
-    padding: 0 6px 16px 6px;
-  }
-
-  .levels h2 {
-    display: none;
-  }
-
-  .level-group h3 {
-    font-size: 0.6rem;
-    text-align: center;
-    overflow-wrap: anywhere;
-    hyphens: auto;
-  }
-
-  .level-pick {
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 2px;
-  }
-
-  .level-outline {
-    width: 32px;
-    height: 32px;
-  }
-
-  .level-text {
-    align-items: center;
-  }
-
-  .level-name {
-    font-size: 0.72rem;
-  }
-
-  .level-row {
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .level-tile {
-    width: 11px;
-    height: 11px;
-  }
 }
 
 .board {
@@ -439,17 +474,20 @@ button {
   stroke: var(--remove-edge);
 }
 
+/* The tray's strip, in screen pixels: a panel along the bottom (or the
+   right), over whatever of a zoomed-in board runs under it — and the place a
+   lifted tile is dropped to take it off. */
 .tray-zone {
-  fill: none;
-  stroke: none;
+  fill: var(--tray-strip);
+  stroke: var(--border);
+  stroke-width: 1px;
 }
 
 .discarding .tray-zone {
   fill: var(--remove);
-  fill-opacity: 0.12;
+  fill-opacity: 0.18;
   stroke: var(--remove);
-  stroke-width: 0.04;
-  stroke-dasharray: none;
+  stroke-width: 2px;
 }
 
 .pile circle {
@@ -530,20 +568,14 @@ button:disabled {
 }
 
 .won-card {
+  position: relative;
   background: var(--card);
-  border-radius: 14px;
-  padding: 20px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
   text-align: center;
   max-width: calc(100vw - 32px);
-}
-
-.hud .clock {
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-.hud .clock.over {
-  color: var(--remove);
 }
 
 .won-stars {
@@ -576,6 +608,7 @@ button:disabled {
 
 .won-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
 }
@@ -603,20 +636,21 @@ button:disabled {
   display: none;
 }
 
-.home-button {
-  padding: 6px 10px;
-}
-
 .home {
+  position: relative;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
   gap: 8px;
 }
 
+/* Caprasimo gets exactly one word, as in Hypersweeper's Sand theme: the
+   game's name. */
 .home-title {
-  font-size: 2.6rem;
-  letter-spacing: 0.02em;
+  font-family: "Caprasimo", "Space Grotesk", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 3rem;
+  letter-spacing: 0.01em;
   margin: 0;
 }
 
@@ -637,8 +671,15 @@ button:disabled {
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   text-align: left;
+}
+
+.home-pick:active {
+  border-color: var(--accent);
+  background: var(--selected);
+  box-shadow: none;
 }
 
 .home-pick .bars {
@@ -723,7 +764,8 @@ button:disabled {
   align-items: center;
   gap: 6px;
   padding: 10px 8px;
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
   scroll-snap-align: start;
 }
 
@@ -763,4 +805,138 @@ button:disabled {
 .card-meta .bars {
   width: 22px;
   height: 22px;
+}
+
+/* -- settings --------------------------------------------------------------- */
+
+.settings-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 16px 24px;
+  width: min(520px, 100%);
+  align-self: center;
+}
+
+.settings-body h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 12px 4px 8px;
+}
+
+.settings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.settings-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 16px;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+button.settings-row:active {
+  background: var(--selected);
+}
+
+.settings-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.settings-hint:empty {
+  display: none;
+}
+
+.settings-value {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The settings gear in the home screen's top-left corner, drawn like
+   Hypersweeper's menu header buttons: a bare glyph in the muted ink, lit in
+   the accent when pressed. */
+.menu-header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(32px, 10vw, 40px);
+  height: clamp(32px, 10vw, 40px);
+  min-height: 0;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+}
+
+.menu-header-btn svg {
+  display: block;
+  width: 60%;
+  height: 60%;
+}
+
+.menu-header-btn:hover,
+.menu-header-btn:active {
+  color: var(--accent);
+  background: var(--selected);
+}
+
+.home-settings {
+  position: absolute;
+  top: max(var(--hud-pad), env(safe-area-inset-top));
+  left: var(--hud-pad);
+}
+
+/* The win card's ✕, in its top-right corner: closes it to look at the board. */
+.won-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* The tray shelf's scroll bar, under its tiles (beside them in landscape),
+   shown only while they run past the strip. The hit area is the bar's whole
+   row, so a finger finds it. */
+.tray-scroll {
+  cursor: pointer;
+}
+
+.tray-scroll-hit {
+  fill: transparent;
+}
+
+.tray-scroll-track {
+  fill: var(--border);
+}
+
+.tray-scroll-thumb {
+  fill: var(--muted);
 }

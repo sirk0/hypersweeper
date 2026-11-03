@@ -50,11 +50,6 @@ export type UpdateCheck =
   | { readonly state: "found"; readonly build: BuildStamp }
   | { readonly state: "unreachable" };
 
-/** What this bundle is — the same pair the settings page prints. */
-export function runningBuild(): BuildStamp {
-  return { version: __APP_VERSION__, commit: __APP_COMMIT__ };
-}
-
 export function sameBuild(a: BuildStamp, b: BuildStamp): boolean {
   return a.version === b.version && a.commit === b.commit;
 }
@@ -75,7 +70,7 @@ export function parseStamp(body: unknown): BuildStamp | null {
  * be asked (offline, or a host with no stamp). */
 export async function deployedBuild(
   fetchFn?: typeof fetch,
-  base: string = import.meta.env.BASE_URL,
+  base = "/",
 ): Promise<BuildStamp | null> {
   // Called through the global rather than defaulted to `globalThis.fetch`: a
   // detached `fetch` is a WebIDL operation with no `this`, which some engines
@@ -92,11 +87,18 @@ export async function deployedBuild(
   }
 }
 
-/** The check itself: what the server has, against what is running here. */
-export async function checkForUpdate(fetchFn?: typeof fetch, base?: string): Promise<UpdateCheck> {
+/** The check itself: what the server has, against what is running here —
+ * `running` is the game's own stamp (`__APP_VERSION__`, `__APP_COMMIT__`), and
+ * `base` where it is mounted (`import.meta.env.BASE_URL`): a package sees
+ * neither, so the game passes both. */
+export async function checkForUpdate(
+  running: BuildStamp,
+  base = "/",
+  fetchFn?: typeof fetch,
+): Promise<UpdateCheck> {
   const deployed = await deployedBuild(fetchFn, base);
   if (!deployed) return { state: "unreachable" };
-  if (sameBuild(deployed, runningBuild())) return { state: "current" };
+  if (sameBuild(deployed, running)) return { state: "current" };
   return { state: "found", build: deployed };
 }
 

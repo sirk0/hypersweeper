@@ -6,25 +6,30 @@ import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
 import { renderCatalog } from "./view/catalog";
 import { renderHome } from "./view/home";
-import { renderLevelList } from "./view/levelList";
+import { fillGlyphs } from "./view/icons";
+import { renderSettings } from "./view/settings";
 import { SvgBoard } from "./view/svgBoard";
 
 const byId = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
-const stage = byId("stage");
+const host = byId("board-host");
 const count = byId("count");
 const clock = byId("clock");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
 
-// -- screens ------------------------------------------------------------------
-// Three: home (no query), the catalog (?catalog) and a level (?level=<key>).
-// Each move between them is a history entry, so the browser's Back goes back.
+fillGlyphs(document);
 
-type Screen = "home" | "catalog" | "game";
+// -- screens ------------------------------------------------------------------
+// Four: home (no query), the catalog (?catalog), the settings (?settings) and
+// a level (?level=<key>). Each move between them is a history entry, so the
+// browser's Back goes back.
+
+const SCREENS = ["home", "catalog", "settings", "game"] as const;
+type Screen = (typeof SCREENS)[number];
 
 function show(screen: Screen): void {
-  for (const s of ["home", "catalog", "game"] as const) byId(s).hidden = s !== screen;
+  for (const s of SCREENS) byId(s).hidden = s !== screen;
   if (screen !== "game") won.hidden = true;
 }
 
@@ -32,6 +37,12 @@ function goHome(push = true): void {
   if (push) history.pushState(null, "", location.pathname);
   renderHome(byId("home-picks"), tally, playBand, () => goCatalog());
   show("home");
+}
+
+function goSettings(push = true): void {
+  if (push) history.pushState(null, "", "?settings");
+  renderSettings(byId("settings-body"));
+  show("settings");
 }
 
 function goCatalog(push = true): void {
@@ -60,6 +71,7 @@ function route(): void {
   const level = levelByKey(query.get("level") ?? "");
   if (level) open(level, false);
   else if (query.has("catalog")) goCatalog(false);
+  else if (query.has("settings")) goSettings(false);
   else goHome(false);
 }
 
@@ -73,6 +85,9 @@ interface Session {
    * finished — the clock runs between them. */
   started: number | null;
   finished: number | null;
+  /** The win card was closed (Exit): it stays shut while the board stays
+   * finished. */
+  dismissed: boolean;
 }
 
 let session: Session | null = null;
@@ -87,7 +102,8 @@ const clockText = (seconds: number): string =>
 
 function tick(s: Session): void {
   const t = elapsed(s);
-  clock.textContent = `${clockText(t)} / ${clockText(s.puzzle.level.seconds)}`;
+  byId("clock-time").textContent = clockText(t);
+  byId("clock-limit").textContent = `/ ${clockText(s.puzzle.level.seconds)}`;
   clock.classList.toggle("over", t > s.puzzle.level.seconds);
 }
 
@@ -95,17 +111,14 @@ function nextLevel(s: Session): Level | undefined {
   return LEVELS[LEVELS.indexOf(s.puzzle.level) + 1];
 }
 
-function listLevels(s: Session): void {
-  renderLevelList(byId("levels"), LEVELS, s.puzzle.level.key, starsFor, (level) => open(level));
-}
-
 function changed(): void {
   const s = session;
   if (!s) return;
   const { puzzle } = s;
   if (s.started === null && puzzle.tiles.length > 0) s.started = performance.now();
-  count.textContent = `${Math.floor(puzzle.coverage * 100)}% covered`;
-  won.hidden = !puzzle.won;
+  count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
+  if (!puzzle.won) s.dismissed = false;
+  won.hidden = !puzzle.won || s.dismissed;
   if (!puzzle.won) {
     tick(s);
     return;
@@ -139,10 +152,7 @@ function changed(): void {
     }),
   );
   next.hidden = !nextLevel(s);
-  if (stars > starsFor(puzzle.level.key)) {
-    recordStars(puzzle.level.key, stars);
-    listLevels(s);
-  }
+  if (stars > starsFor(puzzle.level.key)) recordStars(puzzle.level.key, stars);
 }
 
 /** Start `level` afresh: a new puzzle, a new board in the stage. */
@@ -150,19 +160,19 @@ function open(level: Level, push = true): void {
   if (push) history.pushState(null, "", `?level=${level.key}`);
   show("game");
   const puzzle = new Puzzle(level);
-  stage.replaceChildren();
-  const board = new SvgBoard(stage, puzzle);
+  host.replaceChildren();
+  const board = new SvgBoard(host, puzzle);
   session = {
     puzzle,
     board,
     control: attachDrag(board, puzzle, changed),
     started: null,
     finished: null,
+    dismissed: false,
   };
   const name = byId("level");
   name.textContent = level.name;
   name.title = level.label;
-  listLevels(session);
   changed();
 }
 
@@ -170,8 +180,25 @@ function restart(): void {
   if (session) open(session.puzzle.level, false);
 }
 
+/** Close the win card and look at the finished board. */
+function dismiss(): void {
+  if (session) session.dismissed = true;
+  won.hidden = true;
+}
+
 byId("restart").addEventListener("click", restart);
+document
+  .querySelector("#home [data-action=settings]")
+  ?.addEventListener("click", () => goSettings());
+// Another level of the same difficulty as this one, however it was picked.
+byId("random").addEventListener("click", () => {
+  if (session) playBand(bandOf(session.puzzle.level.key));
+});
 byId("again").addEventListener("click", restart);
+byId("exit").addEventListener("click", dismiss);
+won.addEventListener("click", (ev) => {
+  if (ev.target === won) dismiss();
+});
 next.addEventListener("click", () => {
   const level = session && nextLevel(session);
   if (level) open(level);
@@ -182,11 +209,14 @@ document.addEventListener("keydown", (ev) => {
   if (!session || byId("game").hidden) return;
   const { control, board } = session;
   if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
-  else if (ev.key === "Escape") control.setRemoving(false);
-  else if (ev.key === "r" || ev.key === "R") control.turn(-1);
+  else if (ev.key === "Escape") {
+    if (!won.hidden) dismiss();
+    else control.setRemoving(false);
+  } else if (ev.key === "r" || ev.key === "R") control.turn(ev.shiftKey ? 1 : -1);
+  else if (ev.key === "e" || ev.key === "E") control.turn(1);
   else if (ev.key === "f" || ev.key === "F") control.flip();
 });
-new ResizeObserver(() => session?.board.layout()).observe(stage);
+new ResizeObserver(() => session?.board.layout()).observe(host);
 setInterval(() => {
   if (session && session.started !== null && session.finished === null) tick(session);
 }, 250);

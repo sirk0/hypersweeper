@@ -6,8 +6,8 @@
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1d1c1a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5ead8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191712" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Rep-tiles" />
@@ -15,42 +15,101 @@
   </head>
   <body>
     <section class="screen home" id="home" hidden>
+      <button
+        type="button"
+        class="menu-header-btn home-settings"
+        data-action="settings"
+        title="Settings"
+        aria-label="Settings"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="settings"></svg>
+      </button>
       <h1 class="home-title">Rep-tiles</h1>
       <p class="home-sub">Cover the board, tile by tile.</p>
       <div class="home-picks" id="home-picks"></div>
     </section>
     <section class="screen catalog" id="catalog" hidden>
       <header class="hud">
-        <button type="button" class="home-button" data-go-home title="Home">‹ Home</button>
-        <h1>Catalog</h1>
+        <div class="hud-cluster hud-left">
+          <button type="button" class="hud-btn" data-go-home title="Home" aria-label="Home">
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="home"></svg>
+          </button>
+        </div>
+        <h1 class="hud-title">Catalog</h1>
+        <div class="hud-cluster hud-right"></div>
       </header>
       <div class="catalog-list" id="catalog-list"></div>
     </section>
+    <section class="screen settings" id="settings" hidden>
+      <header class="hud">
+        <div class="hud-cluster hud-left">
+          <button type="button" class="hud-btn" data-go-home title="Home" aria-label="Home">
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="home"></svg>
+          </button>
+        </div>
+        <h1 class="hud-title">Settings</h1>
+        <div class="hud-cluster hud-right"></div>
+      </header>
+      <div class="settings-body" id="settings-body"></div>
+    </section>
     <div class="screen game" id="game" hidden>
       <header class="hud">
-        <button type="button" class="home-button" data-go-home title="Home">‹ Home</button>
-        <h1>Rep-tiles</h1>
-        <span class="level" id="level"></span>
-        <span class="count" id="count" aria-live="polite"></span>
-        <span class="clock" id="clock" title="Time, against the limit for the third star"></span>
-        <button type="button" id="restart">Restart</button>
+        <div class="hud-cluster hud-left">
+          <button type="button" class="hud-btn" data-go-home title="Home" aria-label="Home">
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="home"></svg>
+          </button>
+        </div>
+        <div class="hud-counter" id="clock" title="Time, against the limit for the third star">
+          <span class="clock-time" id="clock-time">0:00</span>
+          <span class="clock-limit" id="clock-limit"></span>
+        </div>
+        <div class="hud-cluster hud-right">
+          <button type="button" class="hud-btn" id="restart" title="Restart" aria-label="Restart">
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="restart"></svg>
+          </button>
+          <button
+            type="button"
+            class="hud-btn"
+            id="random"
+            title="A new random level of this difficulty"
+            aria-label="New random level"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="random"></svg>
+          </button>
+        </div>
       </header>
-      <div class="play">
-        <main id="stage"></main>
-        <nav class="levels" aria-label="Levels">
-          <h2>Levels</h2>
-          <ol id="levels"></ol>
-        </nav>
-      </div>
+      <main id="stage">
+        <p class="board-name">
+          <span class="level" id="level"></span>
+          <span class="count" id="count" aria-live="polite"></span>
+        </p>
+        <div id="board-host"></div>
+      </main>
     </div>
     <div class="won" id="won" hidden>
       <div class="won-card">
+        <button
+          type="button"
+          id="exit"
+          class="menu-header-btn won-close"
+          title="Close"
+          aria-label="Close"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6 6 L18 18 M18 6 L6 18"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
         <p class="won-title">Tiled!</p>
         <p class="won-stars" id="won-stars"></p>
         <ul class="won-detail" id="won-detail"></ul>
         <div class="won-actions">
           <button type="button" id="again">Play again</button>
-          <button type="button" id="next">Next level</button>
+          <button type="button" id="next" class="primary">Next level</button>
         </div>
       </div>
     </div>

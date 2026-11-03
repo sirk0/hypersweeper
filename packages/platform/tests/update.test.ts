@@ -5,10 +5,9 @@ import {
   deployedBuild,
   loadDeployedBuild,
   parseStamp,
-  runningBuild,
   sameBuild,
   STAMP_FILE,
-} from "../../src/update";
+} from "../src/update";
 
 // The update check's whole point is that it answers from the *server's* stamp
 // rather than from the service worker's state machine — the worker updates
@@ -17,8 +16,10 @@ import {
 // the answer (which build is deployed) and the getting of it (what has to be
 // true before a reload serves the new build rather than the old one again).
 //
-// vitest.config.ts compiles this bundle as version 0.0.0-test, commit
-// "testing"; every stamp below is the other side of that comparison.
+// The build the checks run as: a game passes its own `__APP_VERSION__` and
+// `__APP_COMMIT__`; every other stamp below is the other side of that
+// comparison.
+const RUNNING = { version: "0.0.0-test", commit: "testing" };
 
 /** A fetch that answers the stamp request with `body`, and nothing else. */
 function stubFetch(body: unknown, ok = true): typeof fetch {
@@ -117,13 +118,13 @@ describe("comparing builds", () => {
 
 describe("checking for an update", () => {
   it("reports the running build as current", async () => {
-    const check = await checkForUpdate(stubFetch(runningBuild()), "/");
+    const check = await checkForUpdate(RUNNING, "/", stubFetch(RUNNING));
     expect(check).toEqual({ state: "current" });
   });
 
   it("reports a different deployed build as found", async () => {
     const deployed = { version: "9.9.9", commit: "deadbee" };
-    expect(await checkForUpdate(stubFetch(deployed), "/")).toEqual({
+    expect(await checkForUpdate(RUNNING, "/", stubFetch(deployed))).toEqual({
       state: "found",
       build: deployed,
     });
@@ -134,16 +135,16 @@ describe("checking for an update", () => {
   // no stamp to serve.
   it("reports an unreachable server rather than guessing", async () => {
     const offline = vi.fn(() => Promise.reject(new Error("offline")));
-    expect(await checkForUpdate(offline as unknown as typeof fetch, "/")).toEqual({
+    expect(await checkForUpdate(RUNNING, "/", offline as unknown as typeof fetch)).toEqual({
       state: "unreachable",
     });
-    expect(await checkForUpdate(stubFetch("", false), "/")).toEqual({
+    expect(await checkForUpdate(RUNNING, "/", stubFetch("", false))).toEqual({
       state: "unreachable",
     });
   });
 
   it("asks for the stamp off the cache", async () => {
-    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => runningBuild() }) as Response);
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => RUNNING }) as Response);
     await deployedBuild(fetchFn as unknown as typeof fetch, "/");
     const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
     // `no-store` keeps the browser's own cache out of it, and the query keeps
@@ -155,7 +156,7 @@ describe("checking for an update", () => {
   });
 
   it("honours a base path", async () => {
-    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => runningBuild() }) as Response);
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => RUNNING }) as Response);
     await deployedBuild(fetchFn as unknown as typeof fetch, "/next/");
     expect(String((fetchFn.mock.calls[0] as unknown as [string])[0])).toMatch(
       /^\/next\/version\.json\?/,

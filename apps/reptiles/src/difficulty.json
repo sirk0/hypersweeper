@@ -60,8 +60,8 @@
     "flips": 0
   },
   "snubelongated": {
-    "score": 1.597,
-    "presses": 11,
+    "score": 1.352,
+    "presses": 9,
     "flips": 0
   },
   "squarerows2": {
@@ -145,8 +145,8 @@
     "flips": 0
   },
   "tritrunctrihex": {
-    "score": 0.676,
-    "presses": 4,
+    "score": 0.757,
+    "presses": 6,
     "flips": 0
   },
   "dodecarhombitrihex": {
@@ -155,8 +155,8 @@
     "flips": 0
   },
   "tetrakis": {
-    "score": 0.412,
-    "presses": 7,
+    "score": 0.453,
+    "presses": 8,
     "flips": 0
   },
   "rhombille": {
@@ -185,13 +185,13 @@
     "flips": 0
   },
   "deltoidal": {
-    "score": 0.494,
-    "presses": 9,
+    "score": 0.458,
+    "presses": 8,
     "flips": 0
   },
   "kisrhombille": {
-    "score": 1.106,
+    "score": 1.07,
     "presses": 11,
-    "flips": 8
+    "flips": 7
   }
 }
