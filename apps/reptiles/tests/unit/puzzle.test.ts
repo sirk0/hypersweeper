@@ -8,7 +8,7 @@ import {
 } from "@tiling/geometry";
 import type { Board } from "@tiling/geometry";
 import { describe, expect, it } from "vitest";
-import type { Cyc } from "../../src/geometry/cyclotomic";
+import { strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
 import { centroid, posed, turnsOnto, type XY } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
@@ -96,7 +96,9 @@ describe("puzzle", () => {
     sameTiles(centroids(ours), centroids(theirs));
   });
 
-  const ofPolygons = LEVELS.filter((l) => !isDual(l.group)).map((l) => l.key);
+  const ofPolygons = LEVELS.filter((l) => !isDual(l.group) && l.group !== "rectangle").map(
+    (l) => l.key,
+  );
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
     const { ring, configs } = level;
@@ -121,6 +123,75 @@ describe("puzzle", () => {
       seen.add(which);
     }
     expect(seen.size).toBe(configs.length);
+  });
+
+  // The congruent-rectangle bonds: one brick, and at every point inside the
+  // board either four brick corners (the stacked bond) or two against the
+  // middle of a third brick's side — the T-junction the other bonds have.
+  const bonds = LEVELS.filter((l) => l.group === "rectangle");
+  it("has the five congruent-rectangle bonds", () => {
+    expect(bonds.map((l) => l.key)).toEqual([
+      "stackedbond",
+      "runningbond",
+      "basketweave",
+      "basketweave3",
+      "herringbone",
+    ]);
+    expect(bonds.map((l) => l.name)).toEqual([
+      "Stacked bond",
+      "Running bond",
+      "Basket weave",
+      "Basket weave 3x3",
+      "Herringbone",
+    ]);
+  });
+  it.each(bonds.map((l) => l.key))("%s: one brick, laid in a bond", (key) => {
+    const level = levelByKey(key)!;
+    const { ring } = level;
+    expect(level.region).toHaveLength(1);
+    // one tile kind, a rectangle lying on its long side: 1 by ½, or by ⅓
+    expect(level.tiles).toHaveLength(1);
+    const brick = level.tiles[0]!.verts.map((v) => ring.toXY(v));
+    expect(brick).toHaveLength(4);
+    const [w, h] = [brick[1]![0] - brick[0]![0], brick[2]![1] - brick[1]![1]];
+    expect(w).toBeCloseTo(1, 12);
+    expect(h).toBeCloseTo(key === "basketweave3" ? 1 / 3 : 1 / 2, 12);
+    expect(level.mirror).toBe(false);
+    // round each point: the corners there, and the sides it lies inside
+    const tiles = level.cells.map((c) => ccw(ring, c));
+    const round = new Map<string, { corners: number; sides: number; spanned: number }>();
+    // (every corner of a brick is a right angle, a quarter of the turn)
+    for (const tile of tiles) {
+      for (const v of tile) {
+        const at = round.get(ring.key(v)) ?? { corners: 0, sides: 0, spanned: 0 };
+        at.corners++;
+        at.spanned += ring.n / 4;
+        round.set(ring.key(v), at);
+      }
+    }
+    const points = new Map(tiles.flat().map((v) => [ring.key(v), v]));
+    for (const tile of tiles) {
+      tile.forEach((a, i) => {
+        const b = tile[(i + 1) % tile.length]!;
+        for (const [k, p] of points) {
+          if (!strictlyBetween(ring, a, b, p)) continue;
+          const at = round.get(k)!;
+          at.sides++;
+          at.spanned += ring.n / 2;
+        }
+      });
+    }
+    const inner = [...round.values()].filter((r) => r.spanned === ring.n);
+    expect(inner.length).toBeGreaterThan(0);
+    for (const r of inner) {
+      expect([
+        [4, 0],
+        [2, 1],
+      ]).toContainEqual([r.corners, r.sides]);
+    }
+    const junctions = inner.filter((r) => r.sides > 0).length;
+    if (key === "stackedbond") expect(junctions).toBe(0);
+    else expect(junctions).toBeGreaterThan(0);
   });
 
   // The Laves and 2-isohedral levels: each tile is one of Hypersweeper's dual

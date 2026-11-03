@@ -85,15 +85,19 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 59 levels in five sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 64 levels in six sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
-[3⁶; 3⁴.6]₁), *Laves* (the eight Laves tilings, V4.8² to V4.6.12) and
+[3⁶; 3⁴.6]₁), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
 *2-isohedral* (the twenty 2-uniform tilings' duals, two kinds of tile each,
-named V and the primal's pair, V[3⁶; 3⁴.6]₁). Each board is as near square as its tiling allows at two or three
+named V and the primal's pair, V[3⁶; 3⁴.6]₁) and *Congruent rectangles* (the five
+brick bonds — stacked, running, basket weave, 3×3 basket weave, herringbone —
+one brick each, named as Hypersweeper labels them: a bond has no vertex
+configuration, and but for the stacked bond is not edge to edge). Each board is as near square as its tiling allows at two or three
 dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
-20 tiles, its next square window 60. CI's `game-checks (reptiles)` job typechecks, formats, tests and
+20 tiles, its next square window 60; and the 3×3 basket weave, 48, a whole
+square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 settings, the header, rotating both ways, wheel and pinch zoom, the tray at
@@ -171,7 +175,8 @@ finishes the board — the quick way to see the win state.
   candidates (a tile vertex on a corner, an edge laid along a frontier edge),
   `nearest` the one the drag shows. Won ⇔ empty.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
-  cancel exactly): how a level's region is made from its cells.
+  cancel exactly, after each side is cut at every corner lying inside it, for
+  the bonds' T-junctions): how a level's region is made from its cells.
 - `src/geometry/fromTemplate.ts` — a `box`-edge square window of one of
   Hypersweeper's periodic tilings in exact coordinates: the tiles
   `archimedeanBoard` keeps, with vertex identity taken from the template's own
@@ -180,7 +185,12 @@ finishes the board — the quick way to see the win state.
   ℤ[ζ4], ζ6, ζ8, ζ12, ζ24 that holds every edge. A tiling with no edge along an
   axis (the snub hexagonal, drawn 19° off) is turned until one is, and its
   square cut in the turned frame — the tray's tiles rest flat, so the board's
-  must too; `turned` records it.
+  must too; `turned` records it. The congruent-rectangle bonds' edges are a
+  half or a third of a brick, split at T-vertices: each edge is read as a
+  whole number of the smallest fraction of the unit that makes them all whole,
+  the board built at that scale in a ring whose `unit` draws it at true size,
+  and each cell keeps only its real corners (the template's `real` flags), so
+  a brick is a plain rectangle.
 - `src/geometry/laves.ts` — a Laves tiling as the exact dual of a uniform
   patch, or a 2-isohedral one of a 2-uniform patch: a tile on every whole
   vertex, its corners the face centres round it. Centres are exact once
@@ -191,9 +201,10 @@ finishes the board — the quick way to see the win state.
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
 - `src/levels.ts` — the levels, and `GROUPS`, the sections they are listed
-  in. `windowLevel` makes a level from a tiling key and a box size (uniform or
-  2-uniform, by the tiling's family); the 2-uniform boxes are in
-  `TWO_UNIFORM`, the windows that also have both kinds of vertex inside.
+  in. `windowLevel` makes a level from a tiling key and a box size (uniform,
+  2-uniform or a congruent-rectangle bond, by the tiling's family); the
+  2-uniform boxes are in `TWO_UNIFORM`, the windows that also have both kinds
+  of vertex inside, the bonds' in `RECTANGLES`.
   `lavesLevel` and `twoIsohedralLevel` make the duals, from `LAVES` and
   `TWO_ISOHEDRAL` (the latter keyed by the 2-uniform primal; the level is
   `<primal>dual`, Hypersweeper's key).

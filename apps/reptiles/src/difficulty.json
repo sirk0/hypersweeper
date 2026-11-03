@@ -293,5 +293,30 @@
     "score": 0.98,
     "presses": 10,
     "flips": 7
+  },
+  "stackedbond": {
+    "score": 0.105,
+    "presses": 0,
+    "flips": 0
+  },
+  "runningbond": {
+    "score": 0.155,
+    "presses": 0,
+    "flips": 0
+  },
+  "basketweave": {
+    "score": 0.254,
+    "presses": 3,
+    "flips": 0
+  },
+  "basketweave3": {
+    "score": 0.302,
+    "presses": 3,
+    "flips": 0
+  },
+  "herringbone": {
+    "score": 0.22,
+    "presses": 2,
+    "flips": 0
   }
 }
