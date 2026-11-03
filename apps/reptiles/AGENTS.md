@@ -39,11 +39,13 @@ some back off.
   once zoomed; a wheel or a trackpad pinch zooms about the pointer. Safari's
   own page pinch is cancelled.
 - **The tray** is a strip along the bottom (portrait) or the right
-  (landscape): a shelf of tiles at the board's own scale — a tray tile is the
-  size it lands at, zoomed in or not (up to the strip taking 45% of the
-  screen) — and the controls, at a fixed size, pinned at its end. A shelf
-  longer than the strip scrolls: drag the strip's bare background, or wheel
-  over it.
+  (landscape), in two rows — columns in landscape: a shelf of tiles at the
+  board's own scale (a tray tile is the size it lands at, zoomed in or not, up
+  to the strip taking 45% of the screen), then the controls in a row of their
+  own at a fixed size. A shelf longer than the strip scrolls, with a scroll bar
+  between the two rows: drag its thumb or press its track, drag the strip's
+  bare background, or wheel over it. The one four-kind level,
+  [3.4.6.4; 4.6.12], is the one to check a tray change on.
 
 **Screens**, in Hypersweeper's Sand look (its `sand`/`sandDark` palettes,
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
@@ -91,7 +93,8 @@ dozen tiles. CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 settings, the header, rotating both ways, wheel and pinch zoom, the tray at
-board scale and scrolling, the family names, a won board and its ✕). It packages as an offline desktop app through the
+board scale, its two rows and scroll bar, the family names, a won board and
+its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
 its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
@@ -214,7 +217,8 @@ finishes the board — the quick way to see the win state.
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's
   pinned strip the shelf (at the world's scale, clipped to its room,
-  `scrollTray`) and the controls (a fixed size).
+  `scrollTray`), its scroll bar (`scrollBarBy`, `scrollBarTo`) and the
+  controls' row (a fixed size).
 - `src/view/home.ts`, `src/view/catalog.ts`, `src/view/settings.ts` — the
   first screen, the catalog and the settings; `src/view/icons.ts` the pictures
   they share (board outline, tray tile, the three bars, a star row) and the

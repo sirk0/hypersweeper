@@ -125,33 +125,59 @@ test("the wheel zooms the board in, and the tray tiles grow with it", async ({ p
 test.describe("on a touchscreen", () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
 
-  test("the tray's tiles scroll along the strip, and the controls stay put", async ({
+  test("the tray is two rows: the tiles, then the controls", async ({ page }) => {
+    await page.goto("/?level=kisrhombille");
+    const tile = (await page.locator("svg.board polygon.in-tray").first().boundingBox())!;
+    const knobs = page.locator("svg.board .knob > circle:first-child");
+    await expect(knobs).toHaveCount(4);
+    const ys = new Set<number>();
+    for (const knob of await knobs.all()) {
+      const k = (await knob.boundingBox())!;
+      expect(k.y).toBeGreaterThan(tile.y + tile.height);
+      ys.add(Math.round(k.y));
+    }
+    expect(ys.size).toBe(1);
+    // One kind fits: no scroll bar.
+    await expect(page.locator("svg.board g.tray-scroll")).toBeHidden();
+  });
+
+  test("four kinds of tile scroll, by the scroll bar or the strip's background", async ({
     page,
     context,
   }) => {
-    // 4.6.12: a square, a hexagon and a dodecagon at the board's own size
-    // run longer than a phone is wide.
-    await page.goto("/?level=trunctrihex");
-    const zone = (await page.locator("svg.board rect.tray-zone").boundingBox())!;
+    // [3.4.6.4; 4.6.12]: a triangle, a square, a hexagon and a dodecagon at
+    // the board's own size run longer than a phone is wide.
+    await page.goto("/?level=dodecarhombitrihex");
+    const thumb = page.locator("svg.board .tray-scroll-thumb");
+    await expect(thumb).toBeVisible();
     const tile = page.locator("svg.board polygon.in-tray").first();
     const knob = page.locator('[data-turn="1"]');
-    const before = (await tile.boundingBox())!;
-    const knobBefore = (await knob.boundingBox())!;
+    const start = (await tile.boundingBox())!.x;
+    const knobAt = (await knob.boundingBox())!.x;
     const cdp = await context.newCDPSession(page);
-    const y = zone.y + 4;
-    const x = zone.x + zone.width / 2;
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchStart",
-      touchPoints: [{ x, y, id: 0 }],
-    });
-    for (let i = 1; i <= 8; i++)
+    const drag = async (x: number, y: number, dx: number): Promise<void> => {
       await cdp.send("Input.dispatchTouchEvent", {
-        type: "touchMove",
-        touchPoints: [{ x: x - i * 15, y, id: 0 }],
+        type: "touchStart",
+        touchPoints: [{ x, y, id: 0 }],
       });
-    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    expect((await tile.boundingBox())!.x).toBeLessThan(before.x - 20);
-    expect((await knob.boundingBox())!.x).toBeCloseTo(knobBefore.x, 0);
+      for (let i = 1; i <= 8; i++)
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x: x + (i * dx) / 8, y, id: 0 }],
+        });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    };
+    // The thumb, dragged to the end, scrolls the tiles left.
+    const t = (await thumb.boundingBox())!;
+    await drag(t.x + t.width / 2, t.y + t.height / 2, 300);
+    const scrolled = (await tile.boundingBox())!.x;
+    expect(scrolled).toBeLessThan(start - 1);
+    // The strip's background, dragged right, scrolls them back.
+    const zone = (await page.locator("svg.board rect.tray-zone").boundingBox())!;
+    await drag(zone.x + zone.width / 2, zone.y + 4, 200);
+    expect((await tile.boundingBox())!.x).toBeGreaterThan(scrolled);
+    // The controls never move.
+    expect((await knob.boundingBox())!.x).toBeCloseTo(knobAt, 0);
   });
 
   test("two fingers pinch the board in", async ({ page, context }) => {

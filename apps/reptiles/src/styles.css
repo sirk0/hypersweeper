@@ -921,3 +921,22 @@ button.settings-row:active {
   top: 8px;
   right: 8px;
 }
+
+/* The tray shelf's scroll bar, under its tiles (beside them in landscape),
+   shown only while they run past the strip. The hit area is the bar's whole
+   row, so a finger finds it. */
+.tray-scroll {
+  cursor: pointer;
+}
+
+.tray-scroll-hit {
+  fill: transparent;
+}
+
+.tray-scroll-track {
+  fill: var(--border);
+}
+
+.tray-scroll-thumb {
+  fill: var(--muted);
+}

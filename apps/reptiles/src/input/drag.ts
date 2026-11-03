@@ -22,8 +22,8 @@
 // finger on bare board or page pans it once zoomed, and a wheel or a trackpad
 // pinch zooms about the pointer. Safari's own page pinch is cancelled so only
 // the board zooms. The tray's shelf of tiles is drawn at the board's scale, so
-// it can run longer than the screen: a drag on the strip's bare background, or
-// the wheel over it, scrolls it along.
+// it can run longer than the screen: its scroll bar, a drag on the strip's bare
+// background, or the wheel over it scrolls it along.
 
 import type { Cyc } from "../geometry/cyclotomic";
 import { centroid, signedArea, type XY } from "../geometry/shape";
@@ -74,7 +74,14 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   const touches = new Map<number, XY>();
   /** A pan (one pointer) or a pinch (two) in progress: the pointers, and their
    * distance and midpoint at the last move. */
-  let gesture: { ids: number[]; dist: number; mid: XY; shelf?: boolean } | null = null;
+  let gesture: {
+    ids: number[];
+    dist: number;
+    mid: XY;
+    /** Scrolling the shelf by its background, or by its scroll bar. */
+    shelf?: boolean;
+    bar?: boolean;
+  } | null = null;
 
   const spread = (ids: number[]): { dist: number; mid: XY } => {
     const [a, b] = ids.map((id) => touches.get(id)!);
@@ -159,6 +166,18 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       setRemoving(!board.removing);
       return;
     }
+    if (target.closest("[data-scrollbar]") && !drag && touches.size === 0) {
+      // The shelf's scroll bar: a press on the track brings the thumb there,
+      // and a drag moves it.
+      ev.preventDefault();
+      touches.set(ev.pointerId, [ev.clientX, ev.clientY]);
+      capture(ev.pointerId);
+      if (!target.classList.contains("tray-scroll-thumb"))
+        board.scrollBarTo(ev.clientX, ev.clientY);
+      startGesture([ev.pointerId]);
+      if (gesture) gesture.bar = true;
+      return;
+    }
     if (ev.button > 0) return;
     touches.set(ev.pointerId, [ev.clientX, ev.clientY]);
     capture(ev.pointerId);
@@ -232,7 +251,8 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     touches.set(ev.pointerId, [ev.clientX, ev.clientY]);
     if (gesture && gesture.ids.includes(ev.pointerId)) {
       const { dist, mid } = spread(gesture.ids);
-      if (gesture.shelf) board.scrollTray(mid[0] - gesture.mid[0], mid[1] - gesture.mid[1]);
+      if (gesture.bar) board.scrollBarBy(mid[0] - gesture.mid[0], mid[1] - gesture.mid[1]);
+      else if (gesture.shelf) board.scrollTray(mid[0] - gesture.mid[0], mid[1] - gesture.mid[1]);
       else {
         if (gesture.ids.length === 2 && gesture.dist > 0 && dist > 0)
           board.zoomAt(dist / gesture.dist, mid[0], mid[1]);
