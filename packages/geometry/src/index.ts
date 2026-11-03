@@ -50,13 +50,16 @@ export {
 // The aperiodic and nonperiodic flat tilings.
 export {
   ammannBeenkerBoard,
+  ammannBeenkerExact,
   brickRingsBoard,
   brickRingsTiles,
   kiteDartBoard,
+  kiteDartExact,
   klaassenBoard,
   klaassenExact,
   klaassenTiles,
   penroseBoard,
+  penroseExact,
   pentaSpiral5Board,
   pentaSpiral6Board,
   pentaSpiral7Board,
@@ -65,6 +68,7 @@ export {
   phyllotaxisBoard,
   phyllotaxisExact,
   spectreBoard,
+  spectreExact,
   z7ToXy,
   type ExactTiles,
 } from "./aperiodic";

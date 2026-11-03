@@ -418,5 +418,25 @@
     "score": 1.343,
     "presses": 18,
     "flips": 0
+  },
+  "penrose": {
+    "score": 0.568,
+    "presses": 5,
+    "flips": 0
+  },
+  "kitedart": {
+    "score": 1.177,
+    "presses": 18,
+    "flips": 0
+  },
+  "ammannbeenker": {
+    "score": 0.506,
+    "presses": 4,
+    "flips": 0
+  },
+  "spectre": {
+    "score": 0.9,
+    "presses": 14,
+    "flips": 0
   }
 }
