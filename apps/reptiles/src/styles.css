@@ -41,7 +41,8 @@
   --region-edge: #a1978a;
   --open: #7b4fd0;
   /* Tiles take Hypersweeper's shape hues, by side count: 3 red, 4 orange,
-     5 yellow, 6 green, 8 teal, 12 blue. */
+     5 yellow, 6 green, 8 teal, 12 blue — and rose for a second kind with as
+     many sides as another (a 2-isohedral level's two quadrilaterals). */
   --tile-3: #e07f72;
   --tile-3-edge: #8f3a2f;
   --tile-4: #e9a85a;
@@ -54,6 +55,8 @@
   --tile-8-edge: #23625b;
   --tile-12: #6e9fca;
   --tile-12-edge: #2f5679;
+  --tile-twin: #d68aa6;
+  --tile-twin-edge: #7d3453;
   --stick: #7b4fd0;
   --stick-ring: #fffdf8;
   --star: #d49a1f;
@@ -109,6 +112,8 @@
     --tile-8-edge: #b2e0da;
     --tile-12: #5f8db8;
     --tile-12-edge: #b8d4ee;
+    --tile-twin: #b8708c;
+    --tile-twin-edge: #f2c0d2;
     --stick: #b394ff;
     --stick-ring: #1d1c1a;
     --star: #f2c14e;
@@ -384,6 +389,11 @@ button.primary {
 .tile.sides-12 {
   fill: var(--tile-12);
   stroke: var(--tile-12-edge);
+}
+
+.tile.twin {
+  fill: var(--tile-twin);
+  stroke: var(--tile-twin-edge);
 }
 
 .tray {

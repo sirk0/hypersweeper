@@ -1,13 +1,15 @@
 // The Laves tilings, exactly: each the dual of a uniform tiling. A Laves tile
 // stands on each vertex of the uniform tiling, its corners the centres of the
 // faces round that vertex, in turn — so the kite of V3.4.6.4 has its corners
-// at the centres of a triangle, a square, a hexagon and a square.
+// at the centres of a triangle, a square, a hexagon and a square. The
+// 2-isohedral tilings are built the same way from a 2-uniform one: its two
+// kinds of vertex give the dual its two kinds of tile.
 //
 // A regular polygon's centre is the mean of its corners, so in a ring of
 // cyclotomic integers it is exact once scaled by the side count: L·centre =
 // (L/m)·Σ corners is integral when m divides L. The whole board is built at
 // L — the least common multiple of the face sizes — in a ring whose `unit` is
-// L, so it is drawn back at the uniform tiling's own size. The uniform patch
+// L, so it is drawn back at the primal tiling's own size. The uniform patch
 // comes from `templateWindow`, in a ring that also holds a quarter turn: a
 // dual edge crosses a uniform edge at right angles.
 
@@ -22,9 +24,11 @@ function lcm(a: number, b: number): number {
 }
 
 /**
- * The tiles of the dual of uniform tiling `tiling` that fit whole in a
- * `box`-edge square (in the uniform tiling's edge lengths), centred on the face
- * centre nearest the middle of the patch — a point the dual turns about.
+ * The tiles of the dual of tiling `tiling` (uniform or 2-uniform) that fit
+ * whole in a `box`-edge square (in that tiling's edge lengths), centred on the
+ * face centre nearest the middle of the patch — a point the dual turns about.
+ * Where the square cuts a few tiles off from the rest — a lone kite in a
+ * corner — only the largest piece joined edge to edge is kept.
  */
 export function lavesWindow(tiling: string, box: number): { ring: Ring; cells: Cyc[][] } {
   // A uniform patch comfortably bigger than the square, so every dual tile
@@ -67,11 +71,49 @@ export function lavesWindow(tiling: string, box: number): { ring: Ring; cells: C
     if (d < best) [best, c0] = [d, p];
   }
   const half = box / 2 + 1e-9;
-  const cells = duals.filter((tile) =>
+  const inside = duals.filter((tile) =>
     tile.every((v) => {
       const [x, y] = ring.toXY(v);
       return Math.abs(x - c0[0]) <= half && Math.abs(y - c0[1]) <= half;
     }),
   );
-  return { ring, cells };
+  return { ring, cells: largestPiece(ring, inside) };
+}
+
+/** The largest set of cells joined edge to edge — dual tiles meet whole edge
+ * to whole edge, so two that share one share both its ends, in turn. */
+function largestPiece(ring: Ring, cells: Cyc[][]): Cyc[][] {
+  const byEdge = new Map<string, number[]>();
+  cells.forEach((cell, i) =>
+    cell.forEach((v, j) => {
+      const ends = [ring.key(v), ring.key(cell[(j + 1) % cell.length]!)].sort().join("|");
+      byEdge.set(ends, [...(byEdge.get(ends) ?? []), i]);
+    }),
+  );
+  const piece = new Array<number>(cells.length).fill(-1);
+  const sizes: number[] = [];
+  for (let start = 0; start < cells.length; start++) {
+    if (piece[start] !== -1) continue;
+    const id = sizes.length;
+    const stack = [start];
+    piece[start] = id;
+    let size = 0;
+    while (stack.length) {
+      const i = stack.pop()!;
+      size++;
+      const cell = cells[i]!;
+      cell.forEach((v, j) => {
+        const ends = [ring.key(v), ring.key(cell[(j + 1) % cell.length]!)].sort().join("|");
+        for (const k of byEdge.get(ends)!) {
+          if (piece[k] === -1) {
+            piece[k] = id;
+            stack.push(k);
+          }
+        }
+      });
+    }
+    sizes.push(size);
+  }
+  const biggest = sizes.indexOf(Math.max(...sizes));
+  return cells.filter((_, i) => piece[i] === biggest);
 }
