@@ -54,15 +54,19 @@ export {
   brickRingsTiles,
   kiteDartBoard,
   klaassenBoard,
+  klaassenExact,
   klaassenTiles,
   penroseBoard,
   pentaSpiral5Board,
   pentaSpiral6Board,
   pentaSpiral7Board,
   pentaSpiralBoard,
+  pentaSpiralExact,
   phyllotaxisBoard,
+  phyllotaxisExact,
   spectreBoard,
   z7ToXy,
+  type ExactTiles,
 } from "./aperiodic";
 
 // The self-similar boards.

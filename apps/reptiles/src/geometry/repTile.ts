@@ -26,7 +26,7 @@ export interface RepTilePatch {
 }
 
 /** `verts` with every corner that does not turn removed. */
-function corners(ring: Ring, verts: Cyc[]): Cyc[] {
+export function corners(ring: Ring, verts: Cyc[]): Cyc[] {
   return verts.filter((v, i) => {
     const prev = verts[(i - 1 + verts.length) % verts.length]!;
     const next = verts[(i + 1) % verts.length]!;

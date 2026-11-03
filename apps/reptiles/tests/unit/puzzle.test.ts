@@ -7,7 +7,12 @@ import {
   drafterBoard,
   halfTrapezoidBoard,
   hexBoard,
+  klaassenBoard,
   ltetrominoBoard,
+  pentaSpiral5Board,
+  pentaSpiral6Board,
+  pentaSpiral7Board,
+  phyllotaxisBoard,
   ppentominoBoard,
   rhombicLBoard,
   rightIsoscelesBoard,
@@ -87,10 +92,19 @@ describe("puzzle", () => {
     drafter: drafterBoard,
     ttetromino: ttetrominoBoard,
   };
+  /** Hypersweeper's spiral builders, by mode: (rings, keep, scale) → Board. */
+  const SPIRAL_BUILDERS: Record<string, (rings: number, keep: number, scale: number) => Board> = {
+    phyllotaxis: phyllotaxisBoard,
+    klaassen: klaassenBoard,
+    pentaspiral5: pentaSpiral5Board,
+    pentaspiral6: pentaSpiral6Board,
+    pentaspiral7: pentaSpiral7Board,
+  };
   const builderFor = (key: string): Board => {
-    const { window, inflations } = levelByKey(key)!;
+    const { window, inflations, spiral } = levelByKey(key)!;
     if (window) return archimedeanBoard(window.tiling, window.nx, window.ny, 1);
     if (inflations !== undefined) return REPTILE_BUILDERS[key]!(inflations, 1);
+    if (spiral) return SPIRAL_BUILDERS[key]!(spiral.rings, spiral.keep, 1);
     return BUILDERS[key]!();
   };
   const centroids = (polys: XY[][]): XY[] => {
@@ -127,9 +141,10 @@ describe("puzzle", () => {
     sameTiles(centroids(ours), centroids(theirs));
   });
 
-  // (a bond, a pentagonal tiling or a rep-tile has no vertex configuration)
+  // (a bond, a pentagonal tiling, a rep-tile or a spiral has no vertex
+  // configuration)
   const ofPolygons = LEVELS.filter(
-    (l) => !isDual(l.group) && !["rectangle", "pentagonal", "reptile"].includes(l.group),
+    (l) => !isDual(l.group) && !["rectangle", "pentagonal", "reptile", "spiral"].includes(l.group),
   ).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
@@ -375,6 +390,32 @@ describe("puzzle", () => {
   // The pentagonal tilings: Hypersweeper's, in its order, each one convex
   // pentagon — its own tile, at its own size — turned and, but for type 10,
   // mirrored.
+  // The spirals: every one of Hypersweeper's but the brick rings (a square of
+  // bricks, as easily laid in stacked rows), one tile each, wound round a
+  // centre the board keeps.
+  const spirals = LEVELS.filter((l) => l.group === "spiral");
+  it("has Hypersweeper's spirals, in its order", () => {
+    const theirs = (catalog.menu.spiral as string[]).filter((m) => m !== "brickrings");
+    expect(spirals.map((l) => l.key)).toEqual(theirs);
+    expect(spirals.map((l) => l.name)).toEqual(
+      theirs.map((m) => (catalog.modeInfo as Record<string, { label: string }>)[m]!.label),
+    );
+  });
+  it.each(spirals.map((l) => l.key))("%s: one tile, two or three dozen, one outline", (key) => {
+    const level = levelByKey(key)!;
+    expect(level.tiles).toHaveLength(1);
+    expect(level.need).toEqual([level.cells.length]);
+    expect(level.cells.length).toBeGreaterThanOrEqual(24);
+    expect(level.cells.length).toBeLessThanOrEqual(36);
+    expect(level.region).toHaveLength(1);
+    expect(level.mirror).toBe(false); // a spiral turns its tile, never flips it
+    // the tile sits every way the ring turns it, up to its own symmetry:
+    // 36° on ℤ[ζ10], 30° on ℤ[ζ12], 180/7° on ℤ[ζ14]
+    expect(level.turn).toBe(1);
+    const sides = { phyllotaxis: 6, klaassen: 7 }[key] ?? 5;
+    expect(level.tiles[0]!.verts).toHaveLength(sides);
+  });
+
   const pentagonal = LEVELS.filter((l) => l.group === "pentagonal");
   it("has Hypersweeper's pentagonal tilings, in its order", () => {
     const theirs = ARCH_TILINGS.filter((t) => t.family === "pentagonal");

@@ -13,6 +13,7 @@ import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
 import { repTilePatch } from "./geometry/repTile";
+import { spiralPatch } from "./geometry/spiral";
 import { ccw, outline } from "./geometry/outline";
 import { posed, restFlat, selfTurns, signedArea, turnsOnto, type Shape } from "./geometry/shape";
 
@@ -81,6 +82,11 @@ export interface Level {
    * in @tiling/geometry, keyed as the level is) was inflated — the board its
    * builder makes with that many `levels`. */
   inflations?: number;
+  /** For a spiral level, the arguments Hypersweeper's builder for it
+   * (`phyllotaxisBoard`, `klaassenBoard`, `pentaSpiral5Board`…, keyed as the
+   * level is) makes it with: how far the spiral is grown, and how many of its
+   * centremost tiles are kept. */
+  spiral?: { rings: number; keep: number };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -340,6 +346,11 @@ export const GROUPS = [
     name: familyLabel("reptile"),
     hint: "One tile, filled with smaller copies of itself",
   },
+  {
+    key: "spiral",
+    name: familyLabel("spiral"),
+    hint: "One tile, wound round a centre in spiral arms",
+  },
 ] as const;
 
 export type GroupKey = (typeof GROUPS)[number]["key"];
@@ -546,6 +557,33 @@ function repTileLevel(mode: string, inflations: number): Level {
   return { ...makeLevel(mode, label, ring, cells, "reptile", [], label), inflations };
 }
 
+/** The spirals, in Hypersweeper's order (`menu.spiral` in the shared data),
+ * each with how far its builder grows it (`rings`: its easy board's, turns
+ * for Klaassen's) and how many centremost tiles it keeps: the squarest near
+ * two or three dozen with one outline, found by scanning sizes, and where one
+ * is as square a whole number of the spiral's arms — 30 for the five-fold
+ * hexagons and pentagons, 24 for the six-fold, 28 for the seven-fold — so the
+ * centre keeps its symmetry. Klaassen's has one arm; 28 is its squarest. The
+ * brick rings are left out: their board is a square of bricks, laid as easily
+ * in stacked rows. */
+const SPIRALS: [string, number, number][] = [
+  ["phyllotaxis", 5, 30],
+  ["klaassen", 4, 28],
+  ["pentaspiral5", 4, 30],
+  ["pentaspiral6", 4, 24],
+  ["pentaspiral7", 3, 28],
+];
+
+/** A spiral level: Hypersweeper's spiral board `mode` with `rings` and `keep`
+ * (see `spiralPatch`). A spiral is not vertex-transitive (its centre is a
+ * point unlike every other), so it goes by Hypersweeper's name for it. */
+function spiralLevel(mode: string, rings: number, keep: number): Level {
+  const label = MODE_INFO[mode]?.label;
+  if (!label) throw new Error(`no label for ${mode} in data/catalog.json`);
+  const { ring, cells } = spiralPatch(mode, rings, keep);
+  return { ...makeLevel(mode, label, ring, cells, "spiral", [], label), spiral: { rings, keep } };
+}
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -586,6 +624,8 @@ export const LEVELS: Level[] = [
   ...RECTANGLES.map(([tiling, box]) => windowLevel(tiling, box)),
   // The rep-tiles: one tile, a big copy of it to fill with small ones.
   ...REPTILES.map(([mode, inflations]) => repTileLevel(mode, inflations)),
+  // The spirals: one tile, wound round a centre.
+  ...SPIRALS.map(([mode, rings, keep]) => spiralLevel(mode, rings, keep)),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,
