@@ -85,13 +85,16 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 76 levels in seven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 79 levels in eight sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
 [3⁶; 3⁴.6]₁), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
 *2-isohedral* (the twenty 2-uniform tilings' duals, two kinds of tile each,
-named V and the primal's pair, V[3⁶; 3⁴.6]₁), *Congruent rectangles* (the five
+named V and the primal's pair, V[3⁶; 3⁴.6]₁), *Pentagonal* (types 10, 13 and
+15 — James, Rice, and Mann et al. — one convex pentagon each, named as
+Hypersweeper labels them: none is vertex-transitive, so there is no one
+configuration to name it by), *Congruent rectangles* (the five
 brick bonds — stacked, running, basket weave, 3×3 basket weave, herringbone —
 one brick each, named as Hypersweeper labels them: a bond has no vertex
 configuration, and but for the stacked bond is not edge to edge) and
@@ -194,7 +197,11 @@ finishes the board — the quick way to see the win state.
   whole number of the smallest fraction of the unit that makes them all whole,
   the board built at that scale in a ring whose `unit` draws it at true size,
   and each cell keeps only its real corners (the template's `real` flags), so
-  a brick is a plain rectangle.
+  a brick is a plain rectangle. The pentagonal tilings' edges are no whole
+  fraction of the unit (√2/2, (3√3 − 1)/2, 2cos 15°): every edge length is
+  read as a short real of the ring — a whole number plus a multiple of one
+  ζʲ + ζ⁻ʲ, whole numbers first — times its direction; the walk's closure check
+  holds every reading.
 - `src/geometry/laves.ts` — a Laves tiling as the exact dual of a uniform
   patch, or a 2-isohedral one of a 2-uniform patch: a tile on every whole
   vertex, its corners the face centres round it. Centres are exact once
@@ -211,9 +218,10 @@ finishes the board — the quick way to see the win state.
   level sets `rule`.
 - `src/levels.ts` — the levels, and `GROUPS`, the sections they are listed
   in. `windowLevel` makes a level from a tiling key and a box size (uniform,
-  2-uniform or a congruent-rectangle bond, by the tiling's family); the
-  2-uniform boxes are in `TWO_UNIFORM`, the windows that also have both kinds
-  of vertex inside, the bonds' in `RECTANGLES`.
+  2-uniform, pentagonal or a congruent-rectangle bond, by the tiling's
+  family); the 2-uniform boxes are in `TWO_UNIFORM`, the windows that also
+  have both kinds of vertex inside, the pentagonal ones' in `PENTAGONAL`, the
+  bonds' in `RECTANGLES`.
   `lavesLevel` and `twoIsohedralLevel` make the duals, from `LAVES` and
   `TWO_ISOHEDRAL` (the latter keyed by the 2-uniform primal; the level is
   `<primal>dual`, Hypersweeper's key). `repTileLevel` makes a rep-tile from

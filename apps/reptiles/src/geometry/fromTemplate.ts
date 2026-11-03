@@ -24,6 +24,14 @@
 // any vertex does, so the walk runs through them; a cell keeps only its real
 // corners, so a brick is the four-cornered rectangle the tray holds.
 //
+// The pentagonal tilings' edges are not whole fractions of the unit at all:
+// √2/2, (3√3 − 1)/2, 2cos 15°. Each is still a real number of the ring, and a
+// short one — a whole number plus a whole multiple of one 2cos(2πj/n) = ζʲ +
+// ζ⁻ʲ — so an edge's length is read as the nearest such number (whole numbers
+// first, so every other tiling reads as before), and its vector is that times
+// the direction ζᵏ. As with the directions, this only chooses among a few
+// values well apart; the walk checks that the choice closes up exactly.
+//
 // The window is chosen as `archimedeanBoard` chooses it (the unit tests compare
 // the two tile for tile), and y is flipped on the way in: Hypersweeper draws y
 // down, this game y up, so the level looks as the Hypersweeper board does.
@@ -44,8 +52,34 @@ const ORDERS = [4, 6, 8, 12, 24];
 const TOLERANCE = 1e-4;
 
 /** The scales tried for a tiling whose edges are not all one unit: the
- * fraction of the unit every edge is a whole number of. */
+ * fraction of the unit every edge is a whole number — or a short ring real —
+ * of. */
 const SCALES = [1, 2, 3, 4, 6, 12];
+
+/** The largest coefficient a length is read with: a₀ + a·(ζʲ + ζ⁻ʲ), |a₀|,
+ * |a| ≤ this. The pentagons need 3, at scale 2: 3√3 − 1. */
+const REACH = 4;
+
+/**
+ * The irrational real numbers of ring `ring` (order `n`) an edge length is
+ * read as, when it is no whole number: short combinations a₀ + a·(ζʲ + ζ⁻ʲ),
+ * 1 ≤ j < n/4.
+ */
+function lengthsOf(ring: Ring, n: number): { value: number; cyc: Cyc }[] {
+  const out: { value: number; cyc: Cyc }[] = [];
+  for (let j = 1; 4 * j < n; j++) {
+    const twoCos = ring.add(ring.zeta(j), ring.zeta(-j));
+    for (let a = -REACH; a <= REACH; a++) {
+      if (a === 0) continue;
+      for (let a0 = -REACH; a0 <= REACH; a0++) {
+        const value = a0 + 2 * a * Math.cos((2 * Math.PI * j) / n);
+        if (value <= 0) continue;
+        out.push({ value, cyc: twoCos.map((x, i) => a * x + a0 * ring.one[i]! || 0) });
+      }
+    }
+  }
+  return out;
+}
 
 export interface Window {
   ring: Ring;
@@ -167,14 +201,22 @@ export function templateWindow(
       return Math.hypot(q[0] - p[0], q[1] - p[1]);
     }),
   );
-  const unit = SCALES.find((s) =>
-    lengths.every((l) => Math.round(l * s) > 0 && Math.abs(l * s - Math.round(l * s)) < TOLERANCE),
-  );
+  // (the ring's coordinates are in units of 1/scale, so its numbers are the
+  // same at every scale: only the lengths, × scale, change)
+  const table = lengthsOf(cyclotomic(n), n);
+  const readAt = (l: number): Cyc | undefined => {
+    // a whole number first, so every tiling but the pentagons reads as before
+    const whole = Math.round(l);
+    if (whole > 0 && Math.abs(l - whole) < TOLERANCE)
+      return cyclotomic(n).one.map((x) => x * whole);
+    return table.find(({ value }) => Math.abs(value - l) < TOLERANCE)?.cyc;
+  };
+  const unit = SCALES.find((s) => lengths.every((l) => readAt(l * s) !== undefined));
   if (unit === undefined) {
-    throw new Error(`templateWindow: ${tiling} has an edge that is no whole fraction of the unit`);
+    throw new Error(`templateWindow: ${tiling} has an edge the ring cannot read exactly`);
   }
   const ring = cyclotomic(n, unit);
-  const steps = (p: XY, q: XY): number => Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) * unit);
+  const lengthOf = (p: XY, q: XY): Cyc => readAt(Math.hypot(q[0] - p[0], q[1] - p[1]) * unit)!;
   const dirOf = (p: XY, q: XY): number =>
     Math.round((Math.atan2(q[1] - p[1], q[0] - p[0]) * n) / (2 * Math.PI));
 
@@ -201,11 +243,11 @@ export function templateWindow(
         const i = (start + j) % m;
         const i1 = (i + 1) % m;
         const here = exact.get(g.ids[i]!)!;
-        const step = ring.zeta(dirOf(g.pts[i]!, g.pts[i1]!));
-        const there = ring.add(
-          here,
-          step.map((x) => x * steps(g.pts[i]!, g.pts[i1]!)),
+        const step = ring.mul(
+          ring.zeta(dirOf(g.pts[i]!, g.pts[i1]!)),
+          lengthOf(g.pts[i]!, g.pts[i1]!),
         );
+        const there = ring.add(here, step);
         const known = exact.get(g.ids[i1]!);
         if (known && !ring.eq(known, there)) {
           throw new Error(`templateWindow: ${tiling} does not close up exactly at ${g.ids[i1]}`);

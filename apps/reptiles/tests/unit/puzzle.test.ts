@@ -1,5 +1,6 @@
 import catalog from "@tiling/data/catalog.json";
 import {
+  ARCH_TILINGS,
   archimedeanBoard,
   archTemplate,
   chairBoard,
@@ -126,8 +127,9 @@ describe("puzzle", () => {
     sameTiles(centroids(ours), centroids(theirs));
   });
 
+  // (a bond, a pentagonal tiling or a rep-tile has no vertex configuration)
   const ofPolygons = LEVELS.filter(
-    (l) => !isDual(l.group) && l.group !== "rectangle" && l.group !== "reptile",
+    (l) => !isDual(l.group) && !["rectangle", "pentagonal", "reptile"].includes(l.group),
   ).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
@@ -370,6 +372,38 @@ describe("puzzle", () => {
     expect(checked).toBeGreaterThan(0);
   });
 
+  // The pentagonal tilings: Hypersweeper's, in its order, each one convex
+  // pentagon — its own tile, at its own size — turned and, but for type 10,
+  // mirrored.
+  const pentagonal = LEVELS.filter((l) => l.group === "pentagonal");
+  it("has Hypersweeper's pentagonal tilings, in its order", () => {
+    const theirs = ARCH_TILINGS.filter((t) => t.family === "pentagonal");
+    expect(pentagonal.map((l) => l.key)).toEqual(theirs.map((t) => t.key));
+    expect(pentagonal.map((l) => l.name)).toEqual(theirs.map((t) => t.label));
+  });
+  it.each(pentagonal.map((l) => l.key))("%s: one convex pentagon, Hypersweeper's", (key) => {
+    const level = levelByKey(key)!;
+    const { ring } = level;
+    expect(level.region).toHaveLength(1);
+    expect(level.tiles).toHaveLength(1);
+    expect(level.need).toEqual([level.cells.length]);
+    const tile = level.tiles[0]!.verts.map((v) => ring.toXY(v));
+    expect(tile).toHaveLength(5);
+    expect(signature(tile).angles.every((a) => a < Math.PI)).toBe(true);
+    const [theirs] = templateCells(archTemplate(key), 0, 0).map(({ pts }) =>
+      pts.map(([x, y]): XY => [x, y]),
+    );
+    expect(similar(tile, theirs!)).toBe(true);
+    const area = (pts: XY[]): number =>
+      Math.abs(
+        pts.reduce(
+          (sum, p, i) => sum + p[0] * pts[(i + 1) % 5]![1] - pts[(i + 1) % 5]![0] * p[1],
+          0,
+        ),
+      ) / 2;
+    expect(area(tile)).toBeCloseTo(area(theirs!), 5);
+  });
+
   it("colours a second kind with as many sides as another apart", () => {
     expect(levelByKey("trihex")!.colours).toEqual(["sides-3", "sides-6"]);
     expect(levelByKey("hexrowsdual")!.colours).toEqual(["sides-4", "sides-4 twin"]);
@@ -386,7 +420,8 @@ describe("puzzle", () => {
 
   it("flips only where the board uses a tile both ways round", () => {
     // the kisrhombille's triangles, the 2-isohedral tilings whose tiles
-    // come in mirror pairs, and the rep-tiles whose dissection reflects a child
+    // come in mirror pairs, the pentagonal tilings but type 10, and the
+    // rep-tiles whose dissection reflects a child
     expect(
       LEVELS.filter((l) => l.mirror)
         .map((l) => l.key)
@@ -397,6 +432,8 @@ describe("puzzle", () => {
       "halftrapezoid",
       "hexringsdual",
       "kisrhombille",
+      "pentagon13",
+      "pentagon15",
       "ppentomino",
       "rhombicl",
       "righttrapezoid",
@@ -529,6 +566,12 @@ describe("puzzle", () => {
       "V4.6.12",
     ]);
     expect(new Set(named("2-uniform")).size).toBe(20); // the subscripts keep them apart
+    // not vertex-transitive, so named as Hypersweeper labels them
+    expect(named("pentagonal")).toEqual([
+      "Type 10 (James, 1975)",
+      "Type 13 (Rice, 1977)",
+      "Type 15 (Mann et al., 2015)",
+    ]);
     // the 2-isohedral levels: V and their primal's name, its pair their configs
     expect(named("2-isohedral")).toHaveLength(20);
     expect(new Set(named("2-isohedral")).size).toBe(20);
