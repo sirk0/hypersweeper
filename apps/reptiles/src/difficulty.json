@@ -393,5 +393,30 @@
     "score": 0.517,
     "presses": 7,
     "flips": 0
+  },
+  "phyllotaxis": {
+    "score": 0.361,
+    "presses": 4,
+    "flips": 0
+  },
+  "klaassen": {
+    "score": 1.075,
+    "presses": 14,
+    "flips": 0
+  },
+  "pentaspiral5": {
+    "score": 0.888,
+    "presses": 14,
+    "flips": 0
+  },
+  "pentaspiral6": {
+    "score": 0.986,
+    "presses": 12,
+    "flips": 0
+  },
+  "pentaspiral7": {
+    "score": 1.343,
+    "presses": 18,
+    "flips": 0
   }
 }

@@ -6,7 +6,7 @@
 // that keeps the vertices in the shape's ring: a rotation by a power of ζ, an
 // optional mirror, then a translation.
 
-import type { Cyc, Ring } from "./cyclotomic";
+import { orient, type Cyc, type Ring } from "./cyclotomic";
 
 export type XY = [number, number];
 
@@ -135,33 +135,40 @@ export function selfTurns(shape: Shape): number[] {
 
 /** The polygon `verts` (counter-clockwise) moved to rest on its longest side:
  * that side along the x axis from the origin, the rest above it — how the
- * tray holds a tile. Every side must run along one of the ring's directions,
- * as every side of every tile here does. */
+ * tray holds a tile. A side can rest only if the whole tile lies on its left
+ * (not across a concave tile's dent: Klaassen's heptagon) and it runs along
+ * one of the ring's directions; where the longest cannot (the cut across a
+ * pentagonal spiral's pentagon), the longest that can. */
 export function restFlat(ring: Ring, verts: Cyc[]): Shape {
   const xy = verts.map((v) => ring.toXY(v));
   const m = verts.length;
-  let side = 0;
-  let longest = -1;
-  for (let i = 0; i < m; i++) {
+  const length = (i: number): number => {
     const [ax, ay] = xy[i]!;
     const [bx, by] = xy[(i + 1) % m]!;
-    // which side to stand on is a choice among sides, not an identity: the
-    // first of the longest, by a margin well past rounding
-    const len = Math.hypot(bx - ax, by - ay);
-    if (len > longest + 1e-9) [longest, side] = [len, i];
-  }
-  const from = verts[side]!;
-  const along = ring.sub(verts[(side + 1) % m]!, from);
-  for (let k = 0; k < ring.n; k++) {
-    const turned = ring.mul(ring.zeta(k), along);
-    const [x, y] = ring.toXY(turned);
-    // ζ^k turns the side onto the positive x axis: its imaginary part is 0,
-    // exactly, and it points right
-    if (ring.isZero(ring.sub(turned, ring.conj(turned))) && x > 0 && Math.abs(y) < 1e-9) {
-      // listed from the side it rests on, so its first side is the flat one
-      const order = [...verts.slice(side), ...verts.slice(0, side)];
-      return { ring, verts: order.map((v) => ring.mul(ring.zeta(k), ring.sub(v, from))) };
+    return Math.hypot(bx - ax, by - ay);
+  };
+  // which side to stand on is a choice among sides, not an identity: the
+  // first of the longest, by a margin well past rounding
+  const sides = [...verts.keys()].sort((i, j) => {
+    const d = length(j) - length(i);
+    return Math.abs(d) > 1e-9 ? d : i - j;
+  });
+  for (const side of sides) {
+    const from = verts[side]!;
+    const to = verts[(side + 1) % m]!;
+    if (verts.some((v) => orient(ring, from, to, v) < 0)) continue;
+    const along = ring.sub(verts[(side + 1) % m]!, from);
+    for (let k = 0; k < ring.n; k++) {
+      const turned = ring.mul(ring.zeta(k), along);
+      const [x, y] = ring.toXY(turned);
+      // ζ^k turns the side onto the positive x axis: its imaginary part is 0,
+      // exactly, and it points right
+      if (ring.isZero(ring.sub(turned, ring.conj(turned))) && x > 0 && Math.abs(y) < 1e-9) {
+        // listed from the side it rests on, so its first side is the flat one
+        const order = [...verts.slice(side), ...verts.slice(0, side)];
+        return { ring, verts: order.map((v) => ring.mul(ring.zeta(k), ring.sub(v, from))) };
+      }
     }
   }
-  throw new Error("restFlat: a side runs along no ring direction");
+  throw new Error("restFlat: no side runs along a ring direction");
 }

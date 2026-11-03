@@ -85,7 +85,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 79 levels in eight sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 84 levels in nine sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -97,11 +97,16 @@ Hypersweeper labels them: none is vertex-transitive, so there is no one
 configuration to name it by), *Congruent rectangles* (the five
 brick bonds — stacked, running, basket weave, 3×3 basket weave, herringbone —
 one brick each, named as Hypersweeper labels them: a bond has no vertex
-configuration, and but for the stacked bond is not edge to edge) and
+configuration, and but for the stacked bond is not edge to edge),
 *Rep-tiles* (twelve of Hypersweeper's thirteen — the sphinx to the
 T-tetromino — each a big copy of its one tile to fill with small ones, 16 to
 32 of them; the five-triangle is left out, being the pinwheel, whose tiles
-turn by no power of ζ). Each window board is as near square as its tiling allows at two or three
+turn by no power of ζ) and *Spirals* (five of Hypersweeper's six — the
+phyllotactic hexagons, Klaassen's heptagon, Klaassen's pentagons at five-,
+six- and seven-fold — one tile each, wound round a centre, 24 to 30 of them
+kept as Hypersweeper trims its board, a whole number of arms where that is
+squarest; the brick rings are left out, a square of bricks laid as easily in
+stacked rows). Each window board is as near square as its tiling allows at two or three
 dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 20 tiles, its next square window 60; and the 3×3 basket weave, 48, a whole
 square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
@@ -213,6 +218,12 @@ finishes the board — the quick way to see the win state.
   its lattice points read exactly into ℤ[ζ4] or ℤ[ζ12] and turned by the
   same upright turn Hypersweeper draws the right triangles at, each cell cut
   to its real corners (the tiles meet at T-junctions, as the bonds do).
+- `src/geometry/spiral.ts` — a spiral patch: the tiles Hypersweeper's
+  spiral builder keeps (`phyllotaxisExact`, `klaassenExact`,
+  `pentaSpiralExact` — the coefficient vectors its vertex ids are), read into
+  ℤ[ζ10], ℤ[ζ12], or ℤ[ζ14] for the ζ7 spirals, whose tiles sit at every
+  fourteenth of a turn; mirrored in the x axis, the way round Hypersweeper
+  shows a chiral spiral; the pentagons cut to their real corners.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -227,9 +238,13 @@ finishes the board — the quick way to see the win state.
   `<primal>dual`, Hypersweeper's key). `repTileLevel` makes a rep-tile from
   `REPTILES` (Hypersweeper's mode key and how many inflations); the tests check
   it tile for tile against Hypersweeper's builder at that many `levels`.
+  `spiralLevel` makes a spiral from `SPIRALS` (the mode key, how far the
+  builder grows it, how many tiles it keeps), checked the same way.
   `makeLevel` reads everything off a level's
   cells: the tray (one tile per kind — cells alike up to a turn, or a turn and
-  a mirror — resting flat on its longest side, `restFlat`), whether a kind is
+  a mirror — resting flat on its longest side the whole tile lies above and
+  that runs along a ring direction, `restFlat`: not the pentagonal spirals'
+  cut, nor across the Klaassen heptagon's dent), whether a kind is
   used both ways round (`mirror`, which brings a flip control), each
   kind's rotate step from flat (`turns`) and pile (`need`), the time limit
   (`seconds`), each kind's colour classes (`colours`: by side count, plus
@@ -287,11 +302,13 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   scanning (square, one outline, a couple of dozen tiles) — and the tests check
   it tile for tile against the Hypersweeper board (`archimedeanBoard` for a
   window, else the builder in `BUILDERS` in `tests/unit/puzzle.test.ts`), and
-  check every inner point carries the level's vertex configuration. Planned: builders
-  publish their exact coordinates, so a level can be read off a `Board`.
+  check every inner point carries the level's vertex configuration. The
+  spiral builders publish their exact coordinates (`ExactTiles`); planned:
+  the rest do too, so any level can be read off its builder.
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
-  side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues, and a
+  side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues (7,
+  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it), and a
   second kind with as many sides as another in rose (`.twin`) — read a kind's
   classes from `level.colours`, never from its side count.
 - Import the geometry as `@tiling/geometry` (its index) and nothing from

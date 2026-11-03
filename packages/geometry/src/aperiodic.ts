@@ -8,6 +8,39 @@
 
 import { type Board, type CellId, cid, finalizeFlat, type Vertex } from "./core";
 
+/**
+ * A board's tiles in exact coordinates, for a game that lays the tiles
+ * themselves rather than drawing them (Rep-tiles): each tile's corners, in the
+ * builder's cell order, as the integer coefficients its vertex ids are — over
+ * the power basis 1, ζ, ζ², … of ζ = exp(2πi/`order`), reduced by the
+ * cyclotomic polynomial Φ_order. The board built with the same arguments is
+ * these tiles drawn.
+ */
+export interface ExactTiles {
+  order: number;
+  cells: (readonly number[])[][];
+}
+
+/** Draw exact tiles as a flat board: vertex ids are the coefficients. */
+function exactBoard(
+  mode: string,
+  rows: { id: CellId; ids: readonly (readonly number[])[] }[],
+  toXy: (p: readonly number[]) => Vertex,
+  scale: number,
+): Board {
+  const cellMap = new Map<CellId, string[]>();
+  const positions = new Map<string, Vertex>();
+  for (const row of rows) {
+    const keys = row.ids.map((v) => {
+      const k = v.join(",");
+      if (!positions.has(k)) positions.set(k, toXy(v));
+      return k;
+    });
+    cellMap.set(row.id, keys);
+  }
+  return finalizeFlat(mode, cellMap, positions, scale);
+}
+
 // -- Penrose tiling (P3, rhombi) ---------------------------------------------
 //
 // Vertices are exact elements of ℤ[ζ], ζ = exp(iπ/5), stored as 4 integer
@@ -684,6 +717,20 @@ function phyllotaxisTiles(rings: number): PhyllotaxisTile[] {
  * ten-pointed star. `null` keeps the whole patch; `scale` is pixels per edge.
  */
 export function phyllotaxisBoard(rings: number, keep: number | null = null, scale = 44): Board {
+  const rows = phyllotaxisKept(rings, keep).map((row) => ({
+    id: cid(row.wedge, row.m, row.n),
+    ids: row.ids,
+  }));
+  return exactBoard("phyllotaxis", rows, (p) => zToXy(p as ZPoint), scale);
+}
+
+/** The tiles `phyllotaxisBoard(rings, keep)` draws, exact in ℤ[ζ10]. */
+export function phyllotaxisExact(rings: number, keep: number | null = null): ExactTiles {
+  return { order: 10, cells: phyllotaxisKept(rings, keep).map((row) => [...row.ids]) };
+}
+
+/** The tiles the phyllotactic board keeps, in its cell order. */
+function phyllotaxisKept(rings: number, keep: number | null): PhyllotaxisRow[] {
   const rows: PhyllotaxisRow[] = phyllotaxisTiles(rings).map((tile) => {
     let cx = 0;
     let cy = 0;
@@ -702,24 +749,10 @@ export function phyllotaxisBoard(rings: number, keep: number | null = null, scal
     return { ...tile, near };
   });
 
-  let kept = rows;
-  if (keep !== null && keep < rows.length) {
-    kept = [...rows]
-      .sort((r1, r2) => r1.near - r2.near || r1.wedge - r2.wedge || r1.m - r2.m || r1.n - r2.n)
-      .slice(0, keep);
-  }
-
-  const cellMap = new Map<CellId, string[]>();
-  const positions = new Map<string, Vertex>();
-  for (const row of kept) {
-    const keys = row.ids.map((v) => {
-      const k = zKey(v);
-      if (!positions.has(k)) positions.set(k, zToXy(v));
-      return k;
-    });
-    cellMap.set(cid(row.wedge, row.m, row.n), keys);
-  }
-  return finalizeFlat("phyllotaxis", cellMap, positions, scale);
+  if (keep === null || keep >= rows.length) return rows;
+  return [...rows]
+    .sort((r1, r2) => r1.near - r2.near || r1.wedge - r2.wedge || r1.m - r2.m || r1.n - r2.n)
+    .slice(0, keep);
 }
 
 // -- Klaassen's spiral monotile -----------------------------------------------
@@ -833,6 +866,17 @@ export function klaassenTiles(turns: number): KlaassenTile[] {
  * it by one edge. `null` keeps the whole patch; `scale` is pixels per edge.
  */
 export function klaassenBoard(turns: number, keep: number | null = null, scale = 30): Board {
+  const rows = klaassenKept(turns, keep).map((row) => ({ id: cid(row.hub, row.k), ids: row.ids }));
+  return exactBoard("klaassen", rows, (p) => z7ToXy(p as Z7Point), scale);
+}
+
+/** The tiles `klaassenBoard(turns, keep)` draws, exact in ℤ[ζ7]. */
+export function klaassenExact(turns: number, keep: number | null = null): ExactTiles {
+  return { order: 7, cells: klaassenKept(turns, keep).map((row) => [...row.ids]) };
+}
+
+/** The tiles the Klaassen board keeps, in its cell order. */
+function klaassenKept(turns: number, keep: number | null): KlaassenTile[] {
   const rows = klaassenTiles(turns).map((tile) => {
     let cx = 0;
     let cy = 0;
@@ -848,19 +892,7 @@ export function klaassenBoard(turns: number, keep: number | null = null, scale =
     return { ...tile, near };
   });
   rows.sort((r1, r2) => r1.near - r2.near || r1.hub - r2.hub || r1.k - r2.k);
-  const kept = keep !== null && keep < rows.length ? klaassenGrow(rows, keep) : rows;
-
-  const cellMap = new Map<CellId, string[]>();
-  const positions = new Map<string, Vertex>();
-  for (const row of kept) {
-    const keys = row.ids.map((v) => {
-      const key = z7Key(v);
-      if (!positions.has(key)) positions.set(key, z7ToXy(v));
-      return key;
-    });
-    cellMap.set(cid(row.hub, row.k), keys);
-  }
-  return finalizeFlat("klaassen", cellMap, positions, scale);
+  return keep !== null && keep < rows.length ? klaassenGrow(rows, keep) : rows;
 }
 
 /** The first `keep` of `rows` (in order) that can join edge to edge: each step
@@ -1720,9 +1752,39 @@ export function pentaSpiralBoard(
   keep: number | null = null,
   scale = 18,
 ): Board {
+  const [, toXy] = pentaRing(fold);
+  const rows = pentaSpiralKept(fold, rings, keep).map(({ row, ids }) => ({
+    id: cid(row.wedge, row.m, row.n, row.half),
+    ids,
+  }));
+  return exactBoard(`pentaspiral${fold}`, rows, toXy, scale);
+}
+
+/** The tiles `pentaSpiralBoard(fold, rings, keep)` draws, exact — in ℤ[ζ10],
+ * ℤ[ζ12] or ℤ[ζ7] for 5, 6 or 7 — T-vertices included. */
+export function pentaSpiralExact(
+  fold: number,
+  rings: number,
+  keep: number | null = null,
+): ExactTiles {
+  const order = { 5: 10, 6: 12, 7: 7 }[fold as 5 | 6 | 7];
+  return { order, cells: pentaSpiralKept(fold, rings, keep).map(({ ids }) => ids) };
+}
+
+function pentaRing(fold: number): [(k: number) => PentaPoint, (p: PentaPoint) => Vertex] {
   const ring = PENTA_RINGS[fold];
   if (!ring) throw new Error(`no pentagonal spiral with ${fold}-fold symmetry`);
-  const [, toXy] = ring;
+  return ring;
+}
+
+/** The pentagons the spiral board keeps, in its cell order, each with its
+ * outline split at the T-vertices among them. */
+function pentaSpiralKept(
+  fold: number,
+  rings: number,
+  keep: number | null,
+): { row: PentaSpiralTile; ids: PentaPoint[] }[] {
+  const [, toXy] = pentaRing(fold);
   const rows = pentaSpiralTiles(fold, rings).map((tile) => {
     let cx = 0;
     let cy = 0;
@@ -1754,17 +1816,7 @@ export function pentaSpiralBoard(
 
   const taken = new Set<string>();
   for (const row of kept) for (const [p] of row.corners) taken.add(pentaKey(p));
-  const cellMap = new Map<CellId, string[]>();
-  const positions = new Map<string, Vertex>();
-  for (const row of kept) {
-    const keys = pentaOutline(fold, row.corners, taken).map((p) => {
-      const k = pentaKey(p);
-      if (!positions.has(k)) positions.set(k, toXy(p));
-      return k;
-    });
-    cellMap.set(cid(row.wedge, row.m, row.n, row.half), keys);
-  }
-  return finalizeFlat(`pentaspiral${fold}`, cellMap, positions, scale);
+  return kept.map((row) => ({ row, ids: pentaOutline(fold, row.corners, taken) }));
 }
 
 export const pentaSpiral5Board = (rings: number, keep: number | null = null, scale = 18): Board =>
