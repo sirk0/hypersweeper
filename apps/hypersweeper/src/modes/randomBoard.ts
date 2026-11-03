@@ -32,7 +32,7 @@ const POOLS: Record<RandomKind, () => string[]> = {
   hyperbolic: hyperbolicMenuModes,
 };
 
-/** Boards reachable through Custom only: off the home page, and so never
+/** Boards reachable through Catalog only: off the home page, and so never
  * dealt here either, until their UX is ready to be promoted. The volume board
  * is the one — a cube of cubes played as a deck of slices still needs work. */
 export const CUSTOM_ONLY: ReadonlySet<string> = new Set(["cube3d"]);

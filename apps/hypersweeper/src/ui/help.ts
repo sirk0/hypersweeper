@@ -106,7 +106,7 @@ const SECTIONS: Section[] = [
         "Each deals a random board — a flat tiling, or a manifold, sphere " + "or polyhedron.",
       ],
       [
-        "Custom",
+        "Catalog",
         "Every board there is, by geometry: the plane, the flat manifolds " +
           "(cylinder, Möbius strip, torus, Klein bottle), the sphere, the " +
           "polyhedra and the volumes. Each surface lists its tilings.",

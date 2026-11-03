@@ -154,7 +154,7 @@ function familyGroup(key: string): Group {
  * shared table (`menu.solidGroups`) keeps them as groups of their own -- an
  * achievement, a board's family in its info window -- and so does the pygame
  * menu; only this menu nests them, so the polyhedra do not take four of the
- * Custom rows. Sphere and Volumes stay rows of their own. */
+ * Catalog rows. Sphere and Volumes stay rows of their own. */
 const SOLIDS_PAGE = ["platonic", "archimedean", "catalan", "polyhedra"];
 
 /** The solid groups in the shared table's order: each a flat list of boards,
@@ -178,7 +178,7 @@ function solidGroups(): Group[] {
   return groups;
 }
 
-/** The geometry groups — the desktop sidebar's rows and the phone's Custom
+/** The geometry groups — the desktop sidebar's rows and the phone's Catalog
  * page — with every group this build has nothing in left out. */
 export function boardGroups(): Group[] {
   const groups: Group[] = [
@@ -212,7 +212,7 @@ export function boardGroups(): Group[] {
  *
  * The launch entry comes first: the row that opens a named board sits above
  * the ones that deal a surprise. Volumetric (cube3d) used to be a second
- * launch entry; it is in Custom › Volumes only until its UX is ready to be
+ * launch entry; it is in Catalog › Volumes only until its UX is ready to be
  * promoted (see CUSTOM_ONLY in modes/randomBoard.ts). */
 export function quickPlayEntries(): QuickEntry[] {
   const entries: QuickEntry[] = [];

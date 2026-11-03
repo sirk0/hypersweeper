@@ -445,12 +445,12 @@ test.describe("the desktop menu breakpoint", () => {
         );
       expect(ratio).toBeLessThan(1.8);
 
-      // A board list goes two-up, and a page opens at its top: the Custom row
+      // A board list goes two-up, and a page opens at its top: the Catalog row
       // is the last on the home page, and the body used to keep the scroll it
       // was tapped at, opening the next page past its own back row.
       await page.locator(".menu-body").evaluate((el) => (el.scrollTop = el.scrollHeight));
       await page.locator('.menu-entry[data-group="custom"]').click();
-      await expect(page.locator(".menu-back")).toHaveText("‹ Custom");
+      await expect(page.locator(".menu-back")).toHaveText("‹ Catalog");
       expect(await page.locator(".menu-body").evaluate((el) => el.scrollTop)).toBe(0);
       const lefts = await page
         .locator(".menu-body > .menu-list > li")

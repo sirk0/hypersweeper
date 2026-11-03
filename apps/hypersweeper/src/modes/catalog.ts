@@ -543,7 +543,7 @@ export function flatMenuModes(): string[] {
 }
 
 /** The home page's 3D pool: every board on a flat manifold, plus every solid --
- * everything Custom reaches that is not the plane. */
+ * everything Catalog reaches that is not the plane. */
 export function threeDMenuModes(): string[] {
   const modes: string[] = [];
   for (const surfaceKey of MENU.manifoldOrder as string[]) {

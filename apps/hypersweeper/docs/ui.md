@@ -7,11 +7,11 @@ The app's pages, windows and stored state. For how cells are *drawn* see
 ## The menu
 
 The menu is play-first, and deliberately **not** the pygame one: the home page
-is Classic, Flat, 3D, Hyperbolic and Custom (`src/ui/menu.ts`). Classic opens
+is Classic, Flat, 3D, Hyperbolic and Catalog (`src/ui/menu.ts`). Classic opens
 one particular board straight away — the original square grid — and sits above
 the three that deal a *random* one: the flat picker's pool, every flat manifold
 plus the spheres and polyhedra, and the Hyperbolic page's boards. So no picker
-carries a Random row; Custom holds the old root (Flat, Flat manifolds,
+carries a Random row; Catalog holds the old root (Flat, Flat manifolds,
 Hyperbolic, Sphere, Solids, Volumes). **Solids** gathers four of the shared
 solid groups — Platonic, Archimedean and Catalan solids, and Polyhedra — as
 submenus of one page (`SOLIDS_PAGE` in `src/ui/boardTree.ts`); they stay
@@ -34,7 +34,7 @@ pool deals it. The Regular page is sorted by p, then q — triangles first, as
 the flat picker lists Triangles, Squares, Hexagons — rather than in the shared
 catalog's order, which the pygame menu keeps. Everywhere but the menu the hyperbolic boards still count as the
 plane's: the info window says Hyperbolic, and the achievements file them there.
-A board reachable from the home page is still reachable through Custom — the
+A board reachable from the home page is still reachable through Catalog — the
 home row is a shortcut, not a move, which is how `square` has always worked.
 The reverse is **`CUSTOM_ONLY`** (`src/modes/randomBoard.ts`): boards kept off
 the home page *and* out of every random pool until their UX is ready to be
@@ -42,7 +42,7 @@ promoted. Both pools also drop, per difficulty, the boards
 `data/distortion.json` marks as distorted at the difficulty being dealt, and at
 every difficulty the boards whose surface carries a **caution** (Boy's surface).
 The cube of cubes (`cube3d`, Volumetric) is there today — it used to
-be a second launch row beside Classic, and is now Custom › Volumes only.
+be a second launch row beside Classic, and is now Catalog › Volumes only.
 In every tiling picker the three regular tilings are promoted to rows of their
 own, leaving the Regular family holding the shaped boards alone under the label
 **Shaped boards** (plane only). That shape is *derived* from
@@ -157,7 +157,7 @@ way:
   breakpoint moves under it. `renderRoot` and `renderCustom` bounce to the
   sidebar's Quick start when they go wide; `renderQuickStart` bounces to the
   phone's home page when it goes narrow. Without that last one the phone was
-  left on the desktop's Quick start page — no Custom row, no back row and the
+  left on the desktop's Quick start page — no Catalog row, no back row and the
   sidebar `display: none`, so the whole geometry tree was unreachable until a
   reload. `tests/e2e/layout.spec.ts` pins the crossing.
 - **The sidebar is built once, so it is the one thing a render does not
@@ -185,7 +185,7 @@ way:
 Every playable board row carries a **star** at its right edge, centred on the
 row's height (`Menu.favButton`; on a desktop card, in the preview's top-right
 corner), and the starred boards are listed in a **Favourites**
-section on the main screen: under Classic / Flat / 3D / Hyperbolic / Custom on the phone
+section on the main screen: under Classic / Flat / 3D / Hyperbolic / Catalog on the phone
 home page, and under the quick-play cards on the desktop's Quick start —
 the desktop's landing page, whose sidebar row was already a star. The section is
 not there at all until something is starred; the stars on the rows are how a

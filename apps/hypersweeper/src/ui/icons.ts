@@ -1146,13 +1146,13 @@ const ALIASES: Record<string, string> = {
   solids: "dodecahedron", // the Solids page: the four above are its submenus
   volume: "cube3d", // the Volumes row: its only board
   classic: "square", // the "Classic" home entry: flat squares
-  manifolds: "torus", // the "Flat manifolds" entry under Custom
+  manifolds: "torus", // the "Flat manifolds" entry under Catalog
   // the Sphere group's row and the "3D" home entry: a Goldberg polyhedron,
   // hexagons with the twelve pentagons a sphere needs. Not "sphere", which
   // names the pentagonal hexecontahedron, now one of the Catalan solids
   spheres: "c180",
   "3d": "c180", // a random board off the plane
-  // the "Custom" home entry: the uniform tiling with three shapes in one
+  // the "Catalog" home entry: the uniform tiling with three shapes in one
   // figure, the triangle, square and hexagon the regular tilings are made of
   custom: "rhombitrihex",
   random: "start", // the pygame menu's "Random" picker entry

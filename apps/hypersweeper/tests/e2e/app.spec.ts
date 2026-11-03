@@ -103,7 +103,7 @@ test.describe("M1 app", () => {
     expect(state?.mode).toBe("brickrings");
   });
 
-  // The cube of cubes is Custom-only until its UX is ready to be promoted:
+  // The cube of cubes is Catalog-only until its UX is ready to be promoted:
   // no home row (or Quick start card) launches it, and Volumes still does.
   test("the cube of cubes opens from Volumes, not from the home page", async ({ page }) => {
     await expect(page.locator('.menu-entry[data-mode="square"]:visible')).toBeVisible();

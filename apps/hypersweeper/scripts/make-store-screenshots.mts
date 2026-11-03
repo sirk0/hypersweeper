@@ -184,7 +184,7 @@ async function openScene(
   await settle(page);
 
   if (scene.mode) await stageBoard(page, scene, difficulty);
-  // The phone menu nests the board groups under "Custom"; the two-pane tablet
+  // The phone menu nests the board groups under "Catalog"; the two-pane tablet
   // and desktop menu lists them in its sidebar. A step that is not on screen in
   // this layout is skipped.
   for (const selector of scene.clicks ?? []) {

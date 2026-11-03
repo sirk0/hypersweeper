@@ -50,7 +50,7 @@ describe("random board pools", () => {
     }
   });
 
-  it("keeps the Custom-only boards off the home page and out of every pool", () => {
+  it("keeps the Catalog-only boards off the home page and out of every pool", () => {
     expect(CUSTOM_ONLY.has("cube3d")).toBe(true);
     const home = quickPlayEntries().map((e) => e.key);
     for (const mode of CUSTOM_ONLY) {

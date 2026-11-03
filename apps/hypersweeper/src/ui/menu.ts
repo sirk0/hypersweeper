@@ -43,7 +43,7 @@ import {
 
 // Play-first menu. The home page is Classic (flat squares, launched straight
 // away), Flat and 3D — one tap each for a random board from that half of the
-// catalogue — and Custom, which opens the geometry-first tree the pygame
+// catalogue — and Catalog, which opens the geometry-first tree the pygame
 // MenuScreen (gui.py) shows at its root — Flat, Flat manifolds, Hyperbolic,
 // Sphere, then the polyhedra gathered onto one Solids page, and Volumes. The plane and every flat manifold (cylinder, Möbius, Klein,
 // torus) open the same tiling picker: the three regular tilings promoted to
@@ -78,7 +78,7 @@ function pickerHint(surfaceKey: string): string {
 /** Family rows whose icon is not their own key. The `regular` family no longer
  * holds the regular tilings (they are promoted to rows of their own), so the
  * pygame Regular page's tri/square/hex trio would misname it — and that trio
- * is the home page's Custom glyph. It shows a shaped board instead: what it
+ * is the home page's Catalog glyph. It shows a shaped board instead: what it
  * actually holds. */
 const FAMILY_ICONS: Record<string, string> = {
   regular: "hexhex",
@@ -405,7 +405,7 @@ export class Menu {
   /** The phone has no sidebar, so Quick start is a page it can never navigate
    * to — but it can be *left on* one, by a rotate or a resize that crosses the
    * breakpoint while it is open. Without this the player is stranded: the
-   * quick-play cards, no Custom row, no back row, and the whole geometry tree
+   * quick-play cards, no Catalog row, no back row, and the whole geometry tree
    * behind a sidebar that is `display: none`. The mirror of the guards
    * `renderRoot` and `renderCustom` carry for the other direction. */
   private renderQuickStart(): void {
@@ -808,13 +808,13 @@ export class Menu {
     if (group.key === "flat") return "hex";
     if (group.key === "sphere") return "spheres";
     // the seamed {5,4} of the home page's Hyperbolic entry, so the desktop
-    // sidebar (the desktop's home) and the Custom page wear the same one
+    // sidebar (the desktop's home) and the Catalog page wear the same one
     if (group.key === "hyperbolic") return "hyperbolic-home";
     return group.key;
   }
 
   /** The home page: the board that opens straight away (Classic), one
-   * random board from each pool (flat, 3D, hyperbolic), and Custom
+   * random board from each pool (flat, 3D, hyperbolic), and Catalog
    * for the whole tree. On desktop the sidebar covers this ground instead —
    * see `showRoot`, which only reaches here below the breakpoint (or once
    * the breakpoint is crossed while this page happens to be on screen). */
@@ -833,7 +833,7 @@ export class Menu {
       btn.dataset.group = "custom";
       btn.append(
         iconEl("custom"),
-        textBlock("Custom", this.groups.map((g) => g.label).join(" · ")),
+        textBlock("Catalog", this.groups.map((g) => g.label).join(" · ")),
       );
       btn.addEventListener("click", () => this.showCustom());
       li.append(btn);
@@ -858,7 +858,7 @@ export class Menu {
     this.go(() => this.renderCustom());
   }
 
-  /** The Custom page: pick a geometry — the plane, a flat manifold, the
+  /** The Catalog page: pick a geometry — the plane, a flat manifold, the
    * sphere or a polyhedron — and drill down from there. On desktop the
    * sidebar's geometry group lists every page directly (see `buildSidebar`),
    * so this page has no desktop equivalent — reached only below the
@@ -882,7 +882,7 @@ export class Menu {
       list.append(li);
     }
     this.body.replaceChildren(
-      this.backRow("Custom", () => this.showRoot()),
+      this.backRow("Catalog", () => this.showRoot()),
       list,
     );
   }
@@ -1070,7 +1070,7 @@ export class Menu {
   }
 
   /** A sidebar row for one of `this.groups` — the same `data-group` and click
-   * target as the phone Custom page's rows (`renderCustom`), styled compactly
+   * target as the phone Catalog page's rows (`renderCustom`), styled compactly
    * as a nav row instead of a card (see `.menu-sidebar .menu-entry` in
    * styles.css) and always visible rather than reached through a back stack. */
   private sidebarGroupRow(group: Group): HTMLElement {

@@ -29,7 +29,7 @@ test.describe("M2 solids", () => {
     await page.setViewportSize({ width: 900, height: 700 });
   });
 
-  test("Custom lists the solid groups and launches a solid", async ({ page }) => {
+  test("Catalog lists the solid groups and launches a solid", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body[data-ready]")).toBeVisible();
     await page.locator('.difficulty-btn[data-key="easy"]').click();

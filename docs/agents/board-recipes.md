@@ -1037,7 +1037,7 @@ rather than D_3 -- that too is automatic. Read
    latter, and its point group (D_p, or D_q for a {3,q}) to
    `symmetries.test.ts`.
 
-The web menu files a hyperbolic board on its own: Custom › Hyperbolic is split
+The web menu files a hyperbolic board on its own: Catalog › Hyperbolic is split
 into Regular, Uniform and Closed surfaces by the preset's builder (`MENU_SUBFAMILIES` in
 `apps/hypersweeper/src/modes/catalog.ts`). A board from a builder no submenu names fails
 `apps/hypersweeper/tests/unit/menu.test.ts` rather than vanishing from the menu — add its
@@ -1156,8 +1156,8 @@ These are one-offs, not tiling×surface products.
    `solidGroups`, so nothing else needs to know how many solid pages there
    are); the exporter round-trip test keeps the two sides honest. Both menus
    follow from that table: on the web a `shapedModes` entry lands under
-   **Custom › Flat › Shaped boards** (the regular tilings themselves are
-   rows of the picker there), each solid group is a Custom row leading
+   **Catalog › Flat › Shaped boards** (the regular tilings themselves are
+   rows of the picker there), each solid group is a Catalog row leading
    straight to a flat list of its boards — or, for Platonic, Archimedean,
    Catalan and Polyhedra, a submenu of the web menu's **Solids** page — and
    everything else joins the home
@@ -1168,7 +1168,7 @@ These are one-offs, not tiling×surface products.
    an icon for the row (`_ICON_ALIASES` in `gui.py`, `ALIASES` in
    `apps/hypersweeper/src/ui/icons.ts` — there is no board named "catalan" to draw) and a
    one-line hint (`SOLID_GROUP_HINTS` in `apps/hypersweeper/src/ui/menu.ts`). On the web it
-   is a Custom row of its own unless its key is added to `SOLIDS_PAGE` in
+   is a Catalog row of its own unless its key is added to `SOLIDS_PAGE` in
    `apps/hypersweeper/src/ui/boardTree.ts`, which files it on the Solids page instead.
 3. Add the builder to `_JSON_BUILDERS` in `presets.py`, add a
    `{mode: {builder, args: {difficulty: [...]}}}` row to
@@ -1332,7 +1332,7 @@ surface.
 One menu edit is needed: add the surface key to `MANIFOLD_ORDER` and a
 label to `MANIFOLD_LABELS` in `catalog.py` so it appears (in your chosen
 position) on the Flat manifolds page — that page lists its surfaces
-explicitly (on the web that page is under **Custom**, and the new surface
+explicitly (on the web that page is under **Catalog**, and the new surface
 also joins the home page's 3D random pool, both derived). Everything else is
 still derived: `MODE_LABELS`, `TILINGS`,
 `MODES_3D`, `mode_for`, `surface_of`, `view_hint`, the picker's per-surface

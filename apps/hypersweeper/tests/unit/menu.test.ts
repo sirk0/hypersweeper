@@ -314,15 +314,15 @@ describe("home page pools", () => {
 });
 
 describe("menu reachability", () => {
-  it("reaches every built mode through the home rows or Custom", () => {
+  it("reaches every built mode through the home rows or Catalog", () => {
     const reachable = new Set<string>();
     const add = (mode: string): void => {
       if (hasMode(mode)) reachable.add(mode);
     };
     add("square"); // Classic
-    for (const mode of flatMenuModes()) add(mode); // the Flat pool, and Custom › Flat
-    for (const mode of threeDMenuModes()) add(mode); // the 3D pool, and the rest of Custom
-    for (const mode of hyperbolicMenuModes()) add(mode); // the Hyperbolic pool, and Custom › Hyperbolic
+    for (const mode of flatMenuModes()) add(mode); // the Flat pool, and Catalog › Flat
+    for (const mode of threeDMenuModes()) add(mode); // the 3D pool, and the rest of Catalog
+    for (const mode of hyperbolicMenuModes()) add(mode); // the Hyperbolic pool, and Catalog › Hyperbolic
 
     // no gaps: every mode this build knows is reachable from the menu
     expect(reachable).toEqual(new Set(MODES));

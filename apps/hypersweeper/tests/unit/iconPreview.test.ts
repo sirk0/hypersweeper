@@ -209,7 +209,7 @@ describe("card previews", () => {
     // two by two squares, and hexagons three, two, three.
     expect(paths(menuIcon("classic"))).toBe(4);
     expect(paths(menuIcon("hex"))).toBe(8);
-    // Custom is a real uniform tiling, not three loose regular polygons.
+    // Catalog is a real uniform tiling, not three loose regular polygons.
     expect(menuIcon("custom")).toBe(menuIcon("rhombitrihex"));
     // Hyperbolic is {5,4} parted by seams; the family row stays {7,3}, and the
     // desktop card is the {5,4} board's.
