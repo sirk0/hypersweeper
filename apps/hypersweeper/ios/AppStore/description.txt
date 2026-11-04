@@ -2,19 +2,19 @@ Classic minesweeper, but the board can be almost any shape you can imagine: a sp
 
 The rules you already know: every number tells you how many of its neighbours hide a mine. What changes is the board. A neighbour is any cell that shares a corner, so a hexagon has six neighbours, a triangle has twelve, a square in the hyperbolic plane has twelve too, and a cell inside the volumetric cube has twenty-six. On a torus the board wraps around in both directions; on a Möbius strip, one trip around brings you back mirror-reversed.
 
-MORE THAN 200 BOARDS
-• Flat: squares, triangles, hexagons, the uniform and Laves tilings, brick bonds, basket weave and herringbone
+MORE THAN 300 BOARDS
+• Flat: squares, triangles, hexagons, the uniform, 2-uniform and Laves tilings, isogonal and 2-isohedral tilings, convex pentagon tilings, brick bonds, basket weave and herringbone
 • Aperiodic: Penrose rhombi, kites and darts, Ammann–Beenker, the Spectre monotile, and spirals
-• Fractals: Sierpiński carpet, pentaflake, Gosper island, sphinx and chair
-• Hyperbolic: heptagons, pentagons and squares in the Poincaré disc
-• Surfaces: cylinder, torus, Möbius strip, Klein bottle, projective plane, trefoil knot, double torus
-• Solids: Goldberg spheres, the Platonic, Archimedean and Catalan solids, framed and stepped polyhedra
+• Rep-tiles and fractals: the chair, the sphinx, polyominoes, Sierpiński carpet, pentaflake and Gosper island
+• Hyperbolic: dozens of regular and uniform tilings of the Poincaré disc, the binary tiling, and closed surfaces such as Klein's quartic and the Bolza surface
+• Surfaces: cylinder, torus, Möbius strip, Klein bottle, projective plane, Boy's surface, trefoil knot, double torus
+• Solids: Goldberg and geodesic spheres, the spherical cube, the Platonic, Archimedean and Catalan solids, framed and stepped polyhedra
 • Volumetric: minesweeper in three dimensions, inside a cube of cubes
 
 PLAY IT YOUR WAY
 • Easy, medium and hard, with the mine count of every board measured, not guessed
 • Rotate and zoom the 3D boards with touch, mouse, trackpad or keyboard
-• Colour themes and sound sets, in light and dark mode, and a choice of app icons
+• Colour themes and sound sets, light and dark mode that follow your device, and a choice of app icons
 • Best times for every board
 • Achievements in Game Center
 • Star your favourite boards; each board shows which difficulties you have beaten
