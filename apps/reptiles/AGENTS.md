@@ -33,7 +33,8 @@ some back off.
   from still to go (past zero, how many extra). Finishing at all is one star;
   with no more tiles than that, two; and within the level's time limit
   (`seconds`, five a tile), three. The clock starts with the first tile down.
-  The best per level is kept in `localStorage` and shown in the catalog.
+  The best per level is kept in `localStorage` and shown in Tilings and
+  Figures.
 - **Zoom.** Two fingers pinch the board in, up to four times fitted, about
   their midpoint (a second finger landing mid-drag puts that tile back first;
   one on a control still turns or flips it); one finger on bare board pans it
@@ -51,13 +52,23 @@ some back off.
 **Screens**, in Hypersweeper's Sand look (its `sand`/`sandDark` palettes,
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
 `public/fonts`). Home (no query): Easy, Medium and Hard each deal a random
-level of that difficulty, Catalog opens the catalog (`?catalog`): each family a
-row of level cards scrolling sideways — board outline, tiles, name,
-difficulty as Hypersweeper's three bars, stars — and the gear in its top-left
+level of that difficulty; Tilings opens the catalog (`?tilings`; old
+`?catalog` links still work): each family a row of level cards scrolling
+sideways — board outline, tiles, name, difficulty as Hypersweeper's three bars,
+stars; Figures (`?figures`) lists the levels by the tiles in their tray, a
+row each: one figure by its sides — triangles, quadrilaterals, pentagons,
+hexagons, 7+-gons — then regular pairs, irregular pairs (at least one figure
+irregular), and packs of three or more. A row puts the regular figure first,
+then the rest closest to regular first; one lone figure at two sizes is one
+figure, named for its shape (V4.8² and the isosceles right rep-tile are the
+isosceles right triangle). Each card shows the set's tiles side by side at
+their true sizes — and a set (`?figure=<key>`, keyed by its first
+level) lists the tilings whose tray is exactly that set, easiest first, under
+Easy, Medium and Hard. The gear in home's top-left
 corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
 version and checks for updates (the shared check in `@tiling/platform`; left
-out of a packaged build). Levels are picked in the
-catalog only. A level is `?level=<key>`: one header row, Hypersweeper's —
+out of a packaged build). Levels are picked in
+Tilings or Figures. A level is `?level=<key>`: one header row, Hypersweeper's —
 home, the clock against the three-star limit, restart, and a die that deals
 another level of the same difficulty as this one — then the level's name and
 coverage as a faint label on the page behind the board, which fills the rest
@@ -123,7 +134,7 @@ dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
-settings, the header, rotating both ways, wheel and pinch zoom, the tray at
+Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, a won board and
 its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
@@ -301,8 +312,28 @@ finishes the board — the quick way to see the win state.
   pinned strip the shelf (at the world's scale, clipped to its room,
   `scrollTray`), its scroll bar (`scrollBarBy`, `scrollBarTo`) and the
   controls' row (a fixed size).
-- `src/view/home.ts`, `src/view/catalog.ts`, `src/view/settings.ts` — the
-  first screen, the catalog and the settings; `src/view/icons.ts` the pictures
+- `src/figures.ts` — **the figures**: every level's tray tiles matched across
+  levels — the same figure when one is a turned, moved or mirrored copy of the
+  other at its true size (`sameFigure`, exact: both lifted into ℤ[ζ lcm], each
+  scaled by the other's drawing `unit`, compared by products of edge vectors;
+  a float area check only ever rejects) — and the levels grouped by the set of
+  figures their tray is (`figureSets`). A lone figure also joins the first
+  lone figure of its shape at any size (`sameFigure(…, false)`): V4.8² with
+  the isosceles right rep-tile, V4.6.12 with the 30-60-90 one; pairs and
+  packs keep true sizes (Pythagorean's two squares). Each set is in a row
+  (`bucket`, the order of `BUCKETS`: one figure by its sides — triangles,
+  quadrilaterals, pentagons, hexagons, 7+-gons — then regular pairs,
+  irregular pairs, packs), and in a row by fewer figures, regular first, then
+  `distortion` ascending (1 − the isoperimetric quotient over the regular
+  n-gon's; a float, for ordering only; a set's is its figures' mean), then
+  side counts compared term by term, then first use in `LEVELS`. A figure is
+  named as a regular polygon or a rectangle by its shape, else for the
+  rep-tile of its shape (rep-tiles are named for their shape), else by the
+  level it alone tiles (V3.6.3.6), else as a rhombus, kite or dart, else by
+  its sides.
+- `src/view/home.ts`, `src/view/catalog.ts`, `src/view/figures.ts`,
+  `src/view/settings.ts` — the first screen, Tilings (the catalog), Figures
+  and one figure set's tilings, and the settings; `src/view/icons.ts` the pictures
   they share (board outline, tray tile, the three bars, a star row) and the
   header's glyphs. The catalog shows only what a player starts with: the
   board's outline, the tray's tiles, the vertex configuration as the name

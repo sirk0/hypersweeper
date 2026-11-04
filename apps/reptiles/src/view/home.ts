@@ -1,5 +1,6 @@
-// The first screen: a level of a chosen difficulty, dealt at random, or the
-// catalog to pick one by hand. (The settings gear is in the screen's corner,
+// The first screen: a level of a chosen difficulty, dealt at random, or a
+// level picked by hand — from Tilings (the catalog, by family) or Figures (by
+// the tiles in the tray). (The settings gear is in the screen's corner,
 // in index.html.)
 
 import { BARS, type Band } from "../difficulty";
@@ -17,6 +18,7 @@ export function renderHome(
   tally: (band: Band) => { levels: number; stars: number },
   play: (band: Band) => void,
   catalog: () => void,
+  figures: () => void,
 ): void {
   host.replaceChildren();
   for (const { band, label, hint } of BANDS) {
@@ -35,7 +37,14 @@ export function renderHome(
   grid.className = "catalog-glyph";
   grid.setAttribute("aria-hidden", "true");
   grid.textContent = "▦";
-  host.appendChild(pick("catalog-pick", grid, "Catalog", "Every level, by family", catalog));
+  host.appendChild(pick("catalog-pick", grid, "Tilings", "Every tiling, by family", catalog));
+  const shapes = document.createElement("span");
+  shapes.className = "catalog-glyph";
+  shapes.setAttribute("aria-hidden", "true");
+  shapes.textContent = "◆";
+  host.appendChild(
+    pick("figures-pick", shapes, "Figures", "By the tiles: one shape, a pair, a pack", figures),
+  );
 }
 
 function pick(

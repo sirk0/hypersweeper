@@ -1,4 +1,4 @@
-// The catalog: every level, a family to a row — named for its symmetry —
+// The catalog — called Tilings on screen: every level, a family to a row — named for its symmetry —
 // each row scrolling sideways through its levels' cards. A
 // card shows what a player starts with (the board's outline, the tray's
 // tiles), the level's name, its difficulty as Hypersweeper's three bars, and
@@ -27,13 +27,18 @@ export function renderCatalog(
     hint.textContent = group.hint;
     const row = document.createElement("div");
     row.className = "family-row";
-    for (const level of members) row.appendChild(card(level, stars(level.key), pick));
+    for (const level of members) row.appendChild(levelCard(level, stars(level.key), pick));
     section.append(heading, hint, row);
     host.appendChild(section);
   }
 }
 
-function card(level: Level, earned: number, pick: (level: Level) => void): HTMLButtonElement {
+/** A level's card: its outline, tray tiles, name, difficulty and stars. */
+export function levelCard(
+  level: Level,
+  earned: number,
+  pick: (level: Level) => void,
+): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "card";

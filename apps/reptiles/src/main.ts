@@ -1,10 +1,12 @@
 import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
 import { attachDrag, type DragControl } from "./input/drag";
+import { figureSetByKey, figureSets, type FigureSet } from "./figures";
 import { LEVELS, levelByKey, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
 import { renderCatalog } from "./view/catalog";
+import { renderFigure, renderFigures } from "./view/figures";
 import { renderHome } from "./view/home";
 import { fillGlyphs } from "./view/icons";
 import { renderSettings } from "./view/settings";
@@ -21,11 +23,12 @@ const next = byId<HTMLButtonElement>("next");
 fillGlyphs(document);
 
 // -- screens ------------------------------------------------------------------
-// Four: home (no query), the catalog (?catalog), the settings (?settings) and
-// a level (?level=<key>). Each move between them is a history entry, so the
+// Six: home (no query), Tilings — the catalog — (?tilings; old links say
+// ?catalog), Figures (?figures), one figure set's tilings (?figure=<key>), the
+// settings (?settings) and a level (?level=<key>). Each move between them is a history entry, so the
 // browser's Back goes back.
 
-const SCREENS = ["home", "catalog", "settings", "game"] as const;
+const SCREENS = ["home", "catalog", "figures", "figure", "settings", "game"] as const;
 type Screen = (typeof SCREENS)[number];
 
 function show(screen: Screen): void {
@@ -35,7 +38,13 @@ function show(screen: Screen): void {
 
 function goHome(push = true): void {
   if (push) history.pushState(null, "", location.pathname);
-  renderHome(byId("home-picks"), tally, playBand, () => goCatalog());
+  renderHome(
+    byId("home-picks"),
+    tally,
+    playBand,
+    () => goCatalog(),
+    () => goFigures(),
+  );
   show("home");
 }
 
@@ -46,9 +55,22 @@ function goSettings(push = true): void {
 }
 
 function goCatalog(push = true): void {
-  if (push) history.pushState(null, "", "?catalog");
+  if (push) history.pushState(null, "", "?tilings");
   renderCatalog(byId("catalog-list"), LEVELS, starsFor, (level) => open(level));
   show("catalog");
+}
+
+function goFigures(push = true): void {
+  if (push) history.pushState(null, "", "?figures");
+  renderFigures(byId("figures-list"), figureSets(), starsFor, (set) => goFigure(set));
+  show("figures");
+}
+
+function goFigure(set: FigureSet, push = true): void {
+  if (push) history.pushState(null, "", `?figure=${set.key}`);
+  byId("figure-title").textContent = set.name;
+  renderFigure(byId("figure-list"), set, starsFor, (level) => open(level));
+  show("figure");
 }
 
 function tally(band: Band): { levels: number; stars: number } {
@@ -70,7 +92,12 @@ function route(): void {
   const query = new URLSearchParams(location.search);
   const level = levelByKey(query.get("level") ?? "");
   if (level) open(level, false);
-  else if (query.has("catalog")) goCatalog(false);
+  else if (query.has("tilings") || query.has("catalog")) goCatalog(false);
+  else if (query.has("figure")) {
+    const set = figureSetByKey(query.get("figure") ?? "");
+    if (set) goFigure(set, false);
+    else goFigures(false);
+  } else if (query.has("figures")) goFigures(false);
   else if (query.has("settings")) goSettings(false);
   else goHome(false);
 }
