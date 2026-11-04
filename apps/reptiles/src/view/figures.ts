@@ -1,20 +1,22 @@
 // Figures: the levels by the tiles in their tray. The first screen lists every
-// set — one figure, then pairs, then packs of three and four — a row each,
+// set — regular figures, irregular ones, regular pairs, irregular pairs (one
+// irregular figure is enough), then packs of three or more — a row each,
 // scrolling sideways as the catalog's families do; picking a set lists its
 // tilings, easiest first, under their difficulty.
 
 import { BARS, bandOf, scoreOf, type Band } from "../difficulty";
-import type { FigureSet } from "../figures";
+import { BUCKETS, type Bucket, type FigureSet } from "../figures";
 import type { Level } from "../levels";
 import { levelCard } from "./catalog";
 import { barsIcon, figureIcon } from "./icons";
 
-const BUCKETS: { size: number; name: string; hint: string }[] = [
-  { size: 1, name: "One figure", hint: "One shape throughout" },
-  { size: 2, name: "Pairs", hint: "Two shapes" },
-  { size: 3, name: "Packs of 3", hint: "Three shapes" },
-  { size: 4, name: "Packs of 4", hint: "Four shapes" },
-];
+const ROWS: Record<Bucket, { name: string; hint: string }> = {
+  regular: { name: "Regular figures", hint: "One regular polygon throughout" },
+  irregular: { name: "Irregular figures", hint: "One shape throughout, not a regular polygon" },
+  "regular-pairs": { name: "Regular pairs", hint: "Two regular polygons" },
+  "irregular-pairs": { name: "Irregular pairs", hint: "Two shapes, at least one irregular" },
+  packs: { name: "Packs of 3+", hint: "Three shapes or more" },
+};
 
 const BANDS: { band: Band; name: string }[] = [
   { band: "easy", name: "Easy" },
@@ -31,24 +33,20 @@ export function renderFigures(
   pick: (set: FigureSet) => void,
 ): void {
   host.replaceChildren();
-  const sizes = [...new Set(sets.map((s) => s.figures.length))];
-  for (const size of sizes) {
-    const bucket = BUCKETS.find((b) => b.size === size) ?? {
-      size,
-      name: `Packs of ${size}`,
-      hint: `${size} shapes`,
-    };
+  for (const bucket of BUCKETS) {
+    const members = sets.filter((s) => s.bucket === bucket);
+    if (members.length === 0) continue;
+    const { name, hint: about } = ROWS[bucket];
     const section = document.createElement("section");
     section.className = "family";
     const heading = document.createElement("h2");
-    heading.textContent = bucket.name;
+    heading.textContent = name;
     const hint = document.createElement("p");
     hint.className = "family-hint";
-    hint.textContent = bucket.hint;
+    hint.textContent = about;
     const row = document.createElement("div");
     row.className = "family-row";
-    for (const set of sets.filter((s) => s.figures.length === size))
-      row.appendChild(figureCard(set, stars, pick));
+    for (const set of members) row.appendChild(figureCard(set, stars, pick));
     section.append(heading, hint, row);
     host.appendChild(section);
   }

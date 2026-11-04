@@ -55,10 +55,12 @@ grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
 level of that difficulty; Tilings opens the catalog (`?tilings`; old
 `?catalog` links still work): each family a row of level cards scrolling
 sideways — board outline, tiles, name, difficulty as Hypersweeper's three bars,
-stars; Figures (`?figures`) lists the levels by the tiles in their tray — a row
-of single figures (the square, the triangle, the hexagon, the Laves tiles, …),
-then pairs, then packs of three and four, each card the set's tiles side by
-side at their true sizes — and a set (`?figure=<key>`, keyed by its first
+stars; Figures (`?figures`) lists the levels by the tiles in their tray, a
+row each: regular figures (triangle, square, hexagon), irregular figures (the
+Laves tiles, the pentagons, the bricks, …), regular pairs, irregular pairs (at
+least one figure irregular), and packs of three or more — each row by side
+count (triangle + square, then triangle + hexagon, then square + …), each card
+the set's tiles side by side at their true sizes — and a set (`?figure=<key>`, keyed by its first
 level) lists the tilings whose tray is exactly that set, easiest first, under
 Easy, Medium and Hard. The gear in home's top-left
 corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
@@ -313,8 +315,10 @@ finishes the board — the quick way to see the win state.
   other at its true size (`sameFigure`, exact: both lifted into ℤ[ζ lcm], each
   scaled by the other's drawing `unit`, compared by products of edge vectors;
   a float area check only ever rejects) — and the levels grouped by the set of
-  figures their tray is (`figureSets`, one figure first, then by first use in
-  `LEVELS`). A figure is named as a regular polygon or a rectangle by its
+  figures their tray is (`figureSets`), each in a row (`bucket`, the order of
+  `BUCKETS`: regular, irregular, regular pairs, irregular pairs, packs), and
+  in a row by fewer figures, then side counts ascending compared term by term,
+  then first use in `LEVELS`. A figure is named as a regular polygon or a rectangle by its
   shape, else by the level it alone tiles (V4.8², Sphinx), else as a rhombus,
   kite or dart, else by its sides.
 - `src/view/home.ts`, `src/view/catalog.ts`, `src/view/figures.ts`,

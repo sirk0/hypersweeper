@@ -126,7 +126,20 @@ export interface Figure {
   level: Level;
   kind: number;
   name: string;
+  /** A regular polygon, at any size. */
+  regular: boolean;
 }
+
+/** The rows the figure sets are listed in, in order: one figure, regular or
+ * not; pairs, both regular or at least one not; and packs of three or more. */
+export const BUCKETS = [
+  "regular",
+  "irregular",
+  "regular-pairs",
+  "irregular-pairs",
+  "packs",
+] as const;
+export type Bucket = (typeof BUCKETS)[number];
 
 export interface FigureSet {
   /** The key of its first level: the set's id in a URL (`?figure=squares`). */
@@ -136,6 +149,7 @@ export interface FigureSet {
   levels: Level[];
   /** Its figures' names, " + " between: "Triangle + Square". */
   name: string;
+  bucket: Bucket;
 }
 
 interface Figures {
@@ -158,7 +172,7 @@ function build(): Figures {
         const known = figures.find((f) => sameFigure(f.shape, shape));
         if (known) return known.id;
         const id = figures.length;
-        figures.push({ id, shape, level, kind, name: "" });
+        figures.push({ id, shape, level, kind, name: "", regular: false });
         return id;
       }),
     );
@@ -174,8 +188,10 @@ function build(): Figures {
     // a regular polygon or a brick by its shape; else by the level it alone
     // tiles (V4.8², the Sphinx), else by its shape again, else its sides
     const quad = quadName(f.shape);
+    const regular = regularName(f.shape);
+    f.regular = regular !== undefined;
     f.name =
-      regularName(f.shape) ??
+      regular ??
       (quad === "Rectangle" ? quad : undefined) ??
       groups.get(String(f.id))?.[0]?.name ??
       quad ??
@@ -185,22 +201,52 @@ function build(): Figures {
   const sets: FigureSet[] = [...groups.values()].map((levels) => {
     // in the tray's own order, fewest sides first
     const set = byLevel.get(levels[0]!.key)!.map((id) => figures[id]!);
+    const regular = set.every((f) => f.regular);
+    const bucket: Bucket =
+      set.length === 1
+        ? regular
+          ? "regular"
+          : "irregular"
+        : set.length === 2
+          ? regular
+            ? "regular-pairs"
+            : "irregular-pairs"
+          : "packs";
     return {
       key: levels[0]!.key,
       figures: set,
       levels,
       name: set.map((f) => f.name).join(" + "),
+      bucket,
     };
   });
-  // one figure first, then pairs, then packs; within a size, by first use
+  // by row; then fewer figures first (the packs of 3 before the 4); then by
+  // side counts, fewest first — Triangle, Square, Hexagon; Triangle + Square,
+  // Triangle + Hexagon, Square + Hexagon; then by first use
   const first = (s: FigureSet): number => LEVELS.indexOf(s.levels[0]!);
-  sets.sort((x, y) => x.figures.length - y.figures.length || first(x) - first(y));
+  sets.sort(
+    (x, y) =>
+      BUCKETS.indexOf(x.bucket) - BUCKETS.indexOf(y.bucket) ||
+      x.figures.length - y.figures.length ||
+      bySides(x, y) ||
+      first(x) - first(y),
+  );
   return { figures, byLevel, sets };
+}
+
+/** Two sets of as many figures by their side counts, each list ascending,
+ * compared term by term: [3, 4] before [3, 6] before [4, 4]. */
+function bySides(x: FigureSet, y: FigureSet): number {
+  const sides = (s: FigureSet): number[] =>
+    s.figures.map((f) => f.shape.verts.length).sort((a, b) => a - b);
+  const [a, b] = [sides(x), sides(y)];
+  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i]! - b[i]!;
+  return a.length - b.length;
 }
 
 const figuresMemo = (): Figures => (memo ??= build());
 
-/** Every figure set, one figure first, then pairs, then packs of 3 and 4. */
+/** Every figure set, by row (`BUCKETS`), then by side count. */
 export function figureSets(): FigureSet[] {
   return figuresMemo().sets;
 }

@@ -56,14 +56,16 @@ test("Figures lists the tile sets, and a set its tilings by difficulty", async (
   await page.locator(".figures-pick").click();
   await expect(page).toHaveURL(/\?figures$/);
   await expect(page.locator("#figures .family h2")).toHaveText([
-    "One figure",
-    "Pairs",
-    "Packs of 3",
-    "Packs of 4",
+    "Regular figures",
+    "Irregular figures",
+    "Regular pairs",
+    "Irregular pairs",
+    "Packs of 3+",
   ]);
-  const first = page.locator("#figures-list .figure-card").first();
-  await expect(first.locator(".card-name")).toHaveText("Square");
-  await first.click();
+  await expect(page.locator("#figures-list .figure-card .card-name").first()).toHaveText(
+    "Triangle",
+  );
+  await page.locator('#figures-list [data-figure="squares"]').click();
   await expect(page).toHaveURL(/\?figure=squares$/);
   await expect(page.locator("#figure-title")).toHaveText("Square");
   await expect(page.locator("#figure-list .band-heading").first()).toContainText("Easy");

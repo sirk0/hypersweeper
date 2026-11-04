@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { figureSetByKey, figureSetOf, figureSets, sameFigure } from "../../src/figures";
+import { BUCKETS, figureSetByKey, figureSetOf, figureSets, sameFigure } from "../../src/figures";
 import { cyclotomic } from "../../src/geometry/cyclotomic";
 import { posed, regular, type Shape } from "../../src/geometry/shape";
 import { LEVELS } from "../../src/levels";
@@ -50,16 +50,38 @@ describe("figure sets", () => {
     }
   });
 
-  it("lists one figure first — the regular ones, then the Laves tiles — then pairs and packs", () => {
-    const sizes = sets.map((s) => s.figures.length);
-    expect(sizes).toEqual([...sizes].sort((a, b) => a - b));
-    expect(sets.slice(0, 4).map((s) => [s.key, s.name])).toEqual([
-      ["squares", "Square"],
-      ["triangles", "Triangle"],
-      ["hexagons", "Hexagon"],
-      ["tetrakis", "V4.8²"],
+  it("lists regular figures, irregular ones, regular pairs, irregular pairs, then packs", () => {
+    const rows = sets.map((s) => BUCKETS.indexOf(s.bucket));
+    expect(rows).toEqual([...rows].sort((a, b) => a - b));
+    for (const set of sets) {
+      const n = set.figures.length;
+      const regular = set.figures.every((f) => f.regular);
+      const row =
+        n >= 3 ? "packs" : `${regular ? "regular" : "irregular"}${n === 2 ? "-pairs" : ""}`;
+      expect(set.bucket, set.key).toBe(row);
+    }
+    expect(Math.max(...sets.map((s) => s.figures.length))).toBe(4);
+  });
+
+  it("sorts by side count: triangle, square, hexagon; triangle + square, triangle + hexagon", () => {
+    expect(sets.slice(0, 3).map((s) => [s.key, s.name, s.bucket])).toEqual([
+      ["triangles", "Triangle", "regular"],
+      ["squares", "Square", "regular"],
+      ["hexagons", "Hexagon", "regular"],
     ]);
-    expect(Math.max(...sizes)).toBe(4);
+    const irregular = sets.filter((s) => s.bucket === "irregular");
+    const sides = irregular.map((s) => s.figures[0]!.shape.verts.length);
+    expect(sides[0]).toBe(3);
+    expect(sides).toEqual([...sides].sort((a, b) => a - b));
+    expect(irregular[0]!.key).toBe("tetrakis");
+    const pairs = sets.filter((s) => s.bucket === "regular-pairs").map((s) => s.key);
+    expect(pairs[0]).toBe("elongated");
+    expect(pairs.indexOf("elongated")).toBeLessThan(pairs.indexOf("trihex"));
+    expect(pairs.indexOf("trihex")).toBeLessThan(pairs.indexOf("pythagorean"));
+    expect(figureSetByKey("penrose")!.bucket).toBe("irregular-pairs");
+    const packs = sets.filter((s) => s.bucket === "packs");
+    expect(packs[0]!.key).toBe("threescaletri");
+    expect(packs.at(-1)!.figures).toHaveLength(4);
   });
 
   it("finds a regular tiling's tile in the isogonal tilings at the same size", () => {
