@@ -74,6 +74,7 @@ count is wrong; the script warns about this.
 | `apps/hypersweeper/ios/App/App/App-iOS.entitlements` | **iPhone and iPad only** (`CODE_SIGN_ENTITLEMENTS[sdk=iphone*]`): names the App Clip as this app's (`associated-appclip-app-identifiers`), and turns on Game Center and iCloud key-value storage. |
 | `apps/hypersweeper/ios/App/App/GameCenterPlugin.swift` | The `GameCenter` plugin: sign-in, reporting achievements, opening Game Center. App target only; see "Game Center" below. |
 | `apps/hypersweeper/ios/App/App/CloudRecordPlugin.swift` | The `CloudRecord` plugin: iCloud's key-value store, where the best times, the achievement record and the favourites are kept in step across devices and through a reinstall. App target only; see "iCloud" below. |
+| `apps/hypersweeper/ios/App/App/ReviewPlugin.swift` | The `Review` plugin: StoreKit's rating prompt, asked once after the third win. App target only; see "The rating prompt" below. |
 | `apps/hypersweeper/ios/GameCenter/` | The Game Center achievement list (`achievements.json`) and one badge image per achievement, written by `apps/hypersweeper/scripts/make-gamecenter.mts`. Not part of the Xcode project: it is what App Store Connect is told. See "Game Center" below. |
 | `apps/hypersweeper/ios/AppStore/` | The store listing: promotional text, description and App Review notes, as plain text to paste into App Store Connect. See "The store listing" below. |
 | `apps/hypersweeper/ios/App/Stickers/` | The iMessage sticker pack: an app extension with no code, just `Info.plist` and `Stickers.xcassets` (the stickers and the drawer icon), all written by `apps/hypersweeper/scripts/make-stickers.mts`. See "The sticker pack" below. |
@@ -511,6 +512,25 @@ far inside (a few kilobytes per device, at most ~60 KB of best times).
   `apps/hypersweeper/tests/e2e/cloudRecord.spec.ts` checks the bridge round trip. iCloud
   itself needs real devices signed in to one Apple ID (simulators sync too, but
   slowly; *Debug → Trigger iCloud Sync* nudges one).
+
+## The rating prompt
+
+The App Store app asks for a rating once, after the player's third win.
+
+- **The page counts** (`apps/hypersweeper/src/review.ts`). `countWin` in
+  `main.ts` files each win, and on the third — `REVIEW_AFTER_WINS`, pinned by
+  `apps/hypersweeper/tests/unit/review.test.ts` — it calls the plugin at the
+  beat the win card opens on. The count (`ms:review` in local storage) stops
+  there, so an install asks once.
+- **StoreKit decides** (`ReviewPlugin.swift`, `AppStore.requestReview(in:)`).
+  Whether a sheet actually shows is Apple's call: at most three times a year,
+  never in TestFlight, never to a player who turned the prompts off. In a
+  development build it always shows, and submitting it does nothing.
+- **Only the app registers it**, under `#if !APP_CLIP` in
+  `BridgeViewController.capacitorDidLoad`, like Game Center: the App Clip is
+  not on the store to be rated. The page checks for the plugin
+  (`Capacitor.isPluginAvailable("Review")`), so the website, the PWA and the
+  Electron app neither count nor ask.
 
 ## A second game's iPhone app
 

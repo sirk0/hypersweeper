@@ -34,6 +34,7 @@ import { haptic, setHapticsEnabled } from "./haptics";
 import { boardLinkQuery, parseBoardLink } from "./link";
 import { setMenuBarDifficulty, startMenuBar } from "./menuBar";
 import { GameSession } from "./session";
+import { noteWinForReview } from "./review";
 import { shareBoard } from "./share";
 import { attachControls, blockBrowserZoom } from "./input/controls";
 import { effectsOn, type QualityPref } from "./render/quality";
@@ -1136,6 +1137,9 @@ class App {
       flagless: session.flagless,
       sides: session.sideCounts(),
     });
+    // The App Store app asks for a rating after the third win, at the beat the
+    // win card opens on (review.ts). A no-op everywhere else.
+    noteWinForReview(RECORD_DIALOG_DELAY_MS);
     this.unlocked = ids
       .map((id) => ACHIEVEMENTS_BY_ID.get(id))
       .filter((a): a is Achievement => a !== undefined);

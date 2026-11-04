@@ -51,10 +51,13 @@ class BridgeViewController: CAPBridgeViewController, UIGestureRecognizerDelegate
         // iCloud keeps the best times and the achievement record in step
         // across the player's devices and through a reinstall
         // (apps/hypersweeper/src/cloudRecord.ts). The clip keeps no record, so it too is
-        // the app's alone.
+        // the app's alone. So is the App Store's rating prompt, asked once
+        // after the third win (apps/hypersweeper/src/review.ts): the clip is
+        // not on the store to be rated.
         #if !APP_CLIP
         bridge?.registerPluginInstance(GameCenterPlugin())
         bridge?.registerPluginInstance(CloudRecordPlugin())
+        bridge?.registerPluginInstance(ReviewPlugin())
         // The File menu's boards and difficulties: the clip leads nowhere but
         // its one board.
         bridge?.registerPluginInstance(MenuBarPlugin())
