@@ -56,8 +56,11 @@ test("Figures lists the tile sets, and a set its tilings by difficulty", async (
   await page.locator(".figures-pick").click();
   await expect(page).toHaveURL(/\?figures$/);
   await expect(page.locator("#figures .family h2")).toHaveText([
-    "Regular figures",
-    "Irregular figures",
+    "Triangles",
+    "Quadrilaterals",
+    "Pentagons",
+    "Hexagons",
+    "7+-gons",
     "Regular pairs",
     "Irregular pairs",
     "Packs of 3+",

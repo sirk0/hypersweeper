@@ -128,13 +128,19 @@ export interface Figure {
   name: string;
   /** A regular polygon, at any size. */
   regular: boolean;
+  /** How far from regular: 0 for a regular polygon, more the less regular. */
+  distortion: number;
 }
 
-/** The rows the figure sets are listed in, in order: one figure, regular or
- * not; pairs, both regular or at least one not; and packs of three or more. */
+/** The rows the figure sets are listed in, in order: one figure, by its side
+ * count (seven or more together); pairs, both regular or at least one not;
+ * and packs of three or more. */
 export const BUCKETS = [
-  "regular",
-  "irregular",
+  "triangles",
+  "quadrilaterals",
+  "pentagons",
+  "hexagons",
+  "polygons",
   "regular-pairs",
   "irregular-pairs",
   "packs",
@@ -172,7 +178,7 @@ function build(): Figures {
         const known = figures.find((f) => sameFigure(f.shape, shape));
         if (known) return known.id;
         const id = figures.length;
-        figures.push({ id, shape, level, kind, name: "", regular: false });
+        figures.push({ id, shape, level, kind, name: "", regular: false, distortion: 0 });
         return id;
       }),
     );
@@ -181,32 +187,52 @@ function build(): Figures {
   const groups = new Map<string, Level[]>();
   for (const level of LEVELS) {
     const ids = [...byLevel.get(level.key)!].sort((x, y) => x - y);
+    // a lone figure joins the first lone figure of its shape at any size:
+    // V4.8²'s triangle and the isosceles right rep-tile are one figure
+    if (ids.length === 1) {
+      const alike = figures.find(
+        (f) => groups.has(String(f.id)) && sameFigure(f.shape, figures[ids[0]!]!.shape, false),
+      );
+      if (alike) ids[0] = alike.id;
+    }
     const key = ids.join(",");
     groups.set(key, [...(groups.get(key) ?? []), level]);
   }
+  // the rep-tiles are named for their shape: the sphinx, the 30-60-90 triangle
+  const shapeNames = [...groups.entries()]
+    .filter(([, levels]) => levels.some((l) => l.group === "reptile"))
+    .map(([key, levels]) => ({
+      shape: figures[Number(key)]!.shape,
+      name: levels.find((l) => l.group === "reptile")!.name,
+    }));
   for (const f of figures) {
-    // a regular polygon or a brick by its shape; else by the level it alone
-    // tiles (V4.8², the Sphinx), else by its shape again, else its sides
+    // a regular polygon or a brick by its shape; else a rep-tile's shape name;
+    // else by the level it alone tiles (V3.6.3.6), else by its shape again,
+    // else its sides
     const quad = quadName(f.shape);
     const regular = regularName(f.shape);
     f.regular = regular !== undefined;
+    f.distortion = regular ? 0 : distortion(f.shape);
     f.name =
       regular ??
       (quad === "Rectangle" ? quad : undefined) ??
+      shapeNames.find((n) => sameFigure(n.shape, f.shape, false))?.name ??
       groups.get(String(f.id))?.[0]?.name ??
       quad ??
       SIDE_WORDS[f.shape.verts.length] ??
       `${f.shape.verts.length}-gon`;
   }
-  const sets: FigureSet[] = [...groups.values()].map((levels) => {
-    // in the tray's own order, fewest sides first
-    const set = byLevel.get(levels[0]!.key)!.map((id) => figures[id]!);
+  const sets: FigureSet[] = [...groups.entries()].map(([key, levels]) => {
+    // in the tray's own order, fewest sides first (a lone figure: the first
+    // of its shape)
+    const ids = key.includes(",") ? byLevel.get(levels[0]!.key)! : [Number(key)];
+    const set = ids.map((id) => figures[id]!);
     const regular = set.every((f) => f.regular);
+    const sides = set[0]!.shape.verts.length;
     const bucket: Bucket =
       set.length === 1
-        ? regular
-          ? "regular"
-          : "irregular"
+        ? ((["triangles", "quadrilaterals", "pentagons", "hexagons"] as const)[sides - 3] ??
+          "polygons")
         : set.length === 2
           ? regular
             ? "regular-pairs"
@@ -220,18 +246,41 @@ function build(): Figures {
       bucket,
     };
   });
-  // by row; then fewer figures first (the packs of 3 before the 4); then by
-  // side counts, fewest first — Triangle, Square, Hexagon; Triangle + Square,
-  // Triangle + Hexagon, Square + Hexagon; then by first use
+  // by row; then fewer figures first (the packs of 3 before the 4); then
+  // regular first, then closest to regular; then by side counts, fewest first
+  // — Triangle + Square, Triangle + Hexagon, Square + …; then by first use
   const first = (s: FigureSet): number => LEVELS.indexOf(s.levels[0]!);
+  const irregular = (s: FigureSet): number => (s.figures.every((f) => f.regular) ? 0 : 1);
+  const mean = (s: FigureSet): number =>
+    s.figures.reduce((sum, f) => sum + f.distortion, 0) / s.figures.length;
   sets.sort(
     (x, y) =>
       BUCKETS.indexOf(x.bucket) - BUCKETS.indexOf(y.bucket) ||
       x.figures.length - y.figures.length ||
+      irregular(x) - irregular(y) ||
+      mean(x) - mean(y) ||
       bySides(x, y) ||
       first(x) - first(y),
   );
   return { figures, byLevel, sets };
+}
+
+/** How far `shape` is from regular, for ordering only (a float, never an
+ * identity): 1 − q/qₙ, where q = 4πA/P² is its isoperimetric quotient and qₙ
+ * that of the regular polygon with as many sides, π/(n·tan(π/n)) — 0 for a
+ * regular polygon, nearer 1 the longer, thinner or more dented it is. */
+export function distortion(shape: Shape): number {
+  const xy = shape.verts.map((v) => shape.ring.toXY(v));
+  const n = xy.length;
+  const area = Math.abs(signedArea(xy));
+  let perimeter = 0;
+  xy.forEach(([x, y], i) => {
+    const [u, w] = xy[(i + 1) % n]!;
+    perimeter += Math.hypot(u - x, w - y);
+  });
+  const q = (4 * Math.PI * area) / perimeter ** 2;
+  const qn = Math.PI / (n * Math.tan(Math.PI / n));
+  return Math.max(0, 1 - q / qn);
 }
 
 /** Two sets of as many figures by their side counts, each list ascending,
@@ -246,7 +295,8 @@ function bySides(x: FigureSet, y: FigureSet): number {
 
 const figuresMemo = (): Figures => (memo ??= build());
 
-/** Every figure set, by row (`BUCKETS`), then by side count. */
+/** Every figure set, by row (`BUCKETS`), regular first, then closest to
+ * regular. */
 export function figureSets(): FigureSet[] {
   return figuresMemo().sets;
 }

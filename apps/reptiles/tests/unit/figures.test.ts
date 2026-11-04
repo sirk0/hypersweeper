@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { BUCKETS, figureSetByKey, figureSetOf, figureSets, sameFigure } from "../../src/figures";
+import {
+  allFigures,
+  BUCKETS,
+  figureSetByKey,
+  figureSetOf,
+  figureSets,
+  sameFigure,
+} from "../../src/figures";
 import { cyclotomic } from "../../src/geometry/cyclotomic";
 import { posed, regular, type Shape } from "../../src/geometry/shape";
-import { LEVELS } from "../../src/levels";
+import { LEVELS, levelByKey } from "../../src/levels";
 
 const Z4 = cyclotomic(4);
 const Z12 = cyclotomic(12);
@@ -50,30 +57,36 @@ describe("figure sets", () => {
     }
   });
 
-  it("lists regular figures, irregular ones, regular pairs, irregular pairs, then packs", () => {
+  it("lists one figure by its sides, then regular pairs, irregular pairs and packs", () => {
     const rows = sets.map((s) => BUCKETS.indexOf(s.bucket));
     expect(rows).toEqual([...rows].sort((a, b) => a - b));
+    const ONE = ["triangles", "quadrilaterals", "pentagons", "hexagons"];
     for (const set of sets) {
       const n = set.figures.length;
-      const regular = set.figures.every((f) => f.regular);
+      const sides = set.figures[0]!.shape.verts.length;
       const row =
-        n >= 3 ? "packs" : `${regular ? "regular" : "irregular"}${n === 2 ? "-pairs" : ""}`;
+        n >= 3
+          ? "packs"
+          : n === 2
+            ? set.figures.every((f) => f.regular)
+              ? "regular-pairs"
+              : "irregular-pairs"
+            : (ONE[sides - 3] ?? "polygons");
       expect(set.bucket, set.key).toBe(row);
     }
     expect(Math.max(...sets.map((s) => s.figures.length))).toBe(4);
   });
 
-  it("sorts by side count: triangle, square, hexagon; triangle + square, triangle + hexagon", () => {
-    expect(sets.slice(0, 3).map((s) => [s.key, s.name, s.bucket])).toEqual([
-      ["triangles", "Triangle", "regular"],
-      ["squares", "Square", "regular"],
-      ["hexagons", "Hexagon", "regular"],
-    ]);
-    const irregular = sets.filter((s) => s.bucket === "irregular");
-    const sides = irregular.map((s) => s.figures[0]!.shape.verts.length);
-    expect(sides[0]).toBe(3);
-    expect(sides).toEqual([...sides].sort((a, b) => a - b));
-    expect(irregular[0]!.key).toBe("tetrakis");
+  it("puts a row's regular figure first, then the rest closest to regular first", () => {
+    const row = (bucket: string) => sets.filter((s) => s.bucket === bucket);
+    expect(row("triangles")[0]!.name).toBe("Triangle");
+    expect(row("quadrilaterals")[0]!.name).toBe("Square");
+    expect(row("hexagons")[0]!.name).toBe("Hexagon");
+    for (const bucket of BUCKETS.slice(0, 5)) {
+      const d = row(bucket).map((s) => s.figures[0]!.distortion);
+      expect(d, bucket).toEqual([...d].sort((a, b) => a - b));
+    }
+    for (const f of allFigures()) expect(f.distortion === 0, f.name).toBe(f.regular);
     const pairs = sets.filter((s) => s.bucket === "regular-pairs").map((s) => s.key);
     expect(pairs[0]).toBe("elongated");
     expect(pairs.indexOf("elongated")).toBeLessThan(pairs.indexOf("trihex"));
@@ -82,6 +95,30 @@ describe("figure sets", () => {
     const packs = sets.filter((s) => s.bucket === "packs");
     expect(packs[0]!.key).toBe("threescaletri");
     expect(packs.at(-1)!.figures).toHaveLength(4);
+  });
+
+  it("joins a lone figure with its shape at another size, named for the shape", () => {
+    const right = figureSetByKey("tetrakis")!;
+    expect(right.name).toBe("Isosceles right triangle");
+    expect(right.levels.map((l) => l.key)).toEqual(["tetrakis", "rightisosceles"]);
+    const drafter = figureSetByKey("kisrhombille")!;
+    expect(drafter.name).toBe("30-60-90 triangle");
+    expect(drafter.levels.map((l) => l.key)).toEqual(["kisrhombille", "drafter"]);
+    for (const [a, b] of [
+      ["tetrakis", "rightisosceles"],
+      ["kisrhombille", "drafter"],
+    ] as const) {
+      const [x, y] = [levelByKey(a)!, levelByKey(b)!];
+      const [p, q] = [
+        { ring: x.ring, verts: x.tiles[0]!.verts },
+        { ring: y.ring, verts: y.tiles[0]!.verts },
+      ];
+      expect(sameFigure(p, q, false), `${a} ~ ${b}`).toBe(true);
+      expect(sameFigure(p, q), `${a} = ${b}`).toBe(false);
+    }
+    expect(figureSetByKey("rightisosceles")).toBeUndefined();
+    // pairs and packs still compare true sizes
+    expect(figureSetByKey("pythagorean")!.figures).toHaveLength(2);
   });
 
   it("finds a regular tiling's tile in the isogonal tilings at the same size", () => {
