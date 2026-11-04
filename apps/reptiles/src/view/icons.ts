@@ -61,6 +61,42 @@ export function tileIcon(level: Level, kind: number): SVGSVGElement {
   return svg;
 }
 
+/** Every tray tile of `level` side by side, resting flat on one baseline, all
+ * at one scale — their true sizes — so the Pythagorean tiling's two squares
+ * read as two figures. */
+export function figureIcon(level: Level): SVGSVGElement {
+  const { ring } = level;
+  const shapes = level.tiles.map((t) => t.verts.map((v) => ring.toXY(v)));
+  const tallest = Math.max(...shapes.flat().map(([, y]) => y));
+  const gap = tallest * 0.25;
+  const placed: XY[][] = [];
+  let at = 0;
+  for (const xy of shapes) {
+    const x0 = Math.min(...xy.map(([x]) => x));
+    const x1 = Math.max(...xy.map(([x]) => x));
+    placed.push(xy.map(([x, y]): XY => [x - x0 + at, -y]));
+    at += x1 - x0 + gap;
+  }
+  const width = at - gap;
+  const size = Math.max(width, tallest);
+  const pad = size * 0.08;
+  // centred on the baseline's middle, the tiles sitting on it
+  const svg = svgIn("figure-icon", [
+    width / 2 - size / 2 - pad,
+    -tallest / 2 - size / 2 - pad,
+    size + 2 * pad,
+    size + 2 * pad,
+  ]);
+  placed.forEach((xy, kind) => {
+    const poly = document.createElementNS(NS, "polygon");
+    poly.setAttribute("points", xy.map(([x, y]) => `${x},${y}`).join(" "));
+    poly.setAttribute("class", `tile ${level.colours[kind]}`);
+    poly.setAttribute("stroke-width", String(size * 0.025));
+    svg.appendChild(poly);
+  });
+  return svg;
+}
+
 /** The difficulty ladder: three bars rising left to right, `filled` of them
  * solid — Hypersweeper's own icon. All three are always drawn: one bar alone
  * says nothing about which rung of what. */

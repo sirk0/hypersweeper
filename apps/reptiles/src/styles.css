@@ -837,6 +837,54 @@ button:disabled {
   height: 22px;
 }
 
+/* -- figures: the levels by the tiles in their tray -------------------------- */
+
+.figure-card .figure-icon {
+  width: 84px;
+  height: 84px;
+}
+
+.figure-card .card-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.figure-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 16px 10px;
+}
+
+.figure-head .figure-icon {
+  width: 72px;
+  height: 72px;
+  flex: none;
+}
+
+.figure-head .family-hint {
+  margin: 0;
+}
+
+.band-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.band-heading .bars {
+  width: 22px;
+  height: 22px;
+}
+
+.figure-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 2px 16px 10px;
+}
+
 /* -- settings --------------------------------------------------------------- */
 
 .settings-body {

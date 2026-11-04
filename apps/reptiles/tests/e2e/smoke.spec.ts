@@ -20,7 +20,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
   const response = await page.goto("/");
   expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
   await expect(page.locator("#home")).toBeVisible();
-  await expect(page.locator("#home-picks > *")).toHaveCount(4);
+  await expect(page.locator("#home-picks > *")).toHaveCount(5);
   // The deployed extras the shared preset adds.
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",
@@ -32,7 +32,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
   expect(errors).toEqual([]);
 });
 
-test("a pick from home deals a level, and the catalog lists every family", async ({ page }) => {
+test("a pick from home deals a level, and Tilings lists every family", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/");
   await page.locator("#home-picks > *").first().click();
@@ -40,9 +40,40 @@ test("a pick from home deals a level, and the catalog lists every family", async
   await expect(page.locator("svg.board path.region")).toHaveCount(1);
   await expect(page.locator("svg.board .in-tray").first()).toBeVisible();
 
+  await page.goto("/?tilings");
+  await expect(page.locator("#catalog")).toBeVisible();
+  await expect(page.locator("#catalog .hud-title")).toHaveText("Tilings");
+  await expect(page.locator("#catalog-list button, #catalog-list a").first()).toBeVisible();
+  // the old name's links still open it
   await page.goto("/?catalog");
   await expect(page.locator("#catalog")).toBeVisible();
-  await expect(page.locator("#catalog-list button, #catalog-list a").first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("Figures lists the tile sets, and a set its tilings by difficulty", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/");
+  await page.locator(".figures-pick").click();
+  await expect(page).toHaveURL(/\?figures$/);
+  await expect(page.locator("#figures .family h2")).toHaveText([
+    "One figure",
+    "Pairs",
+    "Packs of 3",
+    "Packs of 4",
+  ]);
+  const first = page.locator("#figures-list .figure-card").first();
+  await expect(first.locator(".card-name")).toHaveText("Square");
+  await first.click();
+  await expect(page).toHaveURL(/\?figure=squares$/);
+  await expect(page.locator("#figure-title")).toHaveText("Square");
+  await expect(page.locator("#figure-list .band-heading").first()).toContainText("Easy");
+  const card = page.locator("#figure-list .card", { hasText: "4⁴" });
+  await expect(card.locator(".bars")).toHaveAttribute("aria-label", "easy");
+  await card.click();
+  await expect(page.locator("#game")).toBeVisible();
+  await expect(page).toHaveURL(/\?level=squares$/);
+  await page.goBack();
+  await expect(page.locator("#figure")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -264,8 +295,8 @@ test("tray tiles are the size they land at, zoomed in or not", async ({ page }) 
   );
 });
 
-test("the catalog's families are named as Hypersweeper names them", async ({ page }) => {
-  await page.goto("/?catalog");
+test("Tilings' families are named as Hypersweeper names them", async ({ page }) => {
+  await page.goto("/?tilings");
   await expect(page.locator(".family h2")).toHaveText([
     "Regular",
     "Uniform",
