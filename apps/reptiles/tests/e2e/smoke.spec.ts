@@ -328,6 +328,29 @@ test("the Spectre's edges are round, Tile(1,1)'s straight", async ({ page }) => 
   await expect(page.locator("svg.board path.region")).not.toHaveAttribute("d", /C/);
 });
 
+test("the hat and the turtle flip and turn by 60°, the hat's metatiles only turn", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  for (const [key, kinds, flips] of [
+    ["hat", 1, true],
+    ["turtle", 1, true],
+    ["hatmetatiles", 4, false],
+  ] as const) {
+    await page.goto(`/?level=${key}`);
+    await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(kinds);
+    await expect(page.locator('[data-turn="1"] title')).toHaveText(/60° anticlockwise/);
+    await expect(page.locator("[data-flip]")).toHaveCount(flips ? 1 : 0);
+  }
+  // a flip mirrors the tray's hat
+  await page.goto("/?level=hat");
+  const tile = page.locator("svg.board .tile.in-tray").first();
+  const start = await tile.getAttribute("d");
+  await page.locator("[data-flip]").click();
+  await expect(tile).not.toHaveAttribute("d", start!);
+  expect(errors).toEqual([]);
+});
+
 test("a tile of several pieces moves as one: the kissing squares", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=kissingsquares");

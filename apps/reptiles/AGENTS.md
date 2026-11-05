@@ -22,7 +22,7 @@ some back off.
   as an axis, a fixed ray, the ray turned one step and the arrow between, and
   both are left out where nothing ever needs turning.
 - Where a board uses a tile both ways round (the kisrhombille's triangles,
-  five of the 2-isohedral levels' tiles),
+  five of the 2-isohedral levels' tiles, the hat and the turtle),
   a flip control (or F) mirrors every tray tile and the one in hand; a tile
   lands only on its own side.
 - Taking tiles off: drag a placed tile back over the tray (it turns red on
@@ -46,8 +46,9 @@ some back off.
   to the strip taking 45% of the screen), then the controls in a row of their
   own at a fixed size. A shelf longer than the strip scrolls, with a scroll bar
   between the two rows: drag its thumb or press its track, drag the strip's
-  bare background, or wheel over it. The one four-kind level,
-  [3.4.6.4; 4.6.12], is the one to check a tray change on.
+  bare background, or wheel over it. The two four-kind levels,
+  [3.4.6.4; 4.6.12] and the hat's metatiles, are the ones to check a tray
+  change on.
 
 **Screens**, in Hypersweeper's Sand look (its `sand`/`sandDark` palettes,
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
@@ -96,7 +97,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 101 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -132,6 +133,14 @@ his kites and darts, Ammann–Beenker's squares and rhombi, the Spectre — each
 the centred window of its builder's patch, 24 to 33 tiles, the sun or star in
 the middle; any cover wins, so the matching rules that keep the other three
 aperiodic are not enforced — the Spectre, never flipped, needs none — then
+**the hat's family**, which Hypersweeper has no board for (`?level=hat`,
+`?level=turtle`, `?level=hatmetatiles`): *the hat*, Tile(1,√3), the first
+aperiodic monotile, 36 of them, used both ways up — about one in seven
+mirrored and no two of those sharing a side, so the flip control is the
+puzzle; *the turtle*, Tile(√3,1), the same outline with its two edge lengths
+swapped, 34, laid as the hats are; and *the hat's metatiles* — H, T, P and F:
+a hexagon, a triangle, a parallelogram and a pentagon, 26, never flipped —
+that every hat tiling is built from; all three turn by 60°; then
 the **Socolar–Taylor tile** (`?level=socolartaylor`), which Hypersweeper has no
 board for: a hexagon whose matching rules are forced by its shape alone, at
 the price of nineteen pieces — a notched hexagon, six small rectangles across
@@ -152,7 +161,7 @@ builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
-edges, a tile of several pieces moving as one, a won board and
+edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a won board and
 its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -313,6 +322,24 @@ quick way to see the win state.
   Tile(1,1) — but for the round Spectre (`keepFlat`), whose two curves meet
   there. `APERIODIC` in `levels.ts` keys each level and names the board it is
   cut from (`aperiodic.mode`: both Spectre levels are `spectre`'s).
+- `src/geometry/hat.ts` — the hat's family: Craig Kaplan's hatviz
+  substitution (BSD 3-Clause; the four metatiles H, T, P and F, glued into a
+  patch and cut into bigger ones, `depth` times from the H) ported as it is,
+  floats and all, then every corner of every hat and metatile read back onto
+  the Eisenstein lattice ℤ[ω] ⊂ ℤ[ζ12] at twice hatviz's size (`snap`: it
+  throws unless the corner is within 1e-6 of a lattice point, whole units
+  apart — discrete identity, not rounding). The hat's short edges point at
+  multiples of 60°, its long ones 30° past, and every hat is turned by sixths,
+  so a hat tiling is any Tile(a,b) tiling with each edge's length changed:
+  `deform` walks the hats' edges from one corner and lays every corner again
+  with short edges a and long ones b, exactly, checking each tile closes and
+  each shared corner lands once — the turtle is (√3, 1), and (1, 1) gives
+  Tile(1,1), which the tests check is the Spectre's level's tile.
+  `hatPatch` keeps the `keep` tiles nearest the middle by Chebyshev distance,
+  as Hypersweeper trims its aperiodic boards (`centredWindow`). The tests
+  (`tests/unit/hat.test.ts`) are its oracle: no overlap and no gap as hats and
+  as metatiles, every hat the hat turned by sixths, the mirrored ones one in
+  seven or so and apart, every turtle the turtle.
 - `src/geometry/socolarTaylor.ts` — the Socolar–Taylor tile
   (`SOCOLAR_TAYLOR`, its nineteen pieces read off the shape-enforced drawing,
   in ℤ[ζ12] via the lattice points (a, b) — x = a·cos 30°, y = b/2 — that
@@ -349,6 +376,9 @@ quick way to see the win state.
   builder grows it, how many tiles it keeps), checked the same way, and
   `aperiodicLevel` an aperiodic window from `APERIODIC` (the mode key, how
   many substitutions, how many tiles the centred window keeps).
+  `hatLevel` makes the hat's family's from `HAT_FAMILY` (the key, the tile,
+  how many substitutions, how many tiles the window keeps), after the
+  Spectre, marked `hat`.
   `pieceTileLevel` makes a rep-tile of several pieces from `PIECE_REPTILES`
   (its key in `PIECE_TILES`, its name, how many times it is grown), in the
   Rep-tiles section, marked `pieceTile`; `socolarTaylorLevel` the
@@ -449,7 +479,8 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and
   checked by covering their grown tile exactly, and the Socolar–Taylor tile in
   `src/geometry/socolarTaylor.ts`, checked by its patch having no overlap and
-  no gap. Build its cells exactly — for a
+  no gap — and for the hat's family, which Hypersweeper has no board for,
+  defined in `src/geometry/hat.ts` and checked the same way. Build its cells exactly — for a
   periodic tiling, `uniformLevel` with the template key and a box size found by
   scanning (square, one outline, a couple of dozen tiles) — and the tests check
   it tile for tile against the Hypersweeper board (`archimedeanBoard` for a
@@ -461,8 +492,8 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues (7,
-  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1)
-  and the Spectre, violet at its end — real corners, `sideCount`), a tile
+  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1),
+  the Spectre, the hat and the turtle, violet at its end — real corners, `sideCount`), a tile
   of several pieces in slate, off the ramp (`.pieces`), and a second kind
   coloured as another in rose (`.twin`) — read a kind's
   classes from `level.colours`, never from its side count.

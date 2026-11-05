@@ -180,9 +180,10 @@ describe("puzzle", () => {
   // in its own frame, not Hypersweeper's; the vertex test below covers it.
   const isDual = (group: string): boolean => group === "laves" || group === "2-isohedral";
   // (a tile of several pieces — the fish, the Socolar–Taylor tile — has no
-  // Hypersweeper board to match)
+  // Hypersweeper board to match, nor has the hat's family:
+  // tests/unit/hat.test.ts is its oracle)
   const unturned = LEVELS.filter(
-    (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor,
+    (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor && !l.hat,
   ).map((l) => l.key);
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
@@ -694,6 +695,7 @@ describe("puzzle", () => {
       "drafter",
       "fish",
       "halftrapezoid",
+      "hat",
       "hexringsdual",
       "kisrhombille",
       "kissingtriangles",
@@ -708,6 +710,7 @@ describe("puzzle", () => {
       "squaretrihexdual",
       "stretchedchair",
       "tritrunctrihexdual",
+      "turtle",
     ]);
     const p = new Puzzle(levelByKey("kisrhombille")!);
     const { ring, tiles } = p.level;

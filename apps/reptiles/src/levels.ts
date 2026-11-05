@@ -17,6 +17,7 @@ import { repTilePatch } from "./geometry/repTile";
 import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
 import { socolarTaylorPatch } from "./geometry/socolarTaylor";
+import { hatPatch, type HatTile } from "./geometry/hat";
 import { ccw, outline } from "./geometry/outline";
 import {
   curveOnto,
@@ -126,6 +127,11 @@ export interface Level {
    * defined here in `geometry/socolarTaylor.ts` — how many rings of its patch
    * round the middle hexagon the board keeps. */
   socolarTaylor?: { rings: number };
+  /** For a level of the hat's family — the hat, the turtle or the hat's four
+   * metatiles, which Hypersweeper has no board for, defined here in
+   * `geometry/hat.ts` — which tile, how many substitutions grow the H
+   * metatile its patch is, and how many tiles its centred window keeps. */
+  hat?: { tile: HatTile; depth: number; keep: number };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -790,6 +796,41 @@ function aperiodicLevel(
   };
 }
 
+/** The hat's family, which Hypersweeper has no board for (`geometry/hat.ts`):
+ * the hat, Tile(1,√3), the first aperiodic monotile, used both ways up —
+ * about one tile in seven mirrored, no two of those touching; the turtle,
+ * Tile(√3,1), the same outline with its two edge lengths swapped, laid as the
+ * hats are; and the hat's four metatiles, H, T, P and F — a hexagon, a
+ * triangle, a parallelogram and a pentagon — that every hat tiling is built
+ * from, none of them ever mirrored. Each is the centred window of the H
+ * metatile three substitutions on (1156 hats, 442 metatiles): the squarest
+ * near three dozen hats or two dozen metatiles, with one outline, found by
+ * scanning sizes. Each entry: the level's key, its tile, the depth and the
+ * window. */
+const HAT_FAMILY: [key: string, tile: HatTile, depth: number, keep: number][] = [
+  ["hat", "hat", 3, 36],
+  ["turtle", "turtle", 3, 34],
+  ["hatmetatiles", "metatiles", 3, 26],
+];
+
+const HAT_LABELS: Record<HatTile, string> = {
+  hat: "The hat",
+  turtle: "The turtle",
+  metatiles: "Hat metatiles",
+};
+
+/** A level of the hat's family: the centred window of `keep` tiles of its
+ * patch (see `hatPatch`), named for its tile, as the other aperiodic levels
+ * are. */
+function hatLevel(key: string, tile: HatTile, depth: number, keep: number): Level {
+  const label = HAT_LABELS[tile];
+  const { ring, cells } = hatPatch(tile, depth, keep);
+  return {
+    ...makeLevel(key, label, ring, whole(cells), "aperiodic", [], label),
+    hat: { tile, depth, keep },
+  };
+}
+
 /** The Socolar–Taylor tile: a notched hexagon, six small rectangles and six
  * pairs of larger ones, moved as one — a single tile that tiles the plane, both
  * ways up, but never periodically. Hypersweeper has no board for it, so it
@@ -858,6 +899,9 @@ export const LEVELS: Level[] = [
   ...APERIODIC.map(([key, mode, depth, keep, round]) =>
     aperiodicLevel(key, mode, depth, keep, round),
   ),
+  // …the hat's family: the hat and the turtle, both ways up, and the hat's
+  // four metatiles…
+  ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatLevel(key, tile, depth, keep)),
   // …and one tile that does it alone, in nineteen pieces.
   socolarTaylorLevel(2),
 ];
