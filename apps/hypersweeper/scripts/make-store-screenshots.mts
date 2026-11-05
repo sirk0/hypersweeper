@@ -149,8 +149,14 @@ async function openScene(
     hasTouch: device.touch,
     reducedMotion: "reduce",
   });
+  const difficulty = scene.difficulty ?? "medium";
+  // The difficulty goes into settings as well as the board link: the menu
+  // shots draw each card's preview at the chosen difficulty (the iPad and Mac
+  // cards show the real board), and Easy's small boards make thin, blocky
+  // figures there. Medium is what the board shots use too.
   const settings = JSON.stringify({
     version: 5,
+    difficulty,
     gloss: false,
     theme: "sand",
     shape: scene.shape,
@@ -176,7 +182,6 @@ async function openScene(
   );
   const page = await context.newPage();
 
-  const difficulty = scene.difficulty ?? "medium";
   const query = scene.mode ? `?mode=${scene.mode}&difficulty=${difficulty}&seed=0` : "";
   await page.goto(BASE + query);
   await page.waitForSelector("body[data-ready]");
