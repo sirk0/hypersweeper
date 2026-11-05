@@ -154,7 +154,14 @@ Practical knowledge for verifying changes by actually running the app
   `group`) onto one contact sheet, labelled with its key — the fastest way to
   review a change to `src/ui/icons.ts` without walking the menu. Most icons
   are generated from the real board geometry, so a change to a tiling,
-  a solid or a surface immersion shows up here too.
+  a solid or a surface immersion shows up here too. Because they are
+  generated, a builder called with shifted arguments does not fail: it yields
+  `NaN` coordinates, which a browser draws as an empty box (0.3.44–0.4.16
+  shipped the hyperbolic Uniform and Closed surfaces rows blank that way).
+  `tests/unit/menuIcons.test.ts` checks every row icon and card preview the
+  menu can show for `NaN` and collapsed drawings, and
+  `tests/e2e/menuIcons.spec.ts` walks every page of the phone menu and
+  measures each row's icon in the browser.
 - **App icons**: `npm run icons` (or `make desktop-icon` from the repo root;
   macOS with Xcode only) writes every icon the app ships, one per entry in
   `src/appIcon.ts` — the Icon Composer documents in `apps/hypersweeper/ios/App/App/*.icon`, then,
