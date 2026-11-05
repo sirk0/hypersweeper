@@ -2162,7 +2162,7 @@ const HYPERBOLIC_SEAM = 0.12;
 /** A hyperbolic mode's disc trimmed to `shells`, with no mines. */
 function hyperbolicDisc(key: string, shells: number, scale: number): Board {
   const uniform = HYPERBOLIC_UNIFORM[key];
-  if (uniform) return hyperbolicUniformBoard(...uniform, shells, 0, scale);
+  if (uniform) return hyperbolicUniformBoard(...uniform, shells, scale);
   return hyperbolicBoard(Number(key.at(-2)), Number(key.at(-1)), shells, scale);
 }
 

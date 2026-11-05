@@ -512,6 +512,17 @@ export function discDrawing(
   extent: number;
   rim: number;
 } {
+  // A zero or negative scale draws every point at the centre and makes the
+  // board's width zero, which its consumers divide by: the result is a board
+  // of NaN coordinates that renders as nothing rather than failing. That is
+  // how a positional argument shifted out of place (0.3.44's menu icons, an
+  // old mine count landing in `scale`) went unnoticed, so it fails here.
+  if (!(scale > 0) || !Number.isFinite(scale)) {
+    throw new Error(`disc scale must be a positive number, got ${scale}`);
+  }
+  if (typeof arc === "number" && !(Number.isInteger(arc) && arc >= 1)) {
+    throw new Error(`arc segments must be a positive integer, got ${arc}`);
+  }
   // `arc` may be decided edge by edge (the closed surfaces draw a far edge
   // straight); the decision is the edge's own, so both its faces agree.
   const segments = new Map<string, number>();
