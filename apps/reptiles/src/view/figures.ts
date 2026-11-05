@@ -1,6 +1,6 @@
 // Figures: the levels by the tiles in their tray. The first screen lists every
 // set — one figure by its sides (triangles, quadrilaterals, pentagons,
-// hexagons, 7+-gons), regular pairs, irregular pairs (one irregular figure is
+// hexagons, 7+-gons), one figure of several pieces, regular pairs, irregular pairs (one irregular figure is
 // enough), then packs of three or more — a row each,
 // scrolling sideways as the catalog's families do; picking a set lists its
 // tilings, easiest first, under their difficulty.
@@ -17,6 +17,7 @@ const ROWS: Record<Bucket, { name: string; hint: string }> = {
   pentagons: { name: "Pentagons", hint: "One five-sided tile throughout" },
   hexagons: { name: "Hexagons", hint: "One six-sided tile throughout" },
   polygons: { name: "7+-gons", hint: "One tile of seven sides or more" },
+  pieces: { name: "Several pieces", hint: "One tile of two or more separate pieces" },
   "regular-pairs": { name: "Regular pairs", hint: "Two regular polygons" },
   "irregular-pairs": { name: "Irregular pairs", hint: "Two shapes, at least one irregular" },
   packs: { name: "Packs of 3+", hint: "Three shapes or more" },

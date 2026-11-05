@@ -61,6 +61,7 @@ test("Figures lists the tile sets, and a set its tilings by difficulty", async (
     "Pentagons",
     "Hexagons",
     "7+-gons",
+    "Several pieces",
     "Regular pairs",
     "Irregular pairs",
     "Packs of 3+",
@@ -325,4 +326,24 @@ test("the Spectre's edges are round, Tile(1,1)'s straight", async ({ page }) => 
   await page.goto("/?level=tile11");
   await expect(page.locator("svg.board .tile.in-tray").first()).not.toHaveAttribute("d", /C/);
   await expect(page.locator("svg.board path.region")).not.toHaveAttribute("d", /C/);
+});
+
+test("a tile of several pieces moves as one: the kissing squares", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=kissingsquares");
+  // one path, a closed sub-path per piece
+  const tray = page.locator("svg.board .tile.in-tray").first();
+  await expect(tray).toHaveAttribute("d", /^M[^M]*Z\s*M[^M]*Z$/);
+  await expect(tray).toHaveClass(/pieces/);
+  // dropped by the board's bottom-left corner, both squares land
+  const t = (await tray.boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + t.width / 2, r.y + r.height - t.height / 2, { steps: 12 });
+  await page.mouse.up();
+  const placed = page.locator("svg.board [data-tile]");
+  await expect(placed).toHaveCount(1);
+  await expect(placed).toHaveAttribute("d", /^M[^M]*Z\s*M[^M]*Z$/);
+  expect(errors).toEqual([]);
 });

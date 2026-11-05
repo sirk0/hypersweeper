@@ -18,9 +18,15 @@
 // kind (choosing from the tray) and for size.
 
 import measured from "./difficulty.json";
-import type { Cyc } from "./geometry/cyclotomic";
-import { ccw } from "./geometry/outline";
-import { centroid, posed, selfTurns, turnsOnto, type XY } from "./geometry/shape";
+import {
+  centroidOf,
+  posed,
+  selfTurns,
+  spotKey,
+  turnsOnto,
+  type Piece,
+  type XY,
+} from "./geometry/shape";
 import type { Level } from "./levels";
 import { Puzzle } from "./puzzle";
 
@@ -69,16 +75,16 @@ export function bandOf(key: string): Band {
 export const BARS: Record<Band, number> = { easy: 1, medium: 2, hard: 3 };
 
 /** Which kind, turn and side each of the level's own cells is. */
-function reference(level: Level): { verts: Cyc[]; kind: number; rot: number; flip: boolean }[] {
+function reference(level: Level): { pieces: Piece[]; kind: number; rot: number; flip: boolean }[] {
   const { ring, tiles } = level;
-  return level.cells.map((raw) => {
-    const verts = ccw(ring, raw);
+  return level.cells.map((pieces) => {
+    const verts = pieces.map((p) => p.verts);
     for (let kind = 0; kind < tiles.length; kind++) {
       const direct = turnsOnto(tiles[kind]!, verts);
-      if (direct.length) return { verts, kind, rot: direct[0]!, flip: false };
-      const mirrored = { ring, verts: posed(tiles[kind]!, { rot: 0, flip: true, t: ring.zero }) };
+      if (direct.length) return { pieces, kind, rot: direct[0]!, flip: false };
+      const mirrored = { ring, pieces: posed(tiles[kind]!, { rot: 0, flip: true, t: ring.zero }) };
       const flipped = turnsOnto(mirrored, verts);
-      if (flipped.length) return { verts, kind, rot: flipped[0]!, flip: true };
+      if (flipped.length) return { pieces, kind, rot: flipped[0]!, flip: true };
     }
     throw new Error(`${level.key}: a cell matches no tile kind`);
   });
@@ -88,15 +94,11 @@ export function measure(level: Level): Measure {
   const { ring, turn } = level;
   const puzzle = new Puzzle(level);
   const period = level.tiles.map((t) => selfTurns(t).find((k) => k > 0) ?? ring.n);
-  const key = (vs: Cyc[]): string =>
-    vs
-      .map((v) => ring.key(v))
-      .sort()
-      .join("|");
+  const key = (pieces: Piece[]): string => spotKey(ring, pieces);
   const left = reference(level).map((c) => ({
     ...c,
-    key: key(c.verts),
-    at: centroid(c.verts.map((v) => ring.toXY(v))),
+    key: key(c.pieces),
+    at: centroidOf(c.pieces.map((p) => p.verts.map((v) => ring.toXY(v)))),
   }));
   const reach = 1e-3;
 
@@ -138,7 +140,7 @@ export function measure(level: Level): Measure {
     if (c.flip !== flip) flips++;
     t = (((t + k * turn) % ring.n) + ring.n) % ring.n;
     flip = c.flip;
-    puzzle.place(c.kind, c.verts, c.rot, c.flip);
+    puzzle.place(c.kind, c.pieces, c.rot, c.flip);
     last = c.at;
     left.splice(i, 1);
   }

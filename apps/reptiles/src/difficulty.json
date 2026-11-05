@@ -424,6 +424,31 @@
     "presses": 7,
     "flips": 0
   },
+  "fish": {
+    "score": 0.665,
+    "presses": 3,
+    "flips": 2
+  },
+  "fish60": {
+    "score": 2.162,
+    "presses": 11,
+    "flips": 0
+  },
+  "kissingsquares": {
+    "score": 0.205,
+    "presses": 2,
+    "flips": 0
+  },
+  "kissingtriangles": {
+    "score": 0.642,
+    "presses": 5,
+    "flips": 4
+  },
+  "kissingchain": {
+    "score": 0.143,
+    "presses": 1,
+    "flips": 0
+  },
   "phyllotaxis": {
     "score": 0.361,
     "presses": 4,

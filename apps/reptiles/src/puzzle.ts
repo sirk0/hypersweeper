@@ -4,12 +4,13 @@
 import type { Cyc } from "./geometry/cyclotomic";
 import { Frontier } from "./geometry/frontier";
 import {
-  curveOnto,
+  allVerts,
   posed,
-  posedCurve,
   selfTurns,
   signedArea,
+  spotKey,
   type Bulge,
+  type Piece,
   type Shape,
   type XY,
 } from "./geometry/shape";
@@ -23,10 +24,9 @@ export interface Placed {
   /** How it was laid: the kind's shape, mirrored if `flip`, turned by ζ^rot. */
   rot: number;
   flip: boolean;
-  verts: Cyc[];
-  /** Its round edges, edge i from verts[i] (see `Shape.curve`); unset for a
-   * tile with straight ones. */
-  curve?: Bulge[];
+  /** Where its pieces lie — one, but for a tile of several (the fish) — each
+   * with its round edges, if it has them (see `Piece.curve`). */
+  pieces: Piece[];
 }
 
 export class Puzzle {
@@ -63,8 +63,8 @@ export class Puzzle {
   }
 
   /** Which corners of a placement meet what is already down, or the rim. */
-  touching(verts: Cyc[]): Cyc[] {
-    return this.frontier.touching(verts);
+  touching(pieces: readonly Piece[]): Cyc[] {
+    return this.frontier.touching(allVerts(pieces));
   }
 
   /** How much of the region is covered, 0 to 1. Not a tile count: the
@@ -73,16 +73,17 @@ export class Puzzle {
     const { ring } = this.level;
     const area = (verts: Cyc[]): number => signedArea(verts.map((v) => ring.toXY(v)));
     const region = this.level.region.reduce((sum, loop) => sum + area(loop), 0);
-    const covered = this.tiles.reduce((sum, t) => sum + area(t.verts), 0);
+    const covered = this.tiles.reduce(
+      (sum, t) => sum + t.pieces.reduce((s, p) => s + area(p.verts), 0),
+      0,
+    );
     return this.won ? 1 : Math.min(covered / region, 0.999);
   }
 
   /** A kind's shape, mirrored if `flip`, turned by ζ^rot. */
   shapeAt(kind: number, rot: number, flip = false): Shape {
     const shape = this.level.tiles[kind]!;
-    const verts = posed(shape, { rot, flip, t: shape.ring.zero });
-    const curve = posedCurve(shape.curve, flip);
-    return curve ? { ring: shape.ring, verts, curve } : { ring: shape.ring, verts };
+    return { ring: shape.ring, pieces: posed(shape, { rot, flip, t: shape.ring.zero }) };
   }
 
   /** Whether the level has a rotate control at all — not where every tile of
@@ -117,18 +118,21 @@ export class Puzzle {
   }
 
   /**
-   * Whether the level's vertex rule lets a tile land on `verts` (which already
-   * fits): it meets its neighbours edge to edge — no corner part-way along a
-   * side, either way — and every vertex it touches, with the new corner added,
-   * can still be completed to the rule. Always true on a level without one.
+   * Whether the level's vertex rule lets a tile land on `pieces` (which
+   * already fit): it meets its neighbours edge to edge — no corner part-way
+   * along a side, either way — and every vertex it touches, with the new
+   * corner added, can still be completed to the rule. Always true on a level
+   * without one.
    */
-  allows(verts: Cyc[]): boolean {
+  allows(pieces: readonly Piece[]): boolean {
     const { rule, ring } = this.level;
     if (!rule) return true;
-    if (!this.frontier.edgeToEdge(verts)) return false;
-    return cornersOf(ring, verts).every(([key, corner]) =>
-      fitsConfig(ring.n, rule, [...(this.corners.get(key) ?? []), corner]),
-    );
+    if (!this.frontier.edgeToEdge(pieces)) return false;
+    const added = new Map<string, Corner[]>();
+    for (const p of pieces)
+      for (const [key, corner] of cornersOf(ring, p.verts))
+        added.set(key, [...(added.get(key) ?? this.corners.get(key) ?? []), corner]);
+    return [...added.values()].every((corners) => fitsConfig(ring.n, rule, corners));
   }
 
   /** Whether the level has a flip control: its board uses some kind both ways
@@ -141,7 +145,7 @@ export class Puzzle {
    * and dragged to `centre`,
    * would land, if anywhere within `reach` of it: only in that orientation,
    * and only where the vertex rule allows. */
-  snap(kind: number, centre: XY, reach: number, rot: number, flip = false): Cyc[] | null {
+  snap(kind: number, centre: XY, reach: number, rot: number, flip = false): Piece[] | null {
     return this.frontier.nearest(
       this.shapeAt(kind, rot, flip),
       centre,
@@ -152,14 +156,15 @@ export class Puzzle {
     );
   }
 
-  place(kind: number, verts: Cyc[], rot: number, flip = false): Placed {
-    const curve = curveOnto(this.shapeAt(kind, rot, flip), verts);
-    if (!this.frontier.fits(verts, curve)) throw new Error("place: the tile does not fit there");
-    const tile: Placed = { id: this.nextId++, kind, rot, flip, verts };
-    if (curve) tile.curve = curve;
+  /** Lay a tile of `kind`, held turned by ζ^rot (mirrored if `flip`), on
+   * `pieces` — a spot `snap` found, or one of the level's own cells — whose
+   * curves, on a round tile, are already its own. */
+  place(kind: number, pieces: Piece[], rot: number, flip = false): Placed {
+    if (!this.frontier.fits(pieces)) throw new Error("place: the tile does not fit there");
+    const tile: Placed = { id: this.nextId++, kind, rot, flip, pieces };
     this.placed.set(tile.id, tile);
-    this.frontier = this.frontier.cover(verts, curve);
-    this.addCorners(verts);
+    this.frontier = this.frontier.cover(pieces);
+    this.addCorners(pieces);
     return tile;
   }
 
@@ -171,27 +176,29 @@ export class Puzzle {
     let f = this.untouched();
     this.corners.clear();
     for (const t of this.placed.values()) {
-      f = f.cover(t.verts, t.curve);
-      this.addCorners(t.verts);
+      f = f.cover(t.pieces);
+      this.addCorners(t.pieces);
     }
     this.frontier = f;
     return tile;
   }
 
-  private addCorners(verts: Cyc[]): void {
+  private addCorners(pieces: readonly Piece[]): void {
     // only a level with a rule reads them, and only its regular polygons have
     // the unit sides they are measured off
     if (!this.level.rule) return;
-    for (const [key, corner] of cornersOf(this.level.ring, verts)) {
-      const list = this.corners.get(key);
-      if (list) list.push(corner);
-      else this.corners.set(key, [corner]);
+    for (const p of pieces) {
+      for (const [key, corner] of cornersOf(this.level.ring, p.verts)) {
+        const list = this.corners.get(key);
+        if (list) list.push(corner);
+        else this.corners.set(key, [corner]);
+      }
     }
   }
 
   /** Every placement that lands with a corner on frontier corner `at`. */
-  private spotsAt(at: XY): { kind: number; rot: number; flip: boolean; spot: Cyc[] }[] {
-    const out: { kind: number; rot: number; flip: boolean; spot: Cyc[] }[] = [];
+  private spotsAt(at: XY): { kind: number; rot: number; flip: boolean; spot: Piece[] }[] {
+    const out: { kind: number; rot: number; flip: boolean; spot: Piece[] }[] = [];
     const flips = this.canFlip() ? [false, true] : [false];
     // biggest first: one big tile settles more than several small ones
     for (let kind = this.level.tiles.length - 1; kind >= 0; kind--) {
@@ -221,22 +228,16 @@ export class Puzzle {
    * later. False if the board cannot be finished from here, or not within
    * `budget` placements. */
   solve(budget = 20000): boolean {
-    const own = new Set(this.level.cells.map((c) => this.spotKey(c)));
-    return this.search({ budget }, (spot) => own.has(this.spotKey(spot)));
+    const { ring } = this.level;
+    const own = new Set(this.level.cells.map((c) => spotKey(ring, c)));
+    return this.search({ budget }, (spot) => own.has(spotKey(ring, spot)));
   }
 
-  private spotKey(verts: Cyc[]): string {
-    return verts
-      .map((v) => this.level.ring.key(v))
-      .sort()
-      .join(",");
-  }
-
-  private search(left: { budget: number }, isOwn: (spot: Cyc[]) => boolean): boolean {
+  private search(left: { budget: number }, isOwn: (spot: Piece[]) => boolean): boolean {
     if (this.won) return true;
     if (left.budget-- <= 0) return false;
     const { ring } = this.level;
-    let best: { kind: number; rot: number; flip: boolean; spot: Cyc[] }[] | null = null;
+    let best: { kind: number; rot: number; flip: boolean; spot: Piece[] }[] | null = null;
     for (const corner of this.openCorners.values()) {
       const here = this.spotsAt(ring.toXY(corner));
       if (!best || here.length < best.length) best = here;

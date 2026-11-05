@@ -44,7 +44,9 @@
      5 yellow, 6 green, 7 sea green (between, as Hypersweeper's hue ramp puts
      it: Klaassen's heptagon), 8 teal, 12 blue, 13 violet (the Spectre) — and
      rose for a second kind with as many sides as another (a 2-isohedral
-     level's two quadrilaterals, and three of the aperiodic tilings' two). */
+     level's two quadrilaterals, and three of the aperiodic tilings' two).
+     A tile of several pieces (the fish, the kissing squares) has no one side
+     count: it is slate, off the hue ramp. */
   --tile-3: #e07f72;
   --tile-3-edge: #8f3a2f;
   --tile-4: #e9a85a;
@@ -63,6 +65,8 @@
   --tile-13-edge: #5f4771;
   --tile-twin: #d68aa6;
   --tile-twin-edge: #7d3453;
+  --tile-pieces: #9aa3b5;
+  --tile-pieces-edge: #48505f;
   --stick: #7b4fd0;
   --stick-ring: #fffdf8;
   --star: #d49a1f;
@@ -124,6 +128,8 @@
     --tile-13-edge: #dac8e8;
     --tile-twin: #b8708c;
     --tile-twin-edge: #f2c0d2;
+    --tile-pieces: #7c859a;
+    --tile-pieces-edge: #d3d9e6;
     --stick: #b394ff;
     --stick-ring: #1d1c1a;
     --star: #f2c14e;
@@ -410,6 +416,11 @@ button.primary {
 .tile.sides-13 {
   fill: var(--tile-13);
   stroke: var(--tile-13-edge);
+}
+
+.tile.pieces {
+  fill: var(--tile-pieces);
+  stroke: var(--tile-pieces-edge);
 }
 
 .tile.twin {

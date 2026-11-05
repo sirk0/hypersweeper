@@ -33,11 +33,28 @@ import type { Board } from "@tiling/geometry";
 import { describe, expect, it } from "vitest";
 import { aperiodicShrink } from "../../src/geometry/aperiodic";
 import { strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
-import { ccw } from "../../src/geometry/outline";
-import { centroid, IN, OUT, posed, sideCount, turnsOnto, type XY } from "../../src/geometry/shape";
+import {
+  allVerts,
+  centroid,
+  IN,
+  OUT,
+  posed,
+  sideCount,
+  spotKey,
+  turnsOnto,
+  type Piece,
+  type XY,
+} from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
 import { LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
+
+/** A one-piece tile's or cell's polygon — every level's but the rep-tiles
+ * of several pieces. */
+function poly(pieces: readonly Piece[]): Cyc[] {
+  if (pieces.length !== 1) throw new Error(`${pieces.length} pieces`);
+  return pieces[0]!.verts;
+}
 
 /** Finish a level; the number of tiles it took. */
 function fill(p: Puzzle): number {
@@ -51,19 +68,21 @@ describe("puzzle", () => {
     const { ring, tiles } = p.level;
     // a cell's kind: the tray tile it is a turn of, or a turn of mirrored —
     // and which turn, which way round
-    const sitOf = (cell: Cyc[]): [kind: number, rot: number, flip: boolean] => {
+    const sitOf = (cell: Piece[]): [kind: number, rot: number, flip: boolean] => {
       for (const [kind, t] of tiles.entries()) {
         for (const flip of [false, true]) {
-          const verts = posed(t, { rot: 0, flip, t: ring.zero });
-          const [rot] = turnsOnto({ ring, verts }, cell);
+          const pieces = posed(t, { rot: 0, flip, t: ring.zero });
+          const [rot] = turnsOnto(
+            { ring, pieces },
+            cell.map((c) => c.verts),
+          );
           if (rot !== undefined) return [kind, rot, flip];
         }
       }
       return [-1, 0, false];
     };
-    for (const raw of p.level.cells) {
+    for (const cell of p.level.cells) {
       expect(p.coverage).toBeLessThan(1);
-      const cell = ccw(ring, raw);
       const [kind, rot, flip] = sitOf(cell);
       expect(kind).toBeGreaterThanOrEqual(0);
       p.place(kind, cell, rot, flip);
@@ -155,10 +174,12 @@ describe("puzzle", () => {
   // A tiling turned to lay its edges on the ring (the snub hexagonal) is cut
   // in its own frame, not Hypersweeper's; the vertex test below covers it.
   const isDual = (group: string): boolean => group === "laves" || group === "2-isohedral";
-  const unturned = LEVELS.filter((l) => !l.window?.turned && !isDual(l.group)).map((l) => l.key);
+  const unturned = LEVELS.filter((l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile).map(
+    (l) => l.key,
+  );
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
-    const ours = p.level.cells.map((c) => c.map((v) => p.level.ring.toXY(v)));
+    const ours = p.level.cells.map((c) => poly(c).map((v) => p.level.ring.toXY(v)));
     const board = builderFor(key);
     const theirs = [...board.polygons.values()].map((poly) => poly.map(([x, y]): XY => [x, -y]));
     sameTiles(centroids(ours), centroids(theirs));
@@ -177,7 +198,7 @@ describe("puzzle", () => {
     expect(level.region).toHaveLength(1); // one outline, no holes
     const round = new Map<string, Corner[]>();
     for (const cell of level.cells) {
-      for (const [k, corner] of cornersOf(ring, ccw(ring, cell)))
+      for (const [k, corner] of cornersOf(ring, poly(cell)))
         round.set(k, [...(round.get(k) ?? []), corner]);
     }
     // a point is inner when its corners go all the way round
@@ -223,14 +244,14 @@ describe("puzzle", () => {
     expect(level.region).toHaveLength(1);
     // one tile kind, a rectangle lying on its long side: 1 by ½, or by ⅓
     expect(level.tiles).toHaveLength(1);
-    const brick = level.tiles[0]!.verts.map((v) => ring.toXY(v));
+    const brick = poly(level.tiles[0]!.pieces).map((v) => ring.toXY(v));
     expect(brick).toHaveLength(4);
     const [w, h] = [brick[1]![0] - brick[0]![0], brick[2]![1] - brick[1]![1]];
     expect(w).toBeCloseTo(1, 12);
     expect(h).toBeCloseTo(key === "basketweave3" ? 1 / 3 : 1 / 2, 12);
     expect(level.mirror).toBe(false);
     // round each point: the corners there, and the sides it lies inside
-    const tiles = level.cells.map((c) => ccw(ring, c));
+    const tiles = level.cells.map(poly);
     const round = new Map<string, { corners: number; sides: number; spanned: number }>();
     // (every corner of a brick is a right angle, a quarter of the turn)
     for (const tile of tiles) {
@@ -292,7 +313,7 @@ describe("puzzle", () => {
     expect(level.mirror).toBe(false);
     // round each point: the polygons whose corner is there, and those whose
     // side runs through it, and how much of the turn they fill between them
-    const tiles = level.cells.map((c) => ccw(ring, c));
+    const tiles = level.cells.map(poly);
     const round = new Map<string, { corners: number[]; sides: number[]; spanned: number }>();
     for (const tile of tiles) {
       // (every tile is regular, so each corner spans what its side count says)
@@ -327,7 +348,7 @@ describe("puzzle", () => {
 
   // The rep-tiles: every one of Hypersweeper's but the five-triangle (the
   // pinwheel, whose turns are no power of ζ), each a big copy of its one tile.
-  const reptiles = LEVELS.filter((l) => l.group === "reptile");
+  const reptiles = LEVELS.filter((l) => l.group === "reptile" && !l.pieceTile);
   it("has Hypersweeper's rep-tiles, in its order", () => {
     const theirs = (catalog.menu.reptile as string[]).filter((m) => m !== "fivetriangle");
     expect(reptiles.map((l) => l.key)).toEqual(theirs);
@@ -357,7 +378,9 @@ describe("puzzle", () => {
         Math.hypot(pts[(i + 1) % pts.length]![0] - p[0], pts[(i + 1) % pts.length]![1] - p[1]),
       );
     const big = sides(turning(xy(level.region[0]!)));
-    const small = sides(xy(level.tiles[0]!.verts)).map((s) => s * Math.sqrt(level.cells.length));
+    const small = sides(xy(poly(level.tiles[0]!.pieces))).map(
+      (s) => s * Math.sqrt(level.cells.length),
+    );
     expect(big).toHaveLength(small.length);
     const rotations = (a: number[]): number[][] =>
       a.map((_, i) => [...a.slice(i), ...a.slice(0, i)]);
@@ -421,9 +444,9 @@ describe("puzzle", () => {
       pts.map(([x, y]): XY => [x, y]),
     );
     // each kind matches some tile of the template, and each tile of it some kind
-    const kinds = level.tiles.map((t) => t.verts.map((v) => level.ring.toXY(v)));
+    const kinds = level.tiles.map((t) => poly(t.pieces).map((v) => level.ring.toXY(v)));
     for (const cell of level.cells) {
-      const ours = ccw(level.ring, cell).map((v) => level.ring.toXY(v));
+      const ours = poly(cell).map((v) => level.ring.toXY(v));
       expect(theirs.some((t) => similar(ours, t))).toBe(true);
     }
     for (const t of theirs) expect(kinds.some((k) => similar(k, t))).toBe(true);
@@ -436,7 +459,7 @@ describe("puzzle", () => {
     expect(level.region).toHaveLength(1);
     // how many tiles meet at each corner, and how much angle they fill
     const meet = new Map<string, { count: number; angle: number }>();
-    const tiles = level.cells.map((c) => ccw(ring, c));
+    const tiles = level.cells.map(poly);
     for (const tile of tiles) {
       const { angles } = signature(tile.map((v) => ring.toXY(v)));
       tile.forEach((v, i) => {
@@ -497,7 +520,7 @@ describe("puzzle", () => {
     // 36° on ℤ[ζ10], 30° on ℤ[ζ12], 180/7° on ℤ[ζ14]
     expect(level.turn).toBe(1);
     const sides = { phyllotaxis: 6, klaassen: 7 }[key] ?? 5;
-    expect(level.tiles[0]!.verts).toHaveLength(sides);
+    expect(poly(level.tiles[0]!.pieces)).toHaveLength(sides);
   });
 
   // The aperiodic tilings: every one of Hypersweeper's, each the centred
@@ -530,7 +553,7 @@ describe("puzzle", () => {
   it.each(aperiodic.map((l) => l.key))("%s: its tiles, two or three dozen, one outline", (key) => {
     const level = levelByKey(key)!;
     const [sides, degrees] = APERIODIC_TILES[key]!;
-    expect(level.tiles.map((t) => sideCount(level.ring, t.verts))).toEqual(sides);
+    expect(level.tiles.map((t) => sideCount(level.ring, poly(t.pieces)))).toEqual(sides);
     expect(level.need.reduce((a, b) => a + b)).toBe(level.cells.length);
     expect(level.cells.length).toBeGreaterThanOrEqual(24);
     expect(level.cells.length).toBeLessThanOrEqual(36);
@@ -547,13 +570,13 @@ describe("puzzle", () => {
     const spectre = levelByKey("spectre")!;
     const straight = levelByKey("tile11")!;
     const { ring } = spectre;
-    const tile = spectre.tiles[0]!;
+    const tile = spectre.tiles[0]!.pieces[0]!;
     const key = (a: Cyc, b: Cyc): string => `${ring.key(a)}>${ring.key(b)}`;
 
     it("is Tile(1,1) with its flat corner kept, its edges out and in by turns", () => {
       expect(tile.verts).toHaveLength(14);
       expect(sideCount(ring, tile.verts)).toBe(13);
-      expect(straight.tiles[0]!.curve).toBeUndefined();
+      expect(straight.tiles[0]!.pieces[0]!.curve).toBeUndefined();
       // the same tile, the same board: only the edges differ
       expect(spectre.colours).toEqual(straight.colours);
       expect(spectre.turn).toBe(straight.turn);
@@ -570,8 +593,10 @@ describe("puzzle", () => {
       const p = new Puzzle(spectre);
       expect(p.solve()).toBe(true);
       const bulge = new Map<string, number>();
-      for (const t of p.tiles)
-        t.verts.forEach((a, i) => bulge.set(key(a, t.verts[(i + 1) % 14]!), t.curve![i]!));
+      for (const t of p.tiles) {
+        const { verts, curve } = t.pieces[0]!;
+        verts.forEach((a, i) => bulge.set(key(a, verts[(i + 1) % 14]!), curve![i]!));
+      }
       let shared = 0;
       for (const [k, b] of bulge) {
         const [ak, bk] = k.split(">");
@@ -589,7 +614,7 @@ describe("puzzle", () => {
       // the board's own first tile, but its curves the other way out
       const p = new Puzzle({
         ...spectre,
-        tiles: [{ ...tile, curve: tile.curve!.map((b) => -b as typeof OUT) }],
+        tiles: [{ ring, pieces: [{ ...tile, curve: tile.curve!.map((b) => -b as typeof OUT) }] }],
       });
       expect(p.solve(200)).toBe(false);
     });
@@ -607,7 +632,7 @@ describe("puzzle", () => {
     expect(level.region).toHaveLength(1);
     expect(level.tiles).toHaveLength(1);
     expect(level.need).toEqual([level.cells.length]);
-    const tile = level.tiles[0]!.verts.map((v) => ring.toXY(v));
+    const tile = poly(level.tiles[0]!.pieces).map((v) => ring.toXY(v));
     expect(tile).toHaveLength(5);
     expect(signature(tile).angles.every((a) => a < Math.PI)).toBe(true);
     const [theirs] = templateCells(archTemplate(key), 0, 0).map(({ pts }) =>
@@ -657,9 +682,11 @@ describe("puzzle", () => {
     ).toEqual([
       "dodecarhombitrihexdual",
       "drafter",
+      "fish",
       "halftrapezoid",
       "hexringsdual",
       "kisrhombille",
+      "kissingtriangles",
       "pentagon13",
       "pentagon15",
       "ppentomino",
@@ -674,10 +701,10 @@ describe("puzzle", () => {
     const p = new Puzzle(levelByKey("kisrhombille")!);
     const { ring, tiles } = p.level;
     // lay the board, then take out one triangle that is the tray's mirror image
-    const placed = p.level.cells.map((c) => p.place(0, ccw(ring, c), 0));
-    const flipped = placed.find((t) => turnsOnto(tiles[0]!, t.verts).length === 0)!;
+    const placed = p.level.cells.map((c) => p.place(0, c, 0));
+    const flipped = placed.find((t) => turnsOnto(tiles[0]!, [poly(t.pieces)]).length === 0)!;
     p.lift(flipped.id);
-    const centre = centroid(flipped.verts.map((v) => ring.toXY(v)));
+    const centre = centroid(poly(flipped.pieces).map((v) => ring.toXY(v)));
     for (const rot of p.orientations(0)) expect(p.snap(0, centre, 0.2, rot, false)).toBeNull();
     expect(p.orientations(0).some((rot) => p.snap(0, centre, 0.2, rot, true))).toBe(true);
   });
@@ -700,11 +727,9 @@ describe("puzzle", () => {
     const tile = p.tiles[5]!;
     p.lift(tile.id);
     expect(p.won).toBe(false);
-    const c = centroid(tile.verts.map((v) => p.level.ring.toXY(v)));
+    const c = centroid(poly(tile.pieces).map((v) => p.level.ring.toXY(v)));
     const spot = p.snap(0, c, 0.5, tile.rot)!;
-    expect(spot.map((v) => p.level.ring.key(v)).sort()).toEqual(
-      tile.verts.map((v) => p.level.ring.key(v)).sort(),
-    );
+    expect(spotKey(p.level.ring, spot)).toEqual(spotKey(p.level.ring, tile.pieces));
     p.place(0, spot, tile.rot);
     expect(p.won).toBe(true);
   });
@@ -722,15 +747,7 @@ describe("puzzle", () => {
     expect(spotFor(turn)).not.toBeNull();
     // a triangle is the same after 120°, so two steps is the tray's way again
     expect(spotFor(2 * turn)).toBeNull();
-    expect(
-      spotFor(3 * turn)!
-        .map((v) => ring.key(v))
-        .sort(),
-    ).toEqual(
-      spotFor(turn)!
-        .map((v) => ring.key(v))
-        .sort(),
-    );
+    expect(spotKey(ring, spotFor(3 * turn)!)).toEqual(spotKey(ring, spotFor(turn)!));
   });
 
   it("offers the rotate control only where a turn changes some tile", () => {
@@ -759,10 +776,10 @@ describe("puzzle", () => {
 
   it("reads the tray and the turns off the board", () => {
     const tri = levelByKey("trihex")!;
-    expect(tri.tiles.map((t) => t.verts.length)).toEqual([3, 6]);
+    expect(tri.tiles.map((t) => poly(t.pieces).length)).toEqual([3, 6]);
     expect(tri.turns.map((k) => (k * 360) / tri.ring.n)).toEqual([60, 0]);
     const rhombi = levelByKey("rhombitrihex")!;
-    expect(rhombi.tiles.map((t) => t.verts.length)).toEqual([3, 4, 6]);
+    expect(rhombi.tiles.map((t) => poly(t.pieces).length)).toEqual([3, 4, 6]);
     // its squares sit three ways, 30° apart; triangles two ways; hexagons
     // one way, but pointy-top — 30° from the tray's flat one
     expect(rhombi.turns.map((k) => (k * 360) / rhombi.ring.n)).toEqual([60, 30, 30]);
@@ -826,9 +843,11 @@ describe("puzzle", () => {
   it("starts every tray tile resting on a flat side", () => {
     for (const level of LEVELS) {
       for (const shape of level.tiles) {
-        const [a, b] = shape.verts.map((v) => level.ring.toXY(v));
-        expect(a![1]).toBeCloseTo(b![1], 12); // first edge horizontal
-        for (const v of shape.verts) expect(level.ring.toXY(v)[1]).toBeGreaterThanOrEqual(-1e-12); // and below
+        // the first piece's first edge horizontal, and every piece above it
+        const [a, b] = shape.pieces[0]!.verts.map((v) => level.ring.toXY(v));
+        expect(a![1]).toBeCloseTo(b![1], 12);
+        for (const v of allVerts(shape.pieces))
+          expect(level.ring.toXY(v)[1]).toBeGreaterThanOrEqual(-1e-12);
       }
     }
   });
@@ -842,8 +861,8 @@ describe("puzzle", () => {
   it("gives one star for finishing, two for the tiles needed, three in time", () => {
     const p = new Puzzle(levelByKey("trihex")!);
     const kindOf = (sides: number): number =>
-      p.level.tiles.findIndex((t) => t.verts.length === sides);
-    for (const cell of p.level.cells) p.place(kindOf(cell.length), ccw(p.level.ring, cell), 0);
+      p.level.tiles.findIndex((t) => poly(t.pieces).length === sides);
+    for (const cell of p.level.cells) p.place(kindOf(poly(cell).length), cell, 0);
     expect(p.stars(p.level.seconds)).toBe(3);
     expect(p.stars(p.level.seconds + 1)).toBe(2);
     // one tile short of finished: nothing yet (the one-star case, more tiles
@@ -857,15 +876,17 @@ describe("puzzle", () => {
     const level = levelByKey("trihex")!;
     const p = new Puzzle(rule ? { ...level, rule } : level);
     const kindOf = (sides: number): number =>
-      p.level.tiles.findIndex((t) => t.verts.length === sides);
-    for (const cell of level.cells) p.place(kindOf(cell.length), ccw(level.ring, cell), 0);
+      p.level.tiles.findIndex((t) => poly(t.pieces).length === sides);
+    for (const cell of level.cells) p.place(kindOf(poly(cell).length), cell, 0);
     // the hexagon furthest in: fewest corners on the rim
     const rim = new Set(level.region.flat().map((v) => level.ring.key(v)));
-    const onRim = (t: { verts: Cyc[] }): number =>
-      t.verts.filter((v) => rim.has(level.ring.key(v))).length;
-    const hex = p.tiles.filter((t) => t.verts.length === 6).sort((a, b) => onRim(a) - onRim(b))[0]!;
+    const onRim = (t: { pieces: Piece[] }): number =>
+      poly(t.pieces).filter((v) => rim.has(level.ring.key(v))).length;
+    const hex = p.tiles
+      .filter((t) => poly(t.pieces).length === 6)
+      .sort((a, b) => onRim(a) - onRim(b))[0]!;
     p.lift(hex.id);
-    return { p, hex: hex.verts };
+    return { p, hex: poly(hex.pieces) };
   }
 
   it("wins however it is covered: six triangles in a hexagon's place", () => {

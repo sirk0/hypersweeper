@@ -8,7 +8,7 @@ import {
   sameFigure,
 } from "../../src/figures";
 import { cyclotomic } from "../../src/geometry/cyclotomic";
-import { posed, regular, type Shape } from "../../src/geometry/shape";
+import { polygon, posed, regular, sides } from "../../src/geometry/shape";
 import { LEVELS, levelByKey } from "../../src/levels";
 
 const Z4 = cyclotomic(4);
@@ -17,21 +17,24 @@ const Z12 = cyclotomic(12);
 describe("sameFigure", () => {
   // a right triangle with legs 2 and 1: chiral, so its mirror image differs
   // from it by more than a turn
-  const right: Shape = { ring: Z4, verts: [Z4.zero, [2, 0], [0, 1]] };
+  const right = polygon(Z4, [Z4.zero, [2, 0], [0, 1]]);
 
   it("is exact under a turn, a move and a mirror", () => {
-    const moved = { ring: Z4, verts: posed(right, { rot: 1, flip: false, t: [5, -3] }) };
-    const mirrored = { ring: Z4, verts: posed(right, { rot: 3, flip: true, t: [1, 1] }) };
+    const moved = { ring: Z4, pieces: posed(right, { rot: 1, flip: false, t: [5, -3] }) };
+    const mirrored = { ring: Z4, pieces: posed(right, { rot: 3, flip: true, t: [1, 1] }) };
     expect(sameFigure(right, moved)).toBe(true);
     expect(sameFigure(right, mirrored)).toBe(true);
     expect(sameFigure(mirrored, right)).toBe(true);
   });
 
   it("tells sizes apart, but not shapes at any size", () => {
-    const big = { ring: Z4, verts: right.verts.map((v) => Z4.add(v, v)) };
+    const big = polygon(
+      Z4,
+      right.pieces[0]!.verts.map((v) => Z4.add(v, v)),
+    );
     expect(sameFigure(right, big)).toBe(false);
     expect(sameFigure(right, big, false)).toBe(true);
-    const other: Shape = { ring: Z4, verts: [Z4.zero, [3, 0], [0, 1]] };
+    const other = polygon(Z4, [Z4.zero, [3, 0], [0, 1]]);
     expect(sameFigure(right, other, false)).toBe(false);
   });
 
@@ -39,7 +42,10 @@ describe("sameFigure", () => {
     expect(sameFigure(regular(Z4, 4), regular(Z12, 4))).toBe(true);
     // a square of side 2 in a ring that draws two units as one
     const halves = cyclotomic(12, 2);
-    const two = { ring: halves, verts: regular(halves, 4).verts.map((v) => halves.add(v, v)) };
+    const two = polygon(
+      halves,
+      regular(halves, 4).pieces[0]!.verts.map((v) => halves.add(v, v)),
+    );
     expect(sameFigure(regular(Z4, 4), two)).toBe(true);
     expect(sameFigure(regular(Z12, 3), regular(Z12, 4))).toBe(false);
   });
@@ -57,13 +63,13 @@ describe("figure sets", () => {
     }
   });
 
-  it("lists one figure by its sides, then regular pairs, irregular pairs and packs", () => {
+  it("lists one figure by its sides, then one of several pieces, then regular pairs, irregular pairs and packs", () => {
     const rows = sets.map((s) => BUCKETS.indexOf(s.bucket));
     expect(rows).toEqual([...rows].sort((a, b) => a - b));
     const ONE = ["triangles", "quadrilaterals", "pentagons", "hexagons"];
     for (const set of sets) {
       const n = set.figures.length;
-      const sides = set.figures[0]!.shape.verts.length;
+      const count = sides(set.figures[0]!.shape);
       const row =
         n >= 3
           ? "packs"
@@ -71,7 +77,9 @@ describe("figure sets", () => {
             ? set.figures.every((f) => f.regular)
               ? "regular-pairs"
               : "irregular-pairs"
-            : (ONE[sides - 3] ?? "polygons");
+            : set.figures[0]!.shape.pieces.length > 1
+              ? "pieces"
+              : (ONE[count - 3] ?? "polygons");
       expect(set.bucket, set.key).toBe(row);
     }
     expect(Math.max(...sets.map((s) => s.figures.length))).toBe(4);
@@ -109,10 +117,7 @@ describe("figure sets", () => {
       ["kisrhombille", "drafter"],
     ] as const) {
       const [x, y] = [levelByKey(a)!, levelByKey(b)!];
-      const [p, q] = [
-        { ring: x.ring, verts: x.tiles[0]!.verts },
-        { ring: y.ring, verts: y.tiles[0]!.verts },
-      ];
+      const [p, q] = [x.tiles[0]!, y.tiles[0]!];
       expect(sameFigure(p, q, false), `${a} ~ ${b}`).toBe(true);
       expect(sameFigure(p, q), `${a} = ${b}`).toBe(false);
     }
