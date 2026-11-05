@@ -5,6 +5,13 @@
 // kites) — listed counter-clockwise with y up. A Pose is a Euclidean isometry
 // that keeps the vertices in the shape's ring: a rotation by a power of ζ, an
 // optional mirror, then a translation.
+//
+// A tile can have round edges (the Spectre): `curve` says, edge by edge, which
+// way each one bulges. The polygon stays the exact truth — what fits where,
+// what a corner is — and a curve is only a label on its straight edge: two
+// tiles meet along an edge only where their curves are the same line, so the
+// frontier checks the labels as well (see frontier.ts), and the view draws
+// them (src/view/curve.ts).
 
 import { orient, type Cyc, type Ring } from "./cyclotomic";
 
@@ -13,6 +20,57 @@ export type XY = [number, number];
 export interface Shape {
   ring: Ring;
   verts: Cyc[];
+  /** Round edges, if the tile has them: one entry per edge, edge i running
+   * from verts[i] to verts[i + 1] — `IN` where it bulges to its left (into a
+   * counter-clockwise tile), `OUT` where it bulges to its right, 0 where it
+   * is straight. A round tile lists every point its curves start and end at,
+   * a flat corner included (the Spectre's), so each edge is one curve. */
+  curve?: Bulge[];
+}
+
+/** Which way an edge bulges, seen along it: to its left, to its right, or not
+ * at all. Every bulge is the same symmetric arc, so an edge bulging `IN` from
+ * a to b is the very line of one bulging `OUT` from b to a — the two edges
+ * that meet there. */
+export type Bulge = -1 | 0 | 1;
+export const IN: Bulge = 1;
+export const OUT: Bulge = -1;
+
+/** `curve` for the shape `posed` makes: a mirror keeps a bulge inward or
+ * outward, but lists the edges backwards. */
+export function posedCurve(curve: Bulge[] | undefined, flip: boolean): Bulge[] | undefined {
+  if (!curve || !flip) return curve;
+  const m = curve.length;
+  return curve.map((_, j) => curve[(((m - 2 - j) % m) + m) % m]!);
+}
+
+/** `shape`'s curve for `verts`, a translate of it listed from any vertex:
+ * edge i of `verts` is the shape's edge it lands on. Undefined for a shape
+ * with straight edges; throws when `verts` is not a translate of it. */
+export function curveOnto(shape: Shape, verts: Cyc[]): Bulge[] | undefined {
+  const { ring, verts: own, curve } = shape;
+  if (!curve) return undefined;
+  const m = own.length;
+  if (verts.length === m) {
+    for (let j = 0; j < m; j++) {
+      const t = ring.sub(verts[0]!, own[j]!);
+      if (verts.every((v, i) => ring.eq(v, ring.add(own[(i + j) % m]!, t))))
+        return verts.map((_, i) => curve[(i + j) % m]!);
+    }
+  }
+  throw new Error("curveOnto: not a translate of the shape");
+}
+
+/** Whether `verts[i]` is a real corner of the polygon — not a flat one, part-way
+ * along a side (the Spectre's, kept for its curves). */
+export function realCorners(ring: Ring, verts: Cyc[]): boolean[] {
+  const m = verts.length;
+  return verts.map((v, i) => orient(ring, verts[(i - 1 + m) % m]!, v, verts[(i + 1) % m]!) !== 0);
+}
+
+/** How many sides the polygon `verts` has: its real corners. */
+export function sideCount(ring: Ring, verts: Cyc[]): number {
+  return realCorners(ring, verts).filter(Boolean).length;
 }
 
 export interface Pose {
@@ -142,22 +200,32 @@ export function selfTurns(shape: Shape): number[] {
 export function restFlat(ring: Ring, verts: Cyc[]): Shape {
   const xy = verts.map((v) => ring.toXY(v));
   const m = verts.length;
+  // a side runs from one real corner to the next: a flat corner (kept for a
+  // round tile's curves) is part-way along one
+  const real = realCorners(ring, verts);
+  const end = (i: number): number => {
+    let j = (i + 1) % m;
+    while (!real[j]) j = (j + 1) % m;
+    return j;
+  };
   const length = (i: number): number => {
     const [ax, ay] = xy[i]!;
-    const [bx, by] = xy[(i + 1) % m]!;
+    const [bx, by] = xy[end(i)]!;
     return Math.hypot(bx - ax, by - ay);
   };
   // which side to stand on is a choice among sides, not an identity: the
   // first of the longest, by a margin well past rounding
-  const sides = [...verts.keys()].sort((i, j) => {
-    const d = length(j) - length(i);
-    return Math.abs(d) > 1e-9 ? d : i - j;
-  });
+  const sides = [...verts.keys()]
+    .filter((i) => real[i])
+    .sort((i, j) => {
+      const d = length(j) - length(i);
+      return Math.abs(d) > 1e-9 ? d : i - j;
+    });
   for (const side of sides) {
     const from = verts[side]!;
-    const to = verts[(side + 1) % m]!;
+    const to = verts[end(side)]!;
     if (verts.some((v) => orient(ring, from, to, v) < 0)) continue;
-    const along = ring.sub(verts[(side + 1) % m]!, from);
+    const along = ring.sub(to, from);
     for (let k = 0; k < ring.n; k++) {
       const turned = ring.mul(ring.zeta(k), along);
       const [x, y] = ring.toXY(turned);

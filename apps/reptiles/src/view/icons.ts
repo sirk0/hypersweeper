@@ -5,6 +5,7 @@
 
 import { centroid, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
+import { outlinePath, reachPoints } from "./curve";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -18,13 +19,14 @@ function svgIn(className: string, viewBox: [number, number, number, number]): SV
 
 /** The board's outline, with no tiles in it. */
 export function outlineIcon(level: Level): SVGSVGElement {
-  const { ring, region } = level;
+  const { ring, region, regionCurves } = level;
   // y flipped: the board draws y up
-  const loops = region.map((loop) =>
-    loop.map((v): XY => {
-      const [x, y] = ring.toXY(v);
-      return [x, -y];
-    }),
+  const flipY = ([x, y]: XY): XY => [x, -y];
+  const loops = region.map((loop, i) =>
+    reachPoints(
+      loop.map((v) => ring.toXY(v)),
+      regionCurves?.[i],
+    ).map(flipY),
   );
   const all = loops.flat();
   const x0 = Math.min(...all.map((p) => p[0]));
@@ -36,9 +38,18 @@ export function outlineIcon(level: Level): SVGSVGElement {
   const cy = (y0 + y1) / 2;
   const svg = svgIn("level-outline", [cx - size / 2, cy - size / 2, size, size]);
   const path = document.createElementNS(NS, "path");
+  // round edges laid out in board space (y up), then flipped
   path.setAttribute(
     "d",
-    loops.map((l) => "M" + l.map((p) => p.join(",")).join("L") + "Z").join(""),
+    region
+      .map((loop, i) =>
+        outlinePath(
+          loop.map((v) => ring.toXY(v)),
+          regionCurves?.[i],
+          flipY,
+        ),
+      )
+      .join(""),
   );
   path.setAttribute("fill-rule", "evenodd");
   path.setAttribute("stroke-width", String(size * 0.035));
@@ -49,12 +60,17 @@ export function outlineIcon(level: Level): SVGSVGElement {
 /** One tray tile, resting flat as the tray holds it. */
 export function tileIcon(level: Level, kind: number): SVGSVGElement {
   const { ring } = level;
-  const xy = level.tiles[kind]!.verts.map((v) => ring.toXY(v));
+  const tile = level.tiles[kind]!;
+  const xy = tile.verts.map((v) => ring.toXY(v));
   const [cx, cy] = centroid(xy);
-  const r = Math.max(...xy.map(([x, y]) => Math.hypot(x - cx, y - cy))) * 1.1;
+  const r =
+    Math.max(...reachPoints(xy, tile.curve).map(([x, y]) => Math.hypot(x - cx, y - cy))) * 1.1;
   const svg = svgIn("level-tile", [-r, -r, 2 * r, 2 * r]);
-  const poly = document.createElementNS(NS, "polygon");
-  poly.setAttribute("points", xy.map(([x, y]) => `${x - cx},${cy - y}`).join(" "));
+  const poly = document.createElementNS(NS, "path");
+  poly.setAttribute(
+    "d",
+    outlinePath(xy, tile.curve, ([x, y]) => [x - cx, cy - y]),
+  );
   poly.setAttribute("class", `tile ${level.colours[kind]}`);
   poly.setAttribute("stroke-width", String(r * 0.1));
   svg.appendChild(poly);
@@ -67,29 +83,36 @@ export function tileIcon(level: Level, kind: number): SVGSVGElement {
 export function figureIcon(level: Level): SVGSVGElement {
   const { ring } = level;
   const shapes = level.tiles.map((t) => t.verts.map((v) => ring.toXY(v)));
-  const tallest = Math.max(...shapes.flat().map(([, y]) => y));
-  const gap = tallest * 0.25;
-  const placed: XY[][] = [];
+  // what each tile reaches, round edges and all (a bulge dips below the base)
+  const reach = shapes.map((xy, kind) => reachPoints(xy, level.tiles[kind]!.curve));
+  const offsets: number[] = [];
+  const tallest = Math.max(...reach.flat().map(([, y]) => y));
+  const lowest = Math.min(0, ...reach.flat().map(([, y]) => y));
+  const gap = (tallest - lowest) * 0.25;
   let at = 0;
-  for (const xy of shapes) {
+  for (const xy of reach) {
     const x0 = Math.min(...xy.map(([x]) => x));
     const x1 = Math.max(...xy.map(([x]) => x));
-    placed.push(xy.map(([x, y]): XY => [x - x0 + at, -y]));
+    offsets.push(at - x0);
     at += x1 - x0 + gap;
   }
   const width = at - gap;
-  const size = Math.max(width, tallest);
+  const size = Math.max(width, tallest - lowest);
   const pad = size * 0.08;
-  // centred on the baseline's middle, the tiles sitting on it
+  // centred on the tiles' middle, the tiles sitting on one baseline
   const svg = svgIn("figure-icon", [
     width / 2 - size / 2 - pad,
-    -tallest / 2 - size / 2 - pad,
+    -(tallest + lowest) / 2 - size / 2 - pad,
     size + 2 * pad,
     size + 2 * pad,
   ]);
-  placed.forEach((xy, kind) => {
-    const poly = document.createElementNS(NS, "polygon");
-    poly.setAttribute("points", xy.map(([x, y]) => `${x},${y}`).join(" "));
+  shapes.forEach((xy, kind) => {
+    const dx = offsets[kind]!;
+    const poly = document.createElementNS(NS, "path");
+    poly.setAttribute(
+      "d",
+      outlinePath(xy, level.tiles[kind]!.curve, ([x, y]) => [x + dx, -y]),
+    );
     poly.setAttribute("class", `tile ${level.colours[kind]}`);
     poly.setAttribute("stroke-width", String(size * 0.025));
     svg.appendChild(poly);

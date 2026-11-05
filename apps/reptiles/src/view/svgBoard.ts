@@ -18,8 +18,9 @@
 // getScreenCTM().inverse(), and a turn counter-clockwise in board units reads
 // counter-clockwise on screen.
 
-import type { XY } from "../geometry/shape";
+import type { Bulge, XY } from "../geometry/shape";
 import { centroid } from "../geometry/shape";
+import { edgePath, outlinePath, reachPoints } from "./curve";
 import type { Puzzle } from "../puzzle";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -200,11 +201,19 @@ export class SvgBoard {
     this.barTrack = el("rect", { class: "tray-scroll-track", rx: BAR / 2 }, this.bar);
     this.barThumb = el("rect", { class: "tray-scroll-thumb", rx: BAR / 2 }, this.bar);
     this.moving = el("g", {}, this.svg);
+    // as far as the drawn tile reaches, round edges and all
     this.radius = puzzle.level.tiles.map((_, kind) =>
-      Math.max(...this.outline(kind, 0).map(([x, y]) => Math.hypot(x, y))),
+      Math.max(
+        ...reachPoints(this.outline(kind, 0), this.curve(kind)).map(([x, y]) => Math.hypot(x, y)),
+      ),
     );
-    const { ring, region } = puzzle.level;
-    const xy = region.flat().map((v) => ring.toXY(v));
+    const { ring, region, regionCurves } = puzzle.level;
+    const xy = region.flatMap((loop, i) =>
+      reachPoints(
+        loop.map((v) => ring.toXY(v)),
+        regionCurves?.[i],
+      ),
+    );
     this.regionBox = [
       Math.min(...xy.map((p) => p[0])),
       Math.min(...xy.map((p) => p[1])),
@@ -273,6 +282,12 @@ export class SvgBoard {
     const xy = this.puzzle.shapeAt(kind, rot, flip).verts.map((v) => ring.toXY(v));
     const [cx, cy] = centroid(xy);
     return xy.map(([x, y]): XY => [x - cx, y - cy]);
+  }
+
+  /** A kind's round edges, mirrored if `flip` (a turn keeps them), edge i
+   * from `outline`'s point i; unset for a tile with straight edges. */
+  curve(kind: number, flip = false): Bulge[] | undefined {
+    return this.puzzle.shapeAt(kind, 0, flip).curve;
   }
 
   /** A kind's tray circle radius. */
@@ -518,17 +533,25 @@ export class SvgBoard {
 
   /** Redraw the settled picture: region, tiles, open edges, tray. */
   draw(): void {
-    const { ring, region } = this.puzzle.level;
+    const { ring, region, regionCurves } = this.puzzle.level;
     this.still.replaceChildren();
     const d = region
-      .map((loop) => "M" + loop.map((v) => ring.toXY(v).join(",")).join("L") + "Z")
+      .map((loop, i) =>
+        outlinePath(
+          loop.map((v) => ring.toXY(v)),
+          regionCurves?.[i],
+        ),
+      )
       .join("");
     el("path", { d, class: "region", "fill-rule": "evenodd" }, this.still);
     for (const tile of this.puzzle.tiles) {
       el(
-        "polygon",
+        "path",
         {
-          points: points(tile.verts.map((v) => ring.toXY(v))),
+          d: outlinePath(
+            tile.verts.map((v) => ring.toXY(v)),
+            tile.curve,
+          ),
           class: `tile ${this.puzzle.level.colours[tile.kind]}`,
           "data-tile": tile.id,
         },
@@ -536,11 +559,7 @@ export class SvgBoard {
       );
     }
     for (const e of this.puzzle.openEdges) {
-      el(
-        "line",
-        { x1: e.axy[0], y1: e.axy[1], x2: e.bxy[0], y2: e.bxy[1], class: "open" },
-        this.still,
-      );
+      el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
     }
     this.shelf.replaceChildren();
     this.knobs.replaceChildren();
@@ -548,10 +567,11 @@ export class SvgBoard {
       const r = this.trayRadius(kind);
       el("circle", { cx, cy, r, class: "tray", "data-tray": kind }, this.shelf);
       el(
-        "polygon",
+        "path",
         {
-          points: points(
+          d: outlinePath(
             this.outline(kind, this.turn, this.flip).map(([x, y]): XY => [x + cx, y + cy]),
+            this.curve(kind, this.flip),
           ),
           class: `tile ${this.puzzle.level.colours[kind]} in-tray`,
           "data-tray": kind,
@@ -675,7 +695,8 @@ export class SvgBoard {
     }
   }
 
-  /** The dragged tile — `outline` about its centroid, moved to `at` — and,
+  /** The dragged tile — `outline` about its centroid, moved to `at`, its
+   * edges round where `curve` says — and,
    * when it would snap, a ✓ where it would land (`fitsAt`, that spot's
    * centroid) and a dot on each of its corners that would meet the edge.
    * `discard`: it is over the tray, and letting go takes it off the board. */
@@ -686,14 +707,15 @@ export class SvgBoard {
     fitsAt: XY | null,
     stick: XY[],
     discard = false,
+    curve?: readonly Bulge[],
   ): void {
     this.moving.replaceChildren();
     this.svg.classList.toggle("discarding", discard);
     const moved = outline.map(([x, y]): XY => [x + at[0], y + at[1]]);
     el(
-      "polygon",
+      "path",
       {
-        points: points(moved),
+        d: outlinePath(moved, curve),
         class: `tile ${this.puzzle.level.colours[kind]} floating${discard ? " discard" : ""}`,
       },
       this.moving,

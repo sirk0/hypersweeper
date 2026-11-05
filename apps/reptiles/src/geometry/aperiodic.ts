@@ -11,7 +11,8 @@
 // by φ^depth — φ = ζ + ζ⁻¹ is in the ring, so exactly — to unit edges (a
 // kite's and a dart's long ones; their short ones are 1/φ). The other two
 // inflate outward from unit tiles already. The Spectre's flat corner is
-// dropped (`exactPatch`), so it is the 13-gon it looks.
+// dropped (`exactPatch`), so it is the 13-gon it looks — but for the round
+// Spectre, whose two curves meet there.
 
 import {
   ammannBeenkerExact,
@@ -40,11 +41,18 @@ export function aperiodicShrink(mode: string, depth: number): number {
   return deflated ? ((1 + Math.sqrt(5)) / 2) ** -depth : 1;
 }
 
-export function aperiodicPatch(mode: string, depth: number, keep: number): ExactPatch {
+/** The patch; with `keepFlat`, each tile keeps its flat corners (the
+ * Spectre's, where a round tile's two curves meet). */
+export function aperiodicPatch(
+  mode: string,
+  depth: number,
+  keep: number,
+  keepFlat = false,
+): ExactPatch {
   const entry = APERIODIC[mode];
   if (!entry) throw new Error(`no aperiodic tiling ${mode}`);
   const [build, deflated] = entry;
-  const { ring, cells } = exactPatch(build(depth, keep));
+  const { ring, cells } = exactPatch(build(depth, keep), keepFlat);
   if (!deflated) return { ring, cells };
   const phi = ring.add(ring.zeta(1), ring.conj(ring.zeta(1)));
   let grow = ring.one;

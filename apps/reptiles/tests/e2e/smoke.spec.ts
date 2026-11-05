@@ -89,7 +89,7 @@ test("a square dragged into the corner of the squares level lands there", async 
   await expect(count).toBeVisible();
   const before = await count.textContent();
 
-  const tray = page.locator("svg.board polygon.in-tray").first();
+  const tray = page.locator("svg.board .tile.in-tray").first();
   const t = (await tray.boundingBox())!;
   const r = (await page.locator("svg.board path.region").boundingBox())!;
   // Press the tray square at its centre — the tile then keeps its centre
@@ -145,18 +145,18 @@ test("the level screen: one header row, no level list, a random level of the sam
 
 test("rotate turns the tray either way", async ({ page }) => {
   await page.goto("/?level=cairo");
-  const tile = page.locator("svg.board polygon.in-tray").first();
-  const start = await tile.getAttribute("points");
+  const tile = page.locator("svg.board .tile.in-tray").first();
+  const start = await tile.getAttribute("d");
   await page.locator('[data-turn="1"]').click();
-  const turned = await tile.getAttribute("points");
+  const turned = await tile.getAttribute("d");
   expect(turned).not.toEqual(start);
   await page.locator('[data-turn="-1"]').click();
-  await expect(tile).toHaveAttribute("points", start!);
+  await expect(tile).toHaveAttribute("d", start!);
 });
 
 test("the wheel zooms the board in, and the tray tiles grow with it", async ({ page }) => {
   await page.goto("/?level=rhombille");
-  const tray = page.locator("svg.board polygon.in-tray").first();
+  const tray = page.locator("svg.board .tile.in-tray").first();
   const before = (await tray.boundingBox())!;
   const r = (await page.locator("svg.board path.region").boundingBox())!;
   await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
@@ -171,7 +171,7 @@ test.describe("on a touchscreen", () => {
 
   test("the tray is two rows: the tiles, then the controls", async ({ page }) => {
     await page.goto("/?level=kisrhombille");
-    const tile = (await page.locator("svg.board polygon.in-tray").first().boundingBox())!;
+    const tile = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
     const knobs = page.locator("svg.board .knob > circle:first-child");
     await expect(knobs).toHaveCount(4);
     const ys = new Set<number>();
@@ -194,7 +194,7 @@ test.describe("on a touchscreen", () => {
     await page.goto("/?level=dodecarhombitrihex");
     const thumb = page.locator("svg.board .tray-scroll-thumb");
     await expect(thumb).toBeVisible();
-    const tile = page.locator("svg.board polygon.in-tray").first();
+    const tile = page.locator("svg.board .tile.in-tray").first();
     const knob = page.locator('[data-turn="1"]');
     const start = (await tile.boundingBox())!.x;
     const knobAt = (await knob.boundingBox())!.x;
@@ -255,7 +255,7 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   await page.goto("/?level=squares");
   // Lay the 4×4 squares row by row from the bottom-left: each dropped on its
   // own cell snaps to the corner the cells before it left open.
-  const tray = page.locator("svg.board polygon.in-tray").first();
+  const tray = page.locator("svg.board .tile.in-tray").first();
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) {
       const t = (await tray.boundingBox())!;
@@ -315,4 +315,14 @@ test("Tilings' families are named as Hypersweeper names them", async ({ page }) 
     "Spirals",
     "Aperiodic",
   ]);
+});
+
+test("the Spectre's edges are round, Tile(1,1)'s straight", async ({ page }) => {
+  await page.goto("/?level=spectre");
+  // a round edge is a cubic arc in the path; a straight one a line
+  await expect(page.locator("svg.board .tile.in-tray").first()).toHaveAttribute("d", /C/);
+  await expect(page.locator("svg.board path.region")).toHaveAttribute("d", /C/);
+  await page.goto("/?level=tile11");
+  await expect(page.locator("svg.board .tile.in-tray").first()).not.toHaveAttribute("d", /C/);
+  await expect(page.locator("svg.board path.region")).not.toHaveAttribute("d", /C/);
 });

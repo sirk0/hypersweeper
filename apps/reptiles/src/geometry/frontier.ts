@@ -11,6 +11,11 @@
 // middle of a neighbour's side, as a running bond or an isogonal tiling has —
 // cancels piece by piece like any other contact.
 //
+// Round edges (the Spectre's) are labels on straight ones: each frontier edge
+// carries the bulge of whatever left it open — a tile's curve, or the rim's —
+// and a tile may lie along a round edge only with the same curve on its own
+// edge there, end to end. A curved edge is never cut part-way.
+//
 // Every decision is exact (see cyclotomic.ts). Floats only prefilter by
 // bounding box, order the split points along an edge, and classify the
 // midpoint of a piece already known to lie off every boundary.
@@ -23,7 +28,16 @@ import {
   type Cyc,
   type Ring,
 } from "./cyclotomic";
-import { centroid, loopEdges, posed, winding, type Shape, type XY } from "./shape";
+import {
+  centroid,
+  loopEdges,
+  posed,
+  posedCurve,
+  winding,
+  type Bulge,
+  type Shape,
+  type XY,
+} from "./shape";
 
 export interface Edge {
   a: Cyc;
@@ -32,16 +46,35 @@ export interface Edge {
   bk: string;
   axy: XY;
   bxy: XY;
+  /** Which way the edge bulges, seen from a to b (`Bulge`); 0 if straight. */
+  bulge: Bulge;
+  /** Not a piece cut from a longer edge. */
+  whole: boolean;
 }
 
 const EPS = 1e-9;
 
-function edge(ring: Ring, a: Cyc, b: Cyc): Edge {
-  return { a, b, ak: ring.key(a), bk: ring.key(b), axy: ring.toXY(a), bxy: ring.toXY(b) };
+function edge(ring: Ring, a: Cyc, b: Cyc, bulge: Bulge = 0, whole = true): Edge {
+  return {
+    a,
+    b,
+    ak: ring.key(a),
+    bk: ring.key(b),
+    axy: ring.toXY(a),
+    bxy: ring.toXY(b),
+    bulge,
+    whole,
+  };
 }
 
-function loopToEdges(ring: Ring, verts: Cyc[]): Edge[] {
-  return verts.map((v, i) => edge(ring, v, verts[(i + 1) % verts.length]!));
+function loopToEdges(ring: Ring, verts: Cyc[], curve?: readonly Bulge[]): Edge[] {
+  return verts.map((v, i) => edge(ring, v, verts[(i + 1) % verts.length]!, curve?.[i] ?? 0));
+}
+
+/** An edge the other way round: the same line, so its bulge is to the other
+ * side. */
+function reverse(ring: Ring, e: Edge): Edge {
+  return edge(ring, e.b, e.a, -e.bulge as Bulge, e.whole);
 }
 
 interface Box {
@@ -92,10 +125,10 @@ function splitAt(ring: Ring, edges: Edge[], points: Map<string, Cyc>): Edge[] {
     cuts.sort((u, v) => dist(u.xy) - dist(v.xy));
     let from = e.a;
     for (const { p } of cuts) {
-      out.push(edge(ring, from, p));
+      out.push(edge(ring, from, p, e.bulge, false));
       from = p;
     }
-    out.push(edge(ring, from, e.b));
+    out.push(edge(ring, from, e.b, e.bulge, false));
   }
   return out;
 }
@@ -140,11 +173,12 @@ export class Frontier {
     readonly edges: readonly Edge[],
   ) {}
 
-  /** The frontier of an untouched region: its loops, interior on the left. */
-  static ofRegion(ring: Ring, loops: Cyc[][]): Frontier {
+  /** The frontier of an untouched region: its loops, interior on the left,
+   * with each loop's round edges, if it has any. */
+  static ofRegion(ring: Ring, loops: Cyc[][], curves?: readonly (readonly Bulge[])[]): Frontier {
     return new Frontier(
       ring,
-      loops.flatMap((loop) => loopToEdges(ring, loop)),
+      loops.flatMap((loop, i) => loopToEdges(ring, loop, curves?.[i])),
     );
   }
 
@@ -182,11 +216,11 @@ export class Frontier {
     return corners;
   }
 
-  /** The frontier once `poly` (counter-clockwise) is covered too. The caller
-   * has checked `fits`. */
-  cover(poly: Cyc[]): Frontier {
+  /** The frontier once `poly` (counter-clockwise, with its round edges'
+   * `curve`) is covered too. The caller has checked `fits`. */
+  cover(poly: Cyc[], curve?: readonly Bulge[]): Frontier {
     const { ring } = this;
-    const reversed = loopToEdges(ring, poly).map((e) => edge(ring, e.b, e.a));
+    const reversed = loopToEdges(ring, poly, curve).map((e) => reverse(ring, e));
     const mine = splitAt(ring, [...this.edges], vertexMap(reversed));
     const theirs = splitAt(ring, reversed, vertexMap(this.edges));
     const open = new Map<string, Edge[]>();
@@ -238,12 +272,13 @@ export class Frontier {
     return true;
   }
 
-  /** `poly` (counter-clockwise) lies inside the uncovered area: it overlaps no
-   * covered tile and does not leave the region. Touching along edges and at
-   * points is fine. */
-  fits(poly: Cyc[]): boolean {
+  /** `poly` (counter-clockwise, with its round edges' `curve`) lies inside the
+   * uncovered area: it overlaps no covered tile and does not leave the
+   * region. Touching along edges and at points is fine — along a round edge,
+   * only where both sides are the one curve, end to end. */
+  fits(poly: Cyc[], curve?: readonly Bulge[]): boolean {
     const { ring } = this;
-    const tile = loopToEdges(ring, poly);
+    const tile = loopToEdges(ring, poly, curve);
     const tileXY = poly.map((v) => ring.toXY(v));
     const box = boxOf(tileXY);
     const near = this.edges.filter((e) => overlaps(edgeBox(e), box));
@@ -256,9 +291,22 @@ export class Frontier {
     // tile's inside), or the tile sits on covered ground there.
     const tileLoop = loopEdges(tileXY);
     for (const piece of splitAt(ring, near, vertexMap(tile))) {
+      // a tile corner part-way along a round edge: it would cut the curve
+      if (piece.bulge && !piece.whole) return false;
       const along = tile.find((t) => onEdge(ring, piece, t));
       if (along) {
         if (!sameDirection(ring, ring.sub(along.b, along.a), ring.sub(piece.b, piece.a)))
+          return false;
+        // a round edge on either side: the same curve, the whole edge
+        if (
+          (along.bulge || piece.bulge) &&
+          !(
+            piece.whole &&
+            piece.ak === along.ak &&
+            piece.bk === along.bk &&
+            piece.bulge === along.bulge
+          )
+        )
           return false;
       } else if (winding(tileLoop, midpoint(piece)) !== 0) {
         return false;
@@ -267,6 +315,7 @@ export class Frontier {
     // Tile pieces off the frontier must be in the uncovered area.
     const all = this.edges.map((e): [XY, XY] => [e.axy, e.bxy]);
     for (const piece of splitAt(ring, tile, vertexMap(near))) {
+      if (piece.bulge && !piece.whole) return false; // a corner part-way along a round side
       if (near.some((f) => onEdge(ring, piece, f))) continue; // judged above
       if (winding(all, midpoint(piece)) !== 1) return false;
     }
@@ -301,13 +350,13 @@ export class Frontier {
   ): Cyc[][] {
     const { ring } = this;
     const found = new Map<string, Cyc[]>();
-    const tryPose = (verts: Cyc[]): void => {
+    const tryPose = (verts: Cyc[], curve: Bulge[] | undefined): void => {
       const k = verts
         .map((v) => ring.key(v))
         .sort()
         .join("|");
       if (found.has(k)) return;
-      found.set(k, this.fits(verts) && (!accept || accept(verts)) ? verts : []);
+      found.set(k, this.fits(verts, curve) && (!accept || accept(verts)) ? verts : []);
     };
     const flips = mirror ? [false, true] : [false];
     const r2 = reach * reach;
@@ -321,6 +370,7 @@ export class Frontier {
         if (!corners.has(ring.key(v))) continue;
         for (const flip of flips) {
           const base = posed(shape, { rot: 0, flip, t: ring.zero });
+          const curve = posedCurve(shape.curve, flip);
           const m = base.length;
           for (let i = 0; i < m; i++) {
             const along = leaving
@@ -331,7 +381,10 @@ export class Frontier {
             const z = ring.zeta(k);
             if (!sameDirection(ring, d, ring.mul(z, along))) continue;
             const t = ring.sub(v, ring.mul(z, base[i]!));
-            tryPose(base.map((p) => ring.add(ring.mul(z, p), t)));
+            tryPose(
+              base.map((p) => ring.add(ring.mul(z, p), t)),
+              curve,
+            );
           }
         }
       }

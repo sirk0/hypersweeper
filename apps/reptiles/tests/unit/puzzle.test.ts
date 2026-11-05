@@ -34,7 +34,7 @@ import { describe, expect, it } from "vitest";
 import { aperiodicShrink } from "../../src/geometry/aperiodic";
 import { strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import { ccw } from "../../src/geometry/outline";
-import { centroid, posed, turnsOnto, type XY } from "../../src/geometry/shape";
+import { centroid, IN, OUT, posed, sideCount, turnsOnto, type XY } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
 import { LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
@@ -49,20 +49,24 @@ describe("puzzle", () => {
   it.each(LEVELS.map((l) => l.key))("%s: the board it was cut from fills it exactly", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const { ring, tiles } = p.level;
-    // a cell's kind: the tray tile it is a turn of, or a turn of mirrored
-    const kindOf = (cell: Cyc[]): number =>
-      tiles.findIndex(
-        (t) =>
-          turnsOnto(t, cell).length > 0 ||
-          turnsOnto({ ring, verts: posed(t, { rot: 0, flip: true, t: ring.zero }) }, cell).length >
-            0,
-      );
+    // a cell's kind: the tray tile it is a turn of, or a turn of mirrored —
+    // and which turn, which way round
+    const sitOf = (cell: Cyc[]): [kind: number, rot: number, flip: boolean] => {
+      for (const [kind, t] of tiles.entries()) {
+        for (const flip of [false, true]) {
+          const verts = posed(t, { rot: 0, flip, t: ring.zero });
+          const [rot] = turnsOnto({ ring, verts }, cell);
+          if (rot !== undefined) return [kind, rot, flip];
+        }
+      }
+      return [-1, 0, false];
+    };
     for (const raw of p.level.cells) {
       expect(p.coverage).toBeLessThan(1);
       const cell = ccw(ring, raw);
-      const kind = kindOf(cell);
+      const [kind, rot, flip] = sitOf(cell);
       expect(kind).toBeGreaterThanOrEqual(0);
-      p.place(kind, cell, 0);
+      p.place(kind, cell, rot, flip);
     }
     expect(p.won).toBe(true);
     expect(p.coverage).toBe(1);
@@ -121,8 +125,8 @@ describe("puzzle", () => {
     if (inflations !== undefined) return REPTILE_BUILDERS[key]!(inflations, 1);
     if (spiral) return SPIRAL_BUILDERS[key]!(spiral.rings, spiral.keep, 1);
     if (aperiodic) {
-      const { depth, keep } = aperiodic;
-      return APERIODIC_BUILDERS[key]!(depth, keep, 1 / aperiodicShrink(key, depth));
+      const { mode, depth, keep } = aperiodic;
+      return APERIODIC_BUILDERS[mode]!(depth, keep, 1 / aperiodicShrink(mode, depth));
     }
     return BUILDERS[key]!();
   };
@@ -499,12 +503,19 @@ describe("puzzle", () => {
   // The aperiodic tilings: every one of Hypersweeper's, each the centred
   // window of its builder's patch.
   const aperiodic = LEVELS.filter((l) => l.group === "aperiodic");
-  it("has Hypersweeper's aperiodic tilings, in its order", () => {
+  it("has Hypersweeper's aperiodic tilings, in its order — the Spectre's twice", () => {
     const theirs = catalog.menu.aperiodic as string[];
-    expect(aperiodic.map((l) => l.key)).toEqual(theirs);
-    expect(aperiodic.map((l) => l.name)).toEqual(
-      theirs.map((m) => (catalog.modeInfo as Record<string, { label: string }>)[m]!.label),
-    );
+    expect(theirs.at(-1)).toBe("spectre");
+    // the Spectre's board is Tile(1,1) with straight edges, then round
+    expect(aperiodic.map((l) => l.key)).toEqual([...theirs.slice(0, -1), "tile11", "spectre"]);
+    expect(aperiodic.map((l) => l.aperiodic!.mode)).toEqual([...theirs, "spectre"]);
+    const label = (m: string): string =>
+      (catalog.modeInfo as Record<string, { label: string }>)[m]!.label;
+    expect(aperiodic.map((l) => l.name)).toEqual([
+      ...theirs.slice(0, -1).map(label),
+      "Tile(1,1)",
+      label("spectre"),
+    ]);
   });
   /** Each tiling's tiles, by side count, and its rotate step in degrees: 36°
    * on ℤ[ζ10] (a thin rhombus sits at every tenth of a turn), 45° on ℤ[ζ8],
@@ -513,20 +524,75 @@ describe("puzzle", () => {
     penrose: [[4, 4], 36],
     kitedart: [[4, 4], 36],
     ammannbeenker: [[4, 4], 45],
+    tile11: [[13], 30],
     spectre: [[13], 30],
   };
   it.each(aperiodic.map((l) => l.key))("%s: its tiles, two or three dozen, one outline", (key) => {
     const level = levelByKey(key)!;
     const [sides, degrees] = APERIODIC_TILES[key]!;
-    expect(level.tiles.map((t) => t.verts.length)).toEqual(sides);
+    expect(level.tiles.map((t) => sideCount(level.ring, t.verts))).toEqual(sides);
     expect(level.need.reduce((a, b) => a + b)).toBe(level.cells.length);
     expect(level.cells.length).toBeGreaterThanOrEqual(24);
     expect(level.cells.length).toBeLessThanOrEqual(36);
     expect(level.region).toHaveLength(1);
-    // every tile here is mirror-symmetric, but for the Spectre, which the
-    // tiling never turns over
+    // every tile here is mirror-symmetric, but for Tile(1,1) and the
+    // Spectre, which the tiling never turns over
     expect(level.mirror).toBe(false);
     expect((level.turn * 360) / level.ring.n).toBe(degrees);
+  });
+
+  // The Spectre: Tile(1,1) with its fourteen unit edges bulging out and in by
+  // turns, its flat corner kept as the point where two curves meet.
+  describe("the Spectre's round edges", () => {
+    const spectre = levelByKey("spectre")!;
+    const straight = levelByKey("tile11")!;
+    const { ring } = spectre;
+    const tile = spectre.tiles[0]!;
+    const key = (a: Cyc, b: Cyc): string => `${ring.key(a)}>${ring.key(b)}`;
+
+    it("is Tile(1,1) with its flat corner kept, its edges out and in by turns", () => {
+      expect(tile.verts).toHaveLength(14);
+      expect(sideCount(ring, tile.verts)).toBe(13);
+      expect(straight.tiles[0]!.curve).toBeUndefined();
+      // the same tile, the same board: only the edges differ
+      expect(spectre.colours).toEqual(straight.colours);
+      expect(spectre.turn).toBe(straight.turn);
+      expect(spectre.need).toEqual(straight.need);
+      expect(tile.curve).toEqual(tile.verts.map((_, i) => (i % 2 ? IN : OUT)));
+      // every edge is one unit long: one curve each
+      for (const [i, v] of tile.verts.entries()) {
+        const d = ring.sub(tile.verts[(i + 1) % 14]!, v);
+        expect(ring.eq(ring.mul(d, ring.conj(d)), ring.one)).toBe(true);
+      }
+    });
+
+    it("meets itself out to in along every edge the board's tiles share", () => {
+      const p = new Puzzle(spectre);
+      expect(p.solve()).toBe(true);
+      const bulge = new Map<string, number>();
+      for (const t of p.tiles)
+        t.verts.forEach((a, i) => bulge.set(key(a, t.verts[(i + 1) % 14]!), t.curve![i]!));
+      let shared = 0;
+      for (const [k, b] of bulge) {
+        const [ak, bk] = k.split(">");
+        const twin = bulge.get(`${bk}>${ak}`);
+        if (twin === undefined) continue;
+        expect(twin).toBe(-b); // the same line: in from one side, out from the other
+        shared++;
+      }
+      expect(shared).toBeGreaterThan(2 * spectre.cells.length);
+      // and the rim is round wherever a tile lies along it
+      expect(spectre.regionCurves!.flat().every((b) => b !== 0)).toBe(true);
+    });
+
+    it("refuses a tile whose curves do not match the rim", () => {
+      // the board's own first tile, but its curves the other way out
+      const p = new Puzzle({
+        ...spectre,
+        tiles: [{ ...tile, curve: tile.curve!.map((b) => -b as typeof OUT) }],
+      });
+      expect(p.solve(200)).toBe(false);
+    });
   });
 
   const pentagonal = LEVELS.filter((l) => l.group === "pentagonal");
