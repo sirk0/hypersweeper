@@ -9,6 +9,7 @@ import {
   selfTurns,
   signedArea,
   spotKey,
+  turnsOnto,
   type Bulge,
   type Piece,
   type Shape,
@@ -80,10 +81,20 @@ export class Puzzle {
     return this.won ? 1 : Math.min(covered / region, 0.999);
   }
 
-  /** A kind's shape, mirrored if `flip`, turned by ζ^rot. */
+  private shapes = new Map<string, Shape>();
+
+  /** A kind's shape, mirrored if `flip`, turned by ζ^rot — the same object
+   * each time, so what the frontier works out about it is kept. */
   shapeAt(kind: number, rot: number, flip = false): Shape {
-    const shape = this.level.tiles[kind]!;
-    return { ring: shape.ring, pieces: posed(shape, { rot, flip, t: shape.ring.zero }) };
+    const n = this.level.ring.n;
+    const key = `${kind}|${((rot % n) + n) % n}|${flip}`;
+    let out = this.shapes.get(key);
+    if (!out) {
+      const shape = this.level.tiles[kind]!;
+      out = { ring: shape.ring, pieces: posed(shape, { rot, flip, t: shape.ring.zero }) };
+      this.shapes.set(key, out);
+    }
+    return out;
   }
 
   /** Whether the level has a rotate control at all — not where every tile of
@@ -231,6 +242,30 @@ export class Puzzle {
     const { ring } = this.level;
     const own = new Set(this.level.cells.map((c) => spotKey(ring, c)));
     return this.search({ budget }, (spot) => own.has(spotKey(ring, spot)));
+  }
+
+  /** Lay every one of the board's own tiles (`level.cells`) that still fits
+   * — all of them on an empty board — as the tray holds it, the cheap part
+   * of finishing a board the player has not wandered off; `solve` does the
+   * rest. A dev aid, for a board whose blind search is slow (the
+   * Socolar–Taylor tile's, its nineteen pieces at every one of hundreds of
+   * corners). */
+  layOwn(): void {
+    const { ring, tiles } = this.level;
+    for (const cell of this.level.cells) {
+      if (!this.frontier.fits(cell)) continue;
+      const verts = cell.map((c) => c.verts);
+      sit: for (const [kind, shape] of tiles.entries()) {
+        for (const flip of [false, true]) {
+          const pieces = posed(shape, { rot: 0, flip, t: ring.zero });
+          const [rot] = turnsOnto({ ring, pieces }, verts);
+          if (rot !== undefined && (!flip || this.level.mirror)) {
+            this.place(kind, cell, rot, flip);
+            break sit;
+          }
+        }
+      }
+    }
   }
 
   private search(left: { budget: number }, isOwn: (spot: Piece[]) => boolean): boolean {

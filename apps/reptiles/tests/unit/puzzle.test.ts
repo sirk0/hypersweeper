@@ -92,7 +92,12 @@ describe("puzzle", () => {
     expect(p.level.tiles.map((_, k) => p.used(k))).toEqual(p.level.need);
   });
 
-  it.each(LEVELS.map((l) => l.key))("%s can be finished by search from empty", (key) => {
+  // (but the Socolar–Taylor tile's: nineteen pieces tried at every one of its
+  // board's five hundred corners, step after step, take a quarter of a
+  // minute — the board's own tiles filling it exactly, above, show it can be
+  // finished)
+  const searchable = LEVELS.filter((l) => !l.socolarTaylor).map((l) => l.key);
+  it.each(searchable)("%s can be finished by search from empty", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     expect(p.solve()).toBe(true);
   });
@@ -174,9 +179,11 @@ describe("puzzle", () => {
   // A tiling turned to lay its edges on the ring (the snub hexagonal) is cut
   // in its own frame, not Hypersweeper's; the vertex test below covers it.
   const isDual = (group: string): boolean => group === "laves" || group === "2-isohedral";
-  const unturned = LEVELS.filter((l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile).map(
-    (l) => l.key,
-  );
+  // (a tile of several pieces — the fish, the Socolar–Taylor tile — has no
+  // Hypersweeper board to match)
+  const unturned = LEVELS.filter(
+    (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor,
+  ).map((l) => l.key);
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const ours = p.level.cells.map((c) => poly(c).map((v) => p.level.ring.toXY(v)));
@@ -525,7 +532,9 @@ describe("puzzle", () => {
 
   // The aperiodic tilings: every one of Hypersweeper's, each the centred
   // window of its builder's patch.
-  const aperiodic = LEVELS.filter((l) => l.group === "aperiodic");
+  // (and then the Socolar–Taylor tile, which Hypersweeper has no board for —
+  // tests/unit/socolarTaylor.test.ts)
+  const aperiodic = LEVELS.filter((l) => l.group === "aperiodic" && l.aperiodic);
   it("has Hypersweeper's aperiodic tilings, in its order — the Spectre's twice", () => {
     const theirs = catalog.menu.aperiodic as string[];
     expect(theirs.at(-1)).toBe("spectre");
@@ -673,8 +682,9 @@ describe("puzzle", () => {
 
   it("flips only where the board uses a tile both ways round", () => {
     // the kisrhombille's triangles, the 2-isohedral tilings whose tiles
-    // come in mirror pairs, the pentagonal tilings but type 10, and the
-    // rep-tiles whose dissection reflects a child
+    // come in mirror pairs, the pentagonal tilings but type 10, the
+    // rep-tiles whose dissection reflects a child, and the Socolar–Taylor
+    // tile, which tiles only with its mirror image
     expect(
       LEVELS.filter((l) => l.mirror)
         .map((l) => l.key)
@@ -692,6 +702,7 @@ describe("puzzle", () => {
       "ppentomino",
       "rhombicl",
       "righttrapezoid",
+      "socolartaylor",
       "sphinx",
       "squaretrihex2dual",
       "squaretrihexdual",

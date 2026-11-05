@@ -255,7 +255,8 @@ route();
 requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
 
 // A seam for checking the game by hand or from a script, in dev builds only:
-// `__reptiles.fill()` finishes the board (backtracking where it must).
+// `__reptiles.fill()` finishes the board: the board's own tiles that still
+// fit, then a search (backtracking where it must).
 if (import.meta.env.DEV) {
   Object.assign(window, {
     __reptiles: {
@@ -264,6 +265,7 @@ if (import.meta.env.DEV) {
       },
       fill(): void {
         if (!session) return;
+        session.puzzle.layOwn();
         session.puzzle.solve();
         session.board.draw();
         changed();

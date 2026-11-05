@@ -16,6 +16,7 @@ import { piecePatch } from "./geometry/pieces";
 import { repTilePatch } from "./geometry/repTile";
 import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
+import { socolarTaylorPatch } from "./geometry/socolarTaylor";
 import { ccw, outline } from "./geometry/outline";
 import {
   curveOnto,
@@ -120,6 +121,11 @@ export interface Level {
    * many substitutions grow the patch, and how many tiles its centred window
    * keeps. */
   aperiodic?: { mode: string; depth: number; keep: number };
+  /** For the Socolar–Taylor tile — an aperiodic monotile Hypersweeper has no
+   * board for (a minesweeper cell is one polygon; this tile is nineteen),
+   * defined here in `geometry/socolarTaylor.ts` — how many rings of its patch
+   * round the middle hexagon the board keeps. */
+  socolarTaylor?: { rings: number };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -784,6 +790,22 @@ function aperiodicLevel(
   };
 }
 
+/** The Socolar–Taylor tile: a notched hexagon, six small rectangles and six
+ * pairs of larger ones, moved as one — a single tile that tiles the plane, both
+ * ways up, but never periodically. Hypersweeper has no board for it, so it
+ * comes from `socolarTaylorPatch`: the middle two rings of a patch four rings
+ * out, 19 tiles, a hexagon of them. Its outer tiles' far pieces lie off the
+ * hexagon, and their missing neighbours leave gaps in it — the region is
+ * those too. */
+function socolarTaylorLevel(rings: number): Level {
+  const name = "Socolar–Taylor tile";
+  const { ring, cells } = socolarTaylorPatch(rings);
+  return {
+    ...makeLevel("socolartaylor", name, ring, cells, "aperiodic", [], name),
+    socolarTaylor: { rings },
+  };
+}
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -836,6 +858,8 @@ export const LEVELS: Level[] = [
   ...APERIODIC.map(([key, mode, depth, keep, round]) =>
     aperiodicLevel(key, mode, depth, keep, round),
   ),
+  // …and one tile that does it alone, in nineteen pieces.
+  socolarTaylorLevel(2),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,
