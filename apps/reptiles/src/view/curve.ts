@@ -3,7 +3,35 @@
 // its left or its right (`Bulge`). The arc is the same seen from either end,
 // so an edge drawn in from one tile and out from its neighbour is one line.
 
-import type { Bulge, XY } from "../geometry/shape";
+import type { Ring } from "../geometry/cyclotomic";
+import type { Bulge, Piece, XY } from "../geometry/shape";
+
+/** One piece of a tile as drawn: its outline, in board units, and its round
+ * edges, if it has them. A tile is one loop, or one per piece (the fish). */
+export interface Loop {
+  xy: XY[];
+  curve?: readonly Bulge[] | undefined;
+}
+
+/** `pieces` as loops to draw. */
+export function loopsOf(ring: Ring, pieces: readonly Piece[]): Loop[] {
+  return pieces.map((p) => ({ xy: p.verts.map((v) => ring.toXY(v)), curve: p.curve }));
+}
+
+/** `loops` moved by `f` (a shift: the curves keep). */
+export function shiftLoops(loops: readonly Loop[], f: (p: XY) => XY): Loop[] {
+  return loops.map((l) => ({ xy: l.xy.map(f), curve: l.curve }));
+}
+
+/** One SVG path for a whole tile: a closed sub-path per loop. */
+export function loopsPath(loops: readonly Loop[], map?: (p: XY) => XY): string {
+  return loops.map((l) => outlinePath(l.xy, l.curve, map)).join("");
+}
+
+/** What bounds a whole tile as drawn (`reachPoints`, loop by loop). */
+export function loopsReach(loops: readonly Loop[]): XY[] {
+  return loops.flatMap((l) => reachPoints(l.xy, l.curve));
+}
 
 /** How far a round edge's control points stand off it, as a share of its
  * length — the arc's deepest point is three quarters of that — and how far

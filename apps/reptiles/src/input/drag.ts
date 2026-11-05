@@ -25,9 +25,9 @@
 // it can run longer than the screen: its scroll bar, a drag on the strip's bare
 // background, or the wheel over it scrolls it along.
 
-import type { Cyc } from "../geometry/cyclotomic";
-import { centroid, signedArea, type Bulge, type XY } from "../geometry/shape";
+import { centroidOf, signedArea, type Piece, type XY } from "../geometry/shape";
 import type { Placed, Puzzle } from "../puzzle";
+import { loopsOf, shiftLoops, type Loop } from "../view/curve";
 import type { SvgBoard } from "../view/svgBoard";
 
 /** How far from the pointer a placement may snap, in tile sizes. */
@@ -43,13 +43,12 @@ interface Drag {
   /** How it is held: the kind's shape, mirrored if `flip`, turned by ζ^rot. */
   rot: number;
   flip: boolean;
-  outline: XY[];
-  /** Its round edges, edge i from outline point i (a round tile's). */
-  curve?: Bulge[] | undefined;
+  /** As drawn, a loop per piece, about its centroid. */
+  outline: Loop[];
   /** From the pointer to the tile's centroid, so it does not jump to centre. */
   offset: XY;
   at: XY;
-  ghost: Cyc[] | null;
+  ghost: Piece[] | null;
   /** The placed tile this drag lifted, to put back if it lands nowhere. */
   origin: Placed | null;
   /** The pointer's latest client position. */
@@ -99,8 +98,11 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   };
 
   const reachFor = (kind: number): number => {
-    const xy = puzzle.level.tiles[kind]!.verts.map((v) => ring.toXY(v));
-    return REACH * Math.sqrt(Math.abs(signedArea(xy)));
+    const area = puzzle.level.tiles[kind]!.pieces.reduce(
+      (sum, p) => sum + signedArea(p.verts.map((v) => ring.toXY(v))),
+      0,
+    );
+    return REACH * Math.sqrt(Math.abs(area));
   };
 
   const settle = (): void => {
@@ -120,17 +122,9 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     drag.ghost = discard
       ? null
       : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot, drag.flip);
-    const ghost = drag.ghost?.map((v) => ring.toXY(v)) ?? null;
+    const ghost = drag.ghost && loopsOf(ring, drag.ghost).map((l) => l.xy);
     const stick = drag.ghost ? puzzle.touching(drag.ghost).map((v) => ring.toXY(v)) : [];
-    board.drawDrag(
-      drag.kind,
-      drag.outline,
-      drag.at,
-      ghost && centroid(ghost),
-      stick,
-      discard,
-      drag.curve,
-    );
+    board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroidOf(ghost), stick, discard);
   };
 
   // One turn for everything: every tray tile, and the one in hand.
@@ -142,7 +136,6 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (drag) {
       drag.rot = mod(drag.rot + step);
       drag.outline = board.outline(drag.kind, drag.rot, drag.flip);
-      drag.curve = board.curve(drag.kind, drag.flip);
       update();
     }
   };
@@ -154,7 +147,6 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (drag) {
       drag.flip = !drag.flip;
       drag.outline = board.outline(drag.kind, drag.rot, drag.flip);
-      drag.curve = board.curve(drag.kind, drag.flip);
       update();
     }
   };
@@ -205,8 +197,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     let kind: number;
     let rot: number;
     let flipped = false;
-    let outline: XY[];
-    let curve: Bulge[] | undefined;
+    let outline: Loop[];
     let c: XY;
     let origin: Placed | null = null;
     const tray = target.closest("[data-tray]");
@@ -224,7 +215,6 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       rot = board.turn;
       flipped = board.flip;
       outline = board.outline(kind, rot, flipped);
-      curve = board.curve(kind, flipped);
       c = board.trayCentre(kind);
     } else if (placed) {
       origin = puzzle.lift(Number(placed.getAttribute("data-tile"))) ?? null;
@@ -232,10 +222,10 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       kind = origin.kind;
       rot = origin.rot;
       flipped = origin.flip;
-      const xy = origin.verts.map((v) => ring.toXY(v));
-      c = centroid(xy);
-      outline = xy.map(([x, y]): XY => [x - c[0], y - c[1]]);
-      curve = origin.curve;
+      const loops = loopsOf(ring, origin.pieces);
+      const [cx, cy] = centroidOf(loops.map((l) => l.xy));
+      c = [cx, cy];
+      outline = shiftLoops(loops, ([x, y]) => [x - cx, y - cy]);
     } else {
       // The tray strip's bare background scrolls the shelf; bare board or
       // page pans, once zoomed in.
@@ -251,7 +241,6 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       rot,
       flip: flipped,
       outline,
-      curve,
       offset: [c[0] - p[0], c[1] - p[1]],
       at: c,
       ghost: null,
@@ -303,7 +292,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const d = drag;
     drag = null;
     board.clearDrag();
-    if (d.origin) puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot, d.origin.flip);
+    if (d.origin) puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
     settle();
   }
 
@@ -320,7 +309,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const d = drag;
     drag = null;
     board.clearDrag();
-    let ghost: Cyc[] | null = null;
+    let ghost: Piece[] | null = null;
     // Judged at the release point itself, not the last frame's.
     const p = board.toBoard(ev.clientX, ev.clientY);
     const discard = drop && board.overTray(ev.clientX, ev.clientY);
@@ -336,7 +325,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (ghost) {
       puzzle.place(d.kind, ghost, d.rot, d.flip);
     } else if (d.origin && !discard) {
-      puzzle.place(d.origin.kind, d.origin.verts, d.origin.rot, d.origin.flip);
+      puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
     }
     settle();
   };

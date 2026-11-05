@@ -57,7 +57,7 @@ level of that difficulty; Tilings opens the catalog (`?tilings`; old
 sideways — board outline, tiles, name, difficulty as Hypersweeper's three bars,
 stars; Figures (`?figures`) lists the levels by the tiles in their tray, a
 row each: one figure by its sides — triangles, quadrilaterals, pentagons,
-hexagons, 7+-gons — then regular pairs, irregular pairs (at least one figure
+hexagons, 7+-gons — then one figure of several pieces, regular pairs, irregular pairs (at least one figure
 irregular), and packs of three or more. A row puts the regular figure first,
 then the rest closest to regular first; one lone figure at two sizes is one
 figure, named for its shape (V4.8² and the isosceles right rep-tile are the
@@ -96,7 +96,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 95 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 100 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -118,7 +118,11 @@ configuration, and but for the stacked bond is not edge to edge),
 *Rep-tiles* (twelve of Hypersweeper's thirteen — the sphinx to the
 T-tetromino — each a big copy of its one tile to fill with small ones, 16 to
 32 of them; the five-triangle is left out, being the pinwheel, whose tiles
-turn by no power of ζ), *Spirals* (five of Hypersweeper's six — the
+turn by no power of ζ — then five whose tile is **several pieces** moved as
+one, which Hypersweeper has no board for: the right-angled fish and the 60°
+fish, a tail meeting a body at one point, 8 and 9 tiles; the kissing squares
+and kissing triangles, two corner to corner, 16; and the kissing square chain,
+four in a zigzag, 16), *Spirals* (five of Hypersweeper's six — the
 phyllotactic hexagons, Klaassen's heptagon, Klaassen's pentagons at five-,
 six- and seven-fold — one tile each, wound round a centre, 24 to 30 of them
 kept as Hypersweeper trims its board, a whole number of arms where that is
@@ -141,7 +145,7 @@ builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
-edges, a won board and
+edges, a tile of several pieces moving as one, a won board and
 its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -203,16 +207,23 @@ finishes the board — the quick way to see the win state.
   Ammann–Beenker, ℤ[ζ5]/ℤ[ζ10] Penrose, ℤ[ζ7] Klaassen, ℤ[ζ24] mixes — and
   the exact predicates (`orient`, `sameDirection`, `strictlyBetween`,
   `properlyCross`) decide zero exactly and only read a float's sign.
-- `src/geometry/shape.ts` — `Shape` (any simple polygon, CCW, y up — concave
-  allowed), `Pose` (rotate by ζᵏ, optional mirror, translate), `regular`,
+- `src/geometry/shape.ts` — `Shape`: a tile, its `pieces` — one `Piece`,
+  any simple polygon (CCW, y up, concave allowed), or several moved as one
+  (the fish, the kissing squares: `polygon` makes the one-piece kind; nothing
+  asks the pieces to touch, so a tile whose pieces lie apart, the
+  Socolar–Taylor tile, fits too) — `Pose` (rotate by ζᵏ, optional mirror, translate), `regular`,
   `walk` (a region outline as unit steps), and the float measures used for
-  drawing and nearest-snap. A round tile's `curve` is a `Bulge` per edge —
+  drawing and nearest-snap. `posed`, `turnsOnto`, `selfTurns` and `restFlat`
+  take every piece together: a tile rests on a side with all its pieces above
+  it (or, having none, as it is); `spotKey` names a placement by all its
+  vertices. A round piece's `curve` is a `Bulge` per edge —
   `IN` (to the edge's left, into the tile), `OUT`, or 0 — every bulge the same
   symmetric arc, so an edge in from one side is the line of one out from the
   other. It lists every point a curve ends at, a flat corner too (the
   Spectre's 14 points); `sideCount` counts only the real corners (13), and
   `restFlat` rests a tile on a whole side. `posedCurve` carries a curve
-  through a mirror, `curveOnto` onto a placed copy listed from any vertex.
+  through a mirror, `curveOnto` onto a placed copy, its pieces and vertices
+  listed in any order.
 - `src/geometry/frontier.ts` — **the frontier**: the uncovered area's boundary
   as directed edges, uncovered side on the left. Covering a tile adds its
   edges reversed and cancels a→b against b→a, after splitting both at each
@@ -222,7 +233,8 @@ finishes the board — the quick way to see the win state.
   `nearest` the one the drag shows. Won ⇔ empty. Each edge carries its
   `bulge` (a round tile's or the rim's, `Level.regionCurves`), and `fits`
   lays an edge along a round one only with the same bulge, end to end — a
-  round edge is never cut part-way.
+  round edge is never cut part-way. A tile of several pieces fits where every
+  piece does, covers them in turn, and snaps by any corner of any of them.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
   cancel exactly, after each side is cut at every corner lying inside it, for
   the bonds' T-junctions): how a level's region is made from its cells.
@@ -257,6 +269,15 @@ finishes the board — the quick way to see the win state.
   its lattice points read exactly into ℤ[ζ4] or ℤ[ζ12] and turned by the
   same upright turn Hypersweeper draws the right triangles at, each cell cut
   to its real corners (the tiles meet at T-junctions, as the bonds do).
+- `src/geometry/pieces.ts` — the rep-tiles of several pieces
+  (`PIECE_TILES`): each tile, the ring element its big copy is grown by (2,
+  3, 4, or 2 + 2i — the right-angled fish grows by 2√2 and turns 45°), and
+  that copy cut into copies of the tile, as a gallery picture of rep-tiles
+  draws it. `piecePatch` grows it: once is the children; again cuts
+  each child the same way, which needs a real factor (a mirror does not
+  commute with a turning growth). The tests (`tests/unit/pieces.test.ts`)
+  check each child is the tile and that they cover the grown tile exactly —
+  the oracle these levels have instead of a Hypersweeper builder.
 - `src/geometry/exact.ts` — tiles a Hypersweeper builder publishes exactly
   (`ExactTiles`: the coefficient vectors its vertex ids are) read into a
   ring: ℤ[ζ(order)], or ℤ[ζ(2·order)] for an odd order, whose tiles sit at
@@ -297,8 +318,11 @@ finishes the board — the quick way to see the win state.
   builder grows it, how many tiles it keeps), checked the same way, and
   `aperiodicLevel` an aperiodic window from `APERIODIC` (the mode key, how
   many substitutions, how many tiles the centred window keeps).
+  `pieceTileLevel` makes a rep-tile of several pieces from `PIECE_REPTILES`
+  (its key in `PIECE_TILES`, its name, how many times it is grown), in the
+  Rep-tiles section, marked `pieceTile`.
   `makeLevel` reads everything off a level's
-  cells: the tray (one tile per kind — cells alike up to a turn, or a turn and
+  cells (each its pieces; `whole` wraps a builder's one-polygon cells): the tray (one tile per kind — cells alike up to a turn, or a turn and
   a mirror — resting flat on its longest side the whole tile lies above and
   that runs along a ring direction, `restFlat`: not the pentagonal spirals'
   cut, nor across the Klaassen heptagon's dent), whether a kind is
@@ -327,7 +351,9 @@ finishes the board — the quick way to see the win state.
   budgeted backtracking fill for the tests and the dev seam that always works
   the open corner with the fewest placements, trying the board's own tile
   there first (blind, it gets lost on V[3.4².6; 3.6.3.6]).
-- `src/view/curve.ts` — drawing round edges: `outlinePath` (a polygon as an
+- `src/view/curve.ts` — drawing a tile: a `Loop` per piece (`loopsOf`),
+  drawn as one path with a sub-path each (`loopsPath`), bounded by
+  `loopsReach`; and round edges: `outlinePath` (a polygon as an
   SVG path, each round edge a cubic arc, laid out in board space before any
   y flip), `edgePath` for an open edge, and `reachPoints` (corners and points
   along the arcs: what a round tile's bounds and tray circle are taken from).
@@ -351,8 +377,8 @@ finishes the board — the quick way to see the win state.
   the isosceles right rep-tile, V4.6.12 with the 30-60-90 one; pairs and
   packs keep true sizes (Pythagorean's two squares). Each set is in a row
   (`bucket`, the order of `BUCKETS`: one figure by its sides — triangles,
-  quadrilaterals, pentagons, hexagons, 7+-gons — then regular pairs,
-  irregular pairs, packs), and in a row by fewer figures, regular first, then
+  quadrilaterals, pentagons, hexagons, 7+-gons — then one figure of several
+  pieces, regular pairs, irregular pairs, packs), and in a row by fewer figures, regular first, then
   `distortion` ascending (1 − the isoperimetric quotient over the regular
   n-gon's; a float, for ordering only; a set's is its figures' mean), then
   side counts compared term by term, then first use in `LEVELS`. A figure is
@@ -382,7 +408,10 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   (the repo rule in the root `AGENTS.md`). Floats are for drawing, for bounding
   boxes, for ordering points already known to be on one segment, and for the
   sign of a value already known to be non-zero.
-- **A level follows a Hypersweeper board.** Build its cells exactly — for a
+- **A level follows a Hypersweeper board** — but for the rep-tiles of
+  several pieces, which Hypersweeper cannot have (a minesweeper cell is one
+  polygon): those are defined in `src/geometry/pieces.ts` and checked by
+  covering their grown tile exactly. Build its cells exactly — for a
   periodic tiling, `uniformLevel` with the template key and a box size found by
   scanning (square, one outline, a couple of dozen tiles) — and the tests check
   it tile for tile against the Hypersweeper board (`archimedeanBoard` for a
@@ -395,8 +424,9 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues (7,
   Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1)
-  and the Spectre, violet at its end — real corners, `sideCount`), and a
-  second kind with as many sides as another in rose (`.twin`) — read a kind's
+  and the Spectre, violet at its end — real corners, `sideCount`), a tile
+  of several pieces in slate, off the ramp (`.pieces`), and a second kind
+  coloured as another in rose (`.twin`) — read a kind's
   classes from `level.colours`, never from its side count.
 - Import the geometry as `@tiling/geometry` (its index) and nothing from
   `apps/hypersweeper/` (renderer, UI, game rules) — that is Hypersweeper's own.

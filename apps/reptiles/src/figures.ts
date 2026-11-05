@@ -11,9 +11,12 @@
 // by rounding a coordinate (the repo rule in AGENTS.md). A round tile (the
 // Spectre) is its own figure: the same polygon with straight edges (Tile(1,1))
 // is another, and two round ones are one only where their curves match too.
+// A tile of several pieces (the fish) matches another only piece for piece,
+// all under the one motion — the same pieces set apart differently are
+// another figure.
 
 import { cyclotomic, dotSign, orient, type Cyc, type Ring } from "./geometry/cyclotomic";
-import { posedCurve, regular, sideCount, signedArea, type Shape } from "./geometry/shape";
+import { posedCurve, regular, sides, signedArea, type Piece, type Shape } from "./geometry/shape";
 import { LEVELS, type Level } from "./levels";
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
@@ -34,43 +37,81 @@ function lift(from: Ring, to: Ring, a: Cyc, scale: number): Cyc {
   return out;
 }
 
-/** Edge vectors from the first vertex: v_i − v_0, i = 1..m−1. */
-function spokes(ring: Ring, verts: Cyc[]): Cyc[] {
-  return verts.slice(1).map((v) => ring.sub(v, verts[0]!));
-}
-
 /** The float area at true size: only ever a quick reject, by a margin far past
  * rounding, before the exact test. */
-const area = (s: Shape): number => Math.abs(signedArea(s.verts.map((v) => s.ring.toXY(v))));
+const area = (s: Shape): number =>
+  Math.abs(s.pieces.reduce((sum, p) => sum + signedArea(p.verts.map((v) => s.ring.toXY(v))), 0));
+
+/** A shape's pieces' side-count profile, the quick reject for a shape of
+ * several: the vertex counts, sorted, and which are round. */
+const profile = (s: Shape): string =>
+  s.pieces
+    .map((p) => `${p.verts.length}${p.curve ? "~" : ""}`)
+    .sort()
+    .join();
 
 /** Whether `b` is a turned, moved, or mirrored copy of `a` — at the same size,
- * or with `size` false at any size (similar) — round edges and all. Exact. */
+ * or with `size` false at any size (similar) — round edges and all, piece for
+ * piece. Exact. */
 export function sameFigure(a: Shape, b: Shape, size = true): boolean {
-  const m = a.verts.length;
-  if (b.verts.length !== m || !a.curve !== !b.curve) return false;
+  if (profile(a) !== profile(b)) return false;
   if (size) {
     const [x, y] = [area(a), area(b)];
     if (Math.abs(x - y) > 1e-6 * Math.max(1, x, y)) return false;
   }
   const ring = cyclotomic(lcm(a.ring.n, b.ring.n));
   // at true size: each scaled by the other's drawing unit (whole numbers)
-  const pa = a.verts.map((v) => lift(a.ring, ring, v, b.ring.unit));
-  const pb = b.verts.map((v) => lift(b.ring, ring, v, a.ring.unit));
+  const lifted = (s: Shape, scale: number): Piece[] =>
+    s.pieces.map((p) => ({
+      verts: p.verts.map((v) => lift(s.ring, ring, v, scale)),
+      ...(p.curve ? { curve: p.curve } : {}),
+    }));
+  const pa = lifted(a, b.ring.unit);
+  const pb = lifted(b, a.ring.unit);
   // a mirror is the conjugate, listed backwards to stay counter-clockwise
-  const mirrored = pa.map((v) => ring.conj(v)).reverse();
+  const mirrored = pa.map((p) => ({
+    verts: p.verts.map((v) => ring.conj(v)).reverse(),
+    ...(p.curve ? { curve: posedCurve(p.curve, true)! } : {}),
+  }));
   const norm = (z: Cyc): Cyc => ring.mul(z, ring.conj(z));
-  for (const [from, curve] of [
-    [pa, a.curve],
-    [mirrored, posedCurve(a.curve, true)],
-  ] as const) {
-    const sa = spokes(ring, from);
-    for (let s = 0; s < m; s++) {
-      const sb = spokes(ring, [...pb.slice(s), ...pb.slice(0, s)]);
-      // b = λ·a for one complex λ: b_i·a_1 = b_1·a_i for every i
-      if (!sa.every((ai, i) => ring.eq(ring.mul(sb[i]!, sa[0]!), ring.mul(sb[0]!, ai)))) continue;
-      // and each edge of b bulges as the edge of a it lies on
-      if (curve && !curve.every((c, i) => b.curve![(i + s) % m] === c)) continue;
-      if (!size || ring.eq(norm(sb[0]!), norm(sa[0]!))) return true;
+  for (const from of [pa, mirrored]) {
+    const [first, ...rest] = from;
+    const a0 = first!.verts[0]!;
+    const sa = ring.sub(first!.verts[1]!, a0);
+    // b = λ·a + τ for one complex λ: anchored on a's first edge landing on
+    // each edge of each of b's pieces in turn
+    for (const anchor of pb) {
+      for (let s = 0; s < anchor.verts.length; s++) {
+        const b0 = anchor.verts[s]!;
+        const sb = ring.sub(anchor.verts[(s + 1) % anchor.verts.length]!, b0);
+        if (size && !ring.eq(norm(sb), norm(sa))) continue;
+        // q is where λ·a + τ takes p: (q − b₀)·(a₁ − a₀) = (b₁ − b₀)·(p − a₀)
+        const lands = (p: Cyc, q: Cyc): boolean =>
+          ring.eq(ring.mul(ring.sub(q, b0), sa), ring.mul(sb, ring.sub(p, a0)));
+        // a piece lands on one of b's, listed from some vertex — each edge
+        // bulging as the edge of b it lies on
+        const onto = (p: Piece, q: Piece): boolean => {
+          const m = p.verts.length;
+          if (q.verts.length !== m) return false;
+          for (let j = 0; j < m; j++) {
+            if (
+              p.verts.every((v, i) => lands(v, q.verts[(i + j) % m]!)) &&
+              (!p.curve || p.curve.every((c, i) => q.curve![(i + j) % m] === c))
+            )
+              return true;
+          }
+          return false;
+        };
+        if (!onto(first!, anchor)) continue;
+        const free = pb.filter((q) => q !== anchor);
+        if (
+          rest.every((p) => {
+            const i = free.findIndex((q) => onto(p, q));
+            return i >= 0 && free.splice(i, 1).length === 1;
+          })
+        )
+          return true;
+      }
     }
   }
   return false;
@@ -101,8 +142,8 @@ const SIDE_WORDS: Record<number, string> = {
 
 /** The regular polygon's name, where `shape` is one, at any size. */
 function regularName(shape: Shape): string | undefined {
-  if (shape.curve) return undefined;
-  const m = shape.verts.length;
+  if (shape.pieces.length !== 1 || shape.pieces[0]!.curve) return undefined;
+  const m = shape.pieces[0]!.verts.length;
   const name = REGULAR_NAMES[m];
   if (!name) return undefined;
   return sameFigure(regular(cyclotomic(m % 2 ? 2 * m : m), m), shape, false) ? name : undefined;
@@ -111,7 +152,9 @@ function regularName(shape: Shape): string | undefined {
 /** A quadrilateral's plain name, read exactly in its own ring: a rectangle
  * (the bricks), a rhombus, a kite, or a dart — a kite with a dent. */
 function quadName(shape: Shape): string | undefined {
-  const { ring, verts } = shape;
+  const { ring, pieces } = shape;
+  if (pieces.length !== 1) return undefined;
+  const { verts } = pieces[0]!;
   if (verts.length !== 4) return undefined;
   const edges = verts.map((v, i) => ring.sub(verts[(i + 1) % 4]!, v));
   const norms = edges.map((e) => ring.mul(e, ring.conj(e)));
@@ -141,14 +184,15 @@ export interface Figure {
 }
 
 /** The rows the figure sets are listed in, in order: one figure, by its side
- * count (seven or more together); pairs, both regular or at least one not;
- * and packs of three or more. */
+ * count (seven or more together), and a figure of several pieces apart; pairs,
+ * both regular or at least one not; and packs of three or more. */
 export const BUCKETS = [
   "triangles",
   "quadrilaterals",
   "pentagons",
   "hexagons",
   "polygons",
+  "pieces",
   "regular-pairs",
   "irregular-pairs",
   "packs",
@@ -181,8 +225,7 @@ function build(): Figures {
   for (const level of LEVELS) {
     byLevel.set(
       level.key,
-      level.tiles.map((verts, kind) => {
-        const shape: Shape = { ring: level.ring, verts: verts.verts };
+      level.tiles.map((shape, kind) => {
         const known = figures.find((f) => sameFigure(f.shape, shape));
         if (known) return known.id;
         const id = figures.length;
@@ -227,8 +270,9 @@ function build(): Figures {
       shapeNames.find((n) => sameFigure(n.shape, f.shape, false))?.name ??
       groups.get(String(f.id))?.[0]?.name ??
       quad ??
-      SIDE_WORDS[sideCount(f.shape.ring, f.shape.verts)] ??
-      `${sideCount(f.shape.ring, f.shape.verts)}-gon`;
+      (f.shape.pieces.length > 1 ? `${f.shape.pieces.length} pieces` : undefined) ??
+      SIDE_WORDS[sides(f.shape)] ??
+      `${sides(f.shape)}-gon`;
   }
   const sets: FigureSet[] = [...groups.entries()].map(([key, levels]) => {
     // in the tray's own order, fewest sides first (a lone figure: the first
@@ -236,11 +280,13 @@ function build(): Figures {
     const ids = key.includes(",") ? byLevel.get(levels[0]!.key)! : [Number(key)];
     const set = ids.map((id) => figures[id]!);
     const regular = set.every((f) => f.regular);
-    const sides = sideCount(set[0]!.shape.ring, set[0]!.shape.verts);
+    const lone = set[0]!.shape;
     const bucket: Bucket =
       set.length === 1
-        ? ((["triangles", "quadrilaterals", "pentagons", "hexagons"] as const)[sides - 3] ??
-          "polygons")
+        ? lone.pieces.length > 1
+          ? "pieces"
+          : ((["triangles", "quadrilaterals", "pentagons", "hexagons"] as const)[sides(lone) - 3] ??
+            "polygons")
         : set.length === 2
           ? regular
             ? "regular-pairs"
@@ -276,16 +322,21 @@ function build(): Figures {
 /** How far `shape` is from regular, for ordering only (a float, never an
  * identity): 1 − q/qₙ, where q = 4πA/P² is its isoperimetric quotient and qₙ
  * that of the regular polygon with as many sides, π/(n·tan(π/n)) — 0 for a
- * regular polygon, nearer 1 the longer, thinner or more dented it is. */
+ * regular polygon, nearer 1 the longer, thinner or more dented it is. A tile
+ * of several pieces is taken whole: every piece's area and perimeter, and all
+ * their sides. */
 export function distortion(shape: Shape): number {
-  const xy = shape.verts.map((v) => shape.ring.toXY(v));
-  const n = sideCount(shape.ring, shape.verts);
-  const area = Math.abs(signedArea(xy));
+  const n = sides(shape);
+  let area = 0;
   let perimeter = 0;
-  xy.forEach(([x, y], i) => {
-    const [u, w] = xy[(i + 1) % xy.length]!;
-    perimeter += Math.hypot(u - x, w - y);
-  });
+  for (const p of shape.pieces) {
+    const xy = p.verts.map((v) => shape.ring.toXY(v));
+    area += Math.abs(signedArea(xy));
+    xy.forEach(([x, y], i) => {
+      const [u, w] = xy[(i + 1) % xy.length]!;
+      perimeter += Math.hypot(u - x, w - y);
+    });
+  }
   const q = (4 * Math.PI * area) / perimeter ** 2;
   const qn = Math.PI / (n * Math.tan(Math.PI / n));
   return Math.max(0, 1 - q / qn);
@@ -294,9 +345,9 @@ export function distortion(shape: Shape): number {
 /** Two sets of as many figures by their side counts, each list ascending,
  * compared term by term: [3, 4] before [3, 6] before [4, 4]. */
 function bySides(x: FigureSet, y: FigureSet): number {
-  const sides = (s: FigureSet): number[] =>
-    s.figures.map((f) => sideCount(f.shape.ring, f.shape.verts)).sort((a, b) => a - b);
-  const [a, b] = [sides(x), sides(y)];
+  const counts = (s: FigureSet): number[] =>
+    s.figures.map((f) => sides(f.shape)).sort((a, b) => a - b);
+  const [a, b] = [counts(x), counts(y)];
   for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i]! - b[i]!;
   return a.length - b.length;
 }

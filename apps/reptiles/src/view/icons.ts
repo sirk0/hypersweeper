@@ -3,9 +3,9 @@
 // draws its own), and a row of stars; and the header's and home screen's
 // glyphs, stroked in `currentColor` so they follow the theme.
 
-import { centroid, type XY } from "../geometry/shape";
+import { centroidOf, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
-import { outlinePath, reachPoints } from "./curve";
+import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -60,16 +60,14 @@ export function outlineIcon(level: Level): SVGSVGElement {
 /** One tray tile, resting flat as the tray holds it. */
 export function tileIcon(level: Level, kind: number): SVGSVGElement {
   const { ring } = level;
-  const tile = level.tiles[kind]!;
-  const xy = tile.verts.map((v) => ring.toXY(v));
-  const [cx, cy] = centroid(xy);
-  const r =
-    Math.max(...reachPoints(xy, tile.curve).map(([x, y]) => Math.hypot(x - cx, y - cy))) * 1.1;
+  const loops = loopsOf(ring, level.tiles[kind]!.pieces);
+  const [cx, cy] = centroidOf(loops.map((l) => l.xy));
+  const r = Math.max(...loopsReach(loops).map(([x, y]) => Math.hypot(x - cx, y - cy))) * 1.1;
   const svg = svgIn("level-tile", [-r, -r, 2 * r, 2 * r]);
   const poly = document.createElementNS(NS, "path");
   poly.setAttribute(
     "d",
-    outlinePath(xy, tile.curve, ([x, y]) => [x - cx, cy - y]),
+    loopsPath(loops, ([x, y]) => [x - cx, cy - y]),
   );
   poly.setAttribute("class", `tile ${level.colours[kind]}`);
   poly.setAttribute("stroke-width", String(r * 0.1));
@@ -82,9 +80,9 @@ export function tileIcon(level: Level, kind: number): SVGSVGElement {
  * read as two figures. */
 export function figureIcon(level: Level): SVGSVGElement {
   const { ring } = level;
-  const shapes = level.tiles.map((t) => t.verts.map((v) => ring.toXY(v)));
+  const shapes = level.tiles.map((t) => loopsOf(ring, t.pieces));
   // what each tile reaches, round edges and all (a bulge dips below the base)
-  const reach = shapes.map((xy, kind) => reachPoints(xy, level.tiles[kind]!.curve));
+  const reach = shapes.map(loopsReach);
   const offsets: number[] = [];
   const tallest = Math.max(...reach.flat().map(([, y]) => y));
   const lowest = Math.min(0, ...reach.flat().map(([, y]) => y));
@@ -106,12 +104,12 @@ export function figureIcon(level: Level): SVGSVGElement {
     size + 2 * pad,
     size + 2 * pad,
   ]);
-  shapes.forEach((xy, kind) => {
+  shapes.forEach((loops, kind) => {
     const dx = offsets[kind]!;
     const poly = document.createElementNS(NS, "path");
     poly.setAttribute(
       "d",
-      outlinePath(xy, level.tiles[kind]!.curve, ([x, y]) => [x + dx, -y]),
+      loopsPath(loops, ([x, y]) => [x + dx, -y]),
     );
     poly.setAttribute("class", `tile ${level.colours[kind]}`);
     poly.setAttribute("stroke-width", String(size * 0.025));

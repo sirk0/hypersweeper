@@ -16,6 +16,10 @@
 // and a tile may lie along a round edge only with the same curve on its own
 // edge there, end to end. A curved edge is never cut part-way.
 //
+// A tile of several pieces (the fish, the kissing squares) fits where each
+// of its pieces does, and covering it covers each in turn; it snaps on by any
+// corner of any piece.
+//
 // Every decision is exact (see cyclotomic.ts). Floats only prefilter by
 // bounding box, order the split points along an edge, and classify the
 // midpoint of a piece already known to lie off every boundary.
@@ -29,12 +33,15 @@ import {
   type Ring,
 } from "./cyclotomic";
 import {
-  centroid,
+  allVerts,
+  centroidOf,
   loopEdges,
+  moved,
   posed,
-  posedCurve,
+  spotKey,
   winding,
   type Bulge,
+  type Piece,
   type Shape,
   type XY,
 } from "./shape";
@@ -216,9 +223,15 @@ export class Frontier {
     return corners;
   }
 
-  /** The frontier once `poly` (counter-clockwise, with its round edges'
-   * `curve`) is covered too. The caller has checked `fits`. */
-  cover(poly: Cyc[], curve?: readonly Bulge[]): Frontier {
+  /** The frontier once `pieces` (each counter-clockwise, with its round
+   * edges' `curve`) are covered too. The caller has checked `fits`. */
+  cover(pieces: readonly Piece[]): Frontier {
+    let f: Frontier = this;
+    for (const p of pieces) f = f.coverOne(p.verts, p.curve);
+    return f;
+  }
+
+  private coverOne(poly: Cyc[], curve?: readonly Bulge[]): Frontier {
     const { ring } = this;
     const reversed = loopToEdges(ring, poly, curve).map((e) => reverse(ring, e));
     const mine = splitAt(ring, [...this.edges], vertexMap(reversed));
@@ -257,10 +270,14 @@ export class Frontier {
     });
   }
 
-  /** `verts` meets the frontier edge to edge: none of its corners part-way
-   * along a frontier edge, and no frontier vertex part-way along one of its
-   * sides. */
-  edgeToEdge(verts: Cyc[]): boolean {
+  /** Every piece meets the frontier edge to edge: none of its corners
+   * part-way along a frontier edge, and no frontier vertex part-way along one
+   * of its sides. */
+  edgeToEdge(pieces: readonly Piece[]): boolean {
+    return pieces.every((p) => this.edgeToEdgeOne(p.verts));
+  }
+
+  private edgeToEdgeOne(verts: Cyc[]): boolean {
     const { ring } = this;
     const sides = loopToEdges(ring, verts);
     const box = boxOf(verts.map((v) => ring.toXY(v)));
@@ -272,11 +289,16 @@ export class Frontier {
     return true;
   }
 
-  /** `poly` (counter-clockwise, with its round edges' `curve`) lies inside the
-   * uncovered area: it overlaps no covered tile and does not leave the
-   * region. Touching along edges and at points is fine — along a round edge,
-   * only where both sides are the one curve, end to end. */
-  fits(poly: Cyc[], curve?: readonly Bulge[]): boolean {
+  /** Every one of `pieces` (each counter-clockwise, with its round edges'
+   * `curve`) lies inside the uncovered area: it overlaps no covered tile and
+   * does not leave the region. Touching along edges and at points is fine —
+   * along a round edge, only where both sides are the one curve, end to end.
+   * A tile's own pieces never overlap one another, so each is judged alone. */
+  fits(pieces: readonly Piece[]): boolean {
+    return pieces.every((p) => this.fitsOne(p.verts, p.curve));
+  }
+
+  private fitsOne(poly: Cyc[], curve?: readonly Bulge[]): boolean {
     const { ring } = this;
     const tile = loopToEdges(ring, poly, curve);
     const tileXY = poly.map((v) => ring.toXY(v));
@@ -331,8 +353,9 @@ export class Frontier {
    * made. Every tiling can still be laid that way — whatever is left uncovered
    * always has a convex corner, and some tile of the tiling fills it. A tile
    * corner meeting a side part-way (a T-junction) still fits; it just has to be
-   * reached from one of the tile's other vertices. Placements are returned as
-   * posed vertex lists, each once.
+   * reached from one of the tile's other vertices. A tile of several pieces
+   * may snap by any corner of any of them. Placements are returned as posed
+   * pieces, each once.
    *
    * `turns`, when given, are the only rotations ζᵏ the shape may be turned by
    * (k mod n) — the player has already turned it, so it lands as it is held or
@@ -346,17 +369,14 @@ export class Frontier {
     reach: number,
     mirror: boolean,
     turns?: readonly number[],
-    accept?: (verts: Cyc[]) => boolean,
-  ): Cyc[][] {
+    accept?: (pieces: Piece[]) => boolean,
+  ): Piece[][] {
     const { ring } = this;
-    const found = new Map<string, Cyc[]>();
-    const tryPose = (verts: Cyc[], curve: Bulge[] | undefined): void => {
-      const k = verts
-        .map((v) => ring.key(v))
-        .sort()
-        .join("|");
+    const found = new Map<string, Piece[] | null>();
+    const tryPose = (pieces: Piece[]): void => {
+      const k = spotKey(ring, pieces);
       if (found.has(k)) return;
-      found.set(k, this.fits(verts, curve) && (!accept || accept(verts)) ? verts : []);
+      found.set(k, this.fits(pieces) && (!accept || accept(pieces)) ? pieces : null);
     };
     const flips = mirror ? [false, true] : [false];
     const r2 = reach * reach;
@@ -370,26 +390,23 @@ export class Frontier {
         if (!corners.has(ring.key(v))) continue;
         for (const flip of flips) {
           const base = posed(shape, { rot: 0, flip, t: ring.zero });
-          const curve = posedCurve(shape.curve, flip);
-          const m = base.length;
-          for (let i = 0; i < m; i++) {
-            const along = leaving
-              ? ring.sub(base[(i + 1) % m]!, base[i]!)
-              : ring.sub(base[i]!, base[(i - 1 + m) % m]!);
-            const k = guessTurn(ring, along, d);
-            if (turns && !turns.includes(((k % ring.n) + ring.n) % ring.n)) continue;
-            const z = ring.zeta(k);
-            if (!sameDirection(ring, d, ring.mul(z, along))) continue;
-            const t = ring.sub(v, ring.mul(z, base[i]!));
-            tryPose(
-              base.map((p) => ring.add(ring.mul(z, p), t)),
-              curve,
-            );
+          for (const { verts: own } of base) {
+            const m = own.length;
+            for (let i = 0; i < m; i++) {
+              const along = leaving
+                ? ring.sub(own[(i + 1) % m]!, own[i]!)
+                : ring.sub(own[i]!, own[(i - 1 + m) % m]!);
+              const k = guessTurn(ring, along, d);
+              if (turns && !turns.includes(((k % ring.n) + ring.n) % ring.n)) continue;
+              const z = ring.zeta(k);
+              if (!sameDirection(ring, d, ring.mul(z, along))) continue;
+              tryPose(moved(ring, base, k, ring.sub(v, ring.mul(z, own[i]!))));
+            }
           }
         }
       }
     }
-    return [...found.values()].filter((verts) => verts.length > 0);
+    return [...found.values()].filter((pieces) => pieces !== null);
   }
 
   /** The fitting placement whose centroid is nearest `centre`, if one is
@@ -400,19 +417,19 @@ export class Frontier {
     reach: number,
     mirror: boolean,
     turns?: readonly number[],
-    accept?: (verts: Cyc[]) => boolean,
-  ): Cyc[] | null {
+    accept?: (pieces: Piece[]) => boolean,
+  ): Piece[] | null {
     const { ring } = this;
-    const xy = shape.verts.map((v) => ring.toXY(v));
+    const xy = allVerts(shape.pieces).map((v) => ring.toXY(v));
     const radius = Math.max(...xy.map((p) => Math.hypot(p[0] - xy[0]![0], p[1] - xy[0]![1])));
-    let best: Cyc[] | null = null;
+    let best: Piece[] | null = null;
     let bestD = reach;
-    for (const verts of this.placements(shape, centre, radius + reach, mirror, turns, accept)) {
-      const c = centroid(verts.map((v) => ring.toXY(v)));
+    for (const pieces of this.placements(shape, centre, radius + reach, mirror, turns, accept)) {
+      const c = centroidOf(pieces.map((p) => p.verts.map((v) => ring.toXY(v))));
       const d = Math.hypot(c[0] - centre[0], c[1] - centre[1]);
       if (d < bestD) {
         bestD = d;
-        best = verts;
+        best = pieces;
       }
     }
     return best;

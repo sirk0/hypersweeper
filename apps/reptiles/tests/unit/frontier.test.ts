@@ -1,13 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { cyclotomic, type Cyc } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
-import { IN, OUT, posed, regular, walk, type Bulge, type Shape } from "../../src/geometry/shape";
+import {
+  allVerts,
+  IN,
+  OUT,
+  piece,
+  polygon,
+  posed,
+  regular,
+  walk,
+  type Bulge,
+  type Piece,
+  type Shape,
+} from "../../src/geometry/shape";
 
 const Z4 = cyclotomic(4);
 const Z12 = cyclotomic(12);
 const square = regular(Z4, 4);
-const at = (shape: Shape, x: number, y: number): Cyc[] =>
+const at = (shape: Shape, x: number, y: number): Piece[] =>
   posed(shape, { rot: 0, flip: false, t: [x, y] });
+/** `pieces` with round edges. */
+const round = (pieces: Piece[], curve: Bulge[]): Piece[] =>
+  pieces.map((p) => piece(p.verts, curve));
 const box = (cols: number, rows: number): Cyc[] =>
   walk(Z4, [
     [0, cols],
@@ -32,13 +47,13 @@ describe("frontier", () => {
     expect(f.fits(at(square, 3, 0))).toBe(false); // off the region
     expect(f.fits(at(square, 1, 1))).toBe(true); // touches at a corner only
     expect(f.fits(at(square, 1, 0))).toBe(true);
-    const big: Shape = { ring: Z4, verts: box(2, 2) };
+    const big = polygon(Z4, box(2, 2));
     expect(f.fits(at(big, 0, 1))).toBe(true);
     expect(f.fits(at(big, 0, 0))).toBe(false); // covers the first square
   });
 
   it("splits an edge where a corner lands part-way along it (T-junction)", () => {
-    const brick: Shape = { ring: Z4, verts: box(2, 1) };
+    const brick = polygon(Z4, box(2, 1));
     // a running bond: two bricks below, one straddling them above
     let f = Frontier.ofRegion(Z4, [box(4, 2)]);
     f = f.cover(at(brick, 0, 0)).cover(at(brick, 2, 0));
@@ -51,9 +66,9 @@ describe("frontier", () => {
   });
 
   it("places a concave tile", () => {
-    const ell: Shape = {
-      ring: Z4,
-      verts: walk(Z4, [
+    const ell = polygon(
+      Z4,
+      walk(Z4, [
         [0, 2],
         [1, 1],
         [2, 1],
@@ -61,7 +76,7 @@ describe("frontier", () => {
         [2, 1],
         [3, 2],
       ]),
-    };
+    );
     let f = Frontier.ofRegion(Z4, [box(2, 2)]);
     expect(f.fits(at(ell, 0, 0))).toBe(true);
     f = f.cover(at(ell, 0, 0));
@@ -74,16 +89,16 @@ describe("frontier", () => {
     const f = Frontier.ofRegion(Z4, [box(3, 3)]).cover(at(square, 0, 0));
     const keys = (vs: Cyc[]): string[] => vs.map((v) => v.join(",")).sort();
     // next to the first: its two corners, and the rim part-way along the bottom
-    expect(keys(f.touching(at(square, 1, 0)))).toEqual(["1,0", "1,1", "2,0"]);
+    expect(keys(f.touching(allVerts(at(square, 1, 0))))).toEqual(["1,0", "1,1", "2,0"]);
     // the middle square meets the first one at a single point
-    expect(keys(f.touching(at(square, 1, 1)))).toEqual(["1,1"]);
+    expect(keys(f.touching(allVerts(at(square, 1, 1))))).toEqual(["1,1"]);
   });
 
   it("snaps triangles and hexagons in ℤ[ζ12]", () => {
     const tri = regular(Z12, 3);
     const hex = regular(Z12, 6);
     // a unit hexagon is six triangles round its centre
-    let f = Frontier.ofRegion(Z12, [hex.verts]);
+    let f = Frontier.ofRegion(Z12, [hex.pieces[0]!.verts]);
     for (let i = 0; i < 6; i++) {
       const spots = f.placements(tri, [0.5, 0.87], 3, false);
       expect(spots.length).toBeGreaterThan(0);
@@ -96,8 +111,15 @@ describe("frontier", () => {
     let f = Frontier.ofRegion(Z4, [box(3, 3)]);
     // the region's four corners, though its outline has a vertex every unit
     expect(f.corners.size).toBe(4);
-    const centres = (spots: Cyc[][]): string[] =>
-      spots.map((s) => s.map((v) => v.join(",")).sort()[0]!).sort();
+    const centres = (spots: Piece[][]): string[] =>
+      spots
+        .map(
+          (s) =>
+            allVerts(s)
+              .map((v) => v.join(","))
+              .sort()[0]!,
+        )
+        .sort();
     expect(centres(f.placements(square, [1.5, 1.5], 10, false))).toEqual([
       "0,0",
       "0,2",
@@ -124,14 +146,14 @@ describe("frontier", () => {
     const f = Frontier.ofRegion(Z4, [box(2, 1)], [rim]);
     expect(f.edges.map((e) => e.bulge)).toEqual(rim);
     expect(f.fits(at(square, 0, 0))).toBe(false); // a straight square on a round rim
-    expect(f.fits(at(square, 0, 0), curve)).toBe(true);
-    const left = f.cover(at(square, 0, 0), curve);
+    expect(f.fits(round(at(square, 0, 0), curve))).toBe(true);
+    const left = f.cover(round(at(square, 0, 0), curve));
     // unturned, the right square's left edge bulges the way the left one's
     // right edge does: the two would overlap
-    expect(left.fits(at(square, 1, 0), curve)).toBe(false);
-    const turned = posed(square, { rot: 1, flip: false, t: [2, 0] });
-    expect(left.fits(turned, curve)).toBe(true);
-    expect(left.cover(turned, curve).empty).toBe(true);
+    expect(left.fits(round(at(square, 1, 0), curve))).toBe(false);
+    const turned = round(posed(square, { rot: 1, flip: false, t: [2, 0] }), curve);
+    expect(left.fits(turned)).toBe(true);
+    expect(left.cover(turned).empty).toBe(true);
   });
 
   it("never cuts a round edge part-way", () => {
@@ -144,8 +166,8 @@ describe("frontier", () => {
       [0, 1],
     ];
     const f = Frontier.ofRegion(Z4, [long], [rim]);
-    expect(f.fits(at(square, 0, 0), [OUT, IN, OUT, IN])).toBe(false);
-    expect(f.fits(long, rim)).toBe(true);
+    expect(f.fits(round(at(square, 0, 0), [OUT, IN, OUT, IN]))).toBe(false);
+    expect(f.fits([piece(long, rim)])).toBe(true);
   });
 
   it("keeps a tile's corner off the middle of a round edge", () => {
@@ -162,8 +184,8 @@ describe("frontier", () => {
       [2, 1],
       [1, 2],
     ];
-    expect(Frontier.ofRegion(Z4, [square2]).fits(triangle)).toBe(true);
+    expect(Frontier.ofRegion(Z4, [square2]).fits([piece(triangle)])).toBe(true);
     // round, the bottom bulges into the square: the corner would cut it
-    expect(Frontier.ofRegion(Z4, [square2], [[IN, 0, 0, 0]]).fits(triangle)).toBe(false);
+    expect(Frontier.ofRegion(Z4, [square2], [[IN, 0, 0, 0]]).fits([piece(triangle)])).toBe(false);
   });
 });

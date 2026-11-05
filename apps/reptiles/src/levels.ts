@@ -12,21 +12,23 @@ import { ARCH_TILINGS, archTemplate } from "@tiling/geometry";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
+import { piecePatch } from "./geometry/pieces";
 import { repTilePatch } from "./geometry/repTile";
 import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
 import { ccw, outline } from "./geometry/outline";
 import {
   curveOnto,
+  piece,
   posed,
-  posedCurve,
   restFlat,
   selfTurns,
-  sideCount,
+  sides,
   signedArea,
   turnsOnto,
   OUT,
   type Bulge,
+  type Piece,
   type Shape,
 } from "./geometry/shape";
 
@@ -39,13 +41,15 @@ export interface Level {
   /** On a level of round tiles, each region loop's curve, edge by edge (see
    * `Shape.curve`): the curve of the tile of `cells` that lies along it. */
   regionCurves?: Bulge[][];
-  /** The tray: one polygon per tile kind, fewest sides first, each always in
-   * supply — regular, but for the Laves and 2-isohedral levels — and, for a
-   * round tile (the Spectre), its `curve`. */
+  /** The tray: one shape per tile kind, fewest sides first, each always in
+   * supply — regular, but for the Laves and 2-isohedral levels; one polygon,
+   * but for a tile of several pieces (the fish) — and, for a round tile (the
+   * Spectre), its `curve`. */
   tiles: Shape[];
-  /** Per kind, its tiles' CSS classes: `sides-<n>`, coloured by side count,
-   * and `twin` too on a kind with as many sides as one before it (the two
-   * quadrilaterals of a 2-isohedral level), so the two look apart. */
+  /** Per kind, its tiles' CSS classes: `sides-<n>`, coloured by side count —
+   * or `pieces`, for a tile of several — and `twin` too on a kind coloured as
+   * one before it (the two quadrilaterals of a 2-isohedral level), so the two
+   * look apart. */
   colours: string[];
   /** Tiles may be mirrored as well as turned. */
   mirror: boolean;
@@ -68,8 +72,9 @@ export interface Level {
   /** The board the level was cut from, tile by tile: one way to finish it,
    * not the only one — any exact cover wins (six triangles where a hexagon
    * was are fine), so a player can wander off it, and may have to take tiles
-   * back off to finish. */
-  cells: Cyc[][];
+   * back off to finish. Each cell is its pieces, counter-clockwise, with
+   * their round edges' curves on a level of round tiles. */
+  cells: Piece[][];
   /** The tiling's vertex configurations — the polygons round a vertex, in
    * order: [[4, 4, 4, 4]] for squares, [[3, 4, 6, 4]] for the
    * rhombitrihexagonal; a 2-uniform tiling has two. A dual's are the
@@ -99,6 +104,10 @@ export interface Level {
    * in @tiling/geometry, keyed as the level is) was inflated — the board its
    * builder makes with that many `levels`. */
   inflations?: number;
+  /** For a rep-tile of several pieces — one Hypersweeper has no board for
+   * (a minesweeper cell is one polygon), defined here in `PIECE_TILES` and
+   * keyed as the level is — how many times it was grown. */
+  pieceTile?: { inflations: number };
   /** For a spiral level, the arguments Hypersweeper's builder for it
    * (`phyllotaxisBoard`, `klaassenBoard`, `pentaSpiral5Board`…, keyed as the
    * level is) makes it with: how far the spiral is grown, and how many of its
@@ -124,8 +133,12 @@ function gcd(a: number, b: number): number {
   return b === 0 ? Math.abs(a) : gcd(b, a % b);
 }
 
+/** Cells of one piece each, as most builders make them. */
+const whole = (cells: Cyc[][]): Cyc[][][] => cells.map((c) => [c]);
+
 /**
- * A level from the exact cells of its board. The tray, the turns, the piles
+ * A level from the exact cells of its board, each its pieces (one, but for a
+ * tile of several). The tray, the turns, the piles
  * and the region are all read off the cells, so nothing about a level is
  * stated twice: each distinct side count is a tile kind, held in the tray
  * resting on a flat side (the regular polygon as `regular` builds it, turn 0);
@@ -143,7 +156,7 @@ function makeLevel(
   key: string,
   label: string,
   ring: Ring,
-  cells: Cyc[][],
+  cells: Cyc[][][],
   group: GroupKey,
   configs: number[][],
   name = notation(configs[0]!),
@@ -155,9 +168,9 @@ function makeLevel(
   type Kind = { shape: Shape; mirrored: Shape; ks: number[]; flipped: boolean };
   const kinds: Kind[] = [];
   // how each cell sits: its kind, turned by ζ^rot, mirrored if `flip`
-  const sits: { cell: Cyc[]; kind: Kind; rot: number; flip: boolean }[] = [];
+  const sits: { cell: Cyc[][]; kind: Kind; rot: number; flip: boolean }[] = [];
   for (const raw of cells) {
-    const cell = ccw(ring, raw);
+    const cell = raw.map((p) => ccw(ring, p));
     let found = false;
     for (const kind of kinds) {
       const direct = turnsOnto(kind.shape, cell);
@@ -173,35 +186,43 @@ function makeLevel(
     }
     if (!found) {
       const shape = restFlat(ring, cell);
-      const mirrored = { ring, verts: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
+      const mirrored = { ring, pieces: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
       const kind = { shape, mirrored, ks: [turnsOnto(shape, cell)[0]!], flipped: false };
       kinds.push(kind);
       sits.push({ cell, kind, rot: kind.ks[0]!, flip: false });
     }
   }
-  const sides = (s: Shape): number => sideCount(ring, s.verts);
-  const area = (s: Shape): number => signedArea(s.verts.map((v) => ring.toXY(v)));
+  const area = (s: Shape): number =>
+    s.pieces.reduce((sum, p) => sum + signedArea(p.verts.map((v) => ring.toXY(v))), 0);
   kinds.sort((a, b) => sides(a.shape) - sides(b.shape) || area(a.shape) - area(b.shape));
   const tiles = kinds.map((k) => k.shape);
+  const colour = (s: Shape): string => (s.pieces.length > 1 ? "pieces" : `sides-${sides(s)}`);
   const colours = tiles.map((t, i) => {
-    const twin = tiles.slice(0, i).some((u) => sides(u) === sides(t));
-    return `sides-${sides(t)}${twin ? " twin" : ""}`;
+    const twin = tiles.slice(0, i).some((u) => colour(u) === colour(t));
+    return `${colour(t)}${twin ? " twin" : ""}`;
   });
-  const region = outline(ring, cells);
+  const region = outline(ring, cells.flat());
   let regionCurves: Bulge[][] | undefined;
   if (round) {
     for (const { shape } of kinds) {
-      if (shape.verts.length % 2) throw new Error(`${key}: round edges alternate, in pairs`);
-      shape.curve = shape.verts.map((_, i) => (i % 2 ? -round : round) as Bulge);
+      for (const p of shape.pieces) {
+        if (p.verts.length % 2) throw new Error(`${key}: round edges alternate, in pairs`);
+        p.curve = p.verts.map((_, i) => (i % 2 ? -round : round) as Bulge);
+      }
     }
-    // each edge of each cell, with its curve: the kind's, turned onto it
+  }
+  // each cell's pieces, with their curves: the kind's, turned onto them
+  const laid: Piece[][] = sits.map(({ cell, kind, rot, flip }) =>
+    round
+      ? curveOnto({ ring, pieces: posed(kind.shape, { rot, flip, t: ring.zero }) }, cell)
+      : cell.map((verts) => piece(verts)),
+  );
+  if (round) {
     const bulges = new Map<string, Bulge>();
-    for (const { cell, kind, rot, flip } of sits) {
-      const verts = posed(kind.shape, { rot, flip, t: ring.zero });
-      const curve = curveOnto({ ring, verts, curve: posedCurve(kind.shape.curve, flip)! }, cell)!;
-      cell.forEach((a, i) => {
-        const b = cell[(i + 1) % cell.length]!;
-        bulges.set(`${ring.key(a)}>${ring.key(b)}`, curve[i]!);
+    for (const { verts, curve } of laid.flat()) {
+      verts.forEach((a, i) => {
+        const b = verts[(i + 1) % verts.length]!;
+        bulges.set(`${ring.key(a)}>${ring.key(b)}`, curve![i]!);
       });
     }
     regionCurves = region.map((loop) =>
@@ -237,7 +258,7 @@ function makeLevel(
     turn,
     need,
     seconds,
-    cells,
+    cells: laid,
     configs,
     name,
     group,
@@ -260,7 +281,10 @@ function windowLevel(tiling: string, box: number): Level {
   });
   const window = { tiling, nx: box / t.width, ny: box / t.height, turned };
   if (spec.family === "uniform") {
-    return { ...makeLevel(tiling, spec.label, ring, cells, "uniform", [spec.config]), window };
+    return {
+      ...makeLevel(tiling, spec.label, ring, whole(cells), "uniform", [spec.config]),
+      window,
+    };
   }
   if (spec.family === "rectangle" || spec.family === "pentagonal" || spec.family === "isogonal") {
     // A bond has no vertex configuration to be named by (a brick corner can
@@ -275,7 +299,7 @@ function windowLevel(tiling: string, box: number): Level {
       tiling,
       spec.label,
       ring,
-      cells,
+      whole(cells),
       spec.family,
       [spec.config],
       spec.label,
@@ -285,7 +309,15 @@ function windowLevel(tiling: string, box: number): Level {
   const written = NOTATIONS[tiling];
   if (!written) throw new Error(`no notation for ${tiling} in data/catalog.json`);
   return {
-    ...makeLevel(tiling, spec.label, ring, cells, "2-uniform", parseNotation(written), written),
+    ...makeLevel(
+      tiling,
+      spec.label,
+      ring,
+      whole(cells),
+      "2-uniform",
+      parseNotation(written),
+      written,
+    ),
     window,
   };
 }
@@ -497,7 +529,7 @@ function lavesLevel(dual: string, box: number): Level {
     dual,
     spec.label,
     ring,
-    cells,
+    whole(cells),
     "laves",
     [spec.config],
     `V${notation(spec.config)}`,
@@ -522,7 +554,7 @@ function twoIsohedralLevel(primal: string, box: number): Level {
     key,
     spec.label,
     ring,
-    cells,
+    whole(cells),
     "2-isohedral",
     parseNotation(configs),
     written,
@@ -650,7 +682,31 @@ function repTileLevel(mode: string, inflations: number): Level {
   const label = MODE_INFO[mode]?.label;
   if (!label) throw new Error(`no label for ${mode} in data/catalog.json`);
   const { ring, cells } = repTilePatch(mode, inflations);
-  return { ...makeLevel(mode, label, ring, cells, "reptile", [], label), inflations };
+  return { ...makeLevel(mode, label, ring, whole(cells), "reptile", [], label), inflations };
+}
+
+/** The rep-tiles of several pieces (`PIECE_TILES`), which Hypersweeper has
+ * no board for, each with its name and how many times it is grown: once for
+ * the fish (8 and 9 tiles; the next, 64 and 81, are too many — and the
+ * right-angled fish turns as it grows) and the chain (16), twice for the
+ * rep-4 kissing squares and triangles (16). As in the picture they come from,
+ * but for those two, whose single growth is four tiles. */
+const PIECE_REPTILES: [key: string, name: string, inflations: number][] = [
+  ["fish", "Right-angled fish", 1],
+  ["fish60", "60° fish", 1],
+  ["kissingsquares", "Kissing squares", 2],
+  ["kissingtriangles", "Kissing triangles", 2],
+  ["kissingchain", "Kissing square chain", 1],
+];
+
+/** A rep-tile of several pieces: `key`'s tile grown `inflations` times (see
+ * `piecePatch`), a big copy to fill with small ones, under its own name. */
+function pieceTileLevel(key: string, name: string, inflations: number): Level {
+  const { ring, cells } = piecePatch(key, inflations);
+  return {
+    ...makeLevel(key, name, ring, cells, "reptile", [], name),
+    pieceTile: { inflations },
+  };
 }
 
 /** The spirals, in Hypersweeper's order (`menu.spiral` in the shared data),
@@ -677,7 +733,10 @@ function spiralLevel(mode: string, rings: number, keep: number): Level {
   const label = MODE_INFO[mode]?.label;
   if (!label) throw new Error(`no label for ${mode} in data/catalog.json`);
   const { ring, cells } = spiralPatch(mode, rings, keep);
-  return { ...makeLevel(mode, label, ring, cells, "spiral", [], label), spiral: { rings, keep } };
+  return {
+    ...makeLevel(mode, label, ring, whole(cells), "spiral", [], label),
+    spiral: { rings, keep },
+  };
 }
 
 /** The aperiodic tilings, in Hypersweeper's order (`menu.aperiodic` in the
@@ -720,7 +779,7 @@ function aperiodicLevel(
   // a round tile keeps its flat corner: an edge either side, each its own curve
   const { ring, cells } = aperiodicPatch(mode, depth, keep, round !== undefined);
   return {
-    ...makeLevel(key, label, ring, cells, "aperiodic", [], label, round),
+    ...makeLevel(key, label, ring, whole(cells), "aperiodic", [], label, round),
     aperiodic: { mode, depth, keep },
   };
 }
@@ -731,11 +790,11 @@ const byEase = (a: Level, b: Level): number =>
 
 export const LEVELS: Level[] = [
   // The three regular tilings, one tile each.
-  makeLevel("squares", "Squares", Z4, squareCells(4, 4), "regular", [[4, 4, 4, 4]]),
-  makeLevel("triangles", "Triangles", Z12, triangleGridCells(4, 6), "regular", [
+  makeLevel("squares", "Squares", Z4, whole(squareCells(4, 4)), "regular", [[4, 4, 4, 4]]),
+  makeLevel("triangles", "Triangles", Z12, whole(triangleGridCells(4, 6)), "regular", [
     [3, 3, 3, 3, 3, 3],
   ]),
-  makeLevel("hexagons", "Hexagons", Z12, hexCells(5, 4), "regular", [[6, 6, 6]]),
+  makeLevel("hexagons", "Hexagons", Z12, whole(hexCells(5, 4)), "regular", [[6, 6, 6]]),
   // The eight other uniform tilings — every vertex alike, regular polygons
   // edge to edge — roughly easiest first: two tile kinds, then three. Each
   // window is the squarest near two or three dozen tiles that keeps one
@@ -768,6 +827,9 @@ export const LEVELS: Level[] = [
   ...RECTANGLES.map(([tiling, box]) => windowLevel(tiling, box)),
   // The rep-tiles: one tile, a big copy of it to fill with small ones.
   ...REPTILES.map(([mode, inflations]) => repTileLevel(mode, inflations)),
+  // …and those of several pieces: a fish's tail and body, squares or
+  // triangles corner to corner, moved as one.
+  ...PIECE_REPTILES.map(([key, name, inflations]) => pieceTileLevel(key, name, inflations)),
   // The spirals: one tile, wound round a centre.
   ...SPIRALS.map(([mode, rings, keep]) => spiralLevel(mode, rings, keep)),
   // The aperiodic tilings: a window onto a tiling that repeats nowhere.
