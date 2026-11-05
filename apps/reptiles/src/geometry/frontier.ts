@@ -34,6 +34,7 @@ import {
 } from "./cyclotomic";
 import {
   allVerts,
+  centroid,
   centroidOf,
   loopEdges,
   moved,
@@ -106,6 +107,17 @@ function overlaps(a: Box, b: Box): boolean {
   return a.x0 <= b.x1 + EPS && b.x0 <= a.x1 + EPS && a.y0 <= b.y1 + EPS && b.y0 <= a.y1 + EPS;
 }
 
+/** Whether two edges' bounding boxes meet (to a margin past rounding): a
+ * float pass before an exact test that needs them to. */
+function meet(e: Edge, f: Edge): boolean {
+  return (
+    Math.min(e.axy[0], e.bxy[0]) <= Math.max(f.axy[0], f.bxy[0]) + EPS &&
+    Math.min(f.axy[0], f.bxy[0]) <= Math.max(e.axy[0], e.bxy[0]) + EPS &&
+    Math.min(e.axy[1], e.bxy[1]) <= Math.max(f.axy[1], f.bxy[1]) + EPS &&
+    Math.min(f.axy[1], f.bxy[1]) <= Math.max(e.axy[1], e.bxy[1]) + EPS
+  );
+}
+
 function edgeBox(e: Edge): Box {
   return boxOf([e.axy, e.bxy]);
 }
@@ -161,17 +173,97 @@ function onEdge(ring: Ring, piece: Edge, e: Edge): boolean {
   );
 }
 
+/** A point inside the polygon `xy` (counter-clockwise) and well clear of
+ * its sides — its centroid if that is, else one just inside the middle of
+ * its longest side that is — or null if neither is. Floats: for a quick
+ * test, never an identity. */
+function interiorPoint(xy: XY[]): XY | null {
+  const edges = loopEdges(xy);
+  const size = Math.max(...edges.map(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1])));
+  const clear = (p: XY, margin: number): boolean =>
+    winding(edges, p) === 1 && edges.every(([a, b]) => distToSegment(p, a, b) > margin);
+  const c = centroid(xy);
+  if (clear(c, size * 1e-3)) return c;
+  for (const [a, b] of [...edges].sort(
+    ([a1, b1], [a2, b2]) =>
+      Math.hypot(b2[0] - a2[0], b2[1] - a2[1]) - Math.hypot(b1[0] - a1[0], b1[1] - a1[1]),
+  )) {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    // a hundredth of the side in from its middle, to its left: inside
+    const p: XY = [
+      (a[0] + b[0]) / 2 - ((b[1] - a[1]) / len) * len * 0.01,
+      (a[1] + b[1]) / 2 + ((b[0] - a[0]) / len) * len * 0.01,
+    ];
+    if (clear(p, len * 0.005)) return p;
+  }
+  return null;
+}
+
+function distToSegment(p: XY, a: XY, b: XY): number {
+  const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+  const t = Math.max(
+    0,
+    Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)),
+  );
+  return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+}
+
 function midpoint(e: Edge): XY {
   return [(e.axy[0] + e.bxy[0]) / 2, (e.axy[1] + e.bxy[1]) / 2];
 }
 
-/** Rotation k, by float angle, that most nearly turns `from` onto `to`. A
- * guess only: the caller confirms it exactly. */
-function guessTurn(ring: Ring, from: Cyc, to: Cyc): number {
-  const [fx, fy] = ring.toXY(from);
-  const [tx, ty] = ring.toXY(to);
-  const turn = Math.atan2(ty, tx) - Math.atan2(fy, fx);
-  return Math.round((turn * ring.n) / (2 * Math.PI));
+/** A shape, one way up, as `placements` reads it: its pieces resting as they
+ * are, every vertex with the sides leaving and entering it (and their float
+ * angles) and the way from it to the centroid, and a point well inside each
+ * piece. Kept per shape object: a puzzle asks about the same few shapes at
+ * every corner. */
+interface Sides {
+  flip: boolean;
+  base: Piece[];
+  at: {
+    u: Cyc;
+    leaving: Cyc;
+    entering: Cyc;
+    leavingAngle: number;
+    enteringAngle: number;
+    off: XY;
+  }[];
+  inner: (XY | null)[];
+}
+const SIDES = new WeakMap<Shape, Map<boolean, Sides>>();
+
+function sidesOf(shape: Shape, flip: boolean): Sides {
+  const cached = SIDES.get(shape)?.get(flip);
+  if (cached) return cached;
+  const { ring } = shape;
+  const base = posed(shape, { rot: 0, flip, t: ring.zero });
+  const c = centroidOf(base.map((p) => p.verts.map((u) => ring.toXY(u))));
+  const angle = (v: Cyc): number => {
+    const [x, y] = ring.toXY(v);
+    return Math.atan2(y, x);
+  };
+  const at = base.flatMap(({ verts: own }) =>
+    own.map((u, i) => {
+      const m = own.length;
+      const leaving = ring.sub(own[(i + 1) % m]!, u);
+      const entering = ring.sub(u, own[(i - 1 + m) % m]!);
+      const [ox, oy] = ring.toXY(u);
+      return {
+        u,
+        leaving,
+        entering,
+        leavingAngle: angle(leaving),
+        enteringAngle: angle(entering),
+        off: [c[0] - ox, c[1] - oy] as XY,
+      };
+    }),
+  );
+  const inner = base.map((p) => interiorPoint(p.verts.map((u) => ring.toXY(u))));
+  const sides = { flip, base, at, inner };
+  const byFlip = SIDES.get(shape) ?? new Map<boolean, Sides>();
+  byFlip.set(flip, sides);
+  SIDES.set(shape, byFlip);
+  return sides;
 }
 
 export class Frontier {
@@ -194,6 +286,62 @@ export class Frontier {
   }
 
   private cornerCache: Map<string, Cyc> | null = null;
+
+  /** The edges by height: a band of the frontier's y range per bucket, each
+   * listing (by index, in order) the edges whose y span meets it — so a tile
+   * asks only about the edges near it, and a winding number only about the
+   * edges level with its point. Built the first time it is needed. */
+  private bandCache: { y0: number; h: number; bands: number[][]; boxes: Box[] } | null = null;
+
+  private get byHeight(): { y0: number; h: number; bands: number[][]; boxes: Box[] } {
+    if (this.bandCache) return this.bandCache;
+    const boxes = this.edges.map(edgeBox);
+    // (no edges: one empty band)
+    const y0 = boxes.length ? Math.min(...boxes.map((b) => b.y0)) : 0;
+    const y1 = boxes.length ? Math.max(...boxes.map((b) => b.y1)) : 0;
+    const count = Math.max(1, Math.ceil(Math.sqrt(this.edges.length)));
+    const h = (y1 - y0) / count || 1;
+    const bands: number[][] = Array.from({ length: count }, () => []);
+    boxes.forEach((b, i) => {
+      for (
+        let k = this.band(b.y0 - EPS, y0, h, count);
+        k <= this.band(b.y1 + EPS, y0, h, count);
+        k++
+      )
+        bands[k]!.push(i);
+    });
+    this.bandCache = { y0, h, bands, boxes };
+    return this.bandCache;
+  }
+
+  private band(y: number, y0: number, h: number, count: number): number {
+    return Math.min(count - 1, Math.max(0, Math.floor((y - y0) / h)));
+  }
+
+  /** The edges whose bounding box meets `box`, in frontier order. */
+  private edgesNear(box: Box): Edge[] {
+    const { y0, h, bands, boxes } = this.byHeight;
+    const lo = this.band(box.y0 - EPS, y0, h, bands.length);
+    const hi = this.band(box.y1 + EPS, y0, h, bands.length);
+    const seen = new Set<number>();
+    for (let k = lo; k <= hi; k++) for (const i of bands[k]!) seen.add(i);
+    return [...seen]
+      .sort((a, b) => a - b)
+      .filter((i) => overlaps(boxes[i]!, box))
+      .map((i) => this.edges[i]!);
+  }
+
+  /** The frontier's winding number about `p` (float; `p` off every edge):
+   * 1 where it is uncovered, inside the region. Only the edges level with it
+   * can cross the ray it is counted along. */
+  private windingAt(p: XY): number {
+    const { y0, h, bands } = this.byHeight;
+    const band = bands[this.band(p[1], y0, h, bands.length)]!;
+    return winding(
+      band.map((i): [XY, XY] => [this.edges[i]!.axy, this.edges[i]!.bxy]),
+      p,
+    );
+  }
 
   /**
    * The frontier's corners, by key: the vertices where it turns. A point part-way
@@ -281,7 +429,7 @@ export class Frontier {
     const { ring } = this;
     const sides = loopToEdges(ring, verts);
     const box = boxOf(verts.map((v) => ring.toXY(v)));
-    const near = this.edges.filter((e) => overlaps(edgeBox(e), box));
+    const near = this.edgesNear(box);
     for (const e of near) {
       for (const v of verts) if (strictlyBetween(ring, e.a, e.b, v)) return false;
       for (const s of sides) if (strictlyBetween(ring, s.a, s.b, e.a)) return false;
@@ -303,10 +451,10 @@ export class Frontier {
     const tile = loopToEdges(ring, poly, curve);
     const tileXY = poly.map((v) => ring.toXY(v));
     const box = boxOf(tileXY);
-    const near = this.edges.filter((e) => overlaps(edgeBox(e), box));
+    const near = this.edgesNear(box);
 
     for (const f of near)
-      for (const t of tile) if (properlyCross(ring, f.a, f.b, t.a, t.b)) return false;
+      for (const t of tile) if (meet(f, t) && properlyCross(ring, f.a, f.b, t.a, t.b)) return false;
 
     // Frontier pieces: none may run through the tile's interior, and one lying
     // along a tile edge must face the same way (the uncovered side is the
@@ -315,7 +463,7 @@ export class Frontier {
     for (const piece of splitAt(ring, near, vertexMap(tile))) {
       // a tile corner part-way along a round edge: it would cut the curve
       if (piece.bulge && !piece.whole) return false;
-      const along = tile.find((t) => onEdge(ring, piece, t));
+      const along = tile.find((t) => meet(piece, t) && onEdge(ring, piece, t));
       if (along) {
         if (!sameDirection(ring, ring.sub(along.b, along.a), ring.sub(piece.b, piece.a)))
           return false;
@@ -335,11 +483,10 @@ export class Frontier {
       }
     }
     // Tile pieces off the frontier must be in the uncovered area.
-    const all = this.edges.map((e): [XY, XY] => [e.axy, e.bxy]);
     for (const piece of splitAt(ring, tile, vertexMap(near))) {
       if (piece.bulge && !piece.whole) return false; // a corner part-way along a round side
-      if (near.some((f) => onEdge(ring, piece, f))) continue; // judged above
-      if (winding(all, midpoint(piece)) !== 1) return false;
+      if (near.some((f) => meet(piece, f) && onEdge(ring, piece, f))) continue; // judged above
+      if (this.windingAt(midpoint(piece)) !== 1) return false;
     }
     return true;
   }
@@ -361,7 +508,11 @@ export class Frontier {
    * (k mod n) — the player has already turned it, so it lands as it is held or
    * not at all; pass `selfTurns(shape)` for that. Unset, any rotation goes.
    * `accept`, when given, is asked about each fitting placement as well — a
-   * level's own rule.
+   * level's own rule. `aim`, when given, keeps only placements whose centroid
+   * is within `aim.reach` of `aim.centre` — judged in floats before a
+   * placement is built, let alone fitted, so a big tile of many corners
+   * (the Socolar–Taylor tile's 114) is not fitted at every corner it could
+   * reach from the pointer.
    */
   placements(
     shape: Shape,
@@ -370,9 +521,11 @@ export class Frontier {
     mirror: boolean,
     turns?: readonly number[],
     accept?: (pieces: Piece[]) => boolean,
+    aim?: { centre: XY; reach: number },
   ): Piece[][] {
     const { ring } = this;
     const found = new Map<string, Piece[] | null>();
+    const poses = new Set<string>();
     const tryPose = (pieces: Piece[]): void => {
       const k = spotKey(ring, pieces);
       if (found.has(k)) return;
@@ -381,27 +534,69 @@ export class Frontier {
     const flips = mirror ? [false, true] : [false];
     const r2 = reach * reach;
     const corners = this.corners;
-    for (const f of this.edges) {
-      for (const [v, vxy, d, leaving] of [
-        [f.a, f.axy, ring.sub(f.b, f.a), true],
-        [f.b, f.bxy, ring.sub(f.b, f.a), false],
+    const tau = 2 * Math.PI;
+    const sides = flips.map((flip) => sidesOf(shape, flip));
+    // only edges with an end within reach: those whose box meets its square
+    const square = {
+      x0: near[0] - reach,
+      y0: near[1] - reach,
+      x1: near[0] + reach,
+      y1: near[1] + reach,
+    };
+    for (const f of this.edgesNear(square)) {
+      const d = ring.sub(f.b, f.a);
+      const [dx0, dy0] = ring.toXY(d);
+      const dAngle = Math.atan2(dy0, dx0);
+      for (const [v, vxy, leaving] of [
+        [f.a, f.axy, true],
+        [f.b, f.bxy, false],
       ] as const) {
         if ((vxy[0] - near[0]) ** 2 + (vxy[1] - near[1]) ** 2 > r2) continue;
         if (!corners.has(ring.key(v))) continue;
-        for (const flip of flips) {
-          const base = posed(shape, { rot: 0, flip, t: ring.zero });
-          for (const { verts: own } of base) {
-            const m = own.length;
-            for (let i = 0; i < m; i++) {
-              const along = leaving
-                ? ring.sub(own[(i + 1) % m]!, own[i]!)
-                : ring.sub(own[i]!, own[(i - 1 + m) % m]!);
-              const k = guessTurn(ring, along, d);
-              if (turns && !turns.includes(((k % ring.n) + ring.n) % ring.n)) continue;
-              const z = ring.zeta(k);
-              if (!sameDirection(ring, d, ring.mul(z, along))) continue;
-              tryPose(moved(ring, base, k, ring.sub(v, ring.mul(z, own[i]!))));
+        for (const { flip, base, at, inner } of sides) {
+          for (const o of at) {
+            const along = leaving ? o.leaving : o.entering;
+            // the turn, by float angle — a guess, confirmed exactly below
+            const turn = dAngle - (leaving ? o.leavingAngle : o.enteringAngle);
+            const k = Math.round((turn * ring.n) / tau);
+            if (turns && !turns.includes(((k % ring.n) + ring.n) % ring.n)) continue;
+            if (aim) {
+              // the centroid, this vertex laid on v: v + ζᵏ·(centroid − vertex)
+              const a = (tau * k) / ring.n;
+              const [dx, dy] = o.off;
+              const x = vxy[0] + dx * Math.cos(a) - dy * Math.sin(a);
+              const y = vxy[1] + dx * Math.sin(a) + dy * Math.cos(a);
+              // a margin past rounding: `nearest` measures it again
+              if (Math.hypot(x - aim.centre[0], y - aim.centre[1]) > aim.reach + 1e-6) continue;
             }
+            const z = ring.zeta(k);
+            if (!sameDirection(ring, d, ring.mul(z, along))) continue;
+            // a placement is its way up, turn and move: one reached already
+            // from another of its corners is not built again
+            const t = ring.sub(v, ring.mul(z, o.u));
+            const pose = `${flip}|${((k % ring.n) + ring.n) % ring.n}|${ring.key(t)}`;
+            if (poses.has(pose)) continue;
+            poses.add(pose);
+            // a quick no: some piece's inner point lands on covered ground (or
+            // off the region) — where a tile fits, each lies in the open
+            // uncovered area, well clear of the frontier
+            {
+              const a = (tau * k) / ring.n;
+              const [cos, sin] = [Math.cos(a), Math.sin(a)];
+              const [ox, oy] = ring.toXY(o.u);
+              const tx = vxy[0] - (ox * cos - oy * sin);
+              const ty = vxy[1] - (ox * sin + oy * cos);
+              if (
+                inner.some(
+                  (q) =>
+                    q !== null &&
+                    this.windingAt([q[0] * cos - q[1] * sin + tx, q[0] * sin + q[1] * cos + ty]) !==
+                      1,
+                )
+              )
+                continue;
+            }
+            tryPose(moved(ring, base, k, t));
           }
         }
       }
@@ -420,11 +615,17 @@ export class Frontier {
     accept?: (pieces: Piece[]) => boolean,
   ): Piece[] | null {
     const { ring } = this;
+    // a corner the tile could land on is no farther from its centroid than
+    // its farthest vertex
     const xy = allVerts(shape.pieces).map((v) => ring.toXY(v));
-    const radius = Math.max(...xy.map((p) => Math.hypot(p[0] - xy[0]![0], p[1] - xy[0]![1])));
+    const c = centroidOf(shape.pieces.map((p) => p.verts.map((v) => ring.toXY(v))));
+    const radius = Math.max(...xy.map((p) => Math.hypot(p[0] - c[0], p[1] - c[1])));
     let best: Piece[] | null = null;
     let bestD = reach;
-    for (const pieces of this.placements(shape, centre, radius + reach, mirror, turns, accept)) {
+    for (const pieces of this.placements(shape, centre, radius + reach, mirror, turns, accept, {
+      centre,
+      reach,
+    })) {
       const c = centroidOf(pieces.map((p) => p.verts.map((v) => ring.toXY(v))));
       const d = Math.hypot(c[0] - centre[0], c[1] - centre[1]);
       if (d < bestD) {

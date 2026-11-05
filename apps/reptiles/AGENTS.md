@@ -96,7 +96,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 100 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 101 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -131,7 +131,14 @@ stacked rows) and *Aperiodic* (all four of Hypersweeper's — Penrose's rhombi,
 his kites and darts, Ammann–Beenker's squares and rhombi, the Spectre — each
 the centred window of its builder's patch, 24 to 33 tiles, the sun or star in
 the middle; any cover wins, so the matching rules that keep the other three
-aperiodic are not enforced — the Spectre, never flipped, needs none). The
+aperiodic are not enforced — the Spectre, never flipped, needs none — then
+the **Socolar–Taylor tile** (`?level=socolartaylor`), which Hypersweeper has no
+board for: a hexagon whose matching rules are forced by its shape alone, at
+the price of nineteen pieces — a notched hexagon, six small rectangles across
+its sides and six pairs of larger ones past its corners — moved as one, used
+both ways up; 19 tiles, two rings round a middle one, the outer ring's far
+pieces lying off the hexagon and gaps opening in it where missing neighbours'
+pieces would go). The
 Spectre's board is two levels: *Tile(1,1)* (`?level=tile11`), the tile with
 straight edges, and *the Spectre* (`?level=spectre`), the same tile with its
 fourteen unit edges bulging out and in by turns — **round edges**: a tile lies
@@ -196,7 +203,8 @@ npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/ic
 or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`,
 `make reptiles-e2e`.
 `?level=<key>` opens a level directly. In dev builds `window.__reptiles.fill()`
-finishes the board — the quick way to see the win state.
+finishes the board (the board's own tiles that still fit, then a search) — the
+quick way to see the win state.
 
 ## Layout
 
@@ -235,6 +243,14 @@ finishes the board — the quick way to see the win state.
   lays an edge along a round one only with the same bulge, end to end — a
   round edge is never cut part-way. A tile of several pieces fits where every
   piece does, covers them in turn, and snaps by any corner of any of them.
+  Fast enough for the Socolar–Taylor tile (114 corners, against a board of
+  650 edges in 88 loops) in a few milliseconds a snap: the edges are indexed
+  by height (`edgesNear`, `windingAt`), a shape's corners and sides are worked
+  out once per shape object (`Puzzle.shapeAt` keeps one per way it is held),
+  and before a placement is built `placements` drops it in floats — its
+  centroid out of the drag's reach (`aim`), or a point well inside one of its
+  pieces on covered ground, which no placement that fits has — and builds a
+  placement reached from several of its corners once.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
   cancel exactly, after each side is cut at every corner lying inside it, for
   the bonds' T-junctions): how a level's region is made from its cells.
@@ -297,6 +313,21 @@ finishes the board — the quick way to see the win state.
   Tile(1,1) — but for the round Spectre (`keepFlat`), whose two curves meet
   there. `APERIODIC` in `levels.ts` keys each level and names the board it is
   cut from (`aperiodic.mode`: both Spectre levels are `spectre`'s).
+- `src/geometry/socolarTaylor.ts` — the Socolar–Taylor tile
+  (`SOCOLAR_TAYLOR`, its nineteen pieces read off the shape-enforced drawing,
+  in ℤ[ζ12] via the lattice points (a, b) — x = a·cos 30°, y = b/2 — that
+  `stPoint` maps), and its tiling: each tile on a hexagon of a hexagonal
+  lattice, in one of twelve ways. No formula gives the ways, but the shape
+  forces them: `socolarTaylorSearch` lays hexagons ring by ring, keeping a way
+  that overlaps nothing and leaves no gap no later tile can reach. That is
+  exact — every edge of the tile lies on a line of the kisrhombille, so a tile
+  is a set of its small triangles (3600 of them, the hexagon's area) and the
+  search compares sets. Four rings take a quarter of a minute, so their patch
+  is written out (`SOCOLAR_TAYLOR_PATCH`, 61 tiles) and the tests check it has
+  no overlap and no gap (`stFaults`); the level keeps its middle two rings,
+  19 tiles, so the board carries on at least two rings further. The tests
+  (`tests/unit/socolarTaylor.test.ts`) are its oracle instead of a
+  Hypersweeper builder.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -320,7 +351,9 @@ finishes the board — the quick way to see the win state.
   many substitutions, how many tiles the centred window keeps).
   `pieceTileLevel` makes a rep-tile of several pieces from `PIECE_REPTILES`
   (its key in `PIECE_TILES`, its name, how many times it is grown), in the
-  Rep-tiles section, marked `pieceTile`.
+  Rep-tiles section, marked `pieceTile`; `socolarTaylorLevel` the
+  Socolar–Taylor tile's, last in the Aperiodic section, marked
+  `socolarTaylor` (how many rings it keeps).
   `makeLevel` reads everything off a level's
   cells (each its pieces; `whole` wraps a builder's one-polygon cells): the tray (one tile per kind — cells alike up to a turn, or a turn and
   a mirror — resting flat on its longest side the whole tile lies above and
@@ -350,7 +383,10 @@ finishes the board — the quick way to see the win state.
   depends on how the board is finished), `used`, `stars`, and `solve`, a
   budgeted backtracking fill for the tests and the dev seam that always works
   the open corner with the fewest placements, trying the board's own tile
-  there first (blind, it gets lost on V[3.4².6; 3.6.3.6]).
+  there first (blind, it gets lost on V[3.4².6; 3.6.3.6]; on the
+  Socolar–Taylor board it takes a quarter of a minute, so its test is left
+  out), and `layOwn`, which lays every one of the board's own tiles that
+  still fits — what the dev seam's `fill()` does first.
 - `src/view/curve.ts` — drawing a tile: a `Loop` per piece (`loopsOf`),
   drawn as one path with a sub-path each (`loopsPath`), bounded by
   `loopsReach`; and round edges: `outlinePath` (a polygon as an
@@ -408,10 +444,12 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   (the repo rule in the root `AGENTS.md`). Floats are for drawing, for bounding
   boxes, for ordering points already known to be on one segment, and for the
   sign of a value already known to be non-zero.
-- **A level follows a Hypersweeper board** — but for the rep-tiles of
-  several pieces, which Hypersweeper cannot have (a minesweeper cell is one
-  polygon): those are defined in `src/geometry/pieces.ts` and checked by
-  covering their grown tile exactly. Build its cells exactly — for a
+- **A level follows a Hypersweeper board** — but for the tiles of several
+  pieces, which Hypersweeper cannot have (a minesweeper cell is one polygon):
+  the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and
+  checked by covering their grown tile exactly, and the Socolar–Taylor tile in
+  `src/geometry/socolarTaylor.ts`, checked by its patch having no overlap and
+  no gap. Build its cells exactly — for a
   periodic tiling, `uniformLevel` with the template key and a box size found by
   scanning (square, one outline, a couple of dozen tiles) — and the tests check
   it tile for tile against the Hypersweeper board (`archimedeanBoard` for a
