@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cyclotomic, type Cyc } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
-import { posed, regular, walk, type Shape } from "../../src/geometry/shape";
+import { IN, OUT, posed, regular, walk, type Bulge, type Shape } from "../../src/geometry/shape";
 
 const Z4 = cyclotomic(4);
 const Z12 = cyclotomic(12);
@@ -114,5 +114,56 @@ describe("frontier", () => {
       "2,0",
       "2,2",
     ]);
+  });
+
+  it("lays a round edge only against the same curve", () => {
+    // squares bulging out and in by turns: two side by side meet out to in
+    // only with the right one turned a quarter
+    const curve: Bulge[] = [OUT, IN, OUT, IN];
+    const rim: Bulge[] = [OUT, IN, OUT, IN, OUT, IN];
+    const f = Frontier.ofRegion(Z4, [box(2, 1)], [rim]);
+    expect(f.edges.map((e) => e.bulge)).toEqual(rim);
+    expect(f.fits(at(square, 0, 0))).toBe(false); // a straight square on a round rim
+    expect(f.fits(at(square, 0, 0), curve)).toBe(true);
+    const left = f.cover(at(square, 0, 0), curve);
+    // unturned, the right square's left edge bulges the way the left one's
+    // right edge does: the two would overlap
+    expect(left.fits(at(square, 1, 0), curve)).toBe(false);
+    const turned = posed(square, { rot: 1, flip: false, t: [2, 0] });
+    expect(left.fits(turned, curve)).toBe(true);
+    expect(left.cover(turned, curve).empty).toBe(true);
+  });
+
+  it("never cuts a round edge part-way", () => {
+    // a round 2×1 rim: a unit square in it would lie along half an edge
+    const rim: Bulge[] = [OUT, IN, OUT, IN];
+    const long: Cyc[] = [
+      [0, 0],
+      [2, 0],
+      [2, 1],
+      [0, 1],
+    ];
+    const f = Frontier.ofRegion(Z4, [long], [rim]);
+    expect(f.fits(at(square, 0, 0), [OUT, IN, OUT, IN])).toBe(false);
+    expect(f.fits(long, rim)).toBe(true);
+  });
+
+  it("keeps a tile's corner off the middle of a round edge", () => {
+    // a triangle with a corner on the middle of a 2×2 square's bottom, one
+    // edge from corner to corner
+    const square2: Cyc[] = [
+      [0, 0],
+      [2, 0],
+      [2, 2],
+      [0, 2],
+    ];
+    const triangle: Cyc[] = [
+      [1, 0],
+      [2, 1],
+      [1, 2],
+    ];
+    expect(Frontier.ofRegion(Z4, [square2]).fits(triangle)).toBe(true);
+    // round, the bottom bulges into the square: the corner would cut it
+    expect(Frontier.ofRegion(Z4, [square2], [[IN, 0, 0, 0]]).fits(triangle)).toBe(false);
   });
 });

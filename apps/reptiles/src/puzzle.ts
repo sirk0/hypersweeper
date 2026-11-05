@@ -3,7 +3,16 @@
 
 import type { Cyc } from "./geometry/cyclotomic";
 import { Frontier } from "./geometry/frontier";
-import { posed, selfTurns, signedArea, type Shape, type XY } from "./geometry/shape";
+import {
+  curveOnto,
+  posed,
+  posedCurve,
+  selfTurns,
+  signedArea,
+  type Bulge,
+  type Shape,
+  type XY,
+} from "./geometry/shape";
 import { cornersOf, fitsConfig, type Corner } from "./geometry/vertexRule";
 import type { Level } from "./levels";
 
@@ -15,6 +24,9 @@ export interface Placed {
   rot: number;
   flip: boolean;
   verts: Cyc[];
+  /** Its round edges, edge i from verts[i] (see `Shape.curve`); unset for a
+   * tile with straight ones. */
+  curve?: Bulge[];
 }
 
 export class Puzzle {
@@ -27,7 +39,7 @@ export class Puzzle {
   private same: number[][];
 
   constructor(readonly level: Level) {
-    this.frontier = Frontier.ofRegion(level.ring, level.region);
+    this.frontier = this.untouched();
     this.same = level.tiles.map(selfTurns);
   }
 
@@ -39,8 +51,9 @@ export class Puzzle {
     return this.frontier.empty;
   }
 
-  /** The open edges, for drawing where the next tile can go. */
-  get openEdges(): readonly { axy: XY; bxy: XY }[] {
+  /** The open edges, for drawing where the next tile can go — each with its
+   * bulge, on a level of round tiles. */
+  get openEdges(): readonly { axy: XY; bxy: XY; bulge: Bulge }[] {
     return this.frontier.edges;
   }
 
@@ -67,7 +80,9 @@ export class Puzzle {
   /** A kind's shape, mirrored if `flip`, turned by ζ^rot. */
   shapeAt(kind: number, rot: number, flip = false): Shape {
     const shape = this.level.tiles[kind]!;
-    return { ring: shape.ring, verts: posed(shape, { rot, flip, t: shape.ring.zero }) };
+    const verts = posed(shape, { rot, flip, t: shape.ring.zero });
+    const curve = posedCurve(shape.curve, flip);
+    return curve ? { ring: shape.ring, verts, curve } : { ring: shape.ring, verts };
   }
 
   /** Whether the level has a rotate control at all — not where every tile of
@@ -138,10 +153,12 @@ export class Puzzle {
   }
 
   place(kind: number, verts: Cyc[], rot: number, flip = false): Placed {
-    if (!this.frontier.fits(verts)) throw new Error("place: the tile does not fit there");
-    const tile = { id: this.nextId++, kind, rot, flip, verts };
+    const curve = curveOnto(this.shapeAt(kind, rot, flip), verts);
+    if (!this.frontier.fits(verts, curve)) throw new Error("place: the tile does not fit there");
+    const tile: Placed = { id: this.nextId++, kind, rot, flip, verts };
+    if (curve) tile.curve = curve;
     this.placed.set(tile.id, tile);
-    this.frontier = this.frontier.cover(verts);
+    this.frontier = this.frontier.cover(verts, curve);
     this.addCorners(verts);
     return tile;
   }
@@ -151,10 +168,10 @@ export class Puzzle {
     const tile = this.placed.get(id);
     if (!tile) return undefined;
     this.placed.delete(id);
-    let f = Frontier.ofRegion(this.level.ring, this.level.region);
+    let f = this.untouched();
     this.corners.clear();
     for (const t of this.placed.values()) {
-      f = f.cover(t.verts);
+      f = f.cover(t.verts, t.curve);
       this.addCorners(t.verts);
     }
     this.frontier = f;
@@ -237,6 +254,11 @@ export class Puzzle {
   reset(): void {
     this.placed.clear();
     this.corners.clear();
-    this.frontier = Frontier.ofRegion(this.level.ring, this.level.region);
+    this.frontier = this.untouched();
+  }
+
+  /** The frontier with nothing down: the region's rim, round where it is. */
+  private untouched(): Frontier {
+    return Frontier.ofRegion(this.level.ring, this.level.region, this.level.regionCurves);
   }
 }

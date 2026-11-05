@@ -26,7 +26,7 @@
 // background, or the wheel over it scrolls it along.
 
 import type { Cyc } from "../geometry/cyclotomic";
-import { centroid, signedArea, type XY } from "../geometry/shape";
+import { centroid, signedArea, type Bulge, type XY } from "../geometry/shape";
 import type { Placed, Puzzle } from "../puzzle";
 import type { SvgBoard } from "../view/svgBoard";
 
@@ -44,6 +44,8 @@ interface Drag {
   rot: number;
   flip: boolean;
   outline: XY[];
+  /** Its round edges, edge i from outline point i (a round tile's). */
+  curve?: Bulge[] | undefined;
   /** From the pointer to the tile's centroid, so it does not jump to centre. */
   offset: XY;
   at: XY;
@@ -120,7 +122,15 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot, drag.flip);
     const ghost = drag.ghost?.map((v) => ring.toXY(v)) ?? null;
     const stick = drag.ghost ? puzzle.touching(drag.ghost).map((v) => ring.toXY(v)) : [];
-    board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroid(ghost), stick, discard);
+    board.drawDrag(
+      drag.kind,
+      drag.outline,
+      drag.at,
+      ghost && centroid(ghost),
+      stick,
+      discard,
+      drag.curve,
+    );
   };
 
   // One turn for everything: every tray tile, and the one in hand.
@@ -132,6 +142,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (drag) {
       drag.rot = mod(drag.rot + step);
       drag.outline = board.outline(drag.kind, drag.rot, drag.flip);
+      drag.curve = board.curve(drag.kind, drag.flip);
       update();
     }
   };
@@ -143,6 +154,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (drag) {
       drag.flip = !drag.flip;
       drag.outline = board.outline(drag.kind, drag.rot, drag.flip);
+      drag.curve = board.curve(drag.kind, drag.flip);
       update();
     }
   };
@@ -194,6 +206,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     let rot: number;
     let flipped = false;
     let outline: XY[];
+    let curve: Bulge[] | undefined;
     let c: XY;
     let origin: Placed | null = null;
     const tray = target.closest("[data-tray]");
@@ -211,6 +224,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       rot = board.turn;
       flipped = board.flip;
       outline = board.outline(kind, rot, flipped);
+      curve = board.curve(kind, flipped);
       c = board.trayCentre(kind);
     } else if (placed) {
       origin = puzzle.lift(Number(placed.getAttribute("data-tile"))) ?? null;
@@ -221,6 +235,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       const xy = origin.verts.map((v) => ring.toXY(v));
       c = centroid(xy);
       outline = xy.map(([x, y]): XY => [x - c[0], y - c[1]]);
+      curve = origin.curve;
     } else {
       // The tray strip's bare background scrolls the shelf; bare board or
       // page pans, once zoomed in.
@@ -236,6 +251,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       rot,
       flip: flipped,
       outline,
+      curve,
       offset: [c[0] - p[0], c[1] - p[1]],
       at: c,
       ghost: null,

@@ -360,6 +360,7 @@ button.primary {
 }
 
 .open {
+  fill: none;
   stroke: var(--open);
   stroke-width: 0.05;
   stroke-linecap: round;

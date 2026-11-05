@@ -464,6 +464,11 @@
     "presses": 4,
     "flips": 0
   },
+  "tile11": {
+    "score": 0.9,
+    "presses": 14,
+    "flips": 0
+  },
   "spectre": {
     "score": 0.9,
     "presses": 14,

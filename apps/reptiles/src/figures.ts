@@ -8,10 +8,12 @@
 // of the other at its true size (the Pythagorean tiling's two squares are two
 // figures). That is decided exactly: both are lifted into one ring, ℤ[ζN] for
 // N the lcm of theirs, and compared by products of their edge vectors — never
-// by rounding a coordinate (the repo rule in AGENTS.md).
+// by rounding a coordinate (the repo rule in AGENTS.md). A round tile (the
+// Spectre) is its own figure: the same polygon with straight edges (Tile(1,1))
+// is another, and two round ones are one only where their curves match too.
 
 import { cyclotomic, dotSign, orient, type Cyc, type Ring } from "./geometry/cyclotomic";
-import { regular, signedArea, type Shape } from "./geometry/shape";
+import { posedCurve, regular, sideCount, signedArea, type Shape } from "./geometry/shape";
 import { LEVELS, type Level } from "./levels";
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
@@ -42,10 +44,10 @@ function spokes(ring: Ring, verts: Cyc[]): Cyc[] {
 const area = (s: Shape): number => Math.abs(signedArea(s.verts.map((v) => s.ring.toXY(v))));
 
 /** Whether `b` is a turned, moved, or mirrored copy of `a` — at the same size,
- * or with `size` false at any size (similar). Exact. */
+ * or with `size` false at any size (similar) — round edges and all. Exact. */
 export function sameFigure(a: Shape, b: Shape, size = true): boolean {
   const m = a.verts.length;
-  if (b.verts.length !== m) return false;
+  if (b.verts.length !== m || !a.curve !== !b.curve) return false;
   if (size) {
     const [x, y] = [area(a), area(b)];
     if (Math.abs(x - y) > 1e-6 * Math.max(1, x, y)) return false;
@@ -57,12 +59,17 @@ export function sameFigure(a: Shape, b: Shape, size = true): boolean {
   // a mirror is the conjugate, listed backwards to stay counter-clockwise
   const mirrored = pa.map((v) => ring.conj(v)).reverse();
   const norm = (z: Cyc): Cyc => ring.mul(z, ring.conj(z));
-  for (const from of [pa, mirrored]) {
+  for (const [from, curve] of [
+    [pa, a.curve],
+    [mirrored, posedCurve(a.curve, true)],
+  ] as const) {
     const sa = spokes(ring, from);
     for (let s = 0; s < m; s++) {
       const sb = spokes(ring, [...pb.slice(s), ...pb.slice(0, s)]);
       // b = λ·a for one complex λ: b_i·a_1 = b_1·a_i for every i
       if (!sa.every((ai, i) => ring.eq(ring.mul(sb[i]!, sa[0]!), ring.mul(sb[0]!, ai)))) continue;
+      // and each edge of b bulges as the edge of a it lies on
+      if (curve && !curve.every((c, i) => b.curve![(i + s) % m] === c)) continue;
       if (!size || ring.eq(norm(sb[0]!), norm(sa[0]!))) return true;
     }
   }
@@ -94,6 +101,7 @@ const SIDE_WORDS: Record<number, string> = {
 
 /** The regular polygon's name, where `shape` is one, at any size. */
 function regularName(shape: Shape): string | undefined {
+  if (shape.curve) return undefined;
   const m = shape.verts.length;
   const name = REGULAR_NAMES[m];
   if (!name) return undefined;
@@ -219,8 +227,8 @@ function build(): Figures {
       shapeNames.find((n) => sameFigure(n.shape, f.shape, false))?.name ??
       groups.get(String(f.id))?.[0]?.name ??
       quad ??
-      SIDE_WORDS[f.shape.verts.length] ??
-      `${f.shape.verts.length}-gon`;
+      SIDE_WORDS[sideCount(f.shape.ring, f.shape.verts)] ??
+      `${sideCount(f.shape.ring, f.shape.verts)}-gon`;
   }
   const sets: FigureSet[] = [...groups.entries()].map(([key, levels]) => {
     // in the tray's own order, fewest sides first (a lone figure: the first
@@ -228,7 +236,7 @@ function build(): Figures {
     const ids = key.includes(",") ? byLevel.get(levels[0]!.key)! : [Number(key)];
     const set = ids.map((id) => figures[id]!);
     const regular = set.every((f) => f.regular);
-    const sides = set[0]!.shape.verts.length;
+    const sides = sideCount(set[0]!.shape.ring, set[0]!.shape.verts);
     const bucket: Bucket =
       set.length === 1
         ? ((["triangles", "quadrilaterals", "pentagons", "hexagons"] as const)[sides - 3] ??
@@ -271,11 +279,11 @@ function build(): Figures {
  * regular polygon, nearer 1 the longer, thinner or more dented it is. */
 export function distortion(shape: Shape): number {
   const xy = shape.verts.map((v) => shape.ring.toXY(v));
-  const n = xy.length;
+  const n = sideCount(shape.ring, shape.verts);
   const area = Math.abs(signedArea(xy));
   let perimeter = 0;
   xy.forEach(([x, y], i) => {
-    const [u, w] = xy[(i + 1) % n]!;
+    const [u, w] = xy[(i + 1) % xy.length]!;
     perimeter += Math.hypot(u - x, w - y);
   });
   const q = (4 * Math.PI * area) / perimeter ** 2;
@@ -287,7 +295,7 @@ export function distortion(shape: Shape): number {
  * compared term by term: [3, 4] before [3, 6] before [4, 4]. */
 function bySides(x: FigureSet, y: FigureSet): number {
   const sides = (s: FigureSet): number[] =>
-    s.figures.map((f) => f.shape.verts.length).sort((a, b) => a - b);
+    s.figures.map((f) => sideCount(f.shape.ring, f.shape.verts)).sort((a, b) => a - b);
   const [a, b] = [sides(x), sides(y)];
   for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i]! - b[i]!;
   return a.length - b.length;

@@ -96,7 +96,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 94 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 95 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -127,7 +127,12 @@ stacked rows) and *Aperiodic* (all four of Hypersweeper's — Penrose's rhombi,
 his kites and darts, Ammann–Beenker's squares and rhombi, the Spectre — each
 the centred window of its builder's patch, 24 to 33 tiles, the sun or star in
 the middle; any cover wins, so the matching rules that keep the other three
-aperiodic are not enforced — the Spectre, never flipped, needs none). Each
+aperiodic are not enforced — the Spectre, never flipped, needs none). The
+Spectre's board is two levels: *Tile(1,1)* (`?level=tile11`), the tile with
+straight edges, and *the Spectre* (`?level=spectre`), the same tile with its
+fourteen unit edges bulging out and in by turns — **round edges**: a tile lies
+along a round edge only where its own edge there is the same curve, whole
+(`Shape.curve`, below). Each
 window board is as near square as its tiling allows at two or three
 dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 20 tiles, its next square window 60; and the 3×3 basket weave, 48, a whole
@@ -135,7 +140,8 @@ square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-check
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
-board scale, its two rows and scroll bar, the family names, a won board and
+board scale, its two rows and scroll bar, the family names, the Spectre's round
+edges, a won board and
 its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -200,14 +206,23 @@ finishes the board — the quick way to see the win state.
 - `src/geometry/shape.ts` — `Shape` (any simple polygon, CCW, y up — concave
   allowed), `Pose` (rotate by ζᵏ, optional mirror, translate), `regular`,
   `walk` (a region outline as unit steps), and the float measures used for
-  drawing and nearest-snap.
+  drawing and nearest-snap. A round tile's `curve` is a `Bulge` per edge —
+  `IN` (to the edge's left, into the tile), `OUT`, or 0 — every bulge the same
+  symmetric arc, so an edge in from one side is the line of one out from the
+  other. It lists every point a curve ends at, a flat corner too (the
+  Spectre's 14 points); `sideCount` counts only the real corners (13), and
+  `restFlat` rests a tile on a whole side. `posedCurve` carries a curve
+  through a mirror, `curveOnto` onto a placed copy listed from any vertex.
 - `src/geometry/frontier.ts` — **the frontier**: the uncovered area's boundary
   as directed edges, uncovered side on the left. Covering a tile adds its
   edges reversed and cancels a→b against b→a, after splitting both at each
   other's vertices (so T-junctions work). `fits` is the overlap test,
   `corners` the frontier vertices where it turns, `placements` the snap
   candidates (a tile vertex on a corner, an edge laid along a frontier edge),
-  `nearest` the one the drag shows. Won ⇔ empty.
+  `nearest` the one the drag shows. Won ⇔ empty. Each edge carries its
+  `bulge` (a round tile's or the rim's, `Level.regionCurves`), and `fits`
+  lays an edge along a round one only with the same bulge, end to end — a
+  round edge is never cut part-way.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
   cancel exactly, after each side is cut at every corner lying inside it, for
   the bonds' T-junctions): how a level's region is made from its cells.
@@ -257,7 +272,10 @@ finishes the board — the quick way to see the win state.
   ℤ[ζ8] or ℤ[ζ12]. The Penrose patches deflate a unit wheel, so their edges
   are 1/φ^depth; they are grown back by φ^depth (exactly: φ = ζ + ζ⁻¹) to
   unit edges, and the tests draw the builder at that scale
-  (`aperiodicShrink`). The Spectre's flat corner is dropped: a 13-gon.
+  (`aperiodicShrink`). The Spectre's flat corner is dropped — a 13-gon,
+  Tile(1,1) — but for the round Spectre (`keepFlat`), whose two curves meet
+  there. `APERIODIC` in `levels.ts` keys each level and names the board it is
+  cut from (`aperiodic.mode`: both Spectre levels are `spectre`'s).
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -266,7 +284,10 @@ finishes the board — the quick way to see the win state.
   2-uniform, pentagonal, isogonal or a congruent-rectangle bond, by the
   tiling's family); the 2-uniform boxes are in `TWO_UNIFORM`, the windows that
   also have both kinds of vertex inside, the pentagonal ones' in `PENTAGONAL`,
-  the isogonal ones' in `ISOGONAL`, the bonds' in `RECTANGLES`.
+  the isogonal ones' in `ISOGONAL`, the bonds' in `RECTANGLES`. `makeLevel`'s
+  `round` gives a level round edges: each kind's tray tile's first edge bulges
+  that way and the rest alternate; every cell takes its kind's curve, and the
+  rim (`regionCurves`) the curve of the cell along it.
   `lavesLevel` and `twoIsohedralLevel` make the duals, from `LAVES` and
   `TWO_ISOHEDRAL` (the latter keyed by the 2-uniform primal; the level is
   `<primal>dual`, Hypersweeper's key). `repTileLevel` makes a rep-tile from
@@ -306,6 +327,12 @@ finishes the board — the quick way to see the win state.
   budgeted backtracking fill for the tests and the dev seam that always works
   the open corner with the fewest placements, trying the board's own tile
   there first (blind, it gets lost on V[3.4².6; 3.6.3.6]).
+- `src/view/curve.ts` — drawing round edges: `outlinePath` (a polygon as an
+  SVG path, each round edge a cubic arc, laid out in board space before any
+  y flip), `edgePath` for an open edge, and `reachPoints` (corners and points
+  along the arcs: what a round tile's bounds and tray circle are taken from).
+  Every tile, the region, the open edges and the icons are paths drawn
+  through it.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's
@@ -316,7 +343,9 @@ finishes the board — the quick way to see the win state.
   levels — the same figure when one is a turned, moved or mirrored copy of the
   other at its true size (`sameFigure`, exact: both lifted into ℤ[ζ lcm], each
   scaled by the other's drawing `unit`, compared by products of edge vectors;
-  a float area check only ever rejects) — and the levels grouped by the set of
+  a float area check only ever rejects; a round tile matches only a round one
+  whose curves land on its own, so Tile(1,1) and the Spectre are two figures)
+  — and the levels grouped by the set of
   figures their tray is (`figureSets`). A lone figure also joins the first
   lone figure of its shape at any size (`sameFigure(…, false)`): V4.8² with
   the isosceles right rep-tile, V4.6.12 with the 30-60-90 one; pairs and
@@ -365,8 +394,8 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues (7,
-  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, the
-  Spectre, violet at its end), and a
+  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1)
+  and the Spectre, violet at its end — real corners, `sideCount`), and a
   second kind with as many sides as another in rose (`.twin`) — read a kind's
   classes from `level.colours`, never from its side count.
 - Import the geometry as `@tiling/geometry` (its index) and nothing from

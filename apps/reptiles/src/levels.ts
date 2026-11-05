@@ -16,7 +16,19 @@ import { repTilePatch } from "./geometry/repTile";
 import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
 import { ccw, outline } from "./geometry/outline";
-import { posed, restFlat, selfTurns, signedArea, turnsOnto, type Shape } from "./geometry/shape";
+import {
+  curveOnto,
+  posed,
+  posedCurve,
+  restFlat,
+  selfTurns,
+  sideCount,
+  signedArea,
+  turnsOnto,
+  OUT,
+  type Bulge,
+  type Shape,
+} from "./geometry/shape";
 
 export interface Level {
   key: string;
@@ -24,8 +36,12 @@ export interface Level {
   ring: Ring;
   /** Outer loop counter-clockwise, any holes clockwise. */
   region: Cyc[][];
+  /** On a level of round tiles, each region loop's curve, edge by edge (see
+   * `Shape.curve`): the curve of the tile of `cells` that lies along it. */
+  regionCurves?: Bulge[][];
   /** The tray: one polygon per tile kind, fewest sides first, each always in
-   * supply — regular, but for the Laves and 2-isohedral levels. */
+   * supply — regular, but for the Laves and 2-isohedral levels — and, for a
+   * round tile (the Spectre), its `curve`. */
   tiles: Shape[];
   /** Per kind, its tiles' CSS classes: `sides-<n>`, coloured by side count,
    * and `twin` too on a kind with as many sides as one before it (the two
@@ -88,11 +104,13 @@ export interface Level {
    * level is) makes it with: how far the spiral is grown, and how many of its
    * centremost tiles are kept. */
   spiral?: { rings: number; keep: number };
-  /** For an aperiodic level, the arguments Hypersweeper's builder for it
-   * (`penroseBoard`, `kiteDartBoard`, `ammannBeenkerBoard`, `spectreBoard`,
-   * keyed as the level is) makes it with: how many substitutions grow the
-   * patch, and how many tiles its centred window keeps. */
-  aperiodic?: { depth: number; keep: number };
+  /** For an aperiodic level, Hypersweeper's board it is cut from (`mode`:
+   * `penroseBoard`, `kiteDartBoard`, `ammannBeenkerBoard`, `spectreBoard` —
+   * keyed as the level is, but for Tile(1,1), which is the Spectre's board
+   * with straight edges) and the arguments its builder makes it with: how
+   * many substitutions grow the patch, and how many tiles its centred window
+   * keeps. */
+  aperiodic?: { mode: string; depth: number; keep: number };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -115,6 +133,11 @@ function gcd(a: number, b: number): number {
  * rotate step is the largest that still reaches every way the board turns
  * that kind from flat — so pointy-top hexagons need turning, though they all
  * sit alike.
+ *
+ * `round`, for a tile with round edges (the Spectre), is how the first edge of
+ * each kind's tray tile bulges — the first half of the side it rests on —
+ * the rest alternating, out and in, round the tile; every cell takes its
+ * kind's curve, and the region's rim the curve of the cell along it.
  */
 function makeLevel(
   key: string,
@@ -124,11 +147,15 @@ function makeLevel(
   group: GroupKey,
   configs: number[][],
   name = notation(configs[0]!),
+  round?: Bulge,
 ): Level {
   // The tile kinds: cells alike up to a turn, or up to a turn and a mirror —
   // a mirrored copy is the same kind, flipped (the kisrhombille's triangles).
   // Each kind's tray tile is its first cell resting flat on its longest side.
-  const kinds: { shape: Shape; mirrored: Shape; ks: number[]; flipped: boolean }[] = [];
+  type Kind = { shape: Shape; mirrored: Shape; ks: number[]; flipped: boolean };
+  const kinds: Kind[] = [];
+  // how each cell sits: its kind, turned by ζ^rot, mirrored if `flip`
+  const sits: { cell: Cyc[]; kind: Kind; rot: number; flip: boolean }[] = [];
   for (const raw of cells) {
     const cell = ccw(ring, raw);
     let found = false;
@@ -136,8 +163,10 @@ function makeLevel(
       const direct = turnsOnto(kind.shape, cell);
       const flipped = direct.length ? [] : turnsOnto(kind.mirrored, cell);
       if (direct.length || flipped.length) {
-        kind.ks.push((direct[0] ?? flipped[0])!);
+        const rot = (direct[0] ?? flipped[0])!;
+        kind.ks.push(rot);
         if (!direct.length) kind.flipped = true;
+        sits.push({ cell, kind, rot, flip: !direct.length });
         found = true;
         break;
       }
@@ -145,18 +174,45 @@ function makeLevel(
     if (!found) {
       const shape = restFlat(ring, cell);
       const mirrored = { ring, verts: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
-      kinds.push({ shape, mirrored, ks: [turnsOnto(shape, cell)[0]!], flipped: false });
+      const kind = { shape, mirrored, ks: [turnsOnto(shape, cell)[0]!], flipped: false };
+      kinds.push(kind);
+      sits.push({ cell, kind, rot: kind.ks[0]!, flip: false });
     }
   }
+  const sides = (s: Shape): number => sideCount(ring, s.verts);
   const area = (s: Shape): number => signedArea(s.verts.map((v) => ring.toXY(v)));
-  kinds.sort(
-    (a, b) => a.shape.verts.length - b.shape.verts.length || area(a.shape) - area(b.shape),
-  );
+  kinds.sort((a, b) => sides(a.shape) - sides(b.shape) || area(a.shape) - area(b.shape));
   const tiles = kinds.map((k) => k.shape);
   const colours = tiles.map((t, i) => {
-    const twin = tiles.slice(0, i).some((u) => u.verts.length === t.verts.length);
-    return `sides-${t.verts.length}${twin ? " twin" : ""}`;
+    const twin = tiles.slice(0, i).some((u) => sides(u) === sides(t));
+    return `sides-${sides(t)}${twin ? " twin" : ""}`;
   });
+  const region = outline(ring, cells);
+  let regionCurves: Bulge[][] | undefined;
+  if (round) {
+    for (const { shape } of kinds) {
+      if (shape.verts.length % 2) throw new Error(`${key}: round edges alternate, in pairs`);
+      shape.curve = shape.verts.map((_, i) => (i % 2 ? -round : round) as Bulge);
+    }
+    // each edge of each cell, with its curve: the kind's, turned onto it
+    const bulges = new Map<string, Bulge>();
+    for (const { cell, kind, rot, flip } of sits) {
+      const verts = posed(kind.shape, { rot, flip, t: ring.zero });
+      const curve = curveOnto({ ring, verts, curve: posedCurve(kind.shape.curve, flip)! }, cell)!;
+      cell.forEach((a, i) => {
+        const b = cell[(i + 1) % cell.length]!;
+        bulges.set(`${ring.key(a)}>${ring.key(b)}`, curve[i]!);
+      });
+    }
+    regionCurves = region.map((loop) =>
+      loop.map((a, i) => {
+        const b = loop[(i + 1) % loop.length]!;
+        const bulge = bulges.get(`${ring.key(a)}>${ring.key(b)}`);
+        if (bulge === undefined) throw new Error(`${key}: a rim edge is no cell's whole edge`);
+        return bulge;
+      }),
+    );
+  }
   // A kind's rotate step: the largest that reaches, from resting flat, every
   // way the board turns it (`period` turns it back to itself).
   const turns = kinds.map(({ shape, ks }) => {
@@ -168,12 +224,12 @@ function makeLevel(
   const mirror = kinds.some((k) => k.flipped);
   const turn = turns.reduce((g, k) => gcd(g, k), 0);
   const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
-  const region = outline(ring, cells);
   return {
     key,
     label,
     ring,
     region,
+    ...(regionCurves ? { regionCurves } : {}),
     tiles,
     colours,
     mirror,
@@ -628,25 +684,44 @@ function spiralLevel(mode: string, rings: number, keep: number): Level {
  * shared data), each with how many substitutions its builder grows the patch
  * by (its easy board's) and how many tiles the centred window keeps — the
  * patch's sun or star in the middle: the squarest near two or three dozen with
- * one outline, found by scanning sizes. */
-const APERIODIC: [string, number, number][] = [
-  ["penrose", 5, 29],
-  ["kitedart", 4, 33],
-  ["ammannbeenker", 3, 24],
-  ["spectre", 3, 33],
+ * one outline, found by scanning sizes. Hypersweeper's Spectre board is two
+ * levels here: Tile(1,1), the Spectre with straight edges, and the Spectre
+ * itself, the same tile with its fourteen unit edges bulging out and in by
+ * turns — every edge two tiles share, out on one side and in on the other.
+ * Neither is ever turned over (no flip control).
+ *
+ * Each entry: the level's key, Hypersweeper's board, the depth and the window,
+ * and for a round tile how its tray tile's first edge bulges (`makeLevel`). */
+const APERIODIC: [key: string, mode: string, depth: number, keep: number, round?: Bulge][] = [
+  ["penrose", "penrose", 5, 29],
+  ["kitedart", "kitedart", 4, 33],
+  ["ammannbeenker", "ammannbeenker", 3, 24],
+  ["tile11", "spectre", 3, 33],
+  ["spectre", "spectre", 3, 33, OUT],
 ];
 
+/** What a level on an aperiodic board is called where Hypersweeper's catalog
+ * has no name for it. */
+const APERIODIC_LABELS: Record<string, string> = { tile11: "Tile(1,1)" };
+
 /** An aperiodic level: the centred window of Hypersweeper's board `mode`,
- * grown `depth` substitutions, `keep` tiles (see `aperiodicPatch`). An
- * aperiodic tiling has no one vertex configuration (that is the point), so
- * it goes by Hypersweeper's name for it. */
-function aperiodicLevel(mode: string, depth: number, keep: number): Level {
-  const label = MODE_INFO[mode]?.label;
-  if (!label) throw new Error(`no label for ${mode} in data/catalog.json`);
-  const { ring, cells } = aperiodicPatch(mode, depth, keep);
+ * grown `depth` substitutions, `keep` tiles (see `aperiodicPatch`), round if
+ * `round` says how. An aperiodic tiling has no one vertex configuration (that
+ * is the point), so it goes by Hypersweeper's name for it. */
+function aperiodicLevel(
+  key: string,
+  mode: string,
+  depth: number,
+  keep: number,
+  round?: Bulge,
+): Level {
+  const label = APERIODIC_LABELS[key] ?? MODE_INFO[key]?.label;
+  if (!label) throw new Error(`no label for ${key} in data/catalog.json`);
+  // a round tile keeps its flat corner: an edge either side, each its own curve
+  const { ring, cells } = aperiodicPatch(mode, depth, keep, round !== undefined);
   return {
-    ...makeLevel(mode, label, ring, cells, "aperiodic", [], label),
-    aperiodic: { depth, keep },
+    ...makeLevel(key, label, ring, cells, "aperiodic", [], label, round),
+    aperiodic: { mode, depth, keep },
   };
 }
 
@@ -696,7 +771,9 @@ export const LEVELS: Level[] = [
   // The spirals: one tile, wound round a centre.
   ...SPIRALS.map(([mode, rings, keep]) => spiralLevel(mode, rings, keep)),
   // The aperiodic tilings: a window onto a tiling that repeats nowhere.
-  ...APERIODIC.map(([mode, depth, keep]) => aperiodicLevel(mode, depth, keep)),
+  ...APERIODIC.map(([key, mode, depth, keep, round]) =>
+    aperiodicLevel(key, mode, depth, keep, round),
+  ),
 ];
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,

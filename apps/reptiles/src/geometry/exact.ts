@@ -10,7 +10,8 @@
 // Spectre) is to show the way round Hypersweeper shows it. A tile is its real
 // corners only (`corners`): the collinear points a builder keeps for its
 // shared-vertex adjacency — T-vertices, the Spectre's flat corner — are
-// dropped.
+// dropped, unless the caller keeps them (`keepFlat`: a round tile's curves
+// meet at its flat corner).
 
 import type { ExactTiles } from "@tiling/geometry";
 import { cyclotomic, type Cyc, type Ring } from "./cyclotomic";
@@ -21,12 +22,16 @@ export interface ExactPatch {
   cells: Cyc[][];
 }
 
-export function exactPatch({ order, cells }: ExactTiles): ExactPatch {
+export function exactPatch({ order, cells }: ExactTiles, keepFlat = false): ExactPatch {
   const n = order % 2 ? 2 * order : order;
   const ring = cyclotomic(n);
   // ζ_order^i, the builder's basis, as an element of ℤ[ζn]
   const basis = (cells[0]?.[0] ?? []).map((_, i) => ring.zeta((i * n) / order));
   const toCyc = (p: readonly number[]): Cyc =>
     ring.conj(p.reduce<Cyc>((sum, c, i) => sum.map((x, j) => x + c * basis[i]![j]!), ring.zero));
-  return { ring, cells: cells.map((cell) => corners(ring, cell.map(toCyc))) };
+  const read = (cell: readonly (readonly number[])[]): Cyc[] => cell.map(toCyc);
+  return {
+    ring,
+    cells: cells.map((cell) => (keepFlat ? read(cell) : corners(ring, read(cell)))),
+  };
 }
