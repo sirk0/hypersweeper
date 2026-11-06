@@ -36,6 +36,7 @@ import {
   allVerts,
   centroid,
   centroidOf,
+  facing,
   loopEdges,
   moved,
   posed,
@@ -79,10 +80,10 @@ function loopToEdges(ring: Ring, verts: Cyc[], curve?: readonly Bulge[]): Edge[]
   return verts.map((v, i) => edge(ring, v, verts[(i + 1) % verts.length]!, curve?.[i] ?? 0));
 }
 
-/** An edge the other way round: the same line, so its bulge is to the other
- * side. */
+/** An edge the other way round: the same line, so an arc bulges to the other
+ * side and a wave is the same wave (`facing`). */
 function reverse(ring: Ring, e: Edge): Edge {
-  return edge(ring, e.b, e.a, -e.bulge as Bulge, e.whole);
+  return edge(ring, e.b, e.a, facing(e.bulge), e.whole);
 }
 
 interface Box {

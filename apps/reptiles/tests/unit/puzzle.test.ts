@@ -31,6 +31,7 @@ import {
 } from "@tiling/geometry";
 import type { Board } from "@tiling/geometry";
 import { describe, expect, it } from "vitest";
+import { mysticPatch } from "../../src/geometry/mystic";
 import { aperiodicShrink } from "../../src/geometry/aperiodic";
 import { strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import {
@@ -181,15 +182,31 @@ describe("puzzle", () => {
   const isDual = (group: string): boolean => group === "laves" || group === "2-isohedral";
   // (a tile of several pieces — the fish, the Socolar–Taylor tile — has no
   // Hypersweeper board to match, nor has the hat's family:
-  // tests/unit/hat.test.ts is its oracle)
+  // tests/unit/hat.test.ts is its oracle; the Spectres and Mystics are
+  // windowed once their Mystics are glued, so their whole patch is matched,
+  // below)
   const unturned = LEVELS.filter(
-    (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor && !l.hat,
+    (l) =>
+      !l.window?.turned &&
+      !isDual(l.group) &&
+      !l.pieceTile &&
+      !l.socolarTaylor &&
+      !l.hat &&
+      !l.mystic,
   ).map((l) => l.key);
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const ours = p.level.cells.map((c) => poly(c).map((v) => p.level.ring.toXY(v)));
     const board = builderFor(key);
     const theirs = [...board.polygons.values()].map((poly) => poly.map(([x, y]): XY => [x, -y]));
+    sameTiles(centroids(ours), centroids(theirs));
+  });
+  it("the Spectres and Mystics' patch is Hypersweeper's whole Spectre cluster", () => {
+    const { ring, parts } = mysticPatch(3, 1e9);
+    const ours = parts.flat().map((c) => c.map((v) => ring.toXY(v)));
+    const theirs = [...spectreBoard(3, null, 1).polygons.values()].map((poly) =>
+      poly.map(([x, y]): XY => [x, -y]),
+    );
     sameTiles(centroids(ours), centroids(theirs));
   });
 
@@ -536,18 +553,24 @@ describe("puzzle", () => {
   // (and then the Socolar–Taylor tile, which Hypersweeper has no board for —
   // tests/unit/socolarTaylor.test.ts)
   const aperiodic = LEVELS.filter((l) => l.group === "aperiodic" && l.aperiodic);
-  it("has Hypersweeper's aperiodic tilings, in its order — the Spectre's twice", () => {
+  it("has Hypersweeper's aperiodic tilings, in its order — the Spectre's three times", () => {
     const theirs = catalog.menu.aperiodic as string[];
     expect(theirs.at(-1)).toBe("spectre");
-    // the Spectre's board is Tile(1,1) with straight edges, then round
-    expect(aperiodic.map((l) => l.key)).toEqual([...theirs.slice(0, -1), "tile11", "spectre"]);
-    expect(aperiodic.map((l) => l.aperiodic!.mode)).toEqual([...theirs, "spectre"]);
+    // the Spectre's board is Tile(1,1) with straight edges, then round, then wavy
+    expect(aperiodic.map((l) => l.key)).toEqual([
+      ...theirs.slice(0, -1),
+      "tile11",
+      "spectre",
+      "spectrewave",
+    ]);
+    expect(aperiodic.map((l) => l.aperiodic!.mode)).toEqual([...theirs, "spectre", "spectre"]);
     const label = (m: string): string =>
       (catalog.modeInfo as Record<string, { label: string }>)[m]!.label;
     expect(aperiodic.map((l) => l.name)).toEqual([
       ...theirs.slice(0, -1).map(label),
       "Tile(1,1)",
       label("spectre"),
+      "Wavy Spectre",
     ]);
   });
   /** Each tiling's tiles, by side count, and its rotate step in degrees: 36°
@@ -559,6 +582,7 @@ describe("puzzle", () => {
     ammannbeenker: [[4, 4], 45],
     tile11: [[13], 30],
     spectre: [[13], 30],
+    spectrewave: [[13], 30],
   };
   it.each(aperiodic.map((l) => l.key))("%s: its tiles, two or three dozen, one outline", (key) => {
     const level = levelByKey(key)!;
@@ -569,7 +593,7 @@ describe("puzzle", () => {
     expect(level.cells.length).toBeLessThanOrEqual(36);
     expect(level.region).toHaveLength(1);
     // every tile here is mirror-symmetric, but for Tile(1,1) and the
-    // Spectre, which the tiling never turns over
+    // Spectres, which the tiling never turns over
     expect(level.mirror).toBe(false);
     expect((level.turn * 360) / level.ring.n).toBe(degrees);
   });

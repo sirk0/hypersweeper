@@ -318,7 +318,7 @@ test("Tilings' families are named as Hypersweeper names them", async ({ page }) 
   ]);
 });
 
-test("the Spectre's edges are round, Tile(1,1)'s straight", async ({ page }) => {
+test("the Spectres' edges are round or wavy, Tile(1,1)'s straight", async ({ page }) => {
   await page.goto("/?level=spectre");
   // a round edge is a cubic arc in the path; a straight one a line
   await expect(page.locator("svg.board .tile.in-tray").first()).toHaveAttribute("d", /C/);
@@ -326,6 +326,17 @@ test("the Spectre's edges are round, Tile(1,1)'s straight", async ({ page }) => 
   await page.goto("/?level=tile11");
   await expect(page.locator("svg.board .tile.in-tray").first()).not.toHaveAttribute("d", /C/);
   await expect(page.locator("svg.board path.region")).not.toHaveAttribute("d", /C/);
+  // the wavy Spectre, and the Spectres and Mystics: round too, the Mystic a
+  // tray tile of its own
+  await page.goto("/?level=spectrewave");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(1);
+  await expect(page.locator("svg.board .tile.in-tray").first()).toHaveAttribute("d", /C/);
+  for (const key of ["mystic", "mysticwave"]) {
+    await page.goto(`/?level=${key}`);
+    await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
+    await expect(page.locator("svg.board .tile.in-tray.sides-18")).toHaveAttribute("d", /C/);
+    await expect(page.locator("svg.board path.region")).toHaveAttribute("d", /C/);
+  }
 });
 
 test("the hat and the turtle flip and turn by 60°, the hat's metatiles only turn", async ({

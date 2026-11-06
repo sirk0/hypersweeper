@@ -5,9 +5,11 @@ import {
   allVerts,
   IN,
   OUT,
+  WAVE,
   piece,
   polygon,
   posed,
+  posedCurve,
   regular,
   walk,
   type Bulge,
@@ -154,6 +156,22 @@ describe("frontier", () => {
     const turned = round(posed(square, { rot: 1, flip: false, t: [2, 0] }), curve);
     expect(left.fits(turned)).toBe(true);
     expect(left.cover(turned).empty).toBe(true);
+  });
+
+  it("lays a wave against the same wave", () => {
+    // a wave is one S from either side: squares waved alike sit side by side
+    // unturned, and a square waved the other way about (a mirror's) fits
+    // neither the rim nor its neighbour
+    const wave: Bulge[] = [WAVE, WAVE, WAVE, WAVE];
+    const other = posedCurve(wave, true)!;
+    expect(other).toEqual([-WAVE, -WAVE, -WAVE, -WAVE]);
+    const f = Frontier.ofRegion(Z4, [box(2, 1)], [[WAVE, WAVE, WAVE, WAVE, WAVE, WAVE]]);
+    expect(f.fits(round(at(square, 0, 0), other))).toBe(false);
+    const left = f.cover(round(at(square, 0, 0), wave));
+    expect(left.edges.find((e) => e.bulge !== WAVE)).toBeUndefined();
+    expect(left.fits(round(at(square, 1, 0), other))).toBe(false);
+    expect(left.fits(round(at(square, 1, 0), wave))).toBe(true);
+    expect(left.cover(round(at(square, 1, 0), wave)).empty).toBe(true);
   });
 
   it("never cuts a round edge part-way", () => {
