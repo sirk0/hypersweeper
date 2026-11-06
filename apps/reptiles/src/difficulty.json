@@ -499,6 +499,21 @@
     "presses": 14,
     "flips": 0
   },
+  "hat": {
+    "score": 0.514,
+    "presses": 9,
+    "flips": 1
+  },
+  "turtle": {
+    "score": 0.54,
+    "presses": 7,
+    "flips": 4
+  },
+  "hatmetatiles": {
+    "score": 0.768,
+    "presses": 4,
+    "flips": 0
+  },
   "socolartaylor": {
     "score": 0.757,
     "presses": 7,
