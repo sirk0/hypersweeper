@@ -63,6 +63,8 @@
   --tile-12-edge: #2f5679;
   --tile-13: #a98bc0;
   --tile-13-edge: #5f4771;
+  --tile-18: #8a86cc;
+  --tile-18-edge: #3f3b7e;
   --tile-twin: #d68aa6;
   --tile-twin-edge: #7d3453;
   --tile-pieces: #9aa3b5;
@@ -126,6 +128,8 @@
     --tile-12-edge: #b8d4ee;
     --tile-13: #987bae;
     --tile-13-edge: #dac8e8;
+    --tile-18: #7773b8;
+    --tile-18-edge: #d0cef2;
     --tile-twin: #b8708c;
     --tile-twin-edge: #f2c0d2;
     --tile-pieces: #7c859a;
@@ -416,6 +420,12 @@ button.primary {
 .tile.sides-13 {
   fill: var(--tile-13);
   stroke: var(--tile-13-edge);
+}
+
+/* the Mystic, two Spectres in one */
+.tile.sides-18 {
+  fill: var(--tile-18);
+  stroke: var(--tile-18-edge);
 }
 
 .tile.pieces {

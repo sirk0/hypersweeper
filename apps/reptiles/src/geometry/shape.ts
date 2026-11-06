@@ -10,7 +10,8 @@
 // by a power of ζ, an optional mirror, then a translation.
 //
 // A tile can have round edges (the Spectre): `curve` says, edge by edge, which
-// way each one bulges. The polygon stays the exact truth — what fits where,
+// way each one bulges — an arc to one side, or a wave, an S, out on one half
+// and in on the other. The polygon stays the exact truth — what fits where,
 // what a corner is — and a curve is only a label on its straight edge: two
 // tiles meet along an edge only where their curves are the same line, so the
 // frontier checks the labels as well (see frontier.ts), and the view draws
@@ -25,8 +26,8 @@ export interface Piece {
   verts: Cyc[];
   /** Round edges, if the tile has them: one entry per edge, edge i running
    * from verts[i] to verts[i + 1] — `IN` where it bulges to its left (into a
-   * counter-clockwise tile), `OUT` where it bulges to its right, 0 where it
-   * is straight. A round tile lists every point its curves start and end at,
+   * counter-clockwise tile), `OUT` where it bulges to its right, `WAVE` or
+   * `-WAVE` where it is an S (`Bulge`), 0 where it is straight. A round tile lists every point its curves start and end at,
    * a flat corner included (the Spectre's), so each edge is one curve. */
   curve?: Bulge[];
 }
@@ -66,20 +67,38 @@ export function sides(shape: Shape): number {
   return shape.pieces.reduce((n, p) => n + sideCount(shape.ring, p.verts), 0);
 }
 
-/** Which way an edge bulges, seen along it: to its left, to its right, or not
- * at all. Every bulge is the same symmetric arc, so an edge bulging `IN` from
- * a to b is the very line of one bulging `OUT` from b to a — the two edges
- * that meet there. */
-export type Bulge = -1 | 0 | 1;
+/** Which way an edge bulges, seen along it: to its left (`IN`), to its right
+ * (`OUT`), not at all (0) — or a wave, an S: `WAVE` bulges to its left on its
+ * first half and to its right on its second, `-WAVE` the other way about.
+ * Every bulge is the same symmetric arc, so an edge bulging `IN` from a to b
+ * is the very line of one bulging `OUT` from b to a — the two edges that meet
+ * there; and every wave the same S, turned half a turn about its middle onto
+ * itself, so a `WAVE` from a to b is the line of a `WAVE` from b to a
+ * (`facing`). */
+export type Bulge = -2 | -1 | 0 | 1 | 2;
 export const IN: Bulge = 1;
 export const OUT: Bulge = -1;
+export const WAVE: Bulge = 2;
 
-/** `curve` for the shape `posed` makes: a mirror keeps a bulge inward or
- * outward, but lists the edges backwards. */
+/** Whether `b` is a wave rather than an arc (or straight). */
+export const isWave = (b: Bulge): boolean => b === WAVE || b === -WAVE;
+
+/** The bulge of the same line seen the other way, from b to a: an arc is to
+ * the other side, and a wave is the same wave. */
+export function facing(b: Bulge): Bulge {
+  return isWave(b) ? b : (-b as Bulge);
+}
+
+/** `curve` for the shape `posed` makes: a mirror keeps an arc inward or
+ * outward and turns a wave the other way about, and lists the edges
+ * backwards. */
 export function posedCurve(curve: Bulge[] | undefined, flip: boolean): Bulge[] | undefined {
   if (!curve || !flip) return curve;
   const m = curve.length;
-  return curve.map((_, j) => curve[(((m - 2 - j) % m) + m) % m]!);
+  return curve.map((_, j) => {
+    const b = curve[(((m - 2 - j) % m) + m) % m]!;
+    return isWave(b) ? (-b as Bulge) : b;
+  });
 }
 
 /** `cell`, a translate of `shape` with its pieces and their vertices listed

@@ -119,10 +119,13 @@ describe("the hat's family's levels", () => {
   const turtle = levelByKey("turtle")!;
   const meta = levelByKey("hatmetatiles")!;
 
-  it("follow the Spectre and come before the Socolar–Taylor tile", () => {
+  it("follow the Spectres and come before the Socolar–Taylor tile", () => {
     const aperiodic = LEVELS.filter((l) => l.group === "aperiodic").map((l) => l.key);
-    expect(aperiodic.slice(-5)).toEqual([
+    expect(aperiodic.slice(-8)).toEqual([
       "spectre",
+      "spectrewave",
+      "mystic",
+      "mysticwave",
       "hat",
       "turtle",
       "hatmetatiles",

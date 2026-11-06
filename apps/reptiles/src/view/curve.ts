@@ -1,10 +1,13 @@
 // Drawing round edges. A tile's polygon stays exact (shape.ts); a round edge
 // is drawn here as one symmetric cubic arc from corner to corner, bulging to
-// its left or its right (`Bulge`). The arc is the same seen from either end,
-// so an edge drawn in from one tile and out from its neighbour is one line.
+// its left or its right (`Bulge`), or as a wave, a cubic S whose two control
+// points stand off to either side. The arc is the same seen from either end,
+// so an edge drawn in from one tile and out from its neighbour is one line;
+// the S is the same turned half a turn about its middle, so it is the same
+// wave from both tiles.
 
 import type { Ring } from "../geometry/cyclotomic";
-import type { Bulge, Piece, XY } from "../geometry/shape";
+import { isWave, type Bulge, type Piece, type XY } from "../geometry/shape";
 
 /** One piece of a tile as drawn: its outline, in board units, and its round
  * edges, if it has them. A tile is one loop, or one per piece (the fish). */
@@ -39,17 +42,25 @@ export function loopsReach(loops: readonly Loop[]): XY[] {
  * its finders: deep, steep-sided bulges. */
 const LIFT = 0.6;
 const ALONG = 0.15;
+/** A wave's: each half of the S about as deep as a third of an arc. */
+const WAVE_LIFT = 0.55;
+const WAVE_ALONG = 0.3;
 
 /** The two control points of a round edge from `a` to `b`. */
 function controls(a: XY, b: XY, bulge: Bulge): [XY, XY] {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
-  // the left normal, (−dy, dx), times the lift, to the side it bulges
-  const nx = -dy * LIFT * bulge;
-  const ny = dx * LIFT * bulge;
+  const wave = isWave(bulge);
+  const lift = wave ? WAVE_LIFT * Math.sign(bulge) : LIFT * bulge;
+  const along = wave ? WAVE_ALONG : ALONG;
+  // the left normal, (−dy, dx), times the lift, to the side it bulges; a
+  // wave's second control point stands off to the other side
+  const nx = -dy * lift;
+  const ny = dx * lift;
+  const back = wave ? -1 : 1;
   return [
-    [a[0] + ALONG * dx + nx, a[1] + ALONG * dy + ny],
-    [b[0] - ALONG * dx + nx, b[1] - ALONG * dy + ny],
+    [a[0] + along * dx + nx, a[1] + along * dy + ny],
+    [b[0] - along * dx + back * nx, b[1] - along * dy + back * ny],
   ];
 }
 

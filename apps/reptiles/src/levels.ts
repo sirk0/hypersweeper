@@ -18,6 +18,7 @@ import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
 import { socolarTaylorPatch } from "./geometry/socolarTaylor";
 import { hatPatch, type HatTile } from "./geometry/hat";
+import { mysticPatch } from "./geometry/mystic";
 import { ccw, outline } from "./geometry/outline";
 import {
   curveOnto,
@@ -28,7 +29,9 @@ import {
   sides,
   signedArea,
   turnsOnto,
+  isWave,
   OUT,
+  WAVE,
   type Bulge,
   type Piece,
   type Shape,
@@ -132,6 +135,11 @@ export interface Level {
    * `geometry/hat.ts` — which tile, how many substitutions grow the H
    * metatile its patch is, and how many tiles its centred window keeps. */
   hat?: { tile: HatTile; depth: number; keep: number };
+  /** For a level of Spectres and Mystics — the Spectre's board with each
+   * Mystic glued into one tile (`geometry/mystic.ts`) — how many
+   * substitutions grow its patch and how many tiles its centred window
+   * keeps. */
+  mystic?: { depth: number; keep: number };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -161,8 +169,14 @@ const whole = (cells: Cyc[][]): Cyc[][][] => cells.map((c) => [c]);
  *
  * `round`, for a tile with round edges (the Spectre), is how the first edge of
  * each kind's tray tile bulges — the first half of the side it rests on —
- * the rest alternating, out and in, round the tile; every cell takes its
- * kind's curve, and the region's rim the curve of the cell along it.
+ * the rest alternating, out and in, round the tile: a neighbour sees an arc
+ * the other way out, so only out against in meets. A wave is the same wave
+ * from either side, so a `WAVE` (or `-WAVE`) is every edge's. Or `round` is
+ * the curve of each edge of the cells (counter-clockwise, a → b), for a kind
+ * whose curves come from somewhere else — the Mystic's, from its two Spectres.
+ * Every cell
+ * takes its kind's curve, and the region's rim the curve of the cell along
+ * it.
  */
 function makeLevel(
   key: string,
@@ -172,7 +186,7 @@ function makeLevel(
   group: GroupKey,
   configs: number[][],
   name = notation(configs[0]!),
-  round?: Bulge,
+  round?: Bulge | ((a: Cyc, b: Cyc) => Bulge),
 ): Level {
   // The tile kinds: cells alike up to a turn, or up to a turn and a mirror —
   // a mirrored copy is the same kind, flipped (the kisrhombille's triangles).
@@ -215,9 +229,33 @@ function makeLevel(
   });
   const region = outline(ring, cells.flat());
   let regionCurves: Bulge[][] | undefined;
-  if (round) {
+  const own = (cell: Cyc[][]): Piece[] =>
+    cell.map((verts) =>
+      piece(
+        verts,
+        verts.map((a, i) =>
+          (round as (a: Cyc, b: Cyc) => Bulge)(a, verts[(i + 1) % verts.length]!),
+        ),
+      ),
+    );
+  if (typeof round === "function") {
+    // each kind's curve: its first cell's — never a mirrored one, the cell
+    // it rests flat from — carried back onto the tray tile
+    for (const kind of kinds) {
+      const { cell, rot } = sits.find((s) => s.kind === kind)!;
+      const back = curveOnto(
+        { ring, pieces: own(cell) },
+        posed(kind.shape, { rot, flip: false, t: ring.zero }).map((p) => p.verts),
+      );
+      kind.shape.pieces.forEach((p, i) => (p.curve = back[i]!.curve!));
+    }
+  } else if (round) {
     for (const { shape } of kinds) {
       for (const p of shape.pieces) {
+        if (isWave(round)) {
+          p.curve = p.verts.map(() => round);
+          continue;
+        }
         if (p.verts.length % 2) throw new Error(`${key}: round edges alternate, in pairs`);
         p.curve = p.verts.map((_, i) => (i % 2 ? -round : round) as Bulge);
       }
@@ -229,6 +267,14 @@ function makeLevel(
       ? curveOnto({ ring, pieces: posed(kind.shape, { rot, flip, t: ring.zero }) }, cell)
       : cell.map((verts) => piece(verts)),
   );
+  if (typeof round === "function") {
+    // every cell's own curves are its kind's: one tile, the same curves
+    sits.forEach(({ cell }, i) => {
+      const mine = own(cell);
+      if (!mine.every((p, j) => p.curve!.every((b, k) => b === laid[i]![j]!.curve![k])))
+        throw new Error(`${key}: a cell's curves are not its kind's`);
+    });
+  }
   if (round) {
     const bulges = new Map<string, Bulge>();
     for (const { verts, curve } of laid.flat()) {
@@ -758,8 +804,9 @@ function spiralLevel(mode: string, rings: number, keep: number): Level {
  * one outline, found by scanning sizes. Hypersweeper's Spectre board is two
  * levels here: Tile(1,1), the Spectre with straight edges, and the Spectre
  * itself, the same tile with its fourteen unit edges bulging out and in by
- * turns — every edge two tiles share, out on one side and in on the other.
- * Neither is ever turned over (no flip control).
+ * turns — every edge two tiles share, out on one side and in on the other —
+ * and the wavy Spectre, the same tile with every edge one S, the same S from
+ * both sides. None is ever turned over (no flip control).
  *
  * Each entry: the level's key, Hypersweeper's board, the depth and the window,
  * and for a round tile how its tray tile's first edge bulges (`makeLevel`). */
@@ -769,11 +816,15 @@ const APERIODIC: [key: string, mode: string, depth: number, keep: number, round?
   ["ammannbeenker", "ammannbeenker", 3, 24],
   ["tile11", "spectre", 3, 33],
   ["spectre", "spectre", 3, 33, OUT],
+  ["spectrewave", "spectre", 3, 33, WAVE],
 ];
 
 /** What a level on an aperiodic board is called where Hypersweeper's catalog
  * has no name for it. */
-const APERIODIC_LABELS: Record<string, string> = { tile11: "Tile(1,1)" };
+const APERIODIC_LABELS: Record<string, string> = {
+  tile11: "Tile(1,1)",
+  spectrewave: "Wavy Spectre",
+};
 
 /** An aperiodic level: the centred window of Hypersweeper's board `mode`,
  * grown `depth` substitutions, `keep` tiles (see `aperiodicPatch`), round if
@@ -793,6 +844,54 @@ function aperiodicLevel(
   return {
     ...makeLevel(key, label, ring, whole(cells), "aperiodic", [], label, round),
     aperiodic: { mode, depth, keep },
+  };
+}
+
+/** The Spectre's tiling with its Mystics whole (`geometry/mystic.ts`): two
+ * tiles, the Spectre and the Mystic, two Spectres glued — round, as the Spectre
+ * is, or wavy, as the wavy Spectre is. The hat and the turtle cannot be round:
+ * their tilings turn one tile in seven over, and no curves on the hat's edges
+ * meet both ways round. Each entry: the level's key, its name, the depth and
+ * the window — the squarest near three dozen with one outline, found by
+ * scanning sizes — and how its Spectres' edges bulge (`makeLevel`). */
+const MYSTICS: [key: string, name: string, depth: number, keep: number, round: Bulge][] = [
+  ["mystic", "Spectres & Mystics", 3, 28, OUT],
+  ["mysticwave", "Wavy Mystics", 3, 28, WAVE],
+];
+
+/** A level of Spectres and Mystics: the centred window of `keep` of them
+ * (`mysticPatch`). Its Spectres' curves are the Spectre level's — out and in
+ * by turns from the same corner of every Spectre, or all one wave — and each
+ * Mystic's those of its two halves, read off them, not assumed of its outline
+ * (`makeLevel` checks every Mystic gets the same). */
+function mysticLevel(key: string, name: string, depth: number, keep: number, round: Bulge): Level {
+  const { ring, cells, parts } = mysticPatch(depth, keep);
+  const bulges = new Map<string, Bulge>();
+  // Every Spectre lists its corners alike, so the corner the Spectre level's
+  // tray tile starts out on is one place in each: read it off the first.
+  const first = parts[0]![0]!;
+  const tray = restFlat(ring, [first]);
+  const flat = tray.pieces[0]!;
+  flat.curve = flat.verts.map((_, i) => (isWave(round) || !(i % 2) ? round : (-round as Bulge)));
+  const rot = turnsOnto(tray, [first])[0]!;
+  const start = curveOnto({ ring, pieces: posed(tray, { rot, flip: false, t: ring.zero }) }, [
+    first,
+  ])[0]!.curve![0]!;
+  for (const spectre of parts.flat()) {
+    spectre.forEach((a, i) => {
+      const b = spectre[(i + 1) % spectre.length]!;
+      const bulge = isWave(round) || !(i % 2) ? start : (-start as Bulge);
+      bulges.set(`${ring.key(a)}>${ring.key(b)}`, bulge);
+    });
+  }
+  const bulge = (a: Cyc, b: Cyc): Bulge => {
+    const found = bulges.get(`${ring.key(a)}>${ring.key(b)}`);
+    if (found === undefined) throw new Error(`${key}: an edge is no Spectre's`);
+    return found;
+  };
+  return {
+    ...makeLevel(key, name, ring, whole(cells), "aperiodic", [], name, bulge),
+    mystic: { depth, keep },
   };
 }
 
@@ -899,6 +998,8 @@ export const LEVELS: Level[] = [
   ...APERIODIC.map(([key, mode, depth, keep, round]) =>
     aperiodicLevel(key, mode, depth, keep, round),
   ),
+  // …the Spectre's with its Mystics whole…
+  ...MYSTICS.map(([key, name, depth, keep, round]) => mysticLevel(key, name, depth, keep, round)),
   // …the hat's family: the hat and the turtle, both ways up, and the hat's
   // four metatiles…
   ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatLevel(key, tile, depth, keep)),

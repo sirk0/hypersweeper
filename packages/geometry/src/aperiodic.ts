@@ -19,6 +19,10 @@ import { type Board, type CellId, cid, finalizeFlat, type Vertex } from "./core"
 export interface ExactTiles {
   order: number;
   cells: (readonly number[])[][];
+  /** Per cell, its builder's name for it, where the builder names its tiles
+   * (the Spectre's: Kaplan's cluster labels, the Mystic's two halves
+   * `Gamma1` and `Gamma2`). */
+  labels?: string[];
 }
 
 /** Draw exact tiles as a flat board: vertex ids are the coefficients. */
@@ -1235,9 +1239,15 @@ export function spectreBoard(
 }
 
 /** The Spectres `spectreBoard(levels, keep, _, variant)` draws, exact in
- * ℤ[ζ12], unit edges — each its 14 corners, the flat one included. */
+ * ℤ[ζ12], unit edges — each its 14 corners, the flat one included — and each
+ * one's cluster label (a Mystic's two halves are `Gamma1` and `Gamma2`). */
 export function spectreExact(levels: number, keep: number | null = null, variant = 0): ExactTiles {
-  return { order: 12, cells: spectreKept(levels, keep, variant).map((row) => [...row.verts]) };
+  const rows = spectreKept(levels, keep, variant);
+  return {
+    order: 12,
+    cells: rows.map((row) => [...row.verts]),
+    labels: rows.map((row) => row.label),
+  };
 }
 
 /** The Spectres the board keeps, in its cell order (which numbers them). */

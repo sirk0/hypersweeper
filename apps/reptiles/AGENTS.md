@@ -97,7 +97,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 107 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -148,11 +148,21 @@ its sides and six pairs of larger ones past its corners — moved as one, used
 both ways up; 19 tiles, two rings round a middle one, the outer ring's far
 pieces lying off the hexagon and gaps opening in it where missing neighbours'
 pieces would go). The
-Spectre's board is two levels: *Tile(1,1)* (`?level=tile11`), the tile with
-straight edges, and *the Spectre* (`?level=spectre`), the same tile with its
+Spectre's board is five levels: *Tile(1,1)* (`?level=tile11`), the tile with
+straight edges; *the Spectre* (`?level=spectre`), the same tile with its
 fourteen unit edges bulging out and in by turns — **round edges**: a tile lies
 along a round edge only where its own edge there is the same curve, whole
-(`Shape.curve`, below). Each
+(`Shape.curve`, below); *the wavy Spectre* (`?level=spectrewave`), every edge
+one S, the same S seen from either tile; and *Spectres & Mystics* and *Wavy
+Mystics* (`?level=mystic`, `?level=mysticwave`), round and wavy: the same
+board with each Mystic — the two Spectres, one turned 30° against the other,
+that the substitution always lays together — glued into one 18-sided tile, a
+second tray tile, 24 Spectres and 4 Mystics. Those are the only round tiles
+in the family: Tile(1,1)'s edges meet odd to even, so its arcs must alternate
+and its waves all match, and the hat and the turtle can take no curve at all
+— a hat tiling turns one tile in seven over, and no arc or wave on the hat's
+edges meets itself both ways round (`tests/unit/mystic.test.ts` checks this
+on all 1156 hats of the patch). Each
 window board is as near square as its tiling allows at two or three
 dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 20 tiles, its next square window 60; and the 3×3 basket weave, 48, a whole
@@ -160,8 +170,8 @@ square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-check
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
-board scale, its two rows and scroll bar, the family names, the Spectre's round
-edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a won board and
+board scale, its two rows and scroll bar, the family names, the Spectres' round
+and wavy edges and the Mystic's tray tile, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a won board and
 its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -234,13 +244,15 @@ quick way to see the win state.
   take every piece together: a tile rests on a side with all its pieces above
   it (or, having none, as it is); `spotKey` names a placement by all its
   vertices. A round piece's `curve` is a `Bulge` per edge —
-  `IN` (to the edge's left, into the tile), `OUT`, or 0 — every bulge the same
-  symmetric arc, so an edge in from one side is the line of one out from the
-  other. It lists every point a curve ends at, a flat corner too (the
+  `IN` (to the edge's left, into the tile), `OUT`, `WAVE` or `-WAVE` (an S:
+  to its left on its first half, its right on its second, or the other way
+  about), or 0 — every bulge the same symmetric arc, so an edge in from one
+  side is the line of one out from the other, and every wave the same S, so a
+  wave is the line of the same wave from the other side (`facing`). It lists every point a curve ends at, a flat corner too (the
   Spectre's 14 points); `sideCount` counts only the real corners (13), and
   `restFlat` rests a tile on a whole side. `posedCurve` carries a curve
-  through a mirror, `curveOnto` onto a placed copy, its pieces and vertices
-  listed in any order.
+  through a mirror (an arc keeps its side, a wave turns the other way about),
+  `curveOnto` onto a placed copy, its pieces and vertices listed in any order.
 - `src/geometry/frontier.ts` — **the frontier**: the uncovered area's boundary
   as directed edges, uncovered side on the left. Covering a tile adds its
   edges reversed and cancels a→b against b→a, after splitting both at each
@@ -321,7 +333,19 @@ quick way to see the win state.
   (`aperiodicShrink`). The Spectre's flat corner is dropped — a 13-gon,
   Tile(1,1) — but for the round Spectre (`keepFlat`), whose two curves meet
   there. `APERIODIC` in `levels.ts` keys each level and names the board it is
-  cut from (`aperiodic.mode`: both Spectre levels are `spectre`'s).
+  cut from (`aperiodic.mode`: the three Spectre levels are `spectre`'s).
+- `src/geometry/mystic.ts` — the Spectre's board with its Mystics whole:
+  Hypersweeper's whole Spectre cluster (`spectreExact`, whose `labels` name
+  each Mystic's halves `Gamma1` and `Gamma2`; a `Gamma2`'s corner 0 is its
+  `Gamma1`'s corner 8, an exact key), each Mystic's halves glued by their
+  `outline`, every corner kept for the curves, then the `centredWindow` the
+  hat's family is trimmed by. `MYSTICS` in `levels.ts` lists the two levels
+  (`mysticLevel`, marked `mystic`), whose curves come edge by edge from the
+  Spectres they are made of: `makeLevel`'s `round` can be a function of an
+  edge, and it then checks every cell of a kind gets that kind's curve. The
+  tests check its patch, Spectre for Spectre, against Hypersweeper's whole
+  cluster (`tests/unit/puzzle.test.ts`) and that it tiles without overlap or
+  gap (`tests/unit/mystic.test.ts`).
 - `src/geometry/hat.ts` — the hat's family: Craig Kaplan's hatviz
   substitution (BSD 3-Clause; the four metatiles H, T, P and F, glued into a
   patch and cut into bigger ones, `depth` times from the H) ported as it is,
@@ -365,7 +389,8 @@ quick way to see the win state.
   also have both kinds of vertex inside, the pentagonal ones' in `PENTAGONAL`,
   the isogonal ones' in `ISOGONAL`, the bonds' in `RECTANGLES`. `makeLevel`'s
   `round` gives a level round edges: each kind's tray tile's first edge bulges
-  that way and the rest alternate; every cell takes its kind's curve, and the
+  that way and the rest alternate (a wave: every edge that wave), or a
+  function names each edge's curve (the Mystics'); every cell takes its kind's curve, and the
   rim (`regionCurves`) the curve of the cell along it.
   `lavesLevel` and `twoIsohedralLevel` make the duals, from `LAVES` and
   `TWO_ISOHEDRAL` (the latter keyed by the 2-uniform primal; the level is
@@ -420,8 +445,8 @@ quick way to see the win state.
 - `src/view/curve.ts` — drawing a tile: a `Loop` per piece (`loopsOf`),
   drawn as one path with a sub-path each (`loopsPath`), bounded by
   `loopsReach`; and round edges: `outlinePath` (a polygon as an
-  SVG path, each round edge a cubic arc, laid out in board space before any
-  y flip), `edgePath` for an open edge, and `reachPoints` (corners and points
+  SVG path, each round edge a cubic arc, each wave a cubic S, laid out in
+  board space before any y flip), `edgePath` for an open edge, and `reachPoints` (corners and points
   along the arcs: what a round tile's bounds and tray circle are taken from).
   Every tile, the region, the open edges and the icons are paths drawn
   through it.
@@ -436,7 +461,8 @@ quick way to see the win state.
   other at its true size (`sameFigure`, exact: both lifted into ℤ[ζ lcm], each
   scaled by the other's drawing `unit`, compared by products of edge vectors;
   a float area check only ever rejects; a round tile matches only a round one
-  whose curves land on its own, so Tile(1,1) and the Spectre are two figures)
+  whose curves land on its own, so Tile(1,1), the Spectre and the wavy
+  Spectre are three figures)
   — and the levels grouped by the set of
   figures their tray is (`figureSets`). A lone figure also joins the first
   lone figure of its shape at any size (`sameFigure(…, false)`): V4.8² with
@@ -493,7 +519,8 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues (7,
   Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1),
-  the Spectre, the hat and the turtle, violet at its end — real corners, `sideCount`), a tile
+  the Spectre, the hat and the turtle, violet at its end; 18, the Mystic, an
+  indigo past it — real corners, `sideCount`), a tile
   of several pieces in slate, off the ramp (`.pieces`), and a second kind
   coloured as another in rose (`.twin`) — read a kind's
   classes from `level.colours`, never from its side count.
