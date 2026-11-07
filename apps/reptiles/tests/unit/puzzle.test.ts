@@ -151,9 +151,7 @@ describe("puzzle", () => {
   };
   const builderFor = (key: string): Board => {
     const { window, inflations, spiral, aperiodic } = levelByKey(key)!;
-    // a board past the first is the same window cut where its square went
-    if (window)
-      return archimedeanBoard(window.tiling, window.nx, window.ny, 1, window.centre ?? null);
+    if (window) return archimedeanBoard(window.tiling, window.nx, window.ny, 1);
     if (inflations !== undefined) return REPTILE_BUILDERS[key]!(inflations, 1);
     if (spiral) return SPIRAL_BUILDERS[key]!(spiral.rings, spiral.keep, 1);
     if (aperiodic) {
@@ -193,11 +191,39 @@ describe("puzzle", () => {
   const unturned = BOARD_LEVELS.filter(
     (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor && !l.hat,
   ).map((l) => l.key);
+  /** A board past a tiling's first, cut from Hypersweeper's template as
+   * `archimedeanBoard` cuts it — every tile that fits whole in the square, a
+   * tile its real corners — but at the square's own centre: the builder grows
+   * half a domain round the copy of its centre nearest its middle, enough for
+   * the template's centre and not for a square moved off it. */
+  const movedWindow = (key: string): XY[][] => {
+    const { tiling, nx, centre } = levelByKey(key)!.window!;
+    const t = archTemplate(tiling);
+    const half = (nx * t.width) / 2;
+    const slack = 1e-6 * Math.max(1, t.width, t.height);
+    const reach = Math.ceil(half / Math.min(t.width, t.height)) + 2;
+    const m0 = Math.floor(centre![0] / t.width);
+    const n0 = Math.floor(centre![1] / t.height);
+    const out: XY[][] = [];
+    for (let m = m0 - reach; m <= m0 + reach; m++) {
+      for (let n = n0 - reach; n <= n0 + reach; n++) {
+        templateCells(t, m, n).forEach(({ pts }, i) => {
+          const fits = pts.every(
+            ([x, y]) =>
+              Math.abs(x - centre![0]) <= half + slack && Math.abs(y - centre![1]) <= half + slack,
+          );
+          if (fits) out.push(pts.filter((_, j) => t.cells[i]!.real[j]).map(([x, y]) => [x, -y]));
+        });
+      }
+    }
+    return out;
+  };
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const ours = p.level.cells.map((c) => poly(c).map((v) => p.level.ring.toXY(v)));
-    const board = builderFor(key);
-    const theirs = [...board.polygons.values()].map((poly) => poly.map(([x, y]): XY => [x, -y]));
+    const theirs = p.level.window?.centre
+      ? movedWindow(key)
+      : [...builderFor(key).polygons.values()].map((poly) => poly.map(([x, y]): XY => [x, -y]));
     sameTiles(centroids(ours), centroids(theirs));
   });
 

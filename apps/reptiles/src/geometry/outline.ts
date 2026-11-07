@@ -89,3 +89,42 @@ export function outline(ring: Ring, cells: Cyc[][]): Cyc[][] {
   }
   return loops;
 }
+
+/**
+ * How solid a region is: its area over its convex hull's, 1 for a convex one.
+ * A window with a bite out of its side — the patch it was cut from ending
+ * inside its square — scores well below the ragged rim a tiling's window has
+ * anyway, so the board search measures every board by it. A float measure,
+ * for comparing boards only; nothing is identified by it.
+ */
+export function solidity(ring: Ring, region: Cyc[][]): number {
+  type P = [number, number];
+  const pts: P[] = region.flat().map((v) => ring.toXY(v));
+  const area = (loop: P[]): number =>
+    Math.abs(
+      loop.reduce((sum, p, i) => {
+        const q = loop[(i + 1) % loop.length]!;
+        return sum + p[0] * q[1] - q[0] * p[1];
+      }, 0),
+    ) / 2;
+  // Andrew's monotone chain
+  const sorted = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: P, a: P, b: P): number =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (points: P[]): P[] => {
+    const out: P[] = [];
+    for (const p of points) {
+      while (out.length >= 2 && cross(out[out.length - 2]!, out[out.length - 1]!, p) <= 0)
+        out.pop();
+      out.push(p);
+    }
+    return out.slice(0, -1);
+  };
+  const hull = [...half(sorted), ...half([...sorted].reverse())];
+  // the outer loop, less any holes
+  const inside = region.reduce((sum, loop, i) => {
+    const a = area(loop.map((v) => ring.toXY(v)));
+    return i === 0 ? sum + a : sum - a;
+  }, 0);
+  return inside / area(hull);
+}

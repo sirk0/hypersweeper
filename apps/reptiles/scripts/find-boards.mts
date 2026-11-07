@@ -20,7 +20,8 @@
 //
 // A candidate is a board worth playing when it has about as many tiles as the
 // first (TOLERANCE), is about as square, is one outline with no hole and no
-// pinch, and takes the very same tray — the same tile kinds, so a tiling's
+// pinch, is not bitten into (`solidity`, SOLID_SLACK), and takes the very same
+// tray — the same tile kinds, so a tiling's
 // boards are the one puzzle laid out afresh; a uniform or 2-uniform one must
 // also have every one of its vertex configurations inside. It is a new board
 // only when it is congruent to none found before (`congruenceKey`). Of those,
@@ -29,6 +30,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { congruenceKey } from "../src/geometry/congruent";
+import { solidity } from "../src/geometry/outline";
 import type { Cyc, Ring } from "../src/geometry/cyclotomic";
 import { hatPatch } from "../src/geometry/hat";
 import { posed, turnsOnto } from "../src/geometry/shape";
@@ -37,6 +39,12 @@ import { BOARD_SOURCES, GRID, LEVELS, type Level, type Variant } from "../src/le
 
 /** How far a board's tile count may stray from its first board's. */
 const TOLERANCE = 0.1;
+/** How much less solid (`solidity`) than its first board a board may be, and
+ * the solidity every board may have whatever its first board's: a square
+ * window of a spiky tile has a ragged rim, but a board well below this has a
+ * bite out of it — the patch it was cut from ends inside its square. */
+const SOLID_SLACK = 0.05;
+const SOLID_ENOUGH = 0.75;
 /** The most boards a tiling gets, its first among them. */
 const MAX = { window: 6, variant: 8, centre: 8 } as const;
 /** How far a periodic window's square may shrink and grow, in BOX_STEPs. */
@@ -218,6 +226,7 @@ function boardsOf(first: Level): Variant[] {
   const slack = Math.max(1, Math.round(TOLERANCE * n0));
   // as square as the first board, or nearly — and never squarer than 0.9 asked
   const square = Math.min(aspect(first) - 0.04, 0.9);
+  const solid = Math.min(solidity(first.ring, first.region) - SOLID_SLACK, SOLID_ENOUGH);
   const fit: { at: Variant; level: Level; hits: number }[] = [];
   const why: Record<string, number> = {};
   const no = (reason: string): void => void (why[reason] = (why[reason] ?? 0) + 1);
@@ -228,6 +237,7 @@ function boardsOf(first: Level): Variant[] {
     else if (aspect(level) < square || ratio(level) > WIDEST || ratio(level) < TALLEST)
       no("not square");
     else if (!isDisc(level)) no("not one outline");
+    else if (solidity(level.ring, level.region) < solid) no("bitten into");
     else if (!sameTray(first, level)) no("another tray");
     else if (ofPolygons(first) && !keepsConfigs(level)) no("a configuration missing");
     else fit.push({ at: c.at, level, hits: c.hits });

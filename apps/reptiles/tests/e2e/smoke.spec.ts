@@ -125,7 +125,8 @@ test("the level screen: one header row, no level list, a random level of the sam
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=cairo");
-  await expect(page.locator("#game .hud .hud-btn")).toHaveCount(3);
+  // home, the next of Cairo's boards, restart and the die
+  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(4);
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
   // Cairo is hard; the die deals another hard level.

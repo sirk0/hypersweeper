@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import data from "../../src/boards.json";
 import { congruenceKey } from "../../src/geometry/congruent";
+import { solidity } from "../../src/geometry/outline";
 import { posed, turnsOnto } from "../../src/geometry/shape";
 import { BOARD_SOURCES, BOARDS, LEVELS, boardKeys, levelByKey, type Level } from "../../src/levels";
 
@@ -48,7 +49,10 @@ describe("boards", () => {
   it.each(many)("%s: every board about the first's size, one outline, its tray", (base) => {
     const [first, ...rest] = boardsOf(base);
     const n0 = first!.cells.length;
+    // not bitten into: about as solid as the first board, or solid enough
+    const solid = Math.min(solidity(first!.ring, first!.region) - 0.05, 0.75);
     for (const level of rest) {
+      expect(solidity(level.ring, level.region), level.key).toBeGreaterThanOrEqual(solid);
       expect(Math.abs(level.cells.length - n0), level.key).toBeLessThanOrEqual(
         Math.max(1, Math.round(0.1 * n0)),
       );

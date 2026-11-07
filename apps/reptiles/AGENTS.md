@@ -95,7 +95,10 @@ board's square, the tightest that holds its tiles, loses some); an
 aperiodic builder's other `variant`s; a hat window centred on another tile
 near the patch's middle. A cut is a board when it has within 10% of the
 first board's tiles, is as square (what the tests hold every board to), is
-one outline with no pinch, and takes the very same tray — and, uniform or
+one outline with no pinch, not bitten into (`solidity`, its area over its
+convex hull's: no more than 0.05 below the first board's, or above 0.75 —
+which a patch ending inside the square falls well under, and a spiky tile's
+ragged rim does not), and takes the very same tray — and, uniform or
 2-uniform, has every vertex configuration inside; a periodic cut is taken only
 at a step whose eight neighbours keep the same tiles, so no float on a box
 edge decides it. It is a new board only when it is congruent to none before
@@ -130,7 +133,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, 388 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -296,7 +299,9 @@ quick way to see the win state.
   placement reached from several of its corners once.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
   cancel exactly, after each side is cut at every corner lying inside it, for
-  the bonds' T-junctions): how a level's region is made from its cells.
+  the bonds' T-junctions): how a level's region is made from its cells; and
+  `solidity`, a region's area over its convex hull's, the float measure the
+  board search refuses a bitten-into board by.
 - `src/geometry/fromTemplate.ts` — a `box`-edge square window of one of
   Hypersweeper's periodic tilings in exact coordinates: the tiles
   `archimedeanBoard` keeps, with vertex identity taken from the template's own
