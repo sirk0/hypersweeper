@@ -27,7 +27,15 @@
 // (`atlas`), so a rim tile's marks are its marks in the tiling.
 
 import type { Cyc, Ring } from "./geometry/cyclotomic";
-import { BLANK, LINE, colourMark, colours as pairOf } from "./geometry/marks";
+import {
+  BLANK,
+  LINE,
+  SAME,
+  colourMark,
+  colours as pairOf,
+  shared as sharedOf,
+  sharedMark,
+} from "./geometry/marks";
 import type { Piece, Shape } from "./geometry/shape";
 import { selfTurns } from "./geometry/shape";
 
@@ -37,13 +45,20 @@ export interface Lattice {
   v: Cyc;
 }
 
-/** One way to paint a board: each cell's edge marks, piece by piece. */
+/** One way to paint a board: each cell's edge marks, piece by piece, and
+ * its colour. */
 export interface Painting {
   /** How many colours: 1 for a lined board. */
   colours: number;
   /** Lines in one colour, rather than colours. */
   lines: boolean;
+  /** The edges' marks are shared edge colours (`sharedMark`: a board where
+   * tiles of one colour touch), not colour pairs (`colourMark`: one where
+   * the colours alternate). */
+  shared: boolean;
   marks: number[][][];
+  /** Each cell's colour, 0 on a lined board. */
+  paints: number[];
 }
 
 /** Where a cell lies in the tiling: its translation class, its lattice point,
@@ -167,17 +182,34 @@ export function paintings(
               return [own, colour(across.type, s.i + across.di, s.j + across.dj)] as const;
             });
           });
+          const paints = pairs.map((edges) => edges[0]![0]);
+          // where tiles of one colour touch, each edge carries the colour it
+          // lies between, the same both sides; where colours alternate, each
+          // tile says what lies across it
+          const touching = pairs.some((edges) => edges.some(([own, other]) => own === other));
           out.push({
             colours: k,
             lines: false,
-            marks: pairs.map((edges) => [edges.map(([own, other]) => colourMark(own, other))]),
+            shared: touching,
+            marks: pairs.map((edges) => [
+              edges.map(([own, other]) =>
+                touching ? sharedMark(own, other) : colourMark(own, other),
+              ),
+            ]),
+            paints,
           });
           const lined = pairs.map((edges) => [
             edges.map(([own, other]) => (own === other ? LINE : BLANK)),
           ]);
           const flat = lined.flat(2);
           if (flat.includes(LINE) && flat.includes(BLANK))
-            out.push({ colours: 1, lines: true, marks: lined });
+            out.push({
+              colours: 1,
+              lines: true,
+              shared: true,
+              marks: lined,
+              paints: paints.map(() => 0),
+            });
         }
       }
     }
@@ -217,14 +249,22 @@ function permutations(k: number): number[][] {
 export function traySignature(tiles: readonly Shape[]): string {
   const colourCount =
     1 +
-    Math.max(0, ...tiles.flatMap((t) => t.pieces[0]!.marks ?? []).map((m) => pairOf(m)?.own ?? 0));
+    Math.max(
+      0,
+      ...tiles
+        .flatMap((t) => t.pieces[0]!.marks ?? [])
+        .map((m) => Math.max(pairOf(m)?.own ?? 0, pairOf(m)?.other ?? 0, sharedOf(m)?.hi ?? 0)),
+    );
   let best: string | null = null;
   for (const perm of permutations(colourCount)) {
     for (const mirror of [false, true]) {
       const keys = tiles.map((shape) => {
         const marks = (shape.pieces[0]!.marks ?? []).map((m) => {
           const pair = pairOf(m);
-          return pair ? `${perm[pair.own]}${perm[pair.other]}` : String(m);
+          if (pair) return `${perm[pair.own]}${perm[pair.other]}`;
+          const edge = sharedOf(m);
+          if (edge) return `=${[perm[edge.lo]!, perm[edge.hi]!].sort().join("")}`;
+          return String(m);
         });
         const seq = mirror ? [...marks].reverse() : marks;
         const m = seq.length;
@@ -246,7 +286,7 @@ export function sameEdges(tiles: readonly Shape[]): number | null {
   const counts = tiles.map(
     (t) =>
       (t.pieces[0]!.marks ?? []).filter((m) => {
-        if (m === LINE) return true;
+        if (m === LINE || m === SAME) return true;
         const pair = pairOf(m);
         return pair !== null && pair.own === pair.other;
       }).length,

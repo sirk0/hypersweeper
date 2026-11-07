@@ -1,9 +1,14 @@
 // Drawing a coloured or lined tile's marks (geometry/marks.ts) on top of it.
 //
-// - A colour pair (own, other) with other ≠ own: a band along the inside of
-//   the edge in the colour that must lie across it — so a tile says, edge by
-//   edge, what goes next to it, and a right placement puts each band against
-//   a tile of its colour.
+// - A colour pair (own, other) with other ≠ own — a board whose colours
+//   alternate: a band along the inside of the edge in the colour that must
+//   lie across it — so a tile says, edge by edge, what goes next to it, and a
+//   right placement puts each band against a tile of its colour.
+// - A shared edge colour — a board where tiles of one colour touch: a band
+//   in the edge's own colour, drawn alike on both tiles, so a band meets the
+//   same band. In two colours that is the second (a red tile's blue band
+//   meets a blue band); in three, the colour that is neither of the edge's
+//   two (between red and blue, gold), never the tile's own.
 // - A line: from the middle of each crossed edge in towards the tile's middle
 //   — two crossed edges one curve through it, so a row of lined tiles draws
 //   one unbroken stripe. A `LINE` mark is always crossed; a pair of one
@@ -15,7 +20,7 @@
 // `pointer-events: none`.
 
 import { centroid, type XY } from "../geometry/shape";
-import { colours, crossed } from "../geometry/marks";
+import { colours, crossed, shared } from "../geometry/marks";
 import type { Loop } from "./curve";
 
 export interface DecorPart {
@@ -54,13 +59,23 @@ function inset(xy: XY[], w: number): XY[] {
 const fmt = (n: number): string => (Math.abs(n) < 1e-9 ? "0" : n.toFixed(4));
 const pt = ([x, y]: XY): string => `${fmt(x)} ${fmt(y)}`;
 
+/** The band colour of an edge shared between colours `lo` and `hi`, on a
+ * board of `count` colours: the one colour that is neither, where there is
+ * one, else the higher. */
+export function sharedBand(lo: number, hi: number, count: number): number {
+  if (count === 3) return 3 - lo - hi;
+  return hi;
+}
+
 /** The marks drawn on `loops` (a tile's, each with its marks), mapped by
- * `map`: a band per edge whose other colour differs, a path of lines. Empty
- * for an unmarked tile. `same`: draw lines across edges of one colour too. */
+ * `map`: a band per edge between two colours, a path of lines. Empty for an
+ * unmarked tile. `same`: draw lines across edges of one colour too.
+ * `count`: how many colours the board is painted in. */
 export function decorParts(
   loops: readonly Loop[],
   same: boolean,
   map: (p: XY) => XY = (p) => p,
+  count = 2,
 ): DecorPart[] {
   const bands = new Map<number, string[]>();
   const lines: string[] = [];
@@ -80,7 +95,13 @@ export function decorParts(
       const dy = b[1] - a[1];
       if (crossed(mark, same)) mids.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
       const pair = colours(mark);
-      if (!pair || pair.own === pair.other) return;
+      const edge = shared(mark);
+      const band = edge
+        ? sharedBand(edge.lo, edge.hi, count)
+        : pair && pair.own !== pair.other
+          ? pair.other
+          : null;
+      if (band === null) return;
       // the band between the edge and the same edge of the inset outline,
       // each stopped short of the corners by the same share
       const ia = inner[i]!;
@@ -93,7 +114,7 @@ export function decorParts(
         [ia[0] + ex * INSET, ia[1] + ey * INSET],
       ];
       const d = `M${quad.map((p) => pt(map(p))).join("L")}Z`;
-      bands.set(pair.other, [...(bands.get(pair.other) ?? []), d]);
+      bands.set(band, [...(bands.get(band) ?? []), d]);
     });
     if (mids.length === 2) {
       lines.push(`M${pt(map(mids[0]!))}Q${pt(map(c))} ${pt(map(mids[1]!))}`);

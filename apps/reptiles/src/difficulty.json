@@ -1945,7 +1945,7 @@
     "flips": 0
   },
   "squares.2striped": {
-    "score": 0.292,
+    "score": 0.143,
     "presses": 1,
     "flips": 0
   },
@@ -1980,13 +1980,13 @@
     "flips": 0
   },
   "triangles.2striped": {
-    "score": 0.831,
-    "presses": 11,
+    "score": 0.63,
+    "presses": 10,
     "flips": 0
   },
   "triangles.2paired": {
-    "score": 0.627,
-    "presses": 7,
+    "score": 0.63,
+    "presses": 10,
     "flips": 0
   },
   "triangles.3paired": {
@@ -2005,7 +2005,7 @@
     "flips": 0
   },
   "hexagons.2striped": {
-    "score": 0.337,
+    "score": 0.187,
     "presses": 1,
     "flips": 0
   },

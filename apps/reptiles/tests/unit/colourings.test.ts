@@ -3,7 +3,18 @@ import { traySignature } from "../../src/colourings";
 import { measure } from "../../src/difficulty";
 import { cyclotomic } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
-import { BLANK, LINE, NONE, colourMark, colours, crossed, partner } from "../../src/geometry/marks";
+import {
+  BLANK,
+  LINE,
+  NONE,
+  SAME,
+  colourMark,
+  colours,
+  crossed,
+  partner,
+  shared,
+  sharedMark,
+} from "../../src/geometry/marks";
 import {
   centroid,
   piece,
@@ -17,7 +28,7 @@ import {
 } from "../../src/geometry/shape";
 import { LEVELS, levelByKey, type Level } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
-import { decorParts } from "../../src/view/decor";
+import { decorParts, sharedBand } from "../../src/view/decor";
 import { loopsOf } from "../../src/view/curve";
 
 const Z4 = cyclotomic(4);
@@ -55,6 +66,13 @@ describe("edge marks", () => {
     expect(crossed(colourMark(1, 1), false)).toBe(false);
     expect(crossed(colourMark(1, 1), true)).toBe(true);
     expect(crossed(colourMark(0, 1), true)).toBe(false);
+    // a shared edge colour is the same from both sides, in either order
+    expect(sharedMark(2, 0)).toBe(sharedMark(0, 2));
+    expect(partner(sharedMark(0, 2))).toBe(sharedMark(0, 2));
+    expect(shared(sharedMark(2, 0))).toEqual({ lo: 0, hi: 2 });
+    expect(sharedMark(1, 1)).toBe(SAME);
+    expect(crossed(SAME, false)).toBe(false);
+    expect(crossed(SAME, true)).toBe(true);
   });
 
   it("lays a tile along a marked edge only with the mark it asks for; the rim takes any", () => {
@@ -125,11 +143,17 @@ describe("colourings", () => {
   });
 
   it.each(COLOURED.map((l) => l.key))(
-    "%s: one marked tile per colour, every shared edge's two marks partners",
+    "%s: a tile per colour at most, every shared edge's two marks partners",
     (key) => {
       const level = levelByKey(key)!;
       const { colours: count, lines } = level.decor!;
-      expect(level.tiles).toHaveLength(lines ? 1 : count);
+      const marks = level.tiles.flatMap((t) => t.pieces[0]!.marks!);
+      // colours alternate (each tile says what lies across it), or the
+      // edges carry their own colour, alike both sides
+      const alternate = marks.some((m) => colours(m) !== null);
+      expect(marks.every((m) => (colours(m) !== null) === alternate)).toBe(true);
+      if (lines || alternate) expect(level.tiles).toHaveLength(lines ? 1 : count);
+      expect(level.tiles.length).toBeLessThanOrEqual(count);
       const all = sides(level);
       let shared = 0;
       for (const [edge, mark] of all) {
@@ -140,7 +164,13 @@ describe("colourings", () => {
         expect(across).toBe(partner(mark));
       }
       expect(shared).toBeGreaterThan(0);
-      if (!lines) {
+      if (!alternate)
+        for (const [edge, mark] of all) {
+          const [a, b] = edge.split(">");
+          const across = all.get(`${b}>${a}`);
+          if (across !== undefined) expect(across).toBe(mark);
+        }
+      if (!lines && alternate) {
         // each kind is its colour all round, painted so
         level.tiles.forEach((t, kind) => {
           const own = new Set(t.pieces[0]!.marks!.map((m) => colours(m)!.own));
@@ -197,14 +227,36 @@ describe("colourings", () => {
     );
   });
 
+  it("makes a striped board one tile: red and blue rows read alike, a band meeting a band", () => {
+    // the rows' two colours are one square, banded on two opposite sides:
+    // laid striped across, its bands meet bands, its plain sides plain ones
+    const striped = levelByKey("squares.2striped")!;
+    expect(striped.tiles).toHaveLength(1);
+    expect(striped.need).toEqual([16]);
+    expect(selfTurns(striped.tiles[0]!)).toEqual([0, 2]);
+    expect(new Puzzle(striped).canTurn()).toBe(true);
+    // the checkerboard's colours alternate: two tiles, each the other's
+    // colour round it
+    expect(levelByKey("squares.2apart")!.tiles).toHaveLength(2);
+  });
+
   it("draws a band in the colour across each edge, and lines where asked", () => {
+    const apart = levelByKey("squares.2apart")!;
+    const own = colours(apart.tiles[0]!.pieces[0]!.marks![0]!)!.own;
+    expect(
+      decorParts(loopsOf(apart.ring, apart.tiles[0]!.pieces), false).map((p) => p.class),
+    ).toEqual([`decor band paint-${1 - own}`]);
+    // a striped board: the edge's own colour — in two colours the second,
+    // on both tiles alike
     const level = levelByKey("squares.2striped")!;
     const loops = loopsOf(level.ring, level.tiles[0]!.pieces);
-    const own = colours(level.tiles[0]!.pieces[0]!.marks![0]!)!.own;
     const parts = decorParts(loops, false);
-    // two bands, both the other colour; no lines unless asked
-    expect(parts.map((p) => p.class)).toEqual([`decor band paint-${1 - own}`]);
+    expect(parts.map((p) => p.class)).toEqual(["decor band paint-1"]);
     expect(parts[0]!.d.match(/M/g)).toHaveLength(2);
+    // in three colours, the colour that is neither of the edge's two
+    expect(sharedBand(0, 1, 3)).toBe(2);
+    expect(sharedBand(0, 2, 3)).toBe(1);
+    expect(sharedBand(1, 2, 3)).toBe(0);
     const withLines = decorParts(loops, true);
     expect(withLines.map((p) => p.class)).toContain("decor line");
     // a lined board's lines are its rule: drawn either way

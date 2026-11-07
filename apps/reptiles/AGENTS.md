@@ -33,9 +33,17 @@ some back off.
   section, `?level=squares.2striped`): a colouring repeats more coarsely than
   the tiling — squares in rows, aaaa over bbbb, or as a checkerboard — and no
   one tile can check it, but every edge can. So each tile carries a **mark**
-  on each edge, (its colour, the colour across), drawn as a band along the
-  edge in the colour that must lie across it, and a tile lands only where its
-  marks meet their partners (the rim takes any). A *lined* board is a
+  on each edge, and a tile lands only where its marks meet their partners
+  (the rim takes any). Where tiles of one colour touch (stripes, pairs), the
+  mark is the *edge's*: a band in one colour for the two colours it lies
+  between — in two colours the second, in three the one that is neither —
+  drawn alike on both tiles, so a band meets the same band, and an edge
+  between two of one colour is plain. Tiles whose edges read alike are then
+  one tile, whatever colour they were: red and blue rows of squares are one
+  red square banded blue on two sides, laid by turning it. Where the colours
+  alternate (apart: a checkerboard), each tile keeps its colour and its bands
+  say what lies across it — the colour that must lie next to it. A *lined*
+  board is a
   colouring in one colour, with a line across every edge between two tiles
   that were one colour: a line meets a line, a blank edge a blank one. On a
   coloured board the same lines are drawn too unless the player turns them
@@ -417,8 +425,11 @@ quick way to see the win state.
   Hypersweeper builder.
 - `src/geometry/marks.ts` — **edge marks**: a coloured or lined tile's label
   per edge — `NONE` (a plain tile's, and the rim's, which takes any), `LINE`
-  and `BLANK` (each its own partner), or a colour pair `colourMark(own,
-  other)`, whose partner is the pair the other way round. A `Piece` carries
+  and `BLANK` (each its own partner); on a board whose colours touch,
+  `sharedMark(x, y)`, the edge's own colour, unordered, and `SAME` between
+  two of one colour (each its own partner); on one whose colours alternate,
+  a colour pair `colourMark(own, other)`, whose partner is the pair the other
+  way round. A `Piece` carries
   them as `marks`, edge for edge as it carries `curve`; `posed`, `moved`,
   `curveOnto` and `restFlat` keep them, `turnsOnto` (given the cell's marks)
   and `selfTurns` count them — a square striped across is the same only after
@@ -429,14 +440,18 @@ quick way to see the win state.
 - `src/colourings.ts` — **the colourings**: `paintings` tries every linear
   colouring of a periodic board in 2 or 3 colours — a tile of translation
   class t at lattice point (i, j) is colour (a·i + b·j + c[t]) mod k — with
-  each colour equally common, as edge marks, and for each the lined board in
+  each colour equally common, as edge marks (shared edge colours where some
+  tile touches its own colour, colour pairs where none does) and each cell's
+  colour, and for each the lined board in
   one colour, where it has lines. Each cell's class and lattice point are
   solved for in floats and checked exactly; which class lies across each edge
   of each class is read off the window's inner edges (`atlasOf`), so a rim
   tile's marks are its marks in the tiling. `colouredLevels` in `levels.ts`
-  builds each with `makeLevel` (its `marks`), keeps those whose tray is one
-  marked tile per colour — the colourings that look alike everywhere — and
-  drops any whose tray another already had (`traySignature`: the same up to
+  builds each with `makeLevel` (its `marks` and `paints`: a kind takes the
+  first colour among its cells), keeps those that mark all of a colour's
+  tiles alike — the colourings that look alike everywhere; one tile per
+  colour, or fewer where colours read alike — and ask something (not one mark
+  all round), and drops any whose tray another already had (`traySignature`: the same up to
   turning a tile, a mirror and renaming the colours — rows and columns are
   one). `COLOURED` lists the boards painted and each one's lattice; the
   level is `<plain>.<label>`, `Level.decor` saying what it paints.

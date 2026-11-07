@@ -23,7 +23,7 @@ const ROWS: Record<Bucket, { name: string; hint: string }> = {
   packs: { name: "Packs of 3+", hint: "Three shapes or more" },
   colourings: {
     name: "Colourings",
-    hint: "One shape, coloured or lined — each edge says what lies across it",
+    hint: "One shape, coloured or lined — each edge must match the one it meets",
   },
 };
 

@@ -358,11 +358,11 @@ test("a coloured board: bands on its tiles, lines on and off, a lined square int
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=squares.2striped");
-  // two tiles, each with a band in the other colour on two sides, and a
-  // stripe across them: lines are on unless turned off
-  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
-  await expect(page.locator("svg.board .tray-layer .decor.band")).toHaveCount(2);
-  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(2);
+  // the rows' two colours read alike: one tile, banded on two sides, and a
+  // stripe across it — lines are on unless turned off
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(1);
+  await expect(page.locator("svg.board .tray-layer .decor.band")).toHaveCount(1);
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
   await page.keyboard.press("l");
   await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(0);
 
@@ -374,7 +374,7 @@ test("a coloured board: bands on its tiles, lines on and off, a lined square int
   await lines.click();
   await expect(lines).toHaveAttribute("aria-checked", "true");
   await page.goto("/?level=squares.2striped");
-  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
 
   // a lined board's lines are its rule, drawn whatever the setting; its
   // first square goes into the corner either way round (the rim takes any)
