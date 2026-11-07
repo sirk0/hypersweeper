@@ -6,6 +6,8 @@
 import { centroidOf, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
+import { decorParts } from "./decor";
+import { showLines } from "../prefs";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -72,7 +74,23 @@ export function tileIcon(level: Level, kind: number): SVGSVGElement {
   poly.setAttribute("class", `tile ${level.colours[kind]}`);
   poly.setAttribute("stroke-width", String(r * 0.1));
   svg.appendChild(poly);
+  decorate(svg, level, loops, ([x, y]) => [x - cx, cy - y]);
   return svg;
+}
+
+/** A coloured or lined tile's bands and lines (view/decor.ts), over it. */
+function decorate(
+  svg: SVGSVGElement,
+  level: Level,
+  loops: ReturnType<typeof loopsOf>,
+  map: (p: XY) => XY,
+): void {
+  for (const part of decorParts(loops, showLines(), map, level.decor?.colours ?? 2)) {
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("d", part.d);
+    path.setAttribute("class", part.class);
+    svg.appendChild(path);
+  }
 }
 
 /** Every tray tile of `level` side by side, resting flat on one baseline, all
@@ -114,6 +132,7 @@ export function figureIcon(level: Level): SVGSVGElement {
     poly.setAttribute("class", `tile ${level.colours[kind]}`);
     poly.setAttribute("stroke-width", String(size * 0.025));
     svg.appendChild(poly);
+    decorate(svg, level, loops, ([x, y]) => [x + dx, -y]);
   });
   return svg;
 }

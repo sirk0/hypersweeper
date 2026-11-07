@@ -1938,5 +1938,85 @@
     "score": 0.757,
     "presses": 7,
     "flips": 4
+  },
+  "squares.lines": {
+    "score": 0.143,
+    "presses": 1,
+    "flips": 0
+  },
+  "squares.2striped": {
+    "score": 0.143,
+    "presses": 1,
+    "flips": 0
+  },
+  "squares.2apart": {
+    "score": 0.23,
+    "presses": 0,
+    "flips": 0
+  },
+  "squares.3striped": {
+    "score": 0.443,
+    "presses": 1,
+    "flips": 0
+  },
+  "squares.3apart": {
+    "score": 0.443,
+    "presses": 1,
+    "flips": 0
+  },
+  "triangles.lines": {
+    "score": 0.63,
+    "presses": 10,
+    "flips": 0
+  },
+  "triangles.linkedpairs": {
+    "score": 0.63,
+    "presses": 10,
+    "flips": 0
+  },
+  "triangles.2apart": {
+    "score": 0.423,
+    "presses": 3,
+    "flips": 0
+  },
+  "triangles.2striped": {
+    "score": 0.63,
+    "presses": 10,
+    "flips": 0
+  },
+  "triangles.2paired": {
+    "score": 0.63,
+    "presses": 10,
+    "flips": 0
+  },
+  "triangles.3paired": {
+    "score": 0.581,
+    "presses": 1,
+    "flips": 3
+  },
+  "triangles.3paired2": {
+    "score": 0.832,
+    "presses": 4,
+    "flips": 5
+  },
+  "hexagons.lines": {
+    "score": 0.187,
+    "presses": 1,
+    "flips": 0
+  },
+  "hexagons.2striped": {
+    "score": 0.187,
+    "presses": 1,
+    "flips": 0
+  },
+  "hexagons.3striped": {
+    "score": 0.487,
+    "presses": 1,
+    "flips": 0
+  },
+  "hexagons.3apart": {
+    "score": 0.487,
+    "presses": 1,
+    "flips": 0
   }
 }

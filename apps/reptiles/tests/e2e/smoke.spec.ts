@@ -65,6 +65,7 @@ test("Figures lists the tile sets, and a set its tilings by difficulty", async (
     "Regular pairs",
     "Irregular pairs",
     "Packs of 3+",
+    "Colourings",
   ]);
   await expect(page.locator("#figures-list .figure-card .card-name").first()).toHaveText(
     "Triangle",
@@ -348,7 +349,47 @@ test("Tilings' families are named as Hypersweeper names them", async ({ page }) 
     "Rep-tiles",
     "Spirals",
     "Aperiodic",
+    "Colourings",
   ]);
+});
+
+test("a coloured board: bands on its tiles, lines on and off, a lined square into the corner", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares.2striped");
+  // the rows' two colours read alike: one tile, banded on two sides, and a
+  // stripe across it — lines are on unless turned off
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(1);
+  await expect(page.locator("svg.board .tray-layer .decor.band")).toHaveCount(1);
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
+  await page.keyboard.press("l");
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(0);
+
+  // Settings remembers the choice, and switches it back
+  await page.goto("/?settings");
+  const lines = page.locator('[data-action="toggle-lines"]');
+  await expect(lines).toHaveAttribute("aria-checked", "false");
+  await expect(page.locator('[data-value="lines"]')).toHaveText("Off");
+  await lines.click();
+  await expect(lines).toHaveAttribute("aria-checked", "true");
+  await page.goto("/?level=squares.2striped");
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
+
+  // a lined board's lines are its rule, drawn whatever the setting; its
+  // first square goes into the corner either way round (the rim takes any)
+  await page.goto("/?level=squares.lines");
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
+  const tray = page.locator("svg.board .tile.in-tray").first();
+  const t = (await tray.boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + t.width / 2, r.y + r.height - t.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+  await expect(page.locator("svg.board .world .decor.line")).toHaveCount(1);
+  expect(errors).toEqual([]);
 });
 
 test("the Spectre's edges are round, Tile(1,1)'s straight", async ({ page }) => {

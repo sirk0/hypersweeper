@@ -16,6 +16,12 @@
 // and a tile may lie along a round edge only with the same curve on its own
 // edge there, end to end. A curved edge is never cut part-way.
 //
+// Edge marks (a coloured or lined tile's, marks.ts) ride along the same way:
+// a covered tile leaves each of its edges open carrying the mark the tile
+// across must have there (its own mark's partner), a tile lies along a marked
+// edge only with that very mark, end to end, and the rim carries none, so it
+// takes any.
+//
 // A tile of several pieces (the fish, the kissing squares) fits where each
 // of its pieces does, and covering it covers each in turn; it snaps on by any
 // corner of any piece.
@@ -46,6 +52,7 @@ import {
   type Shape,
   type XY,
 } from "./shape";
+import { NONE, partner } from "./marks";
 
 export interface Edge {
   a: Cyc;
@@ -58,11 +65,21 @@ export interface Edge {
   bulge: Bulge;
   /** Not a piece cut from a longer edge. */
   whole: boolean;
+  /** The mark a tile laid along this edge must have on its own edge there
+   * (marks.ts); `NONE` takes any. */
+  mark: number;
 }
 
 const EPS = 1e-9;
 
-function edge(ring: Ring, a: Cyc, b: Cyc, bulge: Bulge = 0, whole = true): Edge {
+function edge(
+  ring: Ring,
+  a: Cyc,
+  b: Cyc,
+  bulge: Bulge = 0,
+  whole = true,
+  mark: number = NONE,
+): Edge {
   return {
     a,
     b,
@@ -72,17 +89,25 @@ function edge(ring: Ring, a: Cyc, b: Cyc, bulge: Bulge = 0, whole = true): Edge 
     bxy: ring.toXY(b),
     bulge,
     whole,
+    mark,
   };
 }
 
-function loopToEdges(ring: Ring, verts: Cyc[], curve?: readonly Bulge[]): Edge[] {
-  return verts.map((v, i) => edge(ring, v, verts[(i + 1) % verts.length]!, curve?.[i] ?? 0));
+function loopToEdges(
+  ring: Ring,
+  verts: Cyc[],
+  curve?: readonly Bulge[],
+  marks?: readonly number[],
+): Edge[] {
+  return verts.map((v, i) =>
+    edge(ring, v, verts[(i + 1) % verts.length]!, curve?.[i] ?? 0, true, marks?.[i] ?? NONE),
+  );
 }
 
 /** An edge the other way round: the same line, so its bulge is to the other
- * side. */
+ * side — and, left open by a tile, the mark the tile across must have. */
 function reverse(ring: Ring, e: Edge): Edge {
-  return edge(ring, e.b, e.a, -e.bulge as Bulge, e.whole);
+  return edge(ring, e.b, e.a, -e.bulge as Bulge, e.whole, partner(e.mark));
 }
 
 interface Box {
@@ -144,10 +169,10 @@ function splitAt(ring: Ring, edges: Edge[], points: Map<string, Cyc>): Edge[] {
     cuts.sort((u, v) => dist(u.xy) - dist(v.xy));
     let from = e.a;
     for (const { p } of cuts) {
-      out.push(edge(ring, from, p, e.bulge, false));
+      out.push(edge(ring, from, p, e.bulge, false, e.mark));
       from = p;
     }
-    out.push(edge(ring, from, e.b, e.bulge, false));
+    out.push(edge(ring, from, e.b, e.bulge, false, e.mark));
   }
   return out;
 }
@@ -375,13 +400,13 @@ export class Frontier {
    * edges' `curve`) are covered too. The caller has checked `fits`. */
   cover(pieces: readonly Piece[]): Frontier {
     let f: Frontier = this;
-    for (const p of pieces) f = f.coverOne(p.verts, p.curve);
+    for (const p of pieces) f = f.coverOne(p.verts, p.curve, p.marks);
     return f;
   }
 
-  private coverOne(poly: Cyc[], curve?: readonly Bulge[]): Frontier {
+  private coverOne(poly: Cyc[], curve?: readonly Bulge[], marks?: readonly number[]): Frontier {
     const { ring } = this;
-    const reversed = loopToEdges(ring, poly, curve).map((e) => reverse(ring, e));
+    const reversed = loopToEdges(ring, poly, curve, marks).map((e) => reverse(ring, e));
     const mine = splitAt(ring, [...this.edges], vertexMap(reversed));
     const theirs = splitAt(ring, reversed, vertexMap(this.edges));
     const open = new Map<string, Edge[]>();
@@ -443,12 +468,12 @@ export class Frontier {
    * along a round edge, only where both sides are the one curve, end to end.
    * A tile's own pieces never overlap one another, so each is judged alone. */
   fits(pieces: readonly Piece[]): boolean {
-    return pieces.every((p) => this.fitsOne(p.verts, p.curve));
+    return pieces.every((p) => this.fitsOne(p.verts, p.curve, p.marks));
   }
 
-  private fitsOne(poly: Cyc[], curve?: readonly Bulge[]): boolean {
+  private fitsOne(poly: Cyc[], curve?: readonly Bulge[], marks?: readonly number[]): boolean {
     const { ring } = this;
-    const tile = loopToEdges(ring, poly, curve);
+    const tile = loopToEdges(ring, poly, curve, marks);
     const tileXY = poly.map((v) => ring.toXY(v));
     const box = boxOf(tileXY);
     const near = this.edgesNear(box);
@@ -461,20 +486,23 @@ export class Frontier {
     // tile's inside), or the tile sits on covered ground there.
     const tileLoop = loopEdges(tileXY);
     for (const piece of splitAt(ring, near, vertexMap(tile))) {
-      // a tile corner part-way along a round edge: it would cut the curve
-      if (piece.bulge && !piece.whole) return false;
+      // a tile corner part-way along a round or marked edge: it would cut it
+      if ((piece.bulge || piece.mark) && !piece.whole) return false;
       const along = tile.find((t) => meet(piece, t) && onEdge(ring, piece, t));
       if (along) {
         if (!sameDirection(ring, ring.sub(along.b, along.a), ring.sub(piece.b, piece.a)))
           return false;
-        // a round edge on either side: the same curve, the whole edge
+        // a round edge on either side: the same curve, the whole edge; a
+        // marked one (but the rim, which takes any): the mark it asks for
+        const marked = piece.mark !== NONE && along.mark !== NONE;
         if (
-          (along.bulge || piece.bulge) &&
+          (along.bulge || piece.bulge || marked) &&
           !(
             piece.whole &&
             piece.ak === along.ak &&
             piece.bk === along.bk &&
-            piece.bulge === along.bulge
+            piece.bulge === along.bulge &&
+            (!marked || piece.mark === along.mark)
           )
         )
           return false;
@@ -484,7 +512,8 @@ export class Frontier {
     }
     // Tile pieces off the frontier must be in the uncovered area.
     for (const piece of splitAt(ring, tile, vertexMap(near))) {
-      if (piece.bulge && !piece.whole) return false; // a corner part-way along a round side
+      // a corner part-way along a round or marked side
+      if ((piece.bulge || piece.mark) && !piece.whole) return false;
       if (near.some((f) => meet(piece, f) && onEdge(ring, piece, f))) continue; // judged above
       if (this.windingAt(midpoint(piece)) !== 1) return false;
     }

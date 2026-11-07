@@ -15,8 +15,14 @@
 // tiles meet along an edge only where their curves are the same line, so the
 // frontier checks the labels as well (see frontier.ts), and the view draws
 // them (src/view/curve.ts).
+//
+// A coloured or lined tile carries `marks` the same way: a label per edge
+// saying what must lie across it (see marks.ts). A turn keeps them, a mirror
+// lists them backwards, and a tile's turns onto a cell, or onto itself, count
+// only where the marks land on the cell's own.
 
 import { orient, type Cyc, type Ring } from "./cyclotomic";
+import { posedMarks } from "./marks";
 
 export type XY = [number, number];
 
@@ -29,6 +35,9 @@ export interface Piece {
    * is straight. A round tile lists every point its curves start and end at,
    * a flat corner included (the Spectre's), so each edge is one curve. */
   curve?: Bulge[];
+  /** Edge marks, if the tile is coloured or lined (marks.ts): one per edge,
+   * edge i running from verts[i] to verts[i + 1]. */
+  marks?: number[];
 }
 
 export interface Shape {
@@ -37,9 +46,12 @@ export interface Shape {
   pieces: Piece[];
 }
 
-/** A piece, its curve left out when it has none. */
-export function piece(verts: Cyc[], curve?: Bulge[]): Piece {
-  return curve ? { verts, curve } : { verts };
+/** A piece, its curve and marks left out when it has none. */
+export function piece(verts: Cyc[], curve?: Bulge[], marks?: number[]): Piece {
+  const out: Piece = { verts };
+  if (curve) out.curve = curve;
+  if (marks) out.marks = marks;
+  return out;
 }
 
 /** A one-piece shape: the polygon `verts`. */
@@ -53,12 +65,24 @@ export function allVerts(pieces: readonly Piece[]): Cyc[] {
 }
 
 /** The pieces' vertices as one key: which spot a placement is, whatever
- * order its pieces and vertices are listed in. */
+ * order its pieces and vertices are listed in — and, for a marked tile, which
+ * mark lies on which edge there, so a coloured tile turned a different way in
+ * the same spot is a different placement. */
 export function spotKey(ring: Ring, pieces: readonly Piece[]): string {
-  return allVerts(pieces)
+  const at = allVerts(pieces)
     .map((v) => ring.key(v))
     .sort()
     .join("|");
+  if (!pieces.some((p) => p.marks)) return at;
+  const marked = pieces
+    .flatMap(({ verts, marks }) =>
+      verts.map(
+        (v, i) => `${ring.key(v)}>${ring.key(verts[(i + 1) % verts.length]!)}=${marks?.[i] ?? 0}`,
+      ),
+    )
+    .sort()
+    .join("|");
+  return `${at}#${marked}`;
 }
 
 /** How many sides a shape has, all its pieces' real corners together. */
@@ -101,7 +125,11 @@ export function curveOnto(shape: Shape, cell: Cyc[][]): Piece[] {
           if (verts.length !== m) continue;
           for (let j = 0; j < m; j++) {
             if (verts.every((u, i) => ring.eq(u, ring.add(p.verts[(i + j) % m]!, t))))
-              return piece(verts, p.curve && verts.map((_, i) => p.curve![(i + j) % m]!));
+              return piece(
+                verts,
+                p.curve && verts.map((_, i) => p.curve![(i + j) % m]!),
+                p.marks && verts.map((_, i) => p.marks![(i + j) % m]!),
+              );
           }
         }
         return null;
@@ -142,18 +170,19 @@ export function posed(shape: Shape, pose: Pose): Piece[] {
   return shape.pieces.map((p) => {
     const out = p.verts.map((v) => ring.add(ring.mul(z, pose.flip ? ring.conj(v) : v), pose.t));
     if (pose.flip) out.reverse();
-    return piece(out, posedCurve(p.curve, pose.flip));
+    return piece(out, posedCurve(p.curve, pose.flip), posedMarks(p.marks, pose.flip));
   });
 }
 
-/** `pieces` turned by ζ^rot and then moved by `t` — curves kept, as a turn
- * keeps them. */
+/** `pieces` turned by ζ^rot and then moved by `t` — curves and marks kept,
+ * as a turn keeps them. */
 export function moved(ring: Ring, pieces: readonly Piece[], rot: number, t: Cyc): Piece[] {
   const z = ring.zeta(rot);
   return pieces.map((p) =>
     piece(
       p.verts.map((v) => ring.add(ring.mul(z, v), t)),
       p.curve,
+      p.marks,
     ),
   );
 }
@@ -246,8 +275,15 @@ export function loopEdges(pts: XY[]): [XY, XY][] {
 
 /** The turns k (0..n-1) for which ζᵏ·`shape` is a translate of `cell` —
  * pieces in any order, each listed from any vertex: how a tile of that shape
- * sits in a given cell. Empty when the cell is not that shape at all. */
-export function turnsOnto(shape: Shape, cell: Cyc[][]): number[] {
+ * sits in a given cell. Empty when the cell is not that shape at all.
+ * `cellMarks`, when given (per cell piece, as its `marks`) and the shape is
+ * marked too, keeps only the turns that lay each of the shape's marks on the
+ * cell's own: a striped square sits in a striped cell two ways, not four. */
+export function turnsOnto(
+  shape: Shape,
+  cell: Cyc[][],
+  cellMarks?: readonly (readonly number[] | undefined)[],
+): number[] {
   const { ring, pieces } = shape;
   const lengths = (ps: Cyc[][]): string =>
     ps
@@ -263,6 +299,7 @@ export function turnsOnto(shape: Shape, cell: Cyc[][]): number[] {
       .join("|");
   const own = new Set(cell.map(pieceKey));
   const anchor = cell[0]![0]!;
+  const marked = cellMarks !== undefined && pieces.some((p) => p.marks);
   const turns: number[] = [];
   for (let k = 0; k < ring.n; k++) {
     const turned = pieces.map((p) => p.verts.map((v) => ring.mul(ring.zeta(k), v)));
@@ -273,7 +310,8 @@ export function turnsOnto(shape: Shape, cell: Cyc[][]): number[] {
       const at = turned.map((q) => q.map((v) => ring.add(v, t)));
       return (
         at.every((q) => q.every((v) => keys.has(ring.key(v)))) &&
-        (at.length === 1 || at.every((q) => own.has(pieceKey(q))))
+        (at.length === 1 || at.every((q) => own.has(pieceKey(q)))) &&
+        (!marked || marksLand(ring, at, pieces, cell, cellMarks!))
       );
     });
     if (fits) turns.push(k);
@@ -281,14 +319,50 @@ export function turnsOnto(shape: Shape, cell: Cyc[][]): number[] {
   return turns;
 }
 
+/** Whether the shape's pieces, laid at `at` (each piece's vertices, in its
+ * own order), put every edge's mark on the mark of the cell edge it lands on. */
+function marksLand(
+  ring: Ring,
+  at: Cyc[][],
+  pieces: readonly Piece[],
+  cell: Cyc[][],
+  cellMarks: readonly (readonly number[] | undefined)[],
+): boolean {
+  return at.every((verts, q) => {
+    const marks = pieces[q]!.marks;
+    const m = verts.length;
+    for (let c = 0; c < cell.length; c++) {
+      const other = cell[c]!;
+      if (other.length !== m) continue;
+      const j = other.findIndex((v) => ring.eq(v, verts[0]!));
+      if (j < 0 || !verts.every((v, i) => ring.eq(v, other[(i + j) % m]!))) continue;
+      const theirs = cellMarks[c];
+      return verts.every((_, i) => (marks?.[i] ?? 0) === (theirs?.[(i + j) % m] ?? 0));
+    }
+    return false;
+  });
+}
+
 /** The turns that carry `shape` onto a translate of itself — k = 0 always;
  * 0, 4, 8 for a triangle in ℤ[ζ12]; every 2 for a hexagon there. Two
  * orientations of a tile that differ by one of these are the same
- * orientation. */
+ * orientation. A marked tile counts its marks too: a square striped across is
+ * the same only after a half turn. */
 export function selfTurns(shape: Shape): number[] {
   return turnsOnto(
     shape,
     shape.pieces.map((p) => p.verts),
+    shape.pieces.map((p) => p.marks),
+  );
+}
+
+/** How `shape` sits in `cell`, a placed tile — its pieces' marks counted,
+ * where both have them. */
+export function turnsOntoPieces(shape: Shape, cell: readonly Piece[]): number[] {
+  return turnsOnto(
+    shape,
+    cell.map((p) => p.verts),
+    cell.map((p) => p.marks),
   );
 }
 
@@ -301,7 +375,11 @@ export function selfTurns(shape: Shape): number[] {
  * spiral's pentagon), the longest that can. The piece it rests on comes
  * first, listed from that side. A tile with no side to rest on — every side
  * of each piece has some other piece across it — is held as it is. */
-export function restFlat(ring: Ring, cell: Cyc[][]): Shape {
+export function restFlat(
+  ring: Ring,
+  cell: Cyc[][],
+  marks?: readonly (readonly number[] | undefined)[],
+): Shape {
   const sides: { p: number; i: number; from: Cyc; to: Cyc; length: number }[] = [];
   cell.forEach((verts, p) => {
     const xy = verts.map((v) => ring.toXY(v));
@@ -349,10 +427,19 @@ export function restFlat(ring: Ring, cell: Cyc[][]): Shape {
           [...verts.slice(i), ...verts.slice(0, i)],
           ...cell.filter((_, q) => q !== p),
         ];
+        const own = marks?.[p];
+        const orderMarks = [
+          own && [...own.slice(i), ...own.slice(0, i)],
+          ...cell.map((_, q) => marks?.[q]).filter((_, q) => q !== p),
+        ];
         return {
           ring,
-          pieces: order.map((vs) =>
-            piece(vs.map((v) => ring.mul(ring.zeta(k), ring.sub(v, from)))),
+          pieces: order.map((vs, q) =>
+            piece(
+              vs.map((v) => ring.mul(ring.zeta(k), ring.sub(v, from))),
+              undefined,
+              orderMarks[q] && [...orderMarks[q]!],
+            ),
           ),
         };
       }
@@ -360,7 +447,16 @@ export function restFlat(ring: Ring, cell: Cyc[][]): Shape {
   }
   if (cell.length > 1) {
     const from = cell[0]![0]!;
-    return { ring, pieces: cell.map((vs) => piece(vs.map((v) => ring.sub(v, from)))) };
+    return {
+      ring,
+      pieces: cell.map((vs, q) =>
+        piece(
+          vs.map((v) => ring.sub(v, from)),
+          undefined,
+          marks?.[q] && [...marks[q]!],
+        ),
+      ),
+    };
   }
   throw new Error("restFlat: no side runs along a ring direction");
 }

@@ -9,7 +9,7 @@ import {
   selfTurns,
   signedArea,
   spotKey,
-  turnsOnto,
+  turnsOntoPieces,
   type Bulge,
   type Piece,
   type Shape,
@@ -254,11 +254,10 @@ export class Puzzle {
     const { ring, tiles } = this.level;
     for (const cell of this.level.cells) {
       if (!this.frontier.fits(cell)) continue;
-      const verts = cell.map((c) => c.verts);
       sit: for (const [kind, shape] of tiles.entries()) {
         for (const flip of [false, true]) {
           const pieces = posed(shape, { rot: 0, flip, t: ring.zero });
-          const [rot] = turnsOnto({ ring, pieces }, verts);
+          const [rot] = turnsOntoPieces({ ring, pieces }, cell);
           if (rot !== undefined && (!flip || this.level.mirror)) {
             this.place(kind, cell, rot, flip);
             break sit;

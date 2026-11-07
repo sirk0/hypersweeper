@@ -4,8 +4,12 @@
 // service worker, and only then gets the worker onto the new build. A packaged
 // app (the desktop shell) carries its build inside the bundle and has nothing
 // to check against, so the row is left out there.
+//
+// Above it, how the boards are drawn: whether a coloured board draws a line
+// across every edge between two tiles of one colour (`prefs.ts`).
 
 import { checkForUpdate, loadDeployedBuild } from "@tiling/platform";
+import { setShowLines, showLines } from "../prefs";
 
 /** This build: the package version, and the short commit on a CI build. */
 export function buildVersion(): string {
@@ -14,6 +18,7 @@ export function buildVersion(): string {
 
 export function renderSettings(host: HTMLElement): void {
   host.replaceChildren();
+  host.append(...boardSettings());
   const heading = document.createElement("h2");
   heading.textContent = "About";
   const list = document.createElement("ul");
@@ -39,6 +44,37 @@ export function renderSettings(host: HTMLElement): void {
     list.append(item(button));
   }
   host.append(heading, list);
+}
+
+/** The board's drawing: a switch for the lines across same-colour edges. */
+function boardSettings(): HTMLElement[] {
+  const heading = document.createElement("h2");
+  heading.textContent = "Boards";
+  const list = document.createElement("ul");
+  list.className = "settings-list";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "settings-row";
+  button.dataset["action"] = "toggle-lines";
+  button.setAttribute("role", "switch");
+  const { block, hint } = textBlock("Lines on coloured boards");
+  hint.textContent = "A line across each edge between two tiles of one colour";
+  const value = document.createElement("span");
+  value.className = "settings-value";
+  value.dataset["value"] = "lines";
+  const show = (): void => {
+    const on = showLines();
+    button.setAttribute("aria-checked", String(on));
+    value.textContent = on ? "On" : "Off";
+  };
+  show();
+  button.addEventListener("click", () => {
+    setShowLines(!showLines());
+    show();
+  });
+  button.append(block, value);
+  list.append(item(button));
+  return [heading, list];
 }
 
 function item(child: HTMLElement): HTMLLIElement {
