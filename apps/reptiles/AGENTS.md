@@ -29,6 +29,22 @@ some back off.
   the way), or turn on ✕ remove, the control beside rotate (or X), and tap
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
   A lifted tile dropped anywhere else it cannot land goes back where it was.
+- **Colourings.** The regular boards come painted too (the Colourings
+  section, `?level=squares.2striped`): a colouring repeats more coarsely than
+  the tiling — squares in rows, aaaa over bbbb, or as a checkerboard — and no
+  one tile can check it, but every edge can. So each tile carries a **mark**
+  on each edge, (its colour, the colour across), drawn as a band along the
+  edge in the colour that must lie across it, and a tile lands only where its
+  marks meet their partners (the rim takes any). A *lined* board is a
+  colouring in one colour, with a line across every edge between two tiles
+  that were one colour: a line meets a line, a blank edge a blank one. On a
+  coloured board the same lines are drawn too unless the player turns them
+  off — Settings' "Lines on coloured boards", or L on such a level
+  (`src/prefs.ts`); a lined board always draws its lines, which are its rule.
+  A marked tile is held, where it can be, so that it fits none of the board's
+  cells as the tray has it — the tray does not hand over the turn — so the
+  marks ask for turning a plain board never needs, and every painted level
+  measures at least as hard as its plain one (a test holds that).
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
   from still to go (past zero, how many extra). Finishing at all is one star;
   with no more tiles than that, two; and within the level's time limit
@@ -133,7 +149,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, 388 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, and 16 colourings of the regular three in a twelfth, 404 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -197,7 +213,7 @@ builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
-edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a won board and
+edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, a won board and
 its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -399,6 +415,31 @@ quick way to see the win state.
   19 tiles, so the board carries on at least two rings further. The tests
   (`tests/unit/socolarTaylor.test.ts`) are its oracle instead of a
   Hypersweeper builder.
+- `src/geometry/marks.ts` — **edge marks**: a coloured or lined tile's label
+  per edge — `NONE` (a plain tile's, and the rim's, which takes any), `LINE`
+  and `BLANK` (each its own partner), or a colour pair `colourMark(own,
+  other)`, whose partner is the pair the other way round. A `Piece` carries
+  them as `marks`, edge for edge as it carries `curve`; `posed`, `moved`,
+  `curveOnto` and `restFlat` keep them, `turnsOnto` (given the cell's marks)
+  and `selfTurns` count them — a square striped across is the same only after
+  a half turn — and `spotKey` names them, so one spot turned two ways is two
+  placements. The frontier treats a marked edge as a round one: each open edge
+  holds the mark the tile across must bring (`partner`), a tile lies along it
+  only with that mark, whole, and covering a tile leaves its marks' partners.
+- `src/colourings.ts` — **the colourings**: `paintings` tries every linear
+  colouring of a periodic board in 2 or 3 colours — a tile of translation
+  class t at lattice point (i, j) is colour (a·i + b·j + c[t]) mod k — with
+  each colour equally common, as edge marks, and for each the lined board in
+  one colour, where it has lines. Each cell's class and lattice point are
+  solved for in floats and checked exactly; which class lies across each edge
+  of each class is read off the window's inner edges (`atlasOf`), so a rim
+  tile's marks are its marks in the tiling. `colouredLevels` in `levels.ts`
+  builds each with `makeLevel` (its `marks`), keeps those whose tray is one
+  marked tile per colour — the colourings that look alike everywhere — and
+  drops any whose tray another already had (`traySignature`: the same up to
+  turning a tile, a mirror and renaming the colours — rows and columns are
+  one). `COLOURED` lists the boards painted and each one's lattice; the
+  level is `<plain>.<label>`, `Level.decor` saying what it paints.
 - `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
   boards congruent to a given one (turned, mirrored or moved, tile for tile),
   how the board search tells a new board from one it has.
@@ -472,6 +513,12 @@ quick way to see the win state.
   along the arcs: what a round tile's bounds and tray circle are taken from).
   Every tile, the region, the open edges and the icons are paths drawn
   through it.
+- `src/view/decor.ts` — drawing a tile's marks over it: a band along each
+  edge whose other colour differs, in that colour, its ends on the corners'
+  bisectors so two never overlap; and lines from each crossed edge's middle
+  to the tile's — two of them one curve through it, so a row draws one
+  stripe. Every tile, tray tile, dragged tile and icon is decorated through
+  it; its parts are `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's
@@ -542,8 +589,9 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1),
   the Spectre, the hat and the turtle, violet at its end — real corners, `sideCount`), a tile
   of several pieces in slate, off the ramp (`.pieces`), and a second kind
-  coloured as another in rose (`.twin`) — read a kind's
-  classes from `level.colours`, never from its side count.
+  coloured as another in rose (`.twin`), and a coloured board's tile in its
+  colour's paint (`.paint-<c>`, `--paint-<c>`: terracotta, blue, gold, green)
+  — read a kind's classes from `level.colours`, never from its side count.
 - Import the geometry as `@tiling/geometry` (its index) and nothing from
   `apps/hypersweeper/` (renderer, UI, game rules) — that is Hypersweeper's own.
   A name the geometry has but does not export gets a line in

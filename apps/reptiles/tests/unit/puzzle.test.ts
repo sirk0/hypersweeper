@@ -42,6 +42,7 @@ import {
   sideCount,
   spotKey,
   turnsOnto,
+  turnsOntoPieces,
   type Piece,
   type XY,
 } from "../../src/geometry/shape";
@@ -75,10 +76,7 @@ describe("puzzle", () => {
       for (const [kind, t] of tiles.entries()) {
         for (const flip of [false, true]) {
           const pieces = posed(t, { rot: 0, flip, t: ring.zero });
-          const [rot] = turnsOnto(
-            { ring, pieces },
-            cell.map((c) => c.verts),
-          );
+          const [rot] = turnsOntoPieces({ ring, pieces }, cell);
           if (rot !== undefined) return [kind, rot, flip];
         }
       }
@@ -189,7 +187,13 @@ describe("puzzle", () => {
   // Hypersweeper board to match, nor has the hat's family:
   // tests/unit/hat.test.ts is its oracle)
   const unturned = BOARD_LEVELS.filter(
-    (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor && !l.hat,
+    (l) =>
+      !l.window?.turned &&
+      !isDual(l.group) &&
+      !l.pieceTile &&
+      !l.socolarTaylor &&
+      !l.hat &&
+      !l.decor,
   ).map((l) => l.key);
   /** A board past a tiling's first, cut from Hypersweeper's template as
    * `archimedeanBoard` cuts it — every tile that fits whole in the square, a
@@ -721,7 +725,7 @@ describe("puzzle", () => {
     // rep-tiles whose dissection reflects a child, and the Socolar–Taylor
     // tile, which tiles only with its mirror image
     expect(
-      LEVELS.filter((l) => l.mirror)
+      LEVELS.filter((l) => l.mirror && !l.decor)
         .map((l) => l.key)
         .sort(),
     ).toEqual([

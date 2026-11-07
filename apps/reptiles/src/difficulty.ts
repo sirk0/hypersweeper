@@ -23,7 +23,7 @@ import {
   posed,
   selfTurns,
   spotKey,
-  turnsOnto,
+  turnsOntoPieces,
   type Piece,
   type XY,
 } from "./geometry/shape";
@@ -78,12 +78,11 @@ export const BARS: Record<Band, number> = { easy: 1, medium: 2, hard: 3 };
 function reference(level: Level): { pieces: Piece[]; kind: number; rot: number; flip: boolean }[] {
   const { ring, tiles } = level;
   return level.cells.map((pieces) => {
-    const verts = pieces.map((p) => p.verts);
     for (let kind = 0; kind < tiles.length; kind++) {
-      const direct = turnsOnto(tiles[kind]!, verts);
+      const direct = turnsOntoPieces(tiles[kind]!, pieces);
       if (direct.length) return { pieces, kind, rot: direct[0]!, flip: false };
       const mirrored = { ring, pieces: posed(tiles[kind]!, { rot: 0, flip: true, t: ring.zero }) };
-      const flipped = turnsOnto(mirrored, verts);
+      const flipped = turnsOntoPieces(mirrored, pieces);
       if (flipped.length) return { pieces, kind, rot: flipped[0]!, flip: true };
     }
     throw new Error(`${level.key}: a cell matches no tile kind`);

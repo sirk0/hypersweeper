@@ -21,6 +21,10 @@ const ROWS: Record<Bucket, { name: string; hint: string }> = {
   "regular-pairs": { name: "Regular pairs", hint: "Two regular polygons" },
   "irregular-pairs": { name: "Irregular pairs", hint: "Two shapes, at least one irregular" },
   packs: { name: "Packs of 3+", hint: "Three shapes or more" },
+  colourings: {
+    name: "Colourings",
+    hint: "One shape, coloured or lined — each edge says what lies across it",
+  },
 };
 
 const BANDS: { band: Band; name: string }[] = [

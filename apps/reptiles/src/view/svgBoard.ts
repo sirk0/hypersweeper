@@ -30,6 +30,8 @@ import {
   type Loop,
 } from "./curve";
 import type { Puzzle } from "../puzzle";
+import { showLines } from "../prefs";
+import { decorParts } from "./decor";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -45,6 +47,13 @@ function el<K extends keyof SVGElementTagNameMap>(
 }
 
 const points = (pts: XY[]): string => pts.map(([x, y]) => `${x},${y}`).join(" ");
+
+/** A coloured or lined tile's bands and lines (view/decor.ts), drawn over it
+ * in `parent`; nothing for a plain tile. */
+function decor(loops: readonly Loop[], parent: Element, map?: (p: XY) => XY): void {
+  for (const part of decorParts(loops, showLines(), map))
+    el("path", { d: part.d, class: part.class }, parent);
+}
 
 /** The gap round the board, in tile edges, at zoom 1. */
 const MARGIN = 0.3;
@@ -548,15 +557,17 @@ export class SvgBoard {
       .join("");
     el("path", { d, class: "region", "fill-rule": "evenodd" }, this.still);
     for (const tile of this.puzzle.tiles) {
+      const loops = loopsOf(ring, tile.pieces);
       el(
         "path",
         {
-          d: loopsPath(loopsOf(ring, tile.pieces)),
+          d: loopsPath(loops),
           class: `tile ${this.puzzle.level.colours[tile.kind]}`,
           "data-tile": tile.id,
         },
         this.still,
       );
+      decor(loops, this.still);
     }
     for (const e of this.puzzle.openEdges) {
       el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
@@ -566,15 +577,18 @@ export class SvgBoard {
     this.trayAt.forEach(([cx, cy], kind) => {
       const r = this.trayRadius(kind);
       el("circle", { cx, cy, r, class: "tray", "data-tray": kind }, this.shelf);
+      const outline = this.outline(kind, this.turn, this.flip);
+      const at = ([x, y]: XY): XY => [x + cx, y + cy];
       el(
         "path",
         {
-          d: loopsPath(this.outline(kind, this.turn, this.flip), ([x, y]) => [x + cx, y + cy]),
+          d: loopsPath(outline, at),
           class: `tile ${this.puzzle.level.colours[kind]} in-tray`,
           "data-tray": kind,
         },
         this.shelf,
       );
+      decor(outline, this.shelf, at);
       // The pile's count: how many more the board was cut with. Past zero it
       // shows how many extra are down — allowed, but it costs a star.
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
@@ -709,14 +723,16 @@ export class SvgBoard {
   ): void {
     this.moving.replaceChildren();
     this.svg.classList.toggle("discarding", discard);
+    const to = ([x, y]: XY): XY => [x + at[0], y + at[1]];
     el(
       "path",
       {
-        d: loopsPath(outline, ([x, y]) => [x + at[0], y + at[1]]),
+        d: loopsPath(outline, to),
         class: `tile ${this.puzzle.level.colours[kind]} floating${discard ? " discard" : ""}`,
       },
       this.moving,
     );
+    decor(outline, this.moving, to);
     for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
     if (fitsAt) {
       const [cx, cy] = fitsAt;

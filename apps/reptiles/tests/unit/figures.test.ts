@@ -70,8 +70,9 @@ describe("figure sets", () => {
     for (const set of sets) {
       const n = set.figures.length;
       const count = sides(set.figures[0]!.shape);
-      const row =
-        n >= 3
+      const row = set.levels[0]!.decor
+        ? "colourings"
+        : n >= 3
           ? "packs"
           : n === 2
             ? set.figures.every((f) => f.regular)

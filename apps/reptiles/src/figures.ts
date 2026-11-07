@@ -196,6 +196,7 @@ export const BUCKETS = [
   "regular-pairs",
   "irregular-pairs",
   "packs",
+  "colourings",
 ] as const;
 export type Bucket = (typeof BUCKETS)[number];
 
@@ -246,7 +247,10 @@ function build(): Figures {
       );
       if (alike) ids[0] = alike.id;
     }
-    const key = ids.join(",");
+    // a coloured or lined tray is its figures painted: a set of its own, by
+    // its figures and how they are painted, in a row after the rest
+    const decor = level.decor;
+    const key = decor ? `${ids.join(",")}|${decor.lines ? "lines" : decor.colours}` : ids.join(",");
     groups.set(key, [...(groups.get(key) ?? []), level]);
   }
   // the rep-tiles are named for their shape: the sphinx, the 30-60-90 triangle
@@ -277,8 +281,19 @@ function build(): Figures {
   const sets: FigureSet[] = [...groups.entries()].map(([key, levels]) => {
     // in the tray's own order, fewest sides first (a lone figure: the first
     // of its shape)
-    const ids = key.includes(",") ? byLevel.get(levels[0]!.key)! : [Number(key)];
+    const decor = levels[0]!.decor;
+    const ids = key.includes(",") || decor ? byLevel.get(levels[0]!.key)! : [Number(key)];
     const set = ids.map((id) => figures[id]!);
+    if (decor) {
+      const names = [...new Set(set.map((f) => f.name))].join(" + ");
+      return {
+        key: levels[0]!.key,
+        figures: set,
+        levels,
+        name: `${names} · ${decor.lines ? "lines" : `${decor.colours} colours`}`,
+        bucket: "colourings" as const,
+      };
+    }
     const regular = set.every((f) => f.regular);
     const lone = set[0]!.shape;
     const bucket: Bucket =

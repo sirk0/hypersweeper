@@ -20,6 +20,8 @@ import { aperiodicPatch } from "./geometry/aperiodic";
 import { socolarTaylorPatch } from "./geometry/socolarTaylor";
 import { hatPatch, type HatTile } from "./geometry/hat";
 import { ccw, outline } from "./geometry/outline";
+import { colours as colourPair } from "./geometry/marks";
+import { paintings, sameEdges, traySignature, type Lattice } from "./colourings";
 import {
   curveOnto,
   piece,
@@ -149,6 +151,11 @@ export interface Level {
    * `geometry/hat.ts` — which tile, how many substitutions grow the H
    * metatile its patch is, and how many tiles its centred window keeps. */
   hat?: { tile: HatTile; depth: number; keep: number; centre?: number };
+  /** For a coloured or lined level (src/colourings.ts): the plain level whose
+   * board it paints, in how many colours (1 with `lines`: one colour, a line
+   * across every edge between two tiles that would be one colour), and what
+   * it is called after the plain level's name — "2 colours, striped". */
+  decor?: { of: string; colours: number; lines: boolean; label: string };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -180,6 +187,12 @@ const whole = (cells: Cyc[][]): Cyc[][][] => cells.map((c) => [c]);
  * each kind's tray tile bulges — the first half of the side it rests on —
  * the rest alternating, out and in, round the tile; every cell takes its
  * kind's curve, and the region's rim the curve of the cell along it.
+ *
+ * `marks`, for a coloured or lined level (src/colourings.ts), are each cell's
+ * edge marks, piece by piece, edge by edge as its vertices run (see
+ * geometry/marks.ts): cells alike but for their marks are different kinds, a
+ * kind's turns count its marks, and each kind of colour pairs takes its
+ * colour's paint (`paint-<c>`) instead of its side count's.
  */
 function makeLevel(
   key: string,
@@ -190,6 +203,7 @@ function makeLevel(
   configs: number[][],
   name = notation(configs[0]!),
   round?: Bulge,
+  marks?: number[][][],
 ): Level {
   // The tile kinds: cells alike up to a turn, or up to a turn and a mirror —
   // a mirrored copy is the same kind, flipped (the kisrhombille's triangles).
@@ -197,36 +211,88 @@ function makeLevel(
   type Kind = { shape: Shape; mirrored: Shape; ks: number[]; flipped: boolean };
   const kinds: Kind[] = [];
   // how each cell sits: its kind, turned by ζ^rot, mirrored if `flip`
-  const sits: { cell: Cyc[][]; kind: Kind; rot: number; flip: boolean }[] = [];
-  for (const raw of cells) {
+  const sits: { cell: Cyc[][]; kind: Kind; rot: number; flip: boolean; i: number }[] = [];
+  for (const [i, raw] of cells.entries()) {
     const cell = raw.map((p) => ccw(ring, p));
+    const own = marks?.[i];
+    if (own && cell.some((p, q) => p !== raw[q]))
+      throw new Error(`${key}: a marked cell must be listed counter-clockwise`);
     let found = false;
     for (const kind of kinds) {
-      const direct = turnsOnto(kind.shape, cell);
-      const flipped = direct.length ? [] : turnsOnto(kind.mirrored, cell);
+      const direct = turnsOnto(kind.shape, cell, own);
+      const flipped = direct.length ? [] : turnsOnto(kind.mirrored, cell, own);
       if (direct.length || flipped.length) {
         const rot = (direct[0] ?? flipped[0])!;
         kind.ks.push(rot);
         if (!direct.length) kind.flipped = true;
-        sits.push({ cell, kind, rot, flip: !direct.length });
+        sits.push({ cell, kind, rot, flip: !direct.length, i });
         found = true;
         break;
       }
     }
     if (!found) {
-      const shape = restFlat(ring, cell);
+      const shape = restFlat(ring, cell, own);
       const mirrored = { ring, pieces: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
-      const kind = { shape, mirrored, ks: [turnsOnto(shape, cell)[0]!], flipped: false };
+      const kind = { shape, mirrored, ks: [turnsOnto(shape, cell, own)[0]!], flipped: false };
       kinds.push(kind);
-      sits.push({ cell, kind, rot: kind.ks[0]!, flip: false });
+      sits.push({ cell, kind, rot: kind.ks[0]!, flip: false, i });
+    }
+  }
+  // A marked tile rests, where it can, on a side that leaves it fitting none
+  // of the board's cells as the tray holds it: its marks are the puzzle, and
+  // the tray should not hand over the turn — squares striped across are held
+  // striped up and down. (An unmarked tile rests on its first longest side,
+  // as ever, and a marked one that fits every cell whichever way it rests —
+  // a checkerboard's — does too.)
+  if (marks) {
+    for (const kind of kinds) {
+      const mine = sits.filter((s) => s.kind === kind);
+      const first = mine[0]!;
+      if (first.cell.length !== 1) continue;
+      const fitsAsHeld = (shape: Shape, rots: number[]): boolean => {
+        const period = selfTurns(shape).find((k) => k > 0) ?? ring.n;
+        return rots.some((r) => r % period === 0);
+      };
+      if (!fitsAsHeld(kind.shape, kind.ks)) continue;
+      const verts = first.cell[0]!;
+      const own = marks[first.i]![0]!;
+      const m = verts.length;
+      for (let q = 1; q < m; q++) {
+        const shape = restFlat(
+          ring,
+          [[...verts.slice(q), ...verts.slice(0, q)]],
+          [[...own.slice(q), ...own.slice(0, q)]],
+        );
+        const mirrored = { ring, pieces: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
+        const rots = mine.map((s) => turnsOnto(s.flip ? mirrored : shape, s.cell, marks[s.i])[0]);
+        if (rots.some((r) => r === undefined)) continue;
+        if (fitsAsHeld(shape, rots as number[])) continue;
+        kind.shape = shape;
+        kind.mirrored = mirrored;
+        kind.ks = rots as number[];
+        mine.forEach((s, n) => (s.rot = rots[n]!));
+        break;
+      }
     }
   }
   const area = (s: Shape): number =>
     s.pieces.reduce((sum, p) => sum + signedArea(p.verts.map((v) => ring.toXY(v))), 0);
-  kinds.sort((a, b) => sides(a.shape) - sides(b.shape) || area(a.shape) - area(b.shape));
+  // a coloured tile's paint: the colour its marks say it is
+  const paint = (s: Shape): number | null => {
+    const mark = s.pieces[0]!.marks?.[0];
+    return mark === undefined ? null : (colourPair(mark)?.own ?? null);
+  };
+  kinds.sort(
+    (a, b) =>
+      sides(a.shape) - sides(b.shape) ||
+      area(a.shape) - area(b.shape) ||
+      (paint(a.shape) ?? 0) - (paint(b.shape) ?? 0),
+  );
   const tiles = kinds.map((k) => k.shape);
   const colour = (s: Shape): string => (s.pieces.length > 1 ? "pieces" : `sides-${sides(s)}`);
   const colours = tiles.map((t, i) => {
+    const painted = paint(t);
+    if (painted !== null) return `${colour(t)} paint paint-${painted}`;
     const twin = tiles.slice(0, i).some((u) => colour(u) === colour(t));
     return `${colour(t)}${twin ? " twin" : ""}`;
   });
@@ -241,10 +307,10 @@ function makeLevel(
     }
   }
   // each cell's pieces, with their curves: the kind's, turned onto them
-  const laid: Piece[][] = sits.map(({ cell, kind, rot, flip }) =>
+  const laid: Piece[][] = sits.map(({ cell, kind, rot, flip, i }) =>
     round
       ? curveOnto({ ring, pieces: posed(kind.shape, { rot, flip, t: ring.zero }) }, cell)
-      : cell.map((verts) => piece(verts)),
+      : cell.map((verts, q) => piece(verts, undefined, marks?.[i]?.[q])),
   );
   if (round) {
     const bulges = new Map<string, Bulge>();
@@ -523,6 +589,11 @@ export const GROUPS = [
     key: "aperiodic",
     name: familyLabel("aperiodic"),
     hint: "A window onto a tiling that repeats nowhere",
+  },
+  {
+    key: "colourings",
+    name: "Colourings",
+    hint: "Coloured or lined tiles — a band on each edge shows the colour across it",
   },
 ] as const;
 
@@ -995,6 +1066,100 @@ const hatBoards = (key: string, tile: HatTile, depth: number, keep: number): Lev
     make: (at) => hatLevel(key, tile, depth, keep, asNumber(at)),
   });
 
+/** The lattice each regular board repeats by, for its colourings: the
+ * squares' unit steps; the up triangles' side and its 60° turn; the
+ * hexagons' centre-to-centre step, √3 along a row, and its 60° turn. */
+const COLOURED: [key: string, lattice: Lattice][] = [
+  ["squares", { u: Z4.one, v: Z4.zeta(1) }],
+  ["triangles", { u: Z12.one, v: Z12.zeta(2) }],
+  [
+    "hexagons",
+    {
+      u: Z12.add(Z12.zeta(1), Z12.zeta(-1)),
+      v: Z12.add(Z12.zeta(3), Z12.zeta(1)),
+    },
+  ],
+];
+
+/** What a painting is called after the plain level's name, by how many of a
+ * tile's edges have its own colour (or a line) across them. */
+function decorLabel(colours: number, lines: boolean, same: number | null): string {
+  if (lines)
+    return same === 1
+      ? "linked pairs"
+      : same === 2
+        ? "lines"
+        : same === null
+          ? "lines, mixed"
+          : "branching lines";
+  const how =
+    same === 0
+      ? "apart"
+      : same === 1
+        ? "paired"
+        : same === 2
+          ? "striped"
+          : same === null
+            ? "mixed"
+            : "in patches";
+  return `${colours} colours, ${how}`;
+}
+
+const ROMAN = ["", " II", " III", " IV", " V", " VI"];
+
+/** The coloured and lined levels painted on `plain`'s board (see
+ * src/colourings.ts): each painting whose tray is one marked tile per colour
+ * and a tray no painting before it had, lined ones first, then by colours.
+ * Keyed `<plain>.<label>` — `squares.lines`, `squares.2striped` — a second of
+ * one label numbered on. */
+function colouredLevels(plain: Level, lattice: Lattice): Level[] {
+  const seen = new Set<string>();
+  const made: Level[] = [];
+  const all = paintings(plain.ring, plain.cells, lattice).sort(
+    (a, b) => Number(b.lines) - Number(a.lines) || a.colours - b.colours,
+  );
+  for (const painting of all) {
+    const level = makeLevel(
+      plain.key,
+      plain.label,
+      plain.ring,
+      plain.cells.map((cell) => cell.map((p) => p.verts)),
+      "colourings",
+      plain.configs,
+      plain.name,
+      undefined,
+      painting.marks,
+    );
+    if (level.tiles.length !== plain.tiles.length * painting.colours) continue;
+    const signature = `${painting.lines}|${traySignature(level.tiles)}`;
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    const label = decorLabel(painting.colours, painting.lines, sameEdges(level.tiles));
+    made.push({
+      ...level,
+      decor: { of: plain.key, colours: painting.colours, lines: painting.lines, label },
+    });
+  }
+  // keys and names: one per label, numbered past the first
+  const count = new Map<string, number>();
+  return made.map((level) => {
+    const label = level.decor!.label;
+    const n = count.get(label) ?? 0;
+    count.set(label, n + 1);
+    const slug = label.replace(/(\d) colours, /, "$1").replace(/[^a-z0-9]/g, "");
+    const key = `${plain.key}.${slug}${n ? n + 1 : ""}`;
+    const full = `${label}${ROMAN[n] ?? ` ${n + 1}`}`;
+    return {
+      ...level,
+      key,
+      base: key,
+      label: `${plain.label}, ${full}`,
+      name: `${plain.name} · ${full}`,
+      decor: { ...level.decor!, label: full },
+    };
+  });
+}
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -1053,6 +1218,16 @@ const FIRST_BOARDS: Level[] = [
   // …and one tile that does it alone, in nineteen pieces.
   socolarTaylorLevel(2),
 ];
+
+// The regular boards painted: lined, then in two and three colours.
+FIRST_BOARDS.push(
+  ...COLOURED.flatMap(([key, lattice]) =>
+    colouredLevels(
+      FIRST_BOARDS.find((l) => l.key === key)!,
+      lattice,
+    ),
+  ),
+);
 
 /** A level's boards past the first, as `boards.json` lists them. */
 const variantsOf = (key: string): Variant[] =>

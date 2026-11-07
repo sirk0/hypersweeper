@@ -10,6 +10,7 @@ import { renderFigure, renderFigures } from "./view/figures";
 import { renderHome } from "./view/home";
 import { fillGlyphs } from "./view/icons";
 import { renderSettings } from "./view/settings";
+import { setShowLines, showLines } from "./prefs";
 import { SvgBoard } from "./view/svgBoard";
 
 const byId = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -271,6 +272,11 @@ document.addEventListener("keydown", (ev) => {
   else if (ev.key === "e" || ev.key === "E") control.turn(1);
   else if (ev.key === "f" || ev.key === "F") control.flip();
   else if ((ev.key === "b" || ev.key === "B") && !boardButton.hidden) boardButton.click();
+  else if ((ev.key === "l" || ev.key === "L") && session.puzzle.level.decor) {
+    // lines across same-colour edges on or off, as in Settings
+    setShowLines(!showLines());
+    board.draw();
+  }
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
 setInterval(() => {
