@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "difficulty": "vite-node scripts/measure-difficulty.mts",
+    "boards": "vite-node scripts/find-boards.mts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icons": "vite-node scripts/make-icons.mts",

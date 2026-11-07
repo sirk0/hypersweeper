@@ -70,14 +70,50 @@ corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
 version and checks for updates (the shared check in `@tiling/platform`; left
 out of a packaged build). Levels are picked in
 Tilings or Figures. A level is `?level=<key>`: one header row, Hypersweeper's —
-home, the clock against the three-star limit, restart, and a die that deals
-another level of the same difficulty as this one — then the level's name and
-coverage as a faint label on the page behind the board, which fills the rest
+home, on a tiling with more than one board the next board (two squares, the
+window moved along; or B), the clock against the three-star limit, restart,
+and a die that deals another board of the same difficulty as this one — then
+the level's name, which board it is (`board 2/6`) and the coverage as a faint
+label on the page behind the board, which fills the rest
 of the screen, the tray on a strip along the bottom (portrait) or the right
-(landscape). The win card has Play again and Next level, and an ✕ in its
+(landscape). The win card has Play again and Next level (the tiling's next
+board, then the next tiling's first), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
 outside it). Each move
 is a history entry, so the browser's Back works.
+
+**Boards.** A tiling cut in more than one place has more than one board, each
+a level of its own (`?level=<key>-<n>`, its own stars and difficulty band;
+the first is `<key>`, the board it shipped with). Tilings and Figures list a
+tiling once — its first board's outline, how many boards it has, the best
+stars on any — and Easy/Medium/Hard and the die deal from every board.
+`npm run boards` (`scripts/find-boards.mts`) finds them and writes where each
+is cut to `src/boards.json`: a periodic tiling's square moved across one
+domain of it on a 32 × 32 grid of steps, its edge shrunk by up to half a
+tile edge or grown by up to one and a half, in quarters (moved, the first
+board's square, the tightest that holds its tiles, loses some); an
+aperiodic builder's other `variant`s; a hat window centred on another tile
+near the patch's middle. A cut is a board when it has within 10% of the
+first board's tiles, is as square (what the tests hold every board to), is
+one outline with no pinch, not bitten into (`solidity`, its area over its
+convex hull's: no more than 0.05 below the first board's, or above 0.75 —
+which a patch ending inside the square falls well under, and a spiky tile's
+ragged rim does not), and takes the very same tray — and, uniform or
+2-uniform, has every vertex configuration inside; a periodic cut is taken only
+at a step whose eight neighbours keep the same tiles, so no float on a box
+edge decides it. It is a new board only when it is congruent to none before
+(`congruenceKey`, exact: centred as N·p − Σ, tried at every ζᵏ, mirrored or
+not). Of those, the most unlike each other — tiles of each kind, length of
+rim — are kept: up to six boards a periodic tiling, eight an aperiodic one.
+The regular tilings, squares, triangles and hexagons, are one board each, the
+same wherever they are cut; so are the rep-tiles (a big copy of the tile, not
+a window), the spirals (one true centre) and the Socolar–Taylor tile (its
+patch holds one two-ring window). Boards past the first are built when first
+opened (`levelByKey`), so the page loads no slower; `BOARDS` lists them all,
+`LEVELS` the first boards. `tests/unit/boards.test.ts` holds every listed
+board to the search's promises, so a changed window that leaves
+`boards.json` behind fails there; re-run `npm run boards`, then
+`npm run difficulty`.
 
 **Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
 player lays the board the level was cut from, always taking a tile it can
@@ -97,7 +133,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 levels in eleven sections, deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, 388 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -205,7 +241,8 @@ npm run test         # vitest unit tests (a few seconds)
 npm run format       # Prettier (the root .prettierrc.json), in place; CI runs format:check
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
-npm run difficulty   # re-measure every level into src/difficulty.json
+npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
+npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
 
@@ -262,7 +299,9 @@ quick way to see the win state.
   placement reached from several of its corners once.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
   cancel exactly, after each side is cut at every corner lying inside it, for
-  the bonds' T-junctions): how a level's region is made from its cells.
+  the bonds' T-junctions): how a level's region is made from its cells; and
+  `solidity`, a region's area over its convex hull's, the float measure the
+  board search refuses a bitten-into board by.
 - `src/geometry/fromTemplate.ts` — a `box`-edge square window of one of
   Hypersweeper's periodic tilings in exact coordinates: the tiles
   `archimedeanBoard` keeps, with vertex identity taken from the template's own
@@ -272,7 +311,9 @@ quick way to see the win state.
   axis (the snub hexagonal, drawn 19° off) is turned until one is, and its
   square cut in the turned frame — the tray's tiles rest flat, so the board's
   must too; `turned` records it (the rotated triangular and the three-scale
-  triangular are turned too). The congruent-rectangle bonds' edges are a
+  triangular are turned too). `offset` moves the square off its centre (a
+  board past the first, `boards.json`), and `centre` says where it ended up in
+  the template's coordinates, for the tests to cut Hypersweeper's board there. The congruent-rectangle bonds' edges are a
   half or a third of a brick, split at T-vertices — and the isogonal tilings'
   a half of the unit, read the same way: each edge is read as a
   whole number of the smallest fraction of the unit that makes them all whole,
@@ -288,7 +329,9 @@ quick way to see the win state.
   vertex, its corners the face centres round it. Centres are exact once
   scaled by the face sizes' lcm, so the board is built at that scale in a ring
   whose `unit` draws it back at true size. Tiles the square cuts off from the
-  rest are dropped: the board is the largest piece joined edge to edge.
+  rest are dropped: the board is the largest piece joined edge to edge. The
+  dual patch is built once per tiling and size, and cut wherever the square is
+  moved to (`offset`), so the board search can try a thousand places.
 - `src/geometry/repTile.ts` — a rep-tile patch: Hypersweeper's substitution
   tile (`SUBSTITUTIONS`, `substitutionPlacements`) inflated `levels` times,
   its lattice points read exactly into ℤ[ζ4] or ℤ[ζ12] and turned by the
@@ -336,7 +379,8 @@ quick way to see the win state.
   each shared corner lands once — the turtle is (√3, 1), and (1, 1) gives
   Tile(1,1), which the tests check is the Spectre's level's tile.
   `hatPatch` keeps the `keep` tiles nearest the middle by Chebyshev distance,
-  as Hypersweeper trims its aperiodic boards (`centredWindow`). The tests
+  as Hypersweeper trims its aperiodic boards (`centredWindow`) — or nearest
+  another tile's centroid (`centre`, a board past the first). The tests
   (`tests/unit/hat.test.ts`) are its oracle: no overlap and no gap as hats and
   as metatiles, every hat the hat turned by sixths, the mirrored ones one in
   seven or so and apart, every turtle the turtle.
@@ -355,6 +399,9 @@ quick way to see the win state.
   19 tiles, so the board carries on at least two rings further. The tests
   (`tests/unit/socolarTaylor.test.ts`) are its oracle instead of a
   Hypersweeper builder.
+- `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
+  boards congruent to a given one (turned, mirrored or moved, tile for tile),
+  how the board search tells a new board from one it has.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.

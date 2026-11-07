@@ -82,6 +82,16 @@
           <button type="button" class="hud-btn" data-go-home title="Home" aria-label="Home">
             <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="home"></svg>
           </button>
+          <button
+            type="button"
+            class="hud-btn"
+            id="board"
+            title="The next board of this tiling"
+            aria-label="Next board"
+            hidden
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="board"></svg>
+          </button>
         </div>
         <div class="hud-counter" id="clock" title="Time, against the limit for the third star">
           <span class="clock-time" id="clock-time">0:00</span>
@@ -105,6 +115,7 @@
       <main id="stage">
         <p class="board-name">
           <span class="level" id="level"></span>
+          <span class="board-of" id="board-of" hidden></span>
           <span class="count" id="count" aria-live="polite"></span>
         </p>
         <div id="board-host"></div>

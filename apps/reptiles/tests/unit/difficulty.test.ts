@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import measured from "../../src/difficulty.json";
 import { band, bandOf, measure } from "../../src/difficulty";
-import { LEVELS, levelByKey } from "../../src/levels";
+import { BOARDS, LEVELS, levelByKey } from "../../src/levels";
 
 describe("difficulty", () => {
-  it.each(LEVELS.map((l) => l.key))(
+  it.each(BOARDS.map((b) => b.key))(
     "%s: src/difficulty.json is in step with the measure",
     (key) => {
       const stored = (measured as Record<string, { score: number }>)[key];

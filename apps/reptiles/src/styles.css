@@ -239,6 +239,10 @@ button.primary {
   box-shadow: var(--shadow);
 }
 
+.hud-btn[hidden] {
+  display: none;
+}
+
 .hud-btn:active {
   border-color: var(--accent);
   background: var(--selected);
@@ -318,7 +322,8 @@ button.primary {
   font-variant-numeric: tabular-nums;
 }
 
-.board-name .count::before {
+.board-name .count::before,
+.board-name .board-of::before {
   content: "· ";
 }
 
@@ -835,6 +840,13 @@ button:disabled {
   min-height: 2.5em;
   display: flex;
   align-items: center;
+}
+
+/* How many boards a tiling has, where it has more than one. */
+.card-boards {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .card-meta {

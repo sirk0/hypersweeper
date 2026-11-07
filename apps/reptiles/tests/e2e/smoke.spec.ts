@@ -125,7 +125,8 @@ test("the level screen: one header row, no level list, a random level of the sam
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=cairo");
-  await expect(page.locator("#game .hud .hud-btn")).toHaveCount(3);
+  // home, the next of Cairo's boards, restart and the die
+  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(4);
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
   // Cairo is hard; the die deals another hard level.
@@ -141,6 +142,38 @@ test("the level screen: one header row, no level list, a random level of the sam
   await expect(page).not.toHaveURL(/level=cairo/);
   const key = new URL(page.url()).searchParams.get("level");
   expect(hard).toContain(key);
+  expect(errors).toEqual([]);
+});
+
+test("a tiling's boards: the board button steps through them, round to the first", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  // a tiling cut the same wherever it is cut has one board, and no button
+  await page.goto("/?level=squares");
+  await expect(page.locator("#board")).toBeHidden();
+  await expect(page.locator("#board-of")).toBeHidden();
+  await page.goto("/?level=rhombitrihex");
+  await expect(page.locator("#board")).toBeVisible();
+  await expect(page.locator("#board-of")).toHaveText(/^board 1\/\d+$/);
+  const boards = Number((await page.locator("#board-of").textContent())!.split("/")[1]);
+  expect(boards).toBeGreaterThan(1);
+  await page.locator("#board").click();
+  await expect(page).toHaveURL(/level=rhombitrihex-2$/);
+  await expect(page.locator("#board-of")).toHaveText(`board 2/${boards}`);
+  await expect(page.locator("svg.board path.region")).toHaveCount(1);
+  // after the last, the first again
+  for (let i = 2; i < boards; i++) await page.keyboard.press("b");
+  await expect(page.locator("#board-of")).toHaveText(`board ${boards}/${boards}`);
+  await page.locator("#board").click();
+  await expect(page).toHaveURL(/level=rhombitrihex$/);
+  // Tilings lists the tiling once, with how many boards it has
+  await page.goto("/?tilings");
+  const card = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^3\.4\.6\.4$/ }) });
+  await expect(card).toHaveCount(1);
+  await expect(card.locator(".card-boards")).toHaveText(`${boards} boards`);
   expect(errors).toEqual([]);
 });
 

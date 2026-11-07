@@ -8,9 +8,10 @@
 // outline; the unit tests check the cells against that builder.
 
 import catalog from "@tiling/data/catalog.json";
+import boardsData from "./boards.json";
 import { ARCH_TILINGS, archTemplate } from "@tiling/geometry";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
-import { templateWindow } from "./geometry/fromTemplate";
+import { templateWindow, type XY } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
 import { piecePatch } from "./geometry/pieces";
 import { repTilePatch } from "./geometry/repTile";
@@ -36,6 +37,13 @@ import {
 
 export interface Level {
   key: string;
+  /** The key of the tiling's first board — the level's own key there, and
+   * what the catalog lists it by — and which of its `boards` this is, from 1.
+   * A tiling's boards are windows cut from it in different places
+   * (`boards.json`), each its own level with its own stars. */
+  base: string;
+  board: number;
+  boards: number;
   label: string;
   ring: Ring;
   /** Outer loop counter-clockwise, any holes clockwise. */
@@ -98,7 +106,16 @@ export interface Level {
    * window `archimedeanBoard(tiling, nx, ny)` takes — unless the tiling had to
    * be `turned` (radians) to lay its edges on the ring, when the window is cut
    * in the turned frame instead. */
-  window?: { tiling: string; nx: number; ny: number; turned: number };
+  window?: {
+    tiling: string;
+    nx: number;
+    ny: number;
+    turned: number;
+    /** For a board after the first, where its square is centred, in the
+     * template's own coordinates — the `centre` that `archimedeanBoard` cuts
+     * the same window at. */
+    centre?: XY;
+  };
   /** For a Laves level, the uniform tiling it is the dual of; for a
    * 2-isohedral one, the 2-uniform tiling. */
   dualOf?: string;
@@ -121,7 +138,7 @@ export interface Level {
    * with straight edges) and the arguments its builder makes it with: how
    * many substitutions grow the patch, and how many tiles its centred window
    * keeps. */
-  aperiodic?: { mode: string; depth: number; keep: number };
+  aperiodic?: { mode: string; depth: number; keep: number; variant: number };
   /** For the Socolar–Taylor tile — an aperiodic monotile Hypersweeper has no
    * board for (a minesweeper cell is one polygon; this tile is nineteen),
    * defined here in `geometry/socolarTaylor.ts` — how many rings of its patch
@@ -131,7 +148,7 @@ export interface Level {
    * metatiles, which Hypersweeper has no board for, defined here in
    * `geometry/hat.ts` — which tile, how many substitutions grow the H
    * metatile its patch is, and how many tiles its centred window keeps. */
-  hat?: { tile: HatTile; depth: number; keep: number };
+  hat?: { tile: HatTile; depth: number; keep: number; centre?: number };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -259,6 +276,9 @@ function makeLevel(
   const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
   return {
     key,
+    base: key,
+    board: 1,
+    boards: 1,
     label,
     ring,
     region,
@@ -282,16 +302,19 @@ function makeLevel(
  * uniform tiling is named by its one vertex configuration; a 2-uniform one by
  * the pair in Hypersweeper's catalog, which the tests also hold its inner
  * vertices to. */
-function windowLevel(tiling: string, box: number): Level {
+function windowLevel(tiling: string, box: number, at?: Variant): Level {
   const spec = ARCH_TILINGS.find((t) => t.key === tiling);
   if (!spec) throw new Error(`unknown tiling ${tiling}`);
   const t = archTemplate(tiling);
-  // (an isogonal window can leave a lone tile at a corner, touching nothing
-  // else kept: the rotated hexagonal does at every box up to 85 tiles)
-  const { ring, cells, turned } = templateWindow(tiling, box, {
-    dropStrays: spec.family === "isogonal",
-  });
-  const window = { tiling, nx: box / t.width, ny: box / t.height, turned };
+  const { ring, cells, turned, centre } = windowCut(tiling, box, at);
+  const size = boxOf(box, at);
+  const window = {
+    tiling,
+    nx: size / t.width,
+    ny: size / t.height,
+    turned,
+    ...(at === undefined ? {} : { centre }),
+  };
   if (spec.family === "uniform") {
     return {
       ...makeLevel(tiling, spec.label, ring, whole(cells), "uniform", [spec.config]),
@@ -332,6 +355,33 @@ function windowLevel(tiling: string, box: number): Level {
     ),
     window,
   };
+}
+
+/** The `box`-edge square window of `tiling` (see `templateWindow`), moved
+ * `at` steps of 1/GRID of the tiling's domain each way off its centre and
+ * grown by its third, in quarter edges. */
+function windowCut(tiling: string, box: number, at?: Variant) {
+  const spec = ARCH_TILINGS.find((t) => t.key === tiling);
+  // (an isogonal window can leave a lone tile at a corner, touching nothing
+  // else kept: the rotated hexagonal does at every box up to 85 tiles)
+  return templateWindow(tiling, boxOf(box, at), {
+    dropStrays: spec?.family === "isogonal",
+    offset: gridOffset(tiling, at),
+  });
+}
+
+/** The edge of a window's square `box`, grown as `at` says. */
+function boxOf(box: number, at?: Variant): number {
+  return typeof at === "object" ? box + (at[2] ?? 0) * BOX_STEP : box;
+}
+
+/** `at`, a step on the grid a window's square is moved on, as a vector in
+ * the template's coordinates. */
+function gridOffset(tiling: string, at?: Variant): XY {
+  if (at === undefined) return [0, 0];
+  if (typeof at === "number") throw new Error(`${tiling}: a window moves by a step, not ${at}`);
+  const t = archTemplate(tiling);
+  return [(at[0] / GRID) * t.width, (at[1] / GRID) * t.height];
 }
 
 const Z4 = cyclotomic(4);
@@ -530,13 +580,11 @@ const TWO_UNIFORM: [string, number][] = [
  * (see `lavesWindow`), named V and the configuration — V3.4.6.4 is the tiling
  * whose every tile has corners where 3, 4, 6 and 4 tiles meet. Keyed and
  * labelled as Hypersweeper's dual tiling is. */
-function lavesLevel(dual: string, box: number): Level {
+function lavesLevel(dual: string, box: number, at?: Variant): Level {
   const spec = ARCH_TILINGS.find((t) => t.key === dual && t.family === "dual");
-  const of = ARCH_TILINGS.find(
-    (t) => t.family === "uniform" && spec && t.config.join() === spec.config.join(),
-  );
-  if (!spec || !of) throw new Error(`no uniform tiling is dual to ${dual}`);
-  const { ring, cells } = lavesWindow(of.key, box);
+  const of = lavesPrimal(dual);
+  if (!spec) throw new Error(`no uniform tiling is dual to ${dual}`);
+  const { ring, cells } = lavesWindow(of, boxOf(box, at), gridOffset(of, at));
   const level = makeLevel(
     dual,
     spec.label,
@@ -546,7 +594,17 @@ function lavesLevel(dual: string, box: number): Level {
     [spec.config],
     `V${notation(spec.config)}`,
   );
-  return { ...level, dualOf: of.key };
+  return { ...level, dualOf: of };
+}
+
+/** The uniform tiling the Laves tiling `dual` is the dual of. */
+function lavesPrimal(dual: string): string {
+  const spec = ARCH_TILINGS.find((t) => t.key === dual && t.family === "dual");
+  const of = ARCH_TILINGS.find(
+    (t) => t.family === "uniform" && spec && t.config.join() === spec.config.join(),
+  );
+  if (!spec || !of) throw new Error(`no uniform tiling is dual to ${dual}`);
+  return of.key;
 }
 
 /** A 2-isohedral level: the dual of 2-uniform tiling `primal`, cut `box` of
@@ -555,13 +613,13 @@ function lavesLevel(dual: string, box: number): Level {
  * Hypersweeper's tiling is (`<primal>dual`), and named as its catalog writes
  * it, V[3⁶; 3⁴.6]₁: the configurations its tiles' corners follow, the
  * primal's. */
-function twoIsohedralLevel(primal: string, box: number): Level {
+function twoIsohedralLevel(primal: string, box: number, at?: Variant): Level {
   const key = `${primal}dual`;
   const spec = ARCH_TILINGS.find((t) => t.key === key && t.family === "2-isohedral");
   const written = NOTATIONS[key];
   const configs = NOTATIONS[primal];
   if (!spec || !written || !configs) throw new Error(`no 2-isohedral tiling ${key}`);
-  const { ring, cells } = lavesWindow(primal, box);
+  const { ring, cells } = lavesWindow(primal, boxOf(box, at), gridOffset(primal, at));
   const level = makeLevel(
     key,
     spec.label,
@@ -785,14 +843,15 @@ function aperiodicLevel(
   depth: number,
   keep: number,
   round?: Bulge,
+  variant = 0,
 ): Level {
   const label = APERIODIC_LABELS[key] ?? MODE_INFO[key]?.label;
   if (!label) throw new Error(`no label for ${key} in data/catalog.json`);
   // a round tile keeps its flat corner: an edge either side, each its own curve
-  const { ring, cells } = aperiodicPatch(mode, depth, keep, round !== undefined);
+  const { ring, cells } = aperiodicPatch(mode, depth, keep, round !== undefined, variant);
   return {
     ...makeLevel(key, label, ring, whole(cells), "aperiodic", [], label, round),
-    aperiodic: { mode, depth, keep },
+    aperiodic: { mode, depth, keep, variant },
   };
 }
 
@@ -822,12 +881,12 @@ const HAT_LABELS: Record<HatTile, string> = {
 /** A level of the hat's family: the centred window of `keep` tiles of its
  * patch (see `hatPatch`), named for its tile, as the other aperiodic levels
  * are. */
-function hatLevel(key: string, tile: HatTile, depth: number, keep: number): Level {
+function hatLevel(key: string, tile: HatTile, depth: number, keep: number, centre?: number): Level {
   const label = HAT_LABELS[tile];
-  const { ring, cells } = hatPatch(tile, depth, keep);
+  const { ring, cells } = hatPatch(tile, depth, keep, centre);
   return {
     ...makeLevel(key, label, ring, whole(cells), "aperiodic", [], label),
-    hat: { tile, depth, keep },
+    hat: { tile, depth, keep, ...(centre === undefined ? {} : { centre }) },
   };
 }
 
@@ -847,11 +906,100 @@ function socolarTaylorLevel(rings: number): Level {
   };
 }
 
+// -- a tiling's boards ---------------------------------------------------------
+// A level's first board is the window this game shipped with. A tiling cut
+// from in more than one place has more: the same square moved about a
+// periodic tiling, an aperiodic builder's other `variant`s, a hat window
+// centred on another tile. `npm run boards` (scripts/find-boards.mts) finds
+// the ones worth playing — about as many tiles as the first and as square,
+// one outline, the same tray, and no two congruent — and writes where each is
+// cut to `boards.json`; each is a level of its own (`<key>-<n>`), built only
+// when it is opened.
+
+/** Where a board after a tiling's first is cut: a periodic window's square
+ * moved [i, j] steps of 1/GRID of the tiling's domain (a Laves or
+ * 2-isohedral one's, of its primal's) and grown by a third, in BOX_STEPs
+ * (the first board's square is the tightest that holds its tiles, so a moved
+ * one loses some unless it grows); an aperiodic builder's `variant`; or the
+ * tile of a hat patch its window is centred on. */
+export type Variant = number | [number, number] | [number, number, number];
+
+/** How finely a periodic window's square is moved across one domain. */
+export const GRID: number = boardsData.grid;
+
+/** How much a periodic window's square grows a step, in edges. */
+export const BOX_STEP = 0.25;
+
+const BOARD_VARIANTS = boardsData.boards as unknown as Record<string, Variant[]>;
+
+/** How a tiling's boards are cut: `kind` says how its variants read
+ * (`Variant`); `cut` is a board's cells, `make` its level. */
+export interface BoardSource {
+  kind: "window" | "variant" | "centre";
+  cut(at?: Variant): { ring: Ring; cells: Cyc[][] };
+  make(at?: Variant): Level;
+}
+
+/** Every level that can have more than one board, by its first board's key. */
+export const BOARD_SOURCES = new Map<string, BoardSource>();
+
+/** A level's first board, its source registered for the rest. */
+function firstBoard(key: string, source: BoardSource): Level {
+  BOARD_SOURCES.set(key, source);
+  return source.make();
+}
+
+const asNumber = (at: Variant | undefined): number | undefined => {
+  if (at !== undefined && typeof at !== "number") throw new Error(`a variant, not ${at}`);
+  return at;
+};
+
+const windowBoards = (tiling: string, box: number): Level =>
+  firstBoard(tiling, {
+    kind: "window",
+    cut: (at) => windowCut(tiling, box, at),
+    make: (at) => windowLevel(tiling, box, at),
+  });
+
+const lavesBoards = (dual: string, box: number): Level =>
+  firstBoard(dual, {
+    kind: "window",
+    cut: (at) => lavesWindow(lavesPrimal(dual), boxOf(box, at), gridOffset(lavesPrimal(dual), at)),
+    make: (at) => lavesLevel(dual, box, at),
+  });
+
+const twoIsohedralBoards = (primal: string, box: number): Level =>
+  firstBoard(`${primal}dual`, {
+    kind: "window",
+    cut: (at) => lavesWindow(primal, boxOf(box, at), gridOffset(primal, at)),
+    make: (at) => twoIsohedralLevel(primal, box, at),
+  });
+
+const aperiodicBoards = (
+  key: string,
+  mode: string,
+  depth: number,
+  keep: number,
+  round?: Bulge,
+): Level =>
+  firstBoard(key, {
+    kind: "variant",
+    cut: (at) => aperiodicPatch(mode, depth, keep, round !== undefined, asNumber(at)),
+    make: (at) => aperiodicLevel(key, mode, depth, keep, round, asNumber(at)),
+  });
+
+const hatBoards = (key: string, tile: HatTile, depth: number, keep: number): Level =>
+  firstBoard(key, {
+    kind: "centre",
+    cut: (at) => hatPatch(tile, depth, keep, asNumber(at)),
+    make: (at) => hatLevel(key, tile, depth, keep, asNumber(at)),
+  });
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
 
-export const LEVELS: Level[] = [
+const FIRST_BOARDS: Level[] = [
   // The three regular tilings, one tile each.
   makeLevel("squares", "Squares", Z4, whole(squareCells(4, 4)), "regular", [[4, 4, 4, 4]]),
   makeLevel("triangles", "Triangles", Z12, whole(triangleGridCells(4, 6)), "regular", [
@@ -864,30 +1012,30 @@ export const LEVELS: Level[] = [
   // outline (`box`, in edges, measured by scanning sizes). The snub hexagonal
   // is mostly triangles whatever the window — eight to each hexagon — and its
   // squarest is one hexagon in thirty triangles; the next square one is 65.
-  windowLevel("trihex", 5.5),
-  windowLevel("truncsquare", 8.7),
-  windowLevel("trunchex", 11.95),
-  windowLevel("elongated", 5),
-  windowLevel("snubsquare", 4.6),
-  windowLevel("snubhex", 5.2),
-  windowLevel("rhombitrihex", 7),
-  windowLevel("trunctrihex", 11.95),
+  windowBoards("trihex", 5.5),
+  windowBoards("truncsquare", 8.7),
+  windowBoards("trunchex", 11.95),
+  windowBoards("elongated", 5),
+  windowBoards("snubsquare", 4.6),
+  windowBoards("snubhex", 5.2),
+  windowBoards("rhombitrihex", 7),
+  windowBoards("trunctrihex", 11.95),
   // The twenty 2-uniform tilings.
-  ...TWO_UNIFORM.map(([tiling, box]) => windowLevel(tiling, box)).sort(byEase),
+  ...TWO_UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)).sort(byEase),
   // The eight Laves tilings with more than one kind of vertex (the regular
   // tilings are their own Laves duals, already above).
-  ...LAVES.map(([dual, box]) => lavesLevel(dual, box)),
+  ...LAVES.map(([dual, box]) => lavesBoards(dual, box)),
   // The twenty 2-isohedral tilings, the 2-uniform tilings' duals: two kinds
   // of tile, neither regular.
-  ...TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralLevel(primal, box)).sort(byEase),
+  ...TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralBoards(primal, box)).sort(byEase),
   // The three pentagonal tilings: one convex pentagon, turned and mirrored.
-  ...PENTAGONAL.map(([tiling, box]) => windowLevel(tiling, box)),
+  ...PENTAGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
   // The six isogonal tilings: regular polygons, every vertex alike, a corner
   // meeting the middle of a side at each.
-  ...ISOGONAL.map(([tiling, box]) => windowLevel(tiling, box)),
+  ...ISOGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
   // The five congruent-rectangle bonds: one brick, laid in rows staggered or
   // turned.
-  ...RECTANGLES.map(([tiling, box]) => windowLevel(tiling, box)),
+  ...RECTANGLES.map(([tiling, box]) => windowBoards(tiling, box)),
   // The rep-tiles: one tile, a big copy of it to fill with small ones.
   ...REPTILES.map(([mode, inflations]) => repTileLevel(mode, inflations)),
   // …and those of several pieces: a fish's tail and body, squares or
@@ -897,14 +1045,54 @@ export const LEVELS: Level[] = [
   ...SPIRALS.map(([mode, rings, keep]) => spiralLevel(mode, rings, keep)),
   // The aperiodic tilings: a window onto a tiling that repeats nowhere.
   ...APERIODIC.map(([key, mode, depth, keep, round]) =>
-    aperiodicLevel(key, mode, depth, keep, round),
+    aperiodicBoards(key, mode, depth, keep, round),
   ),
   // …the hat's family: the hat and the turtle, both ways up, and the hat's
   // four metatiles…
-  ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatLevel(key, tile, depth, keep)),
+  ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatBoards(key, tile, depth, keep)),
   // …and one tile that does it alone, in nineteen pieces.
   socolarTaylorLevel(2),
 ];
+
+/** A level's boards past the first, as `boards.json` lists them. */
+const variantsOf = (key: string): Variant[] =>
+  BOARD_SOURCES.has(key) ? (BOARD_VARIANTS[key] ?? []) : [];
+
+/** Every tiling's first board, in the order the catalog lists them — the
+ * levels themselves, for everything that lists tilings rather than boards. */
+export const LEVELS: Level[] = FIRST_BOARDS.map((level) => ({
+  ...level,
+  boards: 1 + variantsOf(level.key).length,
+}));
+
+/** One board of a tiling, by key: `<base>` for the first, `<base>-<n>` for
+ * the n-th — built only when it is opened. */
+export interface BoardRef {
+  key: string;
+  base: string;
+  board: number;
+}
+
+/** Every board of every tiling: each tiling's in turn, first board first. */
+export const BOARDS: BoardRef[] = LEVELS.flatMap((level) => [
+  { key: level.key, base: level.key, board: 1 },
+  ...variantsOf(level.key).map((_, i) => ({
+    key: `${level.key}-${i + 2}`,
+    base: level.key,
+    board: i + 2,
+  })),
+]);
+
+const BOARD_BY_KEY = new Map(BOARDS.map((b) => [b.key, b]));
+const FIRST_BY_KEY = new Map(LEVELS.map((l) => [l.key, l]));
+const BUILT = new Map<string, Level>();
+
+/** The keys of every board of the tiling `base` is the first board of. */
+export function boardKeys(base: string): string[] {
+  const first = FIRST_BY_KEY.get(base);
+  if (!first) return [];
+  return Array.from({ length: first.boards }, (_, i) => (i === 0 ? base : `${base}-${i + 1}`));
+}
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,
  * dot-separated, a run of one polygon written as a power — 4⁴, 3⁶, 6³,
@@ -923,6 +1111,20 @@ export function notation(config: readonly number[]): string {
   return parts.join(".");
 }
 
+/** A board's level, by key — a first board's at once, any other's built the
+ * first time it is asked for. */
 export function levelByKey(key: string): Level | undefined {
-  return LEVELS.find((l) => l.key === key);
+  const first = FIRST_BY_KEY.get(key);
+  if (first) return first;
+  const ref = BOARD_BY_KEY.get(key);
+  if (!ref) return undefined;
+  let level = BUILT.get(key);
+  if (!level) {
+    const base = FIRST_BY_KEY.get(ref.base)!;
+    const at = variantsOf(ref.base)[ref.board - 2]!;
+    const made = BOARD_SOURCES.get(ref.base)!.make(at);
+    level = { ...made, key, base: ref.base, board: ref.board, boards: base.boards };
+    BUILT.set(key, level);
+  }
+  return level;
 }
