@@ -33,7 +33,9 @@ export function renderCatalog(
   }
 }
 
-/** A level's card: its outline, tray tiles, name, difficulty and stars. */
+/** A level's card: its outline, tray tiles, name, how many boards its tiling
+ * has (where more than one), difficulty and stars — the best on any of its
+ * boards. */
 export function levelCard(
   level: Level,
   earned: number,
@@ -57,7 +59,14 @@ export function levelCard(
   bars.setAttribute("role", "img");
   bars.setAttribute("aria-label", band);
   meta.append(bars, starRow(earned));
-  button.append(outlineIcon(level), tiles, name, meta);
+  button.append(outlineIcon(level), tiles, name);
+  if (level.boards > 1) {
+    const boards = document.createElement("span");
+    boards.className = "card-boards";
+    boards.textContent = `${level.boards} boards`;
+    button.append(boards);
+  }
+  button.append(meta);
   button.addEventListener("click", () => pick(level));
   return button;
 }

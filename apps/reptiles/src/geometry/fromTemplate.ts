@@ -89,9 +89,17 @@ export interface Window {
    * along an axis at all (the snub hexagonal, drawn with its lattice square
    * and its tiles 19° off). Then the window is not `archimedeanBoard`'s. */
   turned: number;
+  /** The square's centre in the template's own coordinates (Hypersweeper's,
+   * y down, unturned): the `centre` that `archimedeanBoard` takes to cut the
+   * same window — any copy of it a whole domain away cuts the same tiles. */
+  centre: XY;
+  /** A vector in the template's coordinates as it lies in this window's
+   * frame (y flipped, turned by `turned`), in the ring's units: how far a
+   * move of the template's square moves the board. */
+  toFrame: (v: XY) => XY;
 }
 
-type XY = [number, number];
+export type XY = [number, number];
 
 /**
  * The tiles of `tiling` that fit whole in a `box`-edge square, in exact
@@ -105,7 +113,11 @@ type XY = [number, number];
 export function templateWindow(
   tiling: string,
   box: number,
-  { quarter = false, dropStrays = false } = {},
+  {
+    quarter = false,
+    dropStrays = false,
+    offset = [0, 0] as XY,
+  }: { quarter?: boolean; dropStrays?: boolean; offset?: XY } = {},
 ): Window {
   const t = archTemplate(tiling);
   const W = t.width;
@@ -142,17 +154,25 @@ export function templateWindow(
   }
   if (n === undefined) throw new Error(`templateWindow: ${tiling} has edges at no 15° multiple`);
   const [ca, sa] = [Math.cos(-alpha), Math.sin(-alpha)];
-  const frame = ([x, y]: XY): XY => [x * ca + y * sa, x * sa - y * ca];
+  const toFrame = ([x, y]: XY): XY => [x * ca + y * sa, x * sa - y * ca];
+  const frame = toFrame;
 
   // The grown patch and its centre: archimedeanBoard's own steps, unturned;
-  // turned, a patch big enough to hold the square whichever way it lies.
+  // turned, a patch big enough to hold the square whichever way it lies. A
+  // square moved off that centre (`offset`, at most a domain each way) takes
+  // a domain more all round.
   const nx = box / W;
   const ny = box / H;
-  const spread = alpha === 0 ? [nx + 2, ny + 2] : [2 * nx + 4, 2 * ny + 4];
+  const moved = offset[0] !== 0 || offset[1] !== 0;
+  const extra = moved ? 2 : 0;
+  const spread =
+    alpha === 0 ? [nx + 2 + extra, ny + 2 + extra] : [2 * nx + 4 + extra, 2 * ny + 4 + extra];
   interface Grown {
     ids: string[];
     pts: XY[];
     centroid: XY;
+    /** The centroid in the template's own coordinates. */
+    template: XY;
     /** Per corner, whether it is a real one — false at a T-vertex, where a
      * neighbour's corner splits this tile's side. */
     real: boolean[];
@@ -162,28 +182,40 @@ export function templateWindow(
     for (let k = 0; k < spread[1]!; k++) {
       for (const { refs, real } of t.cells) {
         const ids = refs.map((r) => `${m + r.dm},${k + r.dn},${r.tag}`);
-        const pts = refs.map((r) => frame(at(m + r.dm, k + r.dn, r.tag)));
+        const raw = refs.map((r) => at(m + r.dm, k + r.dn, r.tag));
+        const pts = raw.map(frame);
         const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
         const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
-        grown.push({ ids, pts, centroid: [cx, cy], real });
+        const tx = raw.reduce((sum, p) => sum + p[0], 0) / raw.length;
+        const ty = raw.reduce((sum, p) => sum + p[1], 0) / raw.length;
+        grown.push({ ids, pts, centroid: [cx, cy], template: [tx, ty], real });
       }
     }
   }
   const mid = frame([(spread[0]! * W) / 2, (spread[1]! * H) / 2]);
   let c0: XY = [0, 0];
+  // …and the same point in the template's coordinates
+  let centre: XY = [0, 0];
   let best = Infinity;
-  const consider = (p: XY): void => {
+  const consider = (p: XY, inTemplate: XY): void => {
     const d = (p[0] - mid[0]) ** 2 + (p[1] - mid[1]) ** 2;
-    if (d < best) [best, c0] = [d, p];
+    if (d < best) [best, c0, centre] = [d, p, inTemplate];
   };
   if (t.centre) {
     for (let m = 0; m < spread[0]!; m++) {
-      for (let k = 0; k < spread[1]!; k++)
-        consider(frame([t.centre[0] + m * W, t.centre[1] + k * H]));
+      for (let k = 0; k < spread[1]!; k++) {
+        const p: XY = [t.centre[0] + m * W, t.centre[1] + k * H];
+        consider(frame(p), p);
+      }
     }
   } else {
     const biggest = Math.max(...grown.map((g) => g.ids.length));
-    for (const g of grown) if (g.ids.length === biggest) consider(g.centroid);
+    for (const g of grown) if (g.ids.length === biggest) consider(g.centroid, g.template);
+  }
+  if (moved) {
+    const [dx, dy] = toFrame(offset);
+    c0 = [c0[0] + dx, c0[1] + dy];
+    centre = [centre[0] + offset[0], centre[1] + offset[1]];
   }
   const half = box / 2;
   const slack = 1e-6 * Math.max(1, W, H);
@@ -267,5 +299,5 @@ export function templateWindow(
   const placed = kept.filter((g) => g.ids.every((id) => exact.has(id)));
   // a cell's corners: the real ones, not the T-vertices its sides run through
   const cells = placed.map((g) => g.ids.filter((_, i) => g.real[i]).map((id) => exact.get(id)!));
-  return { ring, cells, turned: alpha };
+  return { ring, cells, turned: alpha, centre, toFrame };
 }

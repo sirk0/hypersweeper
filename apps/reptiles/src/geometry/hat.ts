@@ -427,8 +427,10 @@ export function deform(hats: Hex[][], a: Cyc, b: Cyc): Cyc[][] {
 /** The `keep` cells nearest the patch's middle — the mean of their corners'
  * means — by Chebyshev distance, a square block, as Hypersweeper trims its
  * aperiodic boards (`windowRows` in @tiling/geometry, its centred window);
- * ties in substitution order. Returns their indices. */
-export function centredWindow(ring: Ring, cells: Cyc[][], keep: number): number[] {
+ * ties in substitution order. Returns their indices. With `centre`, the
+ * window is centred on that tile's centroid instead — another board from the
+ * same patch. */
+export function centredWindow(ring: Ring, cells: Cyc[][], keep: number, centre?: number): number[] {
   const centroids = cells.map((cell) => {
     let x = 0;
     let y = 0;
@@ -447,6 +449,7 @@ export function centredWindow(ring: Ring, cells: Cyc[][], keep: number): number[
   }
   gx /= centroids.length;
   gy /= centroids.length;
+  if (centre !== undefined) [gx, gy] = centroids[centre]!;
   const rank = centroids.map(([x, y]) =>
     Math.floor(Math.max(Math.abs(x - gx), Math.abs(y - gy)) * 1e6 + 0.5),
   );
@@ -470,8 +473,9 @@ export interface HatPatch {
 /** The window of `keep` tiles of `tile` nearest the middle of the H metatile
  * `depth` substitutions on: hats, turtles (the hats deformed, `deform`), or
  * the first-generation metatiles themselves. Each tile is its real corners;
- * a hat's long side runs straight through its fourteenth. */
-export function hatPatch(tile: HatTile, depth: number, keep: number): HatPatch {
+ * a hat's long side runs straight through its fourteenth. `centre`, a tile's
+ * index in the whole patch, centres the window on that tile instead. */
+export function hatPatch(tile: HatTile, depth: number, keep: number, centre?: number): HatPatch {
   const metas = hatMetatiles(depth);
   let cells: Cyc[][];
   let mirrored: boolean[];
@@ -486,6 +490,6 @@ export function hatPatch(tile: HatTile, depth: number, keep: number): HatPatch {
     // drop the long side's midpoint, the fourth corner of fourteen
     cells = cells.map((c) => c.filter((_, i) => i !== 3));
   }
-  const kept = centredWindow(Z12, cells, keep);
+  const kept = centredWindow(Z12, cells, keep, centre);
   return { ring: Z12, cells: kept.map((i) => cells[i]!), mirrored: kept.map((i) => mirrored[i]!) };
 }

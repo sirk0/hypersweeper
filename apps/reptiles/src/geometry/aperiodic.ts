@@ -23,9 +23,12 @@ import {
 } from "@tiling/geometry";
 import { exactPatch, type ExactPatch } from "./exact";
 
-/** Hypersweeper's aperiodic builders, by mode: (depth, keep) → exact tiles,
- * and whether the patch was deflated (its edges 1/φ^depth). */
-const APERIODIC: Record<string, [(depth: number, keep: number) => ExactTiles, boolean]> = {
+/** Hypersweeper's aperiodic builders, by mode: (depth, keep, variant) →
+ * exact tiles, and whether the patch was deflated (its edges 1/φ^depth). */
+const APERIODIC: Record<
+  string,
+  [(depth: number, keep: number, variant: number) => ExactTiles, boolean]
+> = {
   penrose: [penroseExact, true],
   kitedart: [kiteDartExact, true],
   ammannbeenker: [ammannBeenkerExact, false],
@@ -42,17 +45,20 @@ export function aperiodicShrink(mode: string, depth: number): number {
 }
 
 /** The patch; with `keepFlat`, each tile keeps its flat corners (the
- * Spectre's, where a round tile's two curves meet). */
+ * Spectre's, where a round tile's two curves meet). `variant` is the
+ * builder's: 0 the centred window, any other integer a window elsewhere in
+ * the same patch. */
 export function aperiodicPatch(
   mode: string,
   depth: number,
   keep: number,
   keepFlat = false,
+  variant = 0,
 ): ExactPatch {
   const entry = APERIODIC[mode];
   if (!entry) throw new Error(`no aperiodic tiling ${mode}`);
   const [build, deflated] = entry;
-  const { ring, cells } = exactPatch(build(depth, keep), keepFlat);
+  const { ring, cells } = exactPatch(build(depth, keep, variant), keepFlat);
   if (!deflated) return { ring, cells };
   const phi = ring.add(ring.zeta(1), ring.conj(ring.zeta(1)));
   let grow = ring.one;

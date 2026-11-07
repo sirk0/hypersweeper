@@ -2,7 +2,7 @@ import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
 import { attachDrag, type DragControl } from "./input/drag";
 import { figureSetByKey, figureSets, type FigureSet } from "./figures";
-import { LEVELS, levelByKey, type Level } from "./levels";
+import { BOARDS, LEVELS, boardKeys, levelByKey, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
 import { renderCatalog } from "./view/catalog";
@@ -19,6 +19,11 @@ const count = byId("count");
 const clock = byId("clock");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
+const boardButton = byId<HTMLButtonElement>("board");
+
+/** The most stars earned on any board of the tiling `base` is the first
+ * board of: what the catalog and Figures show for it. */
+const tilingStars = (base: string): number => Math.max(...boardKeys(base).map(starsFor));
 
 fillGlyphs(document);
 
@@ -56,35 +61,38 @@ function goSettings(push = true): void {
 
 function goCatalog(push = true): void {
   if (push) history.pushState(null, "", "?tilings");
-  renderCatalog(byId("catalog-list"), LEVELS, starsFor, (level) => open(level));
+  renderCatalog(byId("catalog-list"), LEVELS, tilingStars, (level) => open(level));
   show("catalog");
 }
 
 function goFigures(push = true): void {
   if (push) history.pushState(null, "", "?figures");
-  renderFigures(byId("figures-list"), figureSets(), starsFor, (set) => goFigure(set));
+  renderFigures(byId("figures-list"), figureSets(), tilingStars, (set) => goFigure(set));
   show("figures");
 }
 
 function goFigure(set: FigureSet, push = true): void {
   if (push) history.pushState(null, "", `?figure=${set.key}`);
   byId("figure-title").textContent = set.name;
-  renderFigure(byId("figure-list"), set, starsFor, (level) => open(level));
+  renderFigure(byId("figure-list"), set, tilingStars, (level) => open(level));
   show("figure");
 }
 
+/** Per band, how many boards — every board of every tiling is a level of its
+ * own — and the stars earned on them. */
 function tally(band: Band): { levels: number; stars: number } {
-  const levels = LEVELS.filter((l) => bandOf(l.key) === band);
-  return { levels: levels.length, stars: levels.reduce((sum, l) => sum + starsFor(l.key), 0) };
+  const boards = BOARDS.filter((b) => bandOf(b.key) === band);
+  return { levels: boards.length, stars: boards.reduce((sum, b) => sum + starsFor(b.key), 0) };
 }
 
-/** A level of `band`, dealt at random — not the one just played, where there
- * is another. */
+/** A board of `band`, dealt at random from every tiling's boards — not the
+ * one just played, where there is another. */
 function playBand(band: Band): void {
-  const pool = LEVELS.filter((l) => bandOf(l.key) === band);
-  const fresh = pool.filter((l) => l !== session?.puzzle.level);
+  const pool = BOARDS.filter((b) => bandOf(b.key) === band);
+  const fresh = pool.filter((b) => b.key !== session?.puzzle.level.key);
   const from = fresh.length > 0 ? fresh : pool;
-  const level = from[Math.floor(Math.random() * from.length)];
+  const pick = from[Math.floor(Math.random() * from.length)];
+  const level = pick && levelByKey(pick.key);
   if (level) open(level);
 }
 
@@ -134,8 +142,19 @@ function tick(s: Session): void {
   clock.classList.toggle("over", t > s.puzzle.level.seconds);
 }
 
+/** After a board, the tiling's next board; after its last, the next
+ * tiling's first. */
 function nextLevel(s: Session): Level | undefined {
-  return LEVELS[LEVELS.indexOf(s.puzzle.level) + 1];
+  const i = BOARDS.findIndex((b) => b.key === s.puzzle.level.key);
+  const ref = BOARDS[i + 1];
+  return ref && levelByKey(ref.key);
+}
+
+/** The tiling's next board after `level`, round to its first after its
+ * last. */
+function nextBoard(level: Level): Level | undefined {
+  const keys = boardKeys(level.base);
+  return levelByKey(keys[level.board % keys.length]!);
 }
 
 function changed(): void {
@@ -200,6 +219,11 @@ function open(level: Level, push = true): void {
   const name = byId("level");
   name.textContent = level.name;
   name.title = level.label;
+  const boardOf = byId("board-of");
+  boardOf.hidden = level.boards < 2;
+  boardOf.textContent = `board ${level.board}/${level.boards}`;
+  boardButton.hidden = level.boards < 2;
+  boardButton.title = `The next board of this tiling (this is ${level.board} of ${level.boards})`;
   changed();
 }
 
@@ -214,6 +238,10 @@ function dismiss(): void {
 }
 
 byId("restart").addEventListener("click", restart);
+boardButton.addEventListener("click", () => {
+  const level = session && nextBoard(session.puzzle.level);
+  if (level) open(level);
+});
 document
   .querySelector("#home [data-action=settings]")
   ?.addEventListener("click", () => goSettings());
@@ -242,6 +270,7 @@ document.addEventListener("keydown", (ev) => {
   } else if (ev.key === "r" || ev.key === "R") control.turn(ev.shiftKey ? 1 : -1);
   else if (ev.key === "e" || ev.key === "E") control.turn(1);
   else if (ev.key === "f" || ev.key === "F") control.flip();
+  else if ((ev.key === "b" || ev.key === "B") && !boardButton.hidden) boardButton.click();
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
 setInterval(() => {

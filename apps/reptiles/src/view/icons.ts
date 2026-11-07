@@ -158,8 +158,13 @@ export function starRow(earned: number): HTMLSpanElement {
 const STROKE = `stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
 
 /** The header's and home screen's glyphs, on a 24-unit square: home, restart,
- * a die for a new random level and the settings gear (both Hypersweeper's). */
+ * a die for a new random level and the settings gear (both Hypersweeper's),
+ * and the next board of a tiling — the window moved along, dashed where it
+ * was. */
 export const GLYPHS: Record<string, string> = {
+  board: `<rect x="2.8" y="6.2" width="11.6" height="11.6" rx="1.6" ${STROKE}
+      stroke-dasharray="2.2 2.4"/>
+    <rect x="9.6" y="6.2" width="11.6" height="11.6" rx="1.6" ${STROKE}/>`,
   home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
     <path d="M6.2 9.4 V19.6 H17.8 V9.4" ${STROKE}/>
     <path d="M10.2 19.6 V14.4 H13.8 V19.6" ${STROKE}/>`,

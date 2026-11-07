@@ -15,7 +15,8 @@
 
 import { ccw } from "./outline";
 import { cyclotomic, type Cyc, type Ring } from "./cyclotomic";
-import { templateWindow } from "./fromTemplate";
+import { archTemplate } from "@tiling/geometry";
+import { templateWindow, type XY } from "./fromTemplate";
 import { cornersOf, span } from "./vertexRule";
 
 function lcm(a: number, b: number): number {
@@ -30,10 +31,48 @@ function lcm(a: number, b: number): number {
  * Where the square cuts a few tiles off from the rest — a lone kite in a
  * corner — only the largest piece joined edge to edge is kept.
  */
-export function lavesWindow(tiling: string, box: number): { ring: Ring; cells: Cyc[][] } {
+export function lavesWindow(
+  tiling: string,
+  box: number,
+  offset: XY = [0, 0],
+): { ring: Ring; cells: Cyc[][] } {
+  const { ring, duals, c0, toFrame } = dualPatch(tiling, box, offset[0] !== 0 || offset[1] !== 0);
+  // the square moved by `offset`, a vector in the template's coordinates
+  const [dx, dy] = toFrame(offset);
+  const half = box / 2 + 1e-9;
+  const inside = duals.filter((tile) =>
+    tile.every((v) => {
+      const [x, y] = ring.toXY(v);
+      return Math.abs(x - c0[0] - dx) <= half && Math.abs(y - c0[1] - dy) <= half;
+    }),
+  );
+  return { ring, cells: largestPiece(ring, inside) };
+}
+
+interface DualPatch {
+  ring: Ring;
+  duals: Cyc[][];
+  /** The face centre nearest the middle: where the square is centred. */
+  c0: XY;
+  toFrame: (v: XY) => XY;
+}
+
+/** The dual patches built so far — a scan of where the square can go cuts
+ * one patch many times. */
+const DUAL_PATCHES = new Map<string, DualPatch>();
+
+/** The dual tiles round every whole vertex of a uniform patch comfortably
+ * bigger than a `box` square — by a domain more each way where the square is
+ * to be `moved` — and the face centre nearest its middle. */
+function dualPatch(tiling: string, box: number, moved: boolean): DualPatch {
+  const memo = `${tiling}|${box}|${moved}`;
+  const known = DUAL_PATCHES.get(memo);
+  if (known) return known;
+  const t = archTemplate(tiling);
   // A uniform patch comfortably bigger than the square, so every dual tile
   // that could fit has its whole vertex star in it.
-  const uniform = templateWindow(tiling, box * 1.5 + 6, { quarter: true, dropStrays: true });
+  const size = box * 1.5 + 6 + (moved ? 2 * Math.max(t.width, t.height) : 0);
+  const uniform = templateWindow(tiling, size, { quarter: true, dropStrays: true });
   const base = uniform.ring;
   const L = uniform.cells.reduce((acc, c) => lcm(acc, c.length), 1);
   const ring = cyclotomic(base.n, L);
@@ -60,24 +99,19 @@ export function lavesWindow(tiling: string, box: number): { ring: Ring; cells: C
   }
   if (duals.length === 0) throw new Error(`lavesWindow: no whole vertex in the ${tiling} patch`);
 
-  // Centre on the face centre nearest the middle, and keep what fits.
+  // Centre on the face centre nearest the middle.
   const pts = duals.flat().map((v) => ring.toXY(v));
   const mx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
   const my = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
-  let c0: [number, number] = [0, 0];
+  let c0: XY = [0, 0];
   let best = Infinity;
   for (const p of pts) {
     const d = (p[0] - mx) ** 2 + (p[1] - my) ** 2;
     if (d < best) [best, c0] = [d, p];
   }
-  const half = box / 2 + 1e-9;
-  const inside = duals.filter((tile) =>
-    tile.every((v) => {
-      const [x, y] = ring.toXY(v);
-      return Math.abs(x - c0[0]) <= half && Math.abs(y - c0[1]) <= half;
-    }),
-  );
-  return { ring, cells: largestPiece(ring, inside) };
+  const patch = { ring, duals, c0, toFrame: uniform.toFrame };
+  DUAL_PATCHES.set(memo, patch);
+  return patch;
 }
 
 /** The largest set of cells joined edge to edge — dual tiles meet whole edge

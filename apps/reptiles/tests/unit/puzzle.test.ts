@@ -46,7 +46,7 @@ import {
   type XY,
 } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
-import { LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
+import { BOARDS, LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
 /** A one-piece tile's or cell's polygon — every level's but the rep-tiles
@@ -62,8 +62,11 @@ function fill(p: Puzzle): number {
   return p.tiles.length;
 }
 
+/** Every board of every tiling — each a level of its own. */
+const BOARD_LEVELS = BOARDS.map((b) => levelByKey(b.key)!);
+
 describe("puzzle", () => {
-  it.each(LEVELS.map((l) => l.key))("%s: the board it was cut from fills it exactly", (key) => {
+  it.each(BOARDS.map((b) => b.key))("%s: the board it was cut from fills it exactly", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const { ring, tiles } = p.level;
     // a cell's kind: the tray tile it is a turn of, or a turn of mirrored —
@@ -96,7 +99,7 @@ describe("puzzle", () => {
   // board's five hundred corners, step after step, take a quarter of a
   // minute — the board's own tiles filling it exactly, above, show it can be
   // finished)
-  const searchable = LEVELS.filter((l) => !l.socolarTaylor).map((l) => l.key);
+  const searchable = BOARD_LEVELS.filter((l) => !l.socolarTaylor).map((l) => l.key);
   it.each(searchable)("%s can be finished by search from empty", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     expect(p.solve()).toBe(true);
@@ -133,24 +136,29 @@ describe("puzzle", () => {
     pentaspiral6: pentaSpiral6Board,
     pentaspiral7: pentaSpiral7Board,
   };
-  /** Hypersweeper's aperiodic builders, by mode: (depth, keep, scale) → the
-   * centred window (variant 0). `scale` draws the builder's edge one unit
-   * long: the Penrose patches deflate, so theirs is φ^depth. */
-  const APERIODIC_BUILDERS: Record<string, (depth: number, keep: number, scale: number) => Board> =
-    {
-      penrose: (depth, keep, scale) => penroseBoard(depth, scale, keep),
-      kitedart: (depth, keep, scale) => kiteDartBoard(depth, scale, keep),
-      ammannbeenker: (depth, keep, scale) => ammannBeenkerBoard(depth, scale, keep),
-      spectre: (depth, keep, scale) => spectreBoard(depth, keep, scale),
-    };
+  /** Hypersweeper's aperiodic builders, by mode: (depth, keep, scale,
+   * variant) → the window (variant 0 the centred one). `scale` draws the
+   * builder's edge one unit long: the Penrose patches deflate, so theirs is
+   * φ^depth. */
+  const APERIODIC_BUILDERS: Record<
+    string,
+    (depth: number, keep: number, scale: number, variant: number) => Board
+  > = {
+    penrose: (depth, keep, scale, variant) => penroseBoard(depth, scale, keep, variant),
+    kitedart: (depth, keep, scale, variant) => kiteDartBoard(depth, scale, keep, variant),
+    ammannbeenker: (depth, keep, scale, variant) => ammannBeenkerBoard(depth, scale, keep, variant),
+    spectre: (depth, keep, scale, variant) => spectreBoard(depth, keep, scale, variant),
+  };
   const builderFor = (key: string): Board => {
     const { window, inflations, spiral, aperiodic } = levelByKey(key)!;
-    if (window) return archimedeanBoard(window.tiling, window.nx, window.ny, 1);
+    // a board past the first is the same window cut where its square went
+    if (window)
+      return archimedeanBoard(window.tiling, window.nx, window.ny, 1, window.centre ?? null);
     if (inflations !== undefined) return REPTILE_BUILDERS[key]!(inflations, 1);
     if (spiral) return SPIRAL_BUILDERS[key]!(spiral.rings, spiral.keep, 1);
     if (aperiodic) {
-      const { mode, depth, keep } = aperiodic;
-      return APERIODIC_BUILDERS[mode]!(depth, keep, 1 / aperiodicShrink(mode, depth));
+      const { mode, depth, keep, variant } = aperiodic;
+      return APERIODIC_BUILDERS[mode]!(depth, keep, 1 / aperiodicShrink(mode, depth), variant);
     }
     return BUILDERS[key]!();
   };
@@ -182,7 +190,7 @@ describe("puzzle", () => {
   // (a tile of several pieces — the fish, the Socolar–Taylor tile — has no
   // Hypersweeper board to match, nor has the hat's family:
   // tests/unit/hat.test.ts is its oracle)
-  const unturned = LEVELS.filter(
+  const unturned = BOARD_LEVELS.filter(
     (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor && !l.hat,
   ).map((l) => l.key);
   it.each(unturned)("%s is Hypersweeper's board, tile for tile", (key) => {
@@ -195,7 +203,7 @@ describe("puzzle", () => {
 
   // (a bond, a pentagonal tiling, a rep-tile, a spiral or an aperiodic tiling
   // has no one vertex configuration, and an isogonal one is not edge to edge)
-  const ofPolygons = LEVELS.filter(
+  const ofPolygons = BOARD_LEVELS.filter(
     (l) =>
       !isDual(l.group) &&
       !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic"].includes(l.group),
@@ -402,7 +410,7 @@ describe("puzzle", () => {
   // The Laves and 2-isohedral levels: each tile is one of Hypersweeper's dual
   // tiles, and at each of a tile's corners inside the board the right number
   // of tiles meet, in order round it — the V in V3.4.6.4.
-  const duals = LEVELS.filter((l) => isDual(l.group)).map((l) => l.key);
+  const duals = BOARD_LEVELS.filter((l) => isDual(l.group)).map((l) => l.key);
   /** A polygon's interior angles and its sides over its longest, in order,
    * counter-clockwise. */
   const signature = (raw: XY[]): { angles: number[]; sides: number[] } => {
@@ -448,7 +456,7 @@ describe("puzzle", () => {
 
   it.each(duals)("%s: every tile is one of Hypersweeper's dual tiles", (key) => {
     const level = levelByKey(key)!;
-    const theirs = templateCells(archTemplate(key), 0, 0).map(({ pts }) =>
+    const theirs = templateCells(archTemplate(level.base), 0, 0).map(({ pts }) =>
       pts.map(([x, y]): XY => [x, y]),
     );
     // each kind matches some tile of the template, and each tile of it some kind
@@ -724,7 +732,7 @@ describe("puzzle", () => {
   });
 
   // (not a rep-tile: its board is the shape of its tile)
-  const windows = LEVELS.filter((l) => l.group !== "reptile").map((l) => l.key);
+  const windows = BOARD_LEVELS.filter((l) => l.group !== "reptile").map((l) => l.key);
   it.each(windows)("%s is about as wide as it is tall", (key) => {
     const { ring, region } = levelByKey(key)!;
     const xy = region.flat().map((v) => ring.toXY(v));
