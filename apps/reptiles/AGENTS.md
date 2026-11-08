@@ -29,29 +29,37 @@ some back off.
   the way), or turn on ✕ remove, the control beside rotate (or X), and tap
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
   A lifted tile dropped anywhere else it cannot land goes back where it was.
-- **Colourings.** The regular boards come painted too (the Colourings
-  section, `?level=squares.2striped`): a colouring repeats more coarsely than
-  the tiling — squares in rows, aaaa over bbbb, or as a checkerboard — and no
-  one tile can check it, but every edge can. So each tile carries a **mark**
-  on each edge, and a tile lands only where its marks meet their partners
-  (the rim takes any). Where tiles of one colour touch (stripes, pairs), the
-  mark is the *edge's*: a band in one colour for the two colours it lies
-  between — in two colours the second, in three the one that is neither —
-  drawn alike on both tiles, so a band meets the same band, and an edge
-  between two of one colour is plain. Tiles whose edges read alike are then
-  one tile, whatever colour they were: red and blue rows of squares are one
-  red square banded blue on two sides, laid by turning it. Where the colours
-  alternate (apart: a checkerboard), each tile keeps its colour and its bands
-  say what lies across it — the colour that must lie next to it. A *lined*
-  board is a
-  colouring in one colour, with a line across every edge between two tiles
-  that were one colour: a line meets a line, a blank edge a blank one. On a
-  coloured board the same lines are drawn too unless the player turns them
-  off — Settings' "Lines on coloured boards", or L on such a level
-  (`src/prefs.ts`); a lined board always draws its lines, which are its rule.
+- **Matching rules and colourings** — two sections of Tilings, two rows of
+  Figures. Each tile carries a **mark** on each edge, and a tile lands only
+  where its marks meet their partners (the rim takes any), so a pattern no one
+  tile can check is checked edge by edge. Every mark is drawn so that two
+  tiles meeting as they should make one shape across their edge
+  (`src/view/decor.ts`).
+  - *Matching rules* (`?level=squares.lines`, `?level=penrose.rules`): a
+    *lined* board is a colouring (below) in one colour, with a line across
+    every edge between two tiles that were one colour — a line meets a line,
+    a blank edge a blank one. A line runs from edge to edge, square on to
+    each and ending on it, straight across or round the corner two lined
+    edges share; a tile with one lined edge has a half disc there instead.
+    The Penrose rhombi carry **Penrose's arrows**: a single or a double arrow
+    on each edge, drawn as a half disc set off the edge's middle towards the
+    way it points (dark single, blue double), so tiles meet only where the
+    halves make a disc.
+  - *Colourings* (`?level=squares.2striped`): a colouring repeats more
+    coarsely than the tiling — squares in rows, aaaa over bbbb, or as a
+    checkerboard. Each mark is a half disc on the middle of its edge. Where
+    tiles of one colour touch (stripes, pairs), the mark is the *edge's*: one
+    colour for the two it lies between — in two colours the second, in three
+    the one that is neither — drawn alike on both tiles, so the halves make a
+    disc, and an edge between two of one colour is plain. Tiles whose edges
+    read alike are then one tile, whatever colour they were: red and blue rows
+    of squares are one red square with blue half discs on two sides, laid by
+    turning it. Where the colours alternate (apart: a checkerboard), each tile
+    keeps its colour and its half discs are the colour that must lie across.
+    A coloured board never draws lines.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
-  marks ask for turning a plain board never needs, and every painted level
+  marks ask for turning a plain board never needs, and every marked level
   measures at least as hard as its plain one (a test holds that).
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
   from still to go (past zero, how many extra). Finishing at all is one star;
@@ -157,7 +165,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, and 16 colourings of the regular three in a twelfth, 404 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 5 matching rules (lines on the regular three, Penrose's arrows) and 12 colourings of the regular three in two more, 405 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -429,7 +437,10 @@ quick way to see the win state.
   `sharedMark(x, y)`, the edge's own colour, unordered, and `SAME` between
   two of one colour (each its own partner); on one whose colours alternate,
   a colour pair `colourMark(own, other)`, whose partner is the pair the other
-  way round. A `Piece` carries
+  way round; and the Penrose rhombi's arrows, `arrowMark(kind, forward)`,
+  single or double, pointing along the tile's outline or against it — its
+  partner points the other way, and a mirror (`mirrored`) turns it round. A
+  `Piece` carries
   them as `marks`, edge for edge as it carries `curve`; `posed`, `moved`,
   `curveOnto` and `restFlat` keep them, `turnsOnto` (given the cell's marks)
   and `selfTurns` count them — a square striped across is the same only after
@@ -454,7 +465,15 @@ quick way to see the win state.
   all round), and drops any whose tray another already had (`traySignature`: the same up to
   turning a tile, a mirror and renaming the colours — rows and columns are
   one). `COLOURED` lists the boards painted and each one's lattice; the
-  level is `<plain>.<label>`, `Level.decor` saying what it paints.
+  level is `<plain>.<label>`, `Level.decor` saying what it marks — lined
+  ones in the Matching rules section (`decor.rules`), the rest in
+  Colourings. `penroseRulesLevel` gives the Penrose rhombi their arrows: the
+  builder says which leg of its half-rhombus Robinson triangle each edge was
+  (`penroseLegs` in @tiling/geometry), and the rule is stated on the legs —
+  every a–b leg a double arrow, pointing in to the apex on a thin half and
+  out on a thick one, every a–c leg a single arrow pointing out — the only
+  rule of that shape, up to renaming and reversing, that every shared edge
+  of the builder's 430-rhombus patch keeps.
 - `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
   boards congruent to a given one (turned, mirrored or moved, tile for tile),
   how the board search tells a new board from one it has.
@@ -528,12 +547,14 @@ quick way to see the win state.
   along the arcs: what a round tile's bounds and tray circle are taken from).
   Every tile, the region, the open edges and the icons are paths drawn
   through it.
-- `src/view/decor.ts` — drawing a tile's marks over it: a band along each
-  edge whose other colour differs, in that colour, its ends on the corners'
-  bisectors so two never overlap; and lines from each crossed edge's middle
-  to the tile's — two of them one curve through it, so a row draws one
-  stripe. Every tile, tray tile, dragged tile and icon is decorated through
-  it; its parts are `pointer-events: none`.
+- `src/view/decor.ts` — drawing a tile's marks over it, so that tiles that
+  meet as they should make one shape across their edge: a colour as a half
+  disc on the edge's middle; a lined board's lines from edge to edge, square
+  on and ending on each (straight across, or a Truchet arc about the corner
+  two lined edges share; butt-capped, so never past the edge), and a lone
+  lined edge as a half disc; an arrow as a half disc set off the middle
+  towards its head. Every tile, tray tile, dragged tile and icon is decorated
+  through it; its parts are `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's

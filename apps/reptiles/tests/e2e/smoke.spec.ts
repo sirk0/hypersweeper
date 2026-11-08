@@ -65,6 +65,7 @@ test("Figures lists the tile sets, and a set its tilings by difficulty", async (
     "Regular pairs",
     "Irregular pairs",
     "Packs of 3+",
+    "Matching rules",
     "Colourings",
   ]);
   await expect(page.locator("#figures-list .figure-card .card-name").first()).toHaveText(
@@ -349,35 +350,24 @@ test("Tilings' families are named as Hypersweeper names them", async ({ page }) 
     "Rep-tiles",
     "Spirals",
     "Aperiodic",
+    "Matching rules",
     "Colourings",
   ]);
 });
 
-test("a coloured board: bands on its tiles, lines on and off, a lined square into the corner", async ({
+test("marked boards: colours as half discs, lines edge to edge, the Penrose rhombi's arrows", async ({
   page,
 }) => {
   const errors = watchErrors(page);
+  // the rows' two colours read alike: one tile, a half disc on two sides,
+  // and no line across it — a coloured board never draws one
   await page.goto("/?level=squares.2striped");
-  // the rows' two colours read alike: one tile, banded on two sides, and a
-  // stripe across it — lines are on unless turned off
   await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(1);
   await expect(page.locator("svg.board .tray-layer .decor.band")).toHaveCount(1);
-  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
-  await page.keyboard.press("l");
   await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(0);
 
-  // Settings remembers the choice, and switches it back
-  await page.goto("/?settings");
-  const lines = page.locator('[data-action="toggle-lines"]');
-  await expect(lines).toHaveAttribute("aria-checked", "false");
-  await expect(page.locator('[data-value="lines"]')).toHaveText("Off");
-  await lines.click();
-  await expect(lines).toHaveAttribute("aria-checked", "true");
-  await page.goto("/?level=squares.2striped");
-  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
-
-  // a lined board's lines are its rule, drawn whatever the setting; its
-  // first square goes into the corner either way round (the rim takes any)
+  // a lined board's lines are its rule; its first square goes into the
+  // corner either way round (the rim takes any)
   await page.goto("/?level=squares.lines");
   await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
   const tray = page.locator("svg.board .tile.in-tray").first();
@@ -389,6 +379,16 @@ test("a coloured board: bands on its tiles, lines on and off, a lined square int
   await page.mouse.up();
   await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
   await expect(page.locator("svg.board .world .decor.line")).toHaveCount(1);
+
+  // the Penrose rhombi with their arrows: a single and a double on each
+  await page.goto("/?level=penrose.rules");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.dot.double")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.dot:not(.double)")).toHaveCount(2);
+
+  // no setting for lines any more
+  await page.goto("/?settings");
+  await expect(page.locator('[data-action="toggle-lines"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

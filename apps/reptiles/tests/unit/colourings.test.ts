@@ -8,10 +8,12 @@ import {
   LINE,
   NONE,
   SAME,
+  arrow,
+  arrowMark,
   colourMark,
   colours,
-  crossed,
   partner,
+  posedMarks,
   shared,
   sharedMark,
 } from "../../src/geometry/marks";
@@ -62,17 +64,21 @@ describe("edge marks", () => {
     expect(partner(NONE)).toBe(NONE);
     expect(colours(colourMark(3, 1))).toEqual({ own: 3, other: 1 });
     expect(colours(LINE)).toBeNull();
-    expect(crossed(LINE, false)).toBe(true);
-    expect(crossed(colourMark(1, 1), false)).toBe(false);
-    expect(crossed(colourMark(1, 1), true)).toBe(true);
-    expect(crossed(colourMark(0, 1), true)).toBe(false);
     // a shared edge colour is the same from both sides, in either order
     expect(sharedMark(2, 0)).toBe(sharedMark(0, 2));
     expect(partner(sharedMark(0, 2))).toBe(sharedMark(0, 2));
     expect(shared(sharedMark(2, 0))).toEqual({ lo: 0, hi: 2 });
     expect(sharedMark(1, 1)).toBe(SAME);
-    expect(crossed(SAME, false)).toBe(false);
-    expect(crossed(SAME, true)).toBe(true);
+    // an arrow's partner points the other way round the other tile, and a
+    // mirror turns it round too
+    expect(partner(arrowMark(2, true))).toBe(arrowMark(2, false));
+    expect(arrow(arrowMark(1, false))).toEqual({ kind: 1, forward: false });
+    // (listed backwards: edge j of the mirror image is edge m − 2 − j)
+    expect(posedMarks([arrowMark(1, true), LINE, arrowMark(2, false)], true)).toEqual([
+      LINE,
+      arrowMark(1, false),
+      arrowMark(2, true),
+    ]);
   });
 
   it("lays a tile along a marked edge only with the mark it asks for; the rim takes any", () => {
@@ -106,7 +112,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours", () => {
+  it("paints each regular board lined, then in two and three colours; and gives the Penrose rhombi their arrows", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2striped",
@@ -124,9 +130,11 @@ describe("colourings", () => {
       "hexagons.2striped",
       "hexagons.3striped",
       "hexagons.3apart",
+      "penrose.rules",
     ]);
     for (const level of COLOURED) {
-      expect(level.group).toBe("colourings");
+      // matching rules and colourings: two groups
+      expect(level.group).toBe(level.decor!.rules ? "rules" : "colourings");
       expect(levelByKey(level.key)).toBe(level);
       const plain = levelByKey(level.decor!.of)!;
       expect(level.name.startsWith(`${plain.name} · `)).toBe(true);
@@ -143,17 +151,19 @@ describe("colourings", () => {
   });
 
   it.each(COLOURED.map((l) => l.key))(
-    "%s: a tile per colour at most, every shared edge's two marks partners",
+    "%s: no more tiles than the plain board's per colour, every shared edge's two marks partners",
     (key) => {
       const level = levelByKey(key)!;
-      const { colours: count, lines } = level.decor!;
+      const plain = levelByKey(level.decor!.of)!;
+      const { colours: count, rules } = level.decor!;
       const marks = level.tiles.flatMap((t) => t.pieces[0]!.marks!);
       // colours alternate (each tile says what lies across it), or the
       // edges carry their own colour, alike both sides
       const alternate = marks.some((m) => colours(m) !== null);
       expect(marks.every((m) => (colours(m) !== null) === alternate)).toBe(true);
-      if (lines || alternate) expect(level.tiles).toHaveLength(lines ? 1 : count);
-      expect(level.tiles.length).toBeLessThanOrEqual(count);
+      if (rules) expect(level.tiles).toHaveLength(plain.tiles.length);
+      else if (alternate) expect(level.tiles).toHaveLength(count);
+      expect(level.tiles.length).toBeLessThanOrEqual(count * plain.tiles.length);
       const all = sides(level);
       let shared = 0;
       for (const [edge, mark] of all) {
@@ -164,13 +174,7 @@ describe("colourings", () => {
         expect(across).toBe(partner(mark));
       }
       expect(shared).toBeGreaterThan(0);
-      if (!alternate)
-        for (const [edge, mark] of all) {
-          const [a, b] = edge.split(">");
-          const across = all.get(`${b}>${a}`);
-          if (across !== undefined) expect(across).toBe(mark);
-        }
-      if (!lines && alternate) {
+      if (!rules && alternate) {
         // each kind is its colour all round, painted so
         level.tiles.forEach((t, kind) => {
           const own = new Set(t.pieces[0]!.marks!.map((m) => colours(m)!.own));
@@ -184,7 +188,7 @@ describe("colourings", () => {
 
   it("keeps one of every pair of colourings that make the same tray: rows, not columns too", () => {
     const signatures = COLOURED.map(
-      (l) => `${l.decor!.of}|${l.decor!.lines}|${traySignature(l.tiles)}`,
+      (l) => `${l.decor!.of}|${l.decor!.rules}|${traySignature(l.tiles)}`,
     );
     expect(new Set(signatures).size).toBe(signatures.length);
   });
@@ -240,29 +244,77 @@ describe("colourings", () => {
     expect(levelByKey("squares.2apart")!.tiles).toHaveLength(2);
   });
 
-  it("draws a band in the colour across each edge, and lines where asked", () => {
+  it("draws a colour as a half disc on the edge: the colour across, or the edge's own", () => {
     const apart = levelByKey("squares.2apart")!;
     const own = colours(apart.tiles[0]!.pieces[0]!.marks![0]!)!.own;
-    expect(
-      decorParts(loopsOf(apart.ring, apart.tiles[0]!.pieces), false).map((p) => p.class),
-    ).toEqual([`decor band paint-${1 - own}`]);
+    const apartParts = decorParts(loopsOf(apart.ring, apart.tiles[0]!.pieces));
+    expect(apartParts.map((p) => p.class)).toEqual([`decor band paint-${1 - own}`]);
+    // four half discs, each an arc closed along its edge
+    expect(apartParts[0]!.d.match(/A/g)).toHaveLength(4);
     // a striped board: the edge's own colour — in two colours the second,
-    // on both tiles alike
+    // on both tiles alike — and never a line across the stripes
     const level = levelByKey("squares.2striped")!;
-    const loops = loopsOf(level.ring, level.tiles[0]!.pieces);
-    const parts = decorParts(loops, false);
+    const parts = decorParts(loopsOf(level.ring, level.tiles[0]!.pieces));
     expect(parts.map((p) => p.class)).toEqual(["decor band paint-1"]);
     expect(parts[0]!.d.match(/M/g)).toHaveLength(2);
     // in three colours, the colour that is neither of the edge's two
     expect(sharedBand(0, 1, 3)).toBe(2);
     expect(sharedBand(0, 2, 3)).toBe(1);
     expect(sharedBand(1, 2, 3)).toBe(0);
-    const withLines = decorParts(loops, true);
-    expect(withLines.map((p) => p.class)).toContain("decor line");
-    // a lined board's lines are its rule: drawn either way
-    const lined = levelByKey("squares.lines")!;
-    expect(
-      decorParts(loopsOf(lined.ring, lined.tiles[0]!.pieces), false).map((p) => p.class),
-    ).toEqual(["decor line"]);
+    for (const coloured of COLOURED.filter((l) => !l.decor!.rules))
+      for (const t of coloured.tiles)
+        expect(decorParts(loopsOf(coloured.ring, t.pieces)).map((p) => p.class)).not.toContain(
+          "decor line",
+        );
+  });
+
+  it("draws a line from edge to edge, ending on each edge's middle, or a half disc alone", () => {
+    const num = (d: string): number[] => (d.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
+    // squares: straight across
+    const squares = levelByKey("squares.lines")!;
+    const [sq] = decorParts(loopsOf(squares.ring, squares.tiles[0]!.pieces));
+    expect(sq!.class).toBe("decor line");
+    expect(sq!.d).toMatch(/^M[^A-Z]*L[^A-Z]*$/);
+    // triangles: round the corner two lined edges share, a circle about it
+    // through both their middles — inside the tile, square on to each edge
+    const triangles = levelByKey("triangles.lines")!;
+    const tile = triangles.tiles[0]!;
+    const xy = tile.pieces[0]!.verts.map((v) => triangles.ring.toXY(v));
+    const [tri] = decorParts(loopsOf(triangles.ring, tile.pieces));
+    expect(tri!.d).toMatch(/^M[^A-Z]*A[^A-Z]*$/);
+    const [x0, y0, r, , , , , x1, y1] = num(tri!.d);
+    expect(r).toBeCloseTo(0.5, 4);
+    const mids = xy.map((a, i) => {
+      const b = xy[(i + 1) % xy.length]!;
+      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    });
+    const lined = tile.pieces[0]!.marks!.flatMap((m, i) => (m === LINE ? [mids[i]!] : []));
+    for (const [x, y] of [
+      [x0, y0],
+      [x1, y1],
+    ])
+      expect(lined.some(([mx, my]) => Math.hypot(mx! - x!, my! - y!) < 1e-3)).toBe(true);
+    // one lined edge: a half disc there, two tiles making one disc
+    const pairs = levelByKey("triangles.linkedpairs")!;
+    expect(decorParts(loopsOf(pairs.ring, pairs.tiles[0]!.pieces)).map((p) => p.class)).toEqual([
+      "decor dot",
+    ]);
+  });
+
+  it("gives the Penrose rhombi their arrows: a single and a double on each, two kinds of tile", () => {
+    const rules = levelByKey("penrose.rules")!;
+    expect(rules.tiles).toHaveLength(2);
+    expect(rules.mirror).toBe(false);
+    for (const t of rules.tiles) {
+      const kinds = t.pieces[0]!.marks!.map((m) => arrow(m)!.kind).sort();
+      expect(kinds).toEqual([1, 1, 2, 2]);
+      expect(decorParts(loopsOf(rules.ring, t.pieces)).map((p) => p.class)).toEqual([
+        "decor dot",
+        "decor dot double",
+      ]);
+    }
+    // the arrows break the rhombi's half-turn symmetry: they need turning
+    for (const t of rules.tiles) expect(selfTurns(t)).toEqual([0]);
+    expect(new Puzzle(rules).solve()).toBe(true);
   });
 });

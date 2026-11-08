@@ -196,6 +196,7 @@ export const BUCKETS = [
   "regular-pairs",
   "irregular-pairs",
   "packs",
+  "rules",
   "colourings",
 ] as const;
 export type Bucket = (typeof BUCKETS)[number];
@@ -250,7 +251,7 @@ function build(): Figures {
     // a coloured or lined tray is its figures painted: a set of its own, by
     // its figures and how they are painted, in a row after the rest
     const decor = level.decor;
-    const key = decor ? `${ids.join(",")}|${decor.lines ? "lines" : decor.colours}` : ids.join(",");
+    const key = decor ? `${ids.join(",")}|${decor.rules ? "rules" : decor.colours}` : ids.join(",");
     groups.set(key, [...(groups.get(key) ?? []), level]);
   }
   // the rep-tiles are named for their shape: the sphinx, the 30-60-90 triangle
@@ -290,8 +291,8 @@ function build(): Figures {
         key: levels[0]!.key,
         figures: set,
         levels,
-        name: `${names} · ${decor.lines ? "lines" : `${decor.colours} colours`}`,
-        bucket: "colourings" as const,
+        name: `${names} · ${decor.rules ? "matching rules" : `${decor.colours} colours`}`,
+        bucket: decor.rules ? ("rules" as const) : ("colourings" as const),
       };
     }
     const regular = set.every((f) => f.regular);

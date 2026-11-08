@@ -21,9 +21,13 @@ const ROWS: Record<Bucket, { name: string; hint: string }> = {
   "regular-pairs": { name: "Regular pairs", hint: "Two regular polygons" },
   "irregular-pairs": { name: "Irregular pairs", hint: "Two shapes, at least one irregular" },
   packs: { name: "Packs of 3+", hint: "Three shapes or more" },
+  rules: {
+    name: "Matching rules",
+    hint: "Marked tiles — lines or arrows that must meet across every edge",
+  },
   colourings: {
     name: "Colourings",
-    hint: "One shape, coloured or lined — each edge must match the one it meets",
+    hint: "One shape, coloured — each edge must match the one it meets",
   },
 };
 

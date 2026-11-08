@@ -7,7 +7,6 @@ import { centroidOf, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
 import { decorParts } from "./decor";
-import { showLines } from "../prefs";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -85,7 +84,7 @@ function decorate(
   loops: ReturnType<typeof loopsOf>,
   map: (p: XY) => XY,
 ): void {
-  for (const part of decorParts(loops, showLines(), map, level.decor?.colours ?? 2)) {
+  for (const part of decorParts(loops, map, level.decor?.colours ?? 2)) {
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", part.d);
     path.setAttribute("class", part.class);

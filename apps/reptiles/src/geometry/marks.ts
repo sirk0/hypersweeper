@@ -22,6 +22,12 @@
 //   partner: a band meets the same band. So tiles whose edges read alike are
 //   one tile, whatever colour they were (red and blue squares striped across
 //   are one square, banded on two sides), and only turning tells them apart.
+// - an arrow, `arrowMark(kind, forward)`: the Penrose rhombi's matching
+//   rule — each edge carries a single or a double arrow, pointing one way
+//   along it, and two tiles meet only where their arrows there are the same
+//   kind and point the same way. `forward`: it points the way the tile's
+//   outline runs along the edge (counter-clockwise); its partner points the
+//   other way round the other tile, and a mirror turns it round too.
 //
 // Like a round edge's bulge (`Bulge` in shape.ts), a mark is a label on an
 // exact straight edge, and an edge carrying one is never cut part-way.
@@ -36,6 +42,7 @@ export const MAX_COLOURS = 4;
 
 const PAIRS = 16;
 const SHARED = 64;
+const ARROWS = 128;
 
 /** The mark of an edge of a tile of colour `own` with a tile of colour
  * `other` across it. */
@@ -57,13 +64,29 @@ export function sharedMark(x: number, y: number): number {
 /** A shared edge colour's two colours, lower first; null for any other
  * mark. */
 export function shared(mark: number): { lo: number; hi: number } | null {
-  if (mark < SHARED) return null;
+  if (mark < SHARED || mark >= ARROWS) return null;
   const m = mark - SHARED;
   return { lo: Math.floor(m / MAX_COLOURS), hi: m % MAX_COLOURS };
 }
 
+/** An arrow of `kind` (1 or 2: single or double) along an edge, pointing
+ * the way the tile's outline runs there if `forward`. */
+export function arrowMark(kind: number, forward: boolean): number {
+  if (kind !== 1 && kind !== 2) throw new Error("arrowMark: an arrow is single or double");
+  return ARROWS + kind * 2 + (forward ? 1 : 0);
+}
+
+/** An arrow's kind and way; null for any other mark. */
+export function arrow(mark: number): { kind: number; forward: boolean } | null {
+  if (mark < ARROWS) return null;
+  const m = mark - ARROWS;
+  return { kind: Math.floor(m / 2), forward: m % 2 === 1 };
+}
+
 /** The mark the tile across an edge must have there. */
 export function partner(mark: number): number {
+  const way = arrow(mark);
+  if (way) return arrowMark(way.kind, !way.forward);
   if (mark < PAIRS || mark >= SHARED) return mark;
   const { own, other } = colours(mark)!;
   return colourMark(other, own);
@@ -76,20 +99,17 @@ export function colours(mark: number): { own: number; other: number } | null {
   return { own: Math.floor(m / MAX_COLOURS), other: m % MAX_COLOURS };
 }
 
-/** Whether a line crosses an edge with this mark: a `LINE`, or — where
- * `same` is asked for — an edge between two tiles of one colour, a stripe
- * running on. */
-export function crossed(mark: number, same: boolean): boolean {
-  if (mark === LINE) return true;
-  if (mark === SAME) return same;
-  const pair = colours(mark);
-  return same && pair !== null && pair.own === pair.other;
+/** A mark seen in a mirror: an arrow points the other way round the tile
+ * (the outline runs backwards along it); any other mark has no handedness. */
+export function mirrored(mark: number): number {
+  const way = arrow(mark);
+  return way ? arrowMark(way.kind, !way.forward) : mark;
 }
 
 /** A piece's marks as a mirror lists them: the edges backwards, as
- * `posedCurve` lists a curve. A mark has no handedness, so each keeps. */
+ * `posedCurve` lists a curve, each mark `mirrored`. */
 export function posedMarks(marks: number[] | undefined, flip: boolean): number[] | undefined {
   if (!marks || !flip) return marks;
   const m = marks.length;
-  return marks.map((_, j) => marks[(((m - 2 - j) % m) + m) % m]!);
+  return marks.map((_, j) => mirrored(marks[(((m - 2 - j) % m) + m) % m]!));
 }

@@ -1,26 +1,31 @@
-// Drawing a coloured or lined tile's marks (geometry/marks.ts) on top of it.
+// Drawing a tile's marks (geometry/marks.ts) on top of it. Every mark is
+// drawn so that two tiles that meet as they should make one shape across
+// their edge, and two that would not, a broken one:
 //
-// - A colour pair (own, other) with other ≠ own — a board whose colours
-//   alternate: a band along the inside of the edge in the colour that must
-//   lie across it — so a tile says, edge by edge, what goes next to it, and a
-//   right placement puts each band against a tile of its colour.
-// - A shared edge colour — a board where tiles of one colour touch: a band
-//   in the edge's own colour, drawn alike on both tiles, so a band meets the
-//   same band. In two colours that is the second (a red tile's blue band
-//   meets a blue band); in three, the colour that is neither of the edge's
-//   two (between red and blue, gold), never the tile's own.
-// - A line: from the middle of each crossed edge in towards the tile's middle
-//   — two crossed edges one curve through it, so a row of lined tiles draws
-//   one unbroken stripe. A `LINE` mark is always crossed; a pair of one
-//   colour (a stripe running on) only when the player has asked for lines on
-//   coloured boards (`prefs.ts`).
+// - A colour — a coloured board's: a half disc on the middle of the edge,
+//   inside the tile. Where colours alternate it is the colour that must lie
+//   across (a red tile's blue half disc against a blue tile); where tiles of
+//   one colour touch it is the edge's own colour, drawn alike on both tiles,
+//   so the two halves make one disc: in two colours the second, in three the
+//   one that is neither of the edge's two (between red and blue, gold). An
+//   edge between two of one colour has nothing.
+// - A line — a lined board's: across the tile from edge to edge, meeting
+//   each edge square on and ending on it, so lines run on unbroken from tile
+//   to tile: straight across to the opposite edge, or round the corner two
+//   neighbouring edges share, on a circle about it (a Truchet tile's arc).
+//   A tile with one lined edge has a half disc there instead of a stub: two
+//   such tiles together make one disc.
+// - An arrow — the Penrose rhombi's matching rule: a half disc set off the
+//   middle of the edge towards the way the arrow points, dark for a single
+//   arrow and blue for a double, so tiles meet only where the halves make a
+//   whole disc.
 //
 // Each part is a path's `d` and class, in the coordinates `map` gives; the
 // caller makes the elements. Nothing here is hit-tested: the classes carry
 // `pointer-events: none`.
 
 import { centroid, type XY } from "../geometry/shape";
-import { colours, crossed, shared } from "../geometry/marks";
+import { LINE, arrow, colours, shared } from "../geometry/marks";
 import type { Loop } from "./curve";
 
 export interface DecorPart {
@@ -28,36 +33,18 @@ export interface DecorPart {
   class: string;
 }
 
-/** How deep a band reaches into the tile, as a share of its shortest edge,
- * and how far in from each corner it stops, as a share of its edge. Its ends
- * run along the corners' bisectors, so two bands meeting at a sharp corner
- * (a triangle's) never overlap. */
-const BAND = 0.12;
-const INSET = 0.1;
-
-/** The polygon `xy` (counter-clockwise, convex) moved in by `w` all round:
- * each corner along its bisector. */
-function inset(xy: XY[], w: number): XY[] {
-  const m = xy.length;
-  return xy.map((p, i) => {
-    const prev = xy[(i - 1 + m) % m]!;
-    const next = xy[(i + 1) % m]!;
-    const unit = (a: XY, b: XY): XY => {
-      const l = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      return [(b[0] - a[0]) / l, (b[1] - a[1]) / l];
-    };
-    const [ix, iy] = unit(prev, p);
-    const [ox, oy] = unit(p, next);
-    // the two edges' left normals, into the tile, and their mean
-    const [nx, ny] = [-iy - oy, ix + ox];
-    const half = Math.hypot(nx, ny) / 2; // cos of half the turn
-    const len = Math.hypot(nx, ny);
-    return [p[0] + ((nx / len) * w) / half, p[1] + ((ny / len) * w) / half];
-  });
-}
+/** A colour's or a lone line's half disc: its radius, as a share of its
+ * edge. */
+const HALF = 0.17;
+/** An arrow's half disc: its radius, and how far off the edge's middle it
+ * sits, towards the arrow's head — both as shares of its edge. */
+const DOT = 0.11;
+const DOT_OFF = 0.2;
 
 const fmt = (n: number): string => (Math.abs(n) < 1e-9 ? "0" : n.toFixed(4));
 const pt = ([x, y]: XY): string => `${fmt(x)} ${fmt(y)}`;
+const sub = (a: XY, b: XY): XY => [a[0] - b[0], a[1] - b[1]];
+const cross = (a: XY, b: XY): number => a[0] * b[1] - a[1] * b[0];
 
 /** The band colour of an edge shared between colours `lo` and `hi`, on a
  * board of `count` colours: the one colour that is neither, where there is
@@ -67,66 +54,99 @@ export function sharedBand(lo: number, hi: number, count: number): number {
   return hi;
 }
 
+/** The arc from `from` to `to` about `centre`, the short way round, all
+ * three already mapped: the SVG sweep flag is read off the mapped points, so
+ * a mirroring map draws it the right way round. */
+function arcTo(centre: XY, from: XY, to: XY): string {
+  const r = Math.hypot(from[0] - centre[0], from[1] - centre[1]);
+  const sweep = cross(sub(from, centre), sub(to, centre)) > 0 ? 1 : 0;
+  return `A${fmt(r)} ${fmt(r)} 0 0 ${sweep} ${pt(to)}`;
+}
+
+/** A half disc of radius `r` centred at `at` on the edge a → b, on its left
+ * (inside a counter-clockwise tile), as a closed path in mapped
+ * coordinates. */
+function halfDisc(a: XY, b: XY, at: XY, r: number, map: (p: XY) => XY): string {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const [ux, uy] = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+  const p0 = map([at[0] - ux * r, at[1] - uy * r]);
+  const p1 = map([at[0] + ux * r, at[1] + uy * r]);
+  const inside = map([at[0] - uy * r, at[1] + ux * r]);
+  const c = map(at);
+  // half way round, through the point inside: sweep towards it
+  const sweep = cross(sub(p0, c), sub(inside, c)) > 0 ? 1 : 0;
+  const mr = Math.hypot(p0[0] - c[0], p0[1] - c[1]);
+  return `M${pt(p0)}A${fmt(mr)} ${fmt(mr)} 0 0 ${sweep} ${pt(p1)}Z`;
+}
+
 /** The marks drawn on `loops` (a tile's, each with its marks), mapped by
- * `map`: a band per edge between two colours, a path of lines. Empty for an
- * unmarked tile. `same`: draw lines across edges of one colour too.
+ * `map`: half discs and a path of lines. Empty for an unmarked tile.
  * `count`: how many colours the board is painted in. */
 export function decorParts(
   loops: readonly Loop[],
-  same: boolean,
   map: (p: XY) => XY = (p) => p,
   count = 2,
 ): DecorPart[] {
-  const bands = new Map<number, string[]>();
+  const discs = new Map<string, string[]>();
+  const add = (cls: string, d: string): void => {
+    discs.set(cls, [...(discs.get(cls) ?? []), d]);
+  };
   const lines: string[] = [];
   for (const { xy, marks } of loops) {
     if (!marks) continue;
     const m = xy.length;
-    const c = centroid(xy);
-    const shortest = Math.min(
-      ...xy.map((a, i) => Math.hypot(xy[(i + 1) % m]![0] - a[0], xy[(i + 1) % m]![1] - a[1])),
-    );
-    const inner = inset(xy, shortest * BAND);
-    const mids: XY[] = [];
+    const lined: number[] = [];
     marks.forEach((mark, i) => {
       const a = xy[i]!;
       const b = xy[(i + 1) % m]!;
-      const dx = b[0] - a[0];
-      const dy = b[1] - a[1];
-      if (crossed(mark, same)) mids.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const mid: XY = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      if (mark === LINE) {
+        lined.push(i);
+        return;
+      }
+      const way = arrow(mark);
+      if (way) {
+        const s = way.forward ? DOT_OFF : -DOT_OFF;
+        const at: XY = [mid[0] + (b[0] - a[0]) * s, mid[1] + (b[1] - a[1]) * s];
+        add(`decor dot${way.kind === 2 ? " double" : ""}`, halfDisc(a, b, at, DOT * len, map));
+        return;
+      }
       const pair = colours(mark);
       const edge = shared(mark);
-      const band = edge
+      const colour = edge
         ? sharedBand(edge.lo, edge.hi, count)
         : pair && pair.own !== pair.other
           ? pair.other
           : null;
-      if (band === null) return;
-      // the band between the edge and the same edge of the inset outline,
-      // each stopped short of the corners by the same share
-      const ia = inner[i]!;
-      const ib = inner[(i + 1) % m]!;
-      const [ex, ey] = [ib[0] - ia[0], ib[1] - ia[1]];
-      const quad: XY[] = [
-        [a[0] + dx * INSET, a[1] + dy * INSET],
-        [b[0] - dx * INSET, b[1] - dy * INSET],
-        [ib[0] - ex * INSET, ib[1] - ey * INSET],
-        [ia[0] + ex * INSET, ia[1] + ey * INSET],
-      ];
-      const d = `M${quad.map((p) => pt(map(p))).join("L")}Z`;
-      bands.set(band, [...(bands.get(band) ?? []), d]);
+      if (colour !== null) add(`decor band paint-${colour}`, halfDisc(a, b, mid, HALF * len, map));
     });
-    if (mids.length === 2) {
-      lines.push(`M${pt(map(mids[0]!))}Q${pt(map(c))} ${pt(map(mids[1]!))}`);
-    } else {
-      for (const mid of mids) lines.push(`M${pt(map(mid))}L${pt(map(c))}`);
-      // a lone stub ends in a dot at the middle, so it reads as a line's end
-      if (mids.length === 1) lines.push(`M${pt(map(c))}l0 0`);
+    const mid = (i: number): XY => {
+      const a = xy[i]!;
+      const b = xy[(i + 1) % m]!;
+      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    };
+    if (lined.length === 1) {
+      const i = lined[0]!;
+      const a = xy[i]!;
+      const b = xy[(i + 1) % m]!;
+      add("decor dot", halfDisc(a, b, mid(i), HALF * Math.hypot(b[0] - a[0], b[1] - a[1]), map));
+    } else if (lined.length === 2) {
+      const [i, j] = lined as [number, number];
+      // two neighbouring edges: round the corner they share
+      const corner = j === (i + 1) % m ? xy[j] : i === (j + 1) % m ? xy[i] : null;
+      const [p, q] = [map(mid(i)), map(mid(j))];
+      if (corner) lines.push(`M${pt(p)}${arcTo(map(corner), p, q)}`);
+      else if (Math.abs(i - j) * 2 === m) lines.push(`M${pt(p)}L${pt(q)}`);
+      else lines.push(`M${pt(p)}Q${pt(map(centroid(xy)))} ${pt(q)}`);
+    } else if (lined.length > 2) {
+      const c = map(centroid(xy));
+      for (const i of lined) lines.push(`M${pt(map(mid(i)))}L${pt(c)}`);
     }
   }
-  const out: DecorPart[] = [...bands.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([colour, ds]) => ({ d: ds.join(""), class: `decor band paint-${colour}` }));
+  const out: DecorPart[] = [...discs.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([cls, ds]) => ({ d: ds.join(""), class: cls }));
   if (lines.length) out.push({ d: lines.join(""), class: "decor line" });
   return out;
 }

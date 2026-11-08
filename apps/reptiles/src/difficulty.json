@@ -2018,5 +2018,10 @@
     "score": 0.487,
     "presses": 1,
     "flips": 0
+  },
+  "penrose.rules": {
+    "score": 0.84,
+    "presses": 10,
+    "flips": 0
   }
 }

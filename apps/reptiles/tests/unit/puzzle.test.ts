@@ -47,7 +47,7 @@ import {
   type XY,
 } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
-import { BOARDS, LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
+import { BOARDS, LEVELS, levelByKey, notation, parseNotation, type Level } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
 /** A one-piece tile's or cell's polygon — every level's but the rep-tiles
@@ -233,10 +233,14 @@ describe("puzzle", () => {
 
   // (a bond, a pentagonal tiling, a rep-tile, a spiral or an aperiodic tiling
   // has no one vertex configuration, and an isogonal one is not edge to edge)
+  // (a marked level goes by the board it marks)
+  const familyOf = (l: Level): string => (l.decor ? levelByKey(l.decor.of)!.group : l.group);
   const ofPolygons = BOARD_LEVELS.filter(
     (l) =>
-      !isDual(l.group) &&
-      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic"].includes(l.group),
+      !isDual(familyOf(l)) &&
+      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic"].includes(
+        familyOf(l),
+      ),
   ).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
@@ -710,6 +714,7 @@ describe("puzzle", () => {
       "hexrowsdual",
       "kitedart",
       "penrose",
+      "penrose.rules",
       "pythagorean",
       "snubelongated2dual",
       "snubelongateddual",

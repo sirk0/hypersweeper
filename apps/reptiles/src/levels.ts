@@ -9,7 +9,8 @@
 
 import catalog from "@tiling/data/catalog.json";
 import boardsData from "./boards.json";
-import { ARCH_TILINGS, archTemplate } from "@tiling/geometry";
+import { ARCH_TILINGS, archTemplate, penroseLegs } from "@tiling/geometry";
+import { arrowMark } from "./geometry/marks";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow, type XY } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
@@ -151,11 +152,13 @@ export interface Level {
    * `geometry/hat.ts` — which tile, how many substitutions grow the H
    * metatile its patch is, and how many tiles its centred window keeps. */
   hat?: { tile: HatTile; depth: number; keep: number; centre?: number };
-  /** For a coloured or lined level (src/colourings.ts): the plain level whose
-   * board it paints, in how many colours (1 with `lines`: one colour, a line
-   * across every edge between two tiles that would be one colour), and what
-   * it is called after the plain level's name — "2 colours, striped". */
-  decor?: { of: string; colours: number; lines: boolean; label: string };
+  /** For a level whose tiles carry marks (geometry/marks.ts): the plain
+   * level whose board it is, in how many colours (1 for `rules`: a matching
+   * rule in one colour — lines across the tiles, made from a colouring by
+   * drawing a line across every edge between two tiles that would be one
+   * colour (src/colourings.ts), or the Penrose rhombi's arrows), and what it
+   * is called after the plain level's name — "2 colours, striped". */
+  decor?: { of: string; colours: number; rules: boolean; label: string };
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -592,9 +595,14 @@ export const GROUPS = [
     hint: "A window onto a tiling that repeats nowhere",
   },
   {
+    key: "rules",
+    name: "Matching rules",
+    hint: "Marked tiles — lines or arrows that must meet across every edge",
+  },
+  {
     key: "colourings",
     name: "Colourings",
-    hint: "Coloured or lined tiles — each edge must match the one it meets",
+    hint: "Coloured tiles — each edge must match the one it meets",
   },
 ] as const;
 
@@ -1128,7 +1136,7 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
       plain.label,
       plain.ring,
       plain.cells.map((cell) => cell.map((p) => p.verts)),
-      "colourings",
+      painting.lines ? "rules" : "colourings",
       plain.configs,
       plain.name,
       undefined,
@@ -1159,7 +1167,7 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
     const label = decorLabel(painting.colours, painting.lines, sameEdges(level.tiles));
     made.push({
       ...level,
-      decor: { of: plain.key, colours: painting.colours, lines: painting.lines, label },
+      decor: { of: plain.key, colours: painting.colours, rules: painting.lines, label },
     });
   }
   // keys and names: one per label, numbered past the first
@@ -1180,6 +1188,55 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
       decor: { ...level.decor!, label: full },
     };
   });
+}
+
+/** The Penrose rhombi's matching rule (geometry/marks.ts: `arrowMark`): the
+ * plain Penrose board, each edge carrying a single or a double arrow. The
+ * rhombi are merged from Robinson triangles (colour, apex a, base b c), and
+ * the deflation names a, b and c alike at every step, so the rule is stated
+ * on the triangles' legs (`penroseLegs`): every a–b leg a double arrow — on
+ * a thin half pointing in to its apex, on a thick one out of it — and every
+ * a–c leg a single arrow pointing out of its apex. Up to renaming the two
+ * kinds and turning a kind's arrows round, it is the only rule of that shape
+ * every shared edge of the builder's 430-rhombus patch keeps; the tests check
+ * every shared edge of the board keeps it. */
+function penroseRulesLevel(plain: Level): Level {
+  const [, mode, depth, keep] = APERIODIC.find(([key]) => key === plain.key)!;
+  const { ring, cells } = aperiodicPatch(mode, depth, keep);
+  const legs = penroseLegs(depth, keep, 0);
+  // each edge, by its two ends: its arrow's kind and the end it points to
+  const arrows = new Map<string, { kind: number; head: string }>();
+  const edgeKey = (p: Cyc, q: Cyc): string => [ring.key(p), ring.key(q)].sort().join("|");
+  cells.forEach((cell, n) =>
+    cell.forEach((p, i) => {
+      const q = cell[(i + 1) % cell.length]!;
+      const { color, leg, fromApex } = legs[n]![i]!;
+      const toward = leg === 0 && color === 0;
+      const head = fromApex === toward ? p : q;
+      arrows.set(edgeKey(p, q), { kind: leg === 0 ? 2 : 1, head: ring.key(head) });
+    }),
+  );
+  const turned = cells.map((cell) => ccw(ring, cell));
+  const marks = turned.map((cell) => [
+    cell.map((p, i) => {
+      const q = cell[(i + 1) % cell.length]!;
+      const { kind, head } = arrows.get(edgeKey(p, q))!;
+      return arrowMark(kind, head === ring.key(q));
+    }),
+  ]);
+  const label = "matching rules";
+  const level = makeLevel(
+    `${plain.key}.rules`,
+    `${plain.label}, ${label}`,
+    ring,
+    whole(turned),
+    "rules",
+    [],
+    `${plain.name} · ${label}`,
+    undefined,
+    marks,
+  );
+  return { ...level, decor: { of: plain.key, colours: 1, rules: true, label } };
 }
 
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
@@ -1241,7 +1298,8 @@ const FIRST_BOARDS: Level[] = [
   socolarTaylorLevel(2),
 ];
 
-// The regular boards painted: lined, then in two and three colours.
+// The regular boards painted: lined, then in two and three colours; and
+// the Penrose rhombi with their arrows.
 FIRST_BOARDS.push(
   ...COLOURED.flatMap(([key, lattice]) =>
     colouredLevels(
@@ -1249,6 +1307,7 @@ FIRST_BOARDS.push(
       lattice,
     ),
   ),
+  penroseRulesLevel(FIRST_BOARDS.find((l) => l.key === "penrose")!),
 );
 
 /** A level's boards past the first, as `boards.json` lists them. */

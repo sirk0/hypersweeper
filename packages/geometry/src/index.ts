@@ -60,6 +60,8 @@ export {
   klaassenTiles,
   penroseBoard,
   penroseExact,
+  penroseLegs,
+  type PenroseLeg,
   pentaSpiral5Board,
   pentaSpiral6Board,
   pentaSpiral7Board,

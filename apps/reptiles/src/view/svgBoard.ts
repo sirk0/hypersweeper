@@ -30,7 +30,6 @@ import {
   type Loop,
 } from "./curve";
 import type { Puzzle } from "../puzzle";
-import { showLines } from "../prefs";
 import { decorParts } from "./decor";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -51,7 +50,7 @@ const points = (pts: XY[]): string => pts.map(([x, y]) => `${x},${y}`).join(" ")
 /** A coloured or lined tile's bands and lines (view/decor.ts), drawn over it
  * in `parent`; nothing for a plain tile. */
 function decor(loops: readonly Loop[], parent: Element, count: number, map?: (p: XY) => XY): void {
-  for (const part of decorParts(loops, showLines(), map, count))
+  for (const part of decorParts(loops, map, count))
     el("path", { d: part.d, class: part.class }, parent);
 }
 
