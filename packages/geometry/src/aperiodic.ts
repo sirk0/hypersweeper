@@ -100,9 +100,10 @@ interface PenroseCell {
   index: number;
   verts: ZPoint[];
   /** A rhombus's, per edge, verts[i] → verts[i + 1]: which leg of its
-   * half-rhombus Robinson triangle it is (`PenroseLeg`). Unset on a kite or
-   * dart. */
+   * half-rhombus Robinson triangle it is (`PenroseLeg`). */
   legs?: PenroseLeg[];
+  /** A kite's or dart's, the same (`KiteDartLeg`). */
+  kiteLegs?: KiteDartLeg[];
 }
 
 /**
@@ -451,6 +452,31 @@ export function penroseExact(
   return { order: 10, cells: penroseKept(subdivisions, keep, variant).map((c) => [...c.verts]) };
 }
 
+/**
+ * Where a kite's or dart's edge came from: a leg of one of the two half-tile
+ * Robinson triangles (colour, apex, side, axis) it was merged from — merged
+ * along apex–axis, the tile's mirror line — `leg` 0 the side apex–side, 1 the
+ * side side–axis, and whether the edge, as the tile lists it, runs away from
+ * that triangle's `side` corner (the one off the mirror line). What the P2
+ * tiling's matching rules are stated on, as `PenroseLeg` is for the rhombi.
+ */
+export interface KiteDartLeg {
+  color: number;
+  leg: 0 | 1;
+  fromSide: boolean;
+}
+
+/** For each kite and dart `kiteDartExact(subdivisions, keep, variant)`
+ * lists, in its order, where each of its edges came from (`KiteDartLeg`),
+ * edge i running from its vertex i to vertex i + 1. */
+export function kiteDartLegs(
+  subdivisions: number,
+  keep: number | null = null,
+  variant = 0,
+): KiteDartLeg[][] {
+  return kiteDartKept(subdivisions, keep, variant).map((c) => c.kiteLegs!);
+}
+
 /** For each rhombus `penroseExact(subdivisions, keep, variant)` lists, in
  * its order, where each of its edges came from (`PenroseLeg`), edge i running
  * from its vertex i to vertex i + 1. */
@@ -657,8 +683,20 @@ function kiteDartKept(subdivisions: number, keep: number | null, variant: number
     const otherSide = waiting.get(key);
     if (otherSide !== undefined) {
       waiting.delete(key);
-      // apex, side, axis-end, mirrored side: the tile's outline in order
-      cells.push({ color, index: cells.length, verts: [apex, side, axis, otherSide] });
+      // apex, side, axis-end, mirrored side: the tile's outline in order —
+      // this half's two legs, then the mirrored half's, which names its
+      // corners alike
+      cells.push({
+        color,
+        index: cells.length,
+        verts: [apex, side, axis, otherSide],
+        kiteLegs: [
+          { color, leg: 0, fromSide: false },
+          { color, leg: 1, fromSide: true },
+          { color, leg: 1, fromSide: false },
+          { color, leg: 0, fromSide: true },
+        ],
+      });
     } else {
       waiting.set(key, side);
     }

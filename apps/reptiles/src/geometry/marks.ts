@@ -69,10 +69,13 @@ export function shared(mark: number): { lo: number; hi: number } | null {
   return { lo: Math.floor(m / MAX_COLOURS), hi: m % MAX_COLOURS };
 }
 
-/** An arrow of `kind` (1 or 2: single or double) along an edge, pointing
- * the way the tile's outline runs there if `forward`. */
+/** An arrow of `kind` along an edge, pointing the way the tile's outline
+ * runs there if `forward`: 1 and 2 the rhombi's single and double arrows,
+ * 3 and 4 the kites' and darts' on their long and short edges — kinds apart
+ * so each is drawn as it fits its tiles (view/decor.ts). */
 export function arrowMark(kind: number, forward: boolean): number {
-  if (kind !== 1 && kind !== 2) throw new Error("arrowMark: an arrow is single or double");
+  if (!Number.isInteger(kind) || kind < 1 || kind > 4)
+    throw new Error("arrowMark: an arrow's kind runs 1 to 4");
   return ARROWS + kind * 2 + (forward ? 1 : 0);
 }
 

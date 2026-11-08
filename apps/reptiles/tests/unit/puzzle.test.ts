@@ -713,6 +713,7 @@ describe("puzzle", () => {
       "hexringsdual",
       "hexrowsdual",
       "kitedart",
+      "kitedart.rules",
       "penrose",
       "penrose.rules",
       "pythagorean",

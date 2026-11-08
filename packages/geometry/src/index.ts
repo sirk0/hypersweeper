@@ -55,6 +55,8 @@ export {
   brickRingsTiles,
   kiteDartBoard,
   kiteDartExact,
+  kiteDartLegs,
+  type KiteDartLeg,
   klaassenBoard,
   klaassenExact,
   klaassenTiles,

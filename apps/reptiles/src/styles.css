@@ -522,8 +522,27 @@ button.primary {
   stroke-width: 0.1;
 }
 
-/* A lone line's half disc, and the Penrose rhombi's arrows: a single
-   arrow dark, a double one blue. */
+/* Penrose's arrows as arcs about the tiles' corners: one kind dark, the
+   other blue; butt ends on the edges, as a line's. */
+.decor.arc {
+  fill: none;
+  stroke: var(--decor-line);
+  stroke-width: 0.06;
+  stroke-linecap: butt;
+  opacity: 0.8;
+}
+
+.decor.arc.double {
+  stroke: var(--paint-1);
+  opacity: 1;
+}
+
+.level-tile .decor.arc,
+.figure-icon .decor.arc {
+  stroke-width: 0.1;
+}
+
+/* A lone line's half disc, and an arrow's where no arc can be drawn. */
 .decor.dot {
   fill: var(--decor-line);
   opacity: 0.75;

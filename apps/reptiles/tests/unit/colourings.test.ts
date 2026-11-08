@@ -112,25 +112,27 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; and gives the Penrose rhombi their arrows", () => {
+  it("paints each regular board lined, then in two and three colours; and gives Penrose's tilings their arrows", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
-      "squares.2striped",
       "squares.2apart",
+      "squares.2oneinthree",
+      "squares.2oneinthree2",
       "squares.3striped",
       "squares.3apart",
       "triangles.lines",
       "triangles.linkedpairs",
       "triangles.2apart",
-      "triangles.2striped",
-      "triangles.2paired",
+      "triangles.2oneinthree",
       "triangles.3paired",
       "triangles.3paired2",
       "hexagons.lines",
-      "hexagons.2striped",
+      "hexagons.2oneinthree",
+      "hexagons.2oneinthree2",
       "hexagons.3striped",
       "hexagons.3apart",
       "penrose.rules",
+      "kitedart.rules",
     ]);
     for (const level of COLOURED) {
       // matching rules and colourings: two groups
@@ -231,17 +233,20 @@ describe("colourings", () => {
     );
   });
 
-  it("makes a striped board one tile: red and blue rows read alike, a band meeting a band", () => {
-    // the rows' two colours are one square, banded on two opposite sides:
-    // laid striped across, its bands meet bands, its plain sides plain ones
-    const striped = levelByKey("squares.2striped")!;
-    expect(striped.tiles).toHaveLength(1);
-    expect(striped.need).toEqual([16]);
-    expect(selfTurns(striped.tiles[0]!)).toEqual([0, 2]);
-    expect(new Puzzle(striped).canTurn()).toBe(true);
-    // the checkerboard's colours alternate: two tiles, each the other's
-    // colour round it
-    expect(levelByKey("squares.2apart")!.tiles).toHaveLength(2);
+  it("leaves a colouring of one tile to the lined boards, and colours every regular board in two tiles", () => {
+    // a colouring whose tiles all read alike plays as a lined board does
+    for (const level of COLOURED.filter((l) => !l.decor!.rules))
+      expect(level.tiles.length).toBeGreaterThan(levelByKey(level.decor!.of)!.tiles.length);
+    // the hexagons can't alternate in two colours: a third of them one colour
+    for (const plain of ["squares", "triangles", "hexagons"])
+      expect(
+        COLOURED.some((l) => l.decor!.of === plain && !l.decor!.rules && l.tiles.length === 2),
+        plain,
+      ).toBe(true);
+    const third = levelByKey("hexagons.2oneinthree2")!;
+    // the blue hexagons apart, each ringed by red: one half disc on every side
+    expect(third.need).toEqual([12, 8]);
+    expect(third.tiles[1]!.pieces[0]!.marks!.every((m) => shared(m) !== null)).toBe(true);
   });
 
   it("draws a colour as a half disc on the edge: the colour across, or the edge's own", () => {
@@ -251,16 +256,16 @@ describe("colourings", () => {
     expect(apartParts.map((p) => p.class)).toEqual([`decor band paint-${1 - own}`]);
     // four half discs, each an arc closed along its edge
     expect(apartParts[0]!.d.match(/A/g)).toHaveLength(4);
-    // a striped board: the edge's own colour — in two colours the second,
-    // on both tiles alike — and never a line across the stripes
-    const level = levelByKey("squares.2striped")!;
-    const parts = decorParts(loopsOf(level.ring, level.tiles[0]!.pieces));
-    expect(parts.map((p) => p.class)).toEqual(["decor band paint-1"]);
-    expect(parts[0]!.d.match(/M/g)).toHaveLength(2);
-    // in three colours, the colour that is neither of the edge's two
-    expect(sharedBand(0, 1, 3)).toBe(2);
-    expect(sharedBand(0, 2, 3)).toBe(1);
-    expect(sharedBand(1, 2, 3)).toBe(0);
+    // where colours touch: the edge's own colour, the first that is neither
+    // of its two, on both tiles alike — and never a line across the stripes
+    const level = levelByKey("hexagons.2oneinthree2")!;
+    for (const t of level.tiles)
+      expect(decorParts(loopsOf(level.ring, t.pieces)).map((p) => p.class)).toEqual([
+        "decor band paint-2",
+      ]);
+    expect(sharedBand(0, 1)).toBe(2);
+    expect(sharedBand(0, 2)).toBe(1);
+    expect(sharedBand(1, 2)).toBe(0);
     for (const coloured of COLOURED.filter((l) => !l.decor!.rules))
       for (const t of coloured.tiles)
         expect(decorParts(loopsOf(coloured.ring, t.pieces)).map((p) => p.class)).not.toContain(
@@ -308,13 +313,51 @@ describe("colourings", () => {
     for (const t of rules.tiles) {
       const kinds = t.pieces[0]!.marks!.map((m) => arrow(m)!.kind).sort();
       expect(kinds).toEqual([1, 1, 2, 2]);
-      expect(decorParts(loopsOf(rules.ring, t.pieces)).map((p) => p.class)).toEqual([
-        "decor dot",
-        "decor dot double",
-      ]);
+      // two arcs about opposite corners, one of each kind
+      const parts = decorParts(loopsOf(rules.ring, t.pieces));
+      expect(parts.map((p) => p.class)).toEqual(["decor arc", "decor arc double"]);
+      for (const p of parts) expect(p.d.match(/A/g)).toHaveLength(1);
     }
     // the arrows break the rhombi's half-turn symmetry: they need turning
     for (const t of rules.tiles) expect(selfTurns(t)).toEqual([0]);
+    expect(new Puzzle(rules).solve()).toBe(true);
+  });
+
+  it("gives Penrose's kites and darts his vertex rule: no kite fills a dart's notch", () => {
+    const rules = levelByKey("kitedart.rules")!;
+    expect(rules.tiles).toHaveLength(2);
+    expect(rules.mirror).toBe(false);
+    const angleAt = (xy: [number, number][], v: number): number => {
+      const m = xy.length;
+      const [p, h, n] = [xy[(v - 1 + m) % m]!, xy[v]!, xy[(v + 1) % m]!];
+      const a = Math.atan2(p[1] - h[1], p[0] - h[0]) - Math.atan2(n[1] - h[1], n[0] - h[0]);
+      return ((((a * 180) / Math.PI) % 360) + 360) % 360;
+    };
+    // the arrows on the two edges at a corner: pointing into it, or out
+    const into = (marks: number[], v: number): [boolean, boolean] => {
+      const m = marks.length;
+      return [arrow(marks[(v - 1 + m) % m]!)!.forward, !arrow(marks[v]!)!.forward];
+    };
+    const corners = rules.tiles.map((t) => {
+      const xy = t.pieces[0]!.verts.map((v) => rules.ring.toXY(v));
+      return xy.map((_, v) => ({
+        angle: Math.round(angleAt(xy, v)),
+        arrows: into(t.pieces[0]!.marks!, v),
+      }));
+    });
+    const tail = corners.flat().find((c) => c.angle === 144)!; // the kite's
+    const notch = corners.flat().find((c) => c.angle === 216)!; // the dart's
+    // round the kite's tail its arrows point out, into the dart's notch in:
+    // the two edges a kite would share there cannot both agree
+    expect(tail.arrows).toEqual([false, false]);
+    expect(notch.arrows).toEqual([true, true]);
+    for (const t of rules.tiles) {
+      expect(t.pieces[0]!.marks!.map((m) => arrow(m)!.kind).sort()).toEqual([3, 3, 4, 4]);
+      expect(decorParts(loopsOf(rules.ring, t.pieces)).map((p) => p.class)).toEqual([
+        "decor arc",
+        "decor arc double",
+      ]);
+    }
     expect(new Puzzle(rules).solve()).toBe(true);
   });
 });

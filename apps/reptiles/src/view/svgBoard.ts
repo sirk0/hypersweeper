@@ -49,9 +49,8 @@ const points = (pts: XY[]): string => pts.map(([x, y]) => `${x},${y}`).join(" ")
 
 /** A coloured or lined tile's bands and lines (view/decor.ts), drawn over it
  * in `parent`; nothing for a plain tile. */
-function decor(loops: readonly Loop[], parent: Element, count: number, map?: (p: XY) => XY): void {
-  for (const part of decorParts(loops, map, count))
-    el("path", { d: part.d, class: part.class }, parent);
+function decor(loops: readonly Loop[], parent: Element, map?: (p: XY) => XY): void {
+  for (const part of decorParts(loops, map)) el("path", { d: part.d, class: part.class }, parent);
 }
 
 /** The gap round the board, in tile edges, at zoom 1. */
@@ -299,11 +298,6 @@ export class SvgBoard {
     const loops = loopsOf(ring, this.puzzle.shapeAt(kind, rot, flip).pieces);
     const [cx, cy] = centroidOf(loops.map((l) => l.xy));
     return shiftLoops(loops, ([x, y]) => [x - cx, y - cy]);
-  }
-
-  /** How many colours the level is painted in (view/decor.ts). */
-  private get colourCount(): number {
-    return this.puzzle.level.decor?.colours ?? 2;
   }
 
   /** A kind's tray circle radius. */
@@ -571,7 +565,7 @@ export class SvgBoard {
         },
         this.still,
       );
-      decor(loops, this.still, this.colourCount);
+      decor(loops, this.still);
     }
     for (const e of this.puzzle.openEdges) {
       el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
@@ -592,7 +586,7 @@ export class SvgBoard {
         },
         this.shelf,
       );
-      decor(outline, this.shelf, this.colourCount, at);
+      decor(outline, this.shelf, at);
       // The pile's count: how many more the board was cut with. Past zero it
       // shows how many extra are down — allowed, but it costs a star.
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
@@ -736,7 +730,7 @@ export class SvgBoard {
       },
       this.moving,
     );
-    decor(outline, this.moving, this.colourCount, to);
+    decor(outline, this.moving, to);
     for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
     if (fitsAt) {
       const [cx, cy] = fitsAt;

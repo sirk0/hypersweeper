@@ -35,28 +35,31 @@ some back off.
   tile can check is checked edge by edge. Every mark is drawn so that two
   tiles meeting as they should make one shape across their edge
   (`src/view/decor.ts`).
-  - *Matching rules* (`?level=squares.lines`, `?level=penrose.rules`): a
-    *lined* board is a colouring (below) in one colour, with a line across
-    every edge between two tiles that were one colour — a line meets a line,
-    a blank edge a blank one. A line runs from edge to edge, square on to
-    each and ending on it, straight across or round the corner two lined
-    edges share; a tile with one lined edge has a half disc there instead.
-    The Penrose rhombi carry **Penrose's arrows**: a single or a double arrow
-    on each edge, drawn as a half disc set off the edge's middle towards the
-    way it points (dark single, blue double), so tiles meet only where the
-    halves make a disc.
-  - *Colourings* (`?level=squares.2striped`): a colouring repeats more
-    coarsely than the tiling — squares in rows, aaaa over bbbb, or as a
-    checkerboard. Each mark is a half disc on the middle of its edge. Where
-    tiles of one colour touch (stripes, pairs), the mark is the *edge's*: one
-    colour for the two it lies between — in two colours the second, in three
-    the one that is neither — drawn alike on both tiles, so the halves make a
-    disc, and an edge between two of one colour is plain. Tiles whose edges
-    read alike are then one tile, whatever colour they were: red and blue rows
-    of squares are one red square with blue half discs on two sides, laid by
-    turning it. Where the colours alternate (apart: a checkerboard), each tile
-    keeps its colour and its half discs are the colour that must lie across.
-    A coloured board never draws lines.
+  - *Matching rules* (`?level=squares.lines`, `?level=penrose.rules`,
+    `?level=kitedart.rules`): a *lined* board is a colouring (below) in one
+    colour, with a line across every edge between two tiles that were one
+    colour — a line meets a line, a blank edge a blank one. A line runs from
+    edge to edge, square on to each and ending on it, straight across or
+    round the corner two lined edges share; a tile with one lined edge has a
+    half disc there instead. **Penrose's tilings** carry his arrows: on the
+    rhombi a single or a double arrow on each edge, on the kites and darts
+    his two-colour vertex rule (every edge pointing from one colour of corner
+    to the other, so a kite never fills a dart's notch to make a rhombus).
+    Each arrow is drawn as an arc about one of the tile's corners, crossing
+    its edge a share of the way back from the arrow's head, so the arcs run
+    on unbroken only where the arrows agree — Ammann's on the rhombi,
+    Conway's on the kites and darts.
+  - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
+    colouring repeats more coarsely than the tiling — squares as a
+    checkerboard, or in rows of three colours, or hexagons a third of them
+    blue. Each mark is a half disc on the middle of its edge. Where the
+    colours alternate (apart), each tile keeps its colour and its half discs
+    are the colour that must lie across. Where tiles of one colour touch, the
+    mark is the *edge's*: the first colour that is neither of the two it lies
+    between, drawn alike on both tiles, so the halves make a disc, and an
+    edge between two of one colour is plain. A colouring whose tiles all read
+    alike — one tile, however many colours — plays as a lined board does, so
+    it is left to the lined boards; and a coloured board never draws lines.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
   marks ask for turning a plain board never needs, and every marked level
@@ -165,7 +168,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 5 matching rules (lines on the regular three, Penrose's arrows) and 12 colourings of the regular three in two more, 405 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 6 matching rules (lines on the regular three, Penrose's arrows on his rhombi and his kites and darts) and 13 colourings of the regular three in two more, 407 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -437,8 +440,9 @@ quick way to see the win state.
   `sharedMark(x, y)`, the edge's own colour, unordered, and `SAME` between
   two of one colour (each its own partner); on one whose colours alternate,
   a colour pair `colourMark(own, other)`, whose partner is the pair the other
-  way round; and the Penrose rhombi's arrows, `arrowMark(kind, forward)`,
-  single or double, pointing along the tile's outline or against it — its
+  way round; and Penrose's arrows, `arrowMark(kind, forward)` — kinds 1 and
+  2 the rhombi's single and double, 3 and 4 the kites' and darts' long and
+  short edges' — pointing along the tile's outline or against it: its
   partner points the other way, and a mirror (`mirrored`) turns it round. A
   `Piece` carries
   them as `marks`, edge for edge as it carries `curve`; `posed`, `moved`,
@@ -451,9 +455,11 @@ quick way to see the win state.
 - `src/colourings.ts` — **the colourings**: `paintings` tries every linear
   colouring of a periodic board in 2 or 3 colours — a tile of translation
   class t at lattice point (i, j) is colour (a·i + b·j + c[t]) mod k — with
-  each colour equally common, as edge marks (shared edge colours where some
-  tile touches its own colour, colour pairs where none does) and each cell's
-  colour, and for each the lined board in
+  each colour equally common, and each 3-colouring with two of its colours
+  made one (a third of the tiles one colour: the hexagons' only way in two),
+  as edge marks (shared edge colours where some tile touches its own colour,
+  colour pairs where none does) and each cell's colour, and for each
+  balanced one the lined board in
   one colour, where it has lines. Each cell's class and lattice point are
   solved for in floats and checked exactly; which class lies across each edge
   of each class is read off the window's inner edges (`atlasOf`), so a rim
@@ -462,18 +468,23 @@ quick way to see the win state.
   first colour among its cells), keeps those that mark all of a colour's
   tiles alike — the colourings that look alike everywhere; one tile per
   colour, or fewer where colours read alike — and ask something (not one mark
-  all round), and drops any whose tray another already had (`traySignature`: the same up to
+  all round) and need more than one tile per shape (one reads as a lined
+  board), and drops any whose tray another already had (`traySignature`: the same up to
   turning a tile, a mirror and renaming the colours — rows and columns are
   one). `COLOURED` lists the boards painted and each one's lattice; the
   level is `<plain>.<label>`, `Level.decor` saying what it marks — lined
   ones in the Matching rules section (`decor.rules`), the rest in
-  Colourings. `penroseRulesLevel` gives the Penrose rhombi their arrows: the
-  builder says which leg of its half-rhombus Robinson triangle each edge was
-  (`penroseLegs` in @tiling/geometry), and the rule is stated on the legs —
-  every a–b leg a double arrow, pointing in to the apex on a thin half and
-  out on a thick one, every a–c leg a single arrow pointing out — the only
-  rule of that shape, up to renaming and reversing, that every shared edge
-  of the builder's 430-rhombus patch keeps.
+  Colourings. `arrowLevel` gives an aperiodic board arrows from its builder's Robinson
+  triangles, which name their corners alike at every step: which leg each
+  edge was (`penroseLegs`, `kiteDartLegs` in @tiling/geometry), and a rule
+  stated on the legs. The rhombi's (`penroseRulesLevel`): every a–b leg a
+  double arrow, pointing in to the apex on a thin half and out on a thick
+  one, every a–c leg a single arrow pointing out — up to renaming and
+  reversing, the only rule of that shape every shared edge of the builder's
+  430-rhombus patch keeps. The kites' and darts' (`kiteDartRulesLevel`):
+  every edge pointing to a kite's side corners and from a dart's — of the
+  rules every shared edge of the 705-tile patch keeps, the one that forbids a
+  kite in a dart's notch.
 - `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
   boards congruent to a given one (turned, mirrored or moved, tile for tile),
   how the board search tells a new board from one it has.
@@ -552,9 +563,13 @@ quick way to see the win state.
   disc on the edge's middle; a lined board's lines from edge to edge, square
   on and ending on each (straight across, or a Truchet arc about the corner
   two lined edges share; butt-capped, so never past the edge), and a lone
-  lined edge as a half disc; an arrow as a half disc set off the middle
-  towards its head. Every tile, tray tile, dragged tile and icon is decorated
-  through it; its parts are `pointer-events: none`.
+  lined edge as a half disc; Penrose's arrows as arcs about the tile's
+  corners (`arcsOf` finds the corners whose two edges' crossings are one kind
+  and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —
+  chosen so every arc stays inside its tile, a thin rhombus's round its wide
+  corners small, a dart's round its notch the long way). Every tile, tray
+  tile, dragged tile and icon is decorated through it; its parts are
+  `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's

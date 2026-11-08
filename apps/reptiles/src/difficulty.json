@@ -1944,14 +1944,19 @@
     "presses": 1,
     "flips": 0
   },
-  "squares.2striped": {
-    "score": 0.143,
-    "presses": 1,
-    "flips": 0
-  },
   "squares.2apart": {
     "score": 0.23,
     "presses": 0,
+    "flips": 0
+  },
+  "squares.2oneinthree": {
+    "score": 0.418,
+    "presses": 3,
+    "flips": 0
+  },
+  "squares.2oneinthree2": {
+    "score": 0.418,
+    "presses": 3,
     "flips": 0
   },
   "squares.3striped": {
@@ -1979,14 +1984,9 @@
     "presses": 3,
     "flips": 0
   },
-  "triangles.2striped": {
-    "score": 0.63,
-    "presses": 10,
-    "flips": 0
-  },
-  "triangles.2paired": {
-    "score": 0.63,
-    "presses": 10,
+  "triangles.2oneinthree": {
+    "score": 0.729,
+    "presses": 9,
     "flips": 0
   },
   "triangles.3paired": {
@@ -2004,9 +2004,14 @@
     "presses": 1,
     "flips": 0
   },
-  "hexagons.2striped": {
-    "score": 0.187,
-    "presses": 1,
+  "hexagons.2oneinthree": {
+    "score": 0.856,
+    "presses": 7,
+    "flips": 0
+  },
+  "hexagons.2oneinthree2": {
+    "score": 0.51,
+    "presses": 3,
     "flips": 0
   },
   "hexagons.3striped": {
@@ -2022,6 +2027,11 @@
   "penrose.rules": {
     "score": 0.84,
     "presses": 10,
+    "flips": 0
+  },
+  "kitedart.rules": {
+    "score": 1.177,
+    "presses": 18,
     "flips": 0
   }
 }

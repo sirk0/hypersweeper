@@ -355,15 +355,16 @@ test("Tilings' families are named as Hypersweeper names them", async ({ page }) 
   ]);
 });
 
-test("marked boards: colours as half discs, lines edge to edge, the Penrose rhombi's arrows", async ({
+test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows as arcs", async ({
   page,
 }) => {
   const errors = watchErrors(page);
-  // the rows' two colours read alike: one tile, a half disc on two sides,
-  // and no line across it — a coloured board never draws one
-  await page.goto("/?level=squares.2striped");
-  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(1);
-  await expect(page.locator("svg.board .tray-layer .decor.band")).toHaveCount(1);
+  // the hexagons in two colours, a third of them blue: two tiles, half
+  // discs where the colours meet, and no line — a coloured board never
+  // draws one
+  await page.goto("/?level=hexagons.2oneinthree2");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.band")).toHaveCount(2);
   await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(0);
 
   // a lined board's lines are its rule; its first square goes into the
@@ -380,11 +381,14 @@ test("marked boards: colours as half discs, lines edge to edge, the Penrose rhom
   await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
   await expect(page.locator("svg.board .world .decor.line")).toHaveCount(1);
 
-  // the Penrose rhombi with their arrows: a single and a double on each
-  await page.goto("/?level=penrose.rules");
-  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
-  await expect(page.locator("svg.board .tray-layer .decor.dot.double")).toHaveCount(2);
-  await expect(page.locator("svg.board .tray-layer .decor.dot:not(.double)")).toHaveCount(2);
+  // Penrose's rhombi and his kites and darts with their arrows: two arcs
+  // on each tile, one of each kind
+  for (const key of ["penrose.rules", "kitedart.rules"]) {
+    await page.goto(`/?level=${key}`);
+    await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
+    await expect(page.locator("svg.board .tray-layer .decor.arc.double")).toHaveCount(2);
+    await expect(page.locator("svg.board .tray-layer .decor.arc:not(.double)")).toHaveCount(2);
+  }
 
   // no setting for lines any more
   await page.goto("/?settings");

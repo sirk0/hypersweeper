@@ -59,6 +59,9 @@ export interface Painting {
   marks: number[][][];
   /** Each cell's colour, 0 on a lined board. */
   paints: number[];
+  /** One colour of a 3-colouring by itself, the other two made one: a third
+   * of the tiles one colour, two thirds the other. */
+  third?: boolean;
 }
 
 /** Where a cell lies in the tiling: its translation class, its lattice point,
@@ -140,7 +143,8 @@ function atlasOf(ring: Ring, cells: Piece[][], sites: Site[]): Atlas {
 /**
  * Every linear colouring of the board `cells` in 2 or 3 colours (`counts`)
  * with each colour equally common, as edge marks — and, for each, the lined
- * board it makes in one colour, where it has lines. Not yet sorted out: two
+ * board it makes in one colour, where it has lines; and each 3-colouring
+ * with two of its colours made one, in 2 colours, a third and two thirds. Not yet sorted out: two
  * may make the same tray, and some no tray of one tile per colour; the
  * caller builds each and keeps what is new.
  */
@@ -159,6 +163,52 @@ export function paintings(
         throw new Error("colourings: the window is too small to see every neighbour");
   });
   const out: Painting[] = [];
+  /** The colouring `colour` in `count` colours as edge marks — and, with
+   * `lined`, the lined board it makes in one colour, where it has lines. */
+  const paint = (
+    colour: (t: number, i: number, j: number) => number,
+    count: number,
+    lined: boolean,
+    third = false,
+  ): void => {
+    const pairs = cells.map((piece, cell) => {
+      const verts = piece[0]!.verts;
+      const s = sites[cell]!;
+      const own = colour(s.type, s.i, s.j);
+      return verts.map((_, e) => {
+        const across = atlas.get(`${s.type}:${mod(e - s.shift, verts.length)}`)!;
+        return [own, colour(across.type, s.i + across.di, s.j + across.dj)] as const;
+      });
+    });
+    const paints = pairs.map((edges) => edges[0]![0]);
+    // where tiles of one colour touch, each edge carries the colour it lies
+    // between, the same both sides; where colours alternate, each tile says
+    // what lies across it
+    const touching = pairs.some((edges) => edges.some(([own, other]) => own === other));
+    out.push({
+      colours: count,
+      lines: false,
+      shared: touching,
+      marks: pairs.map((edges) => [
+        edges.map(([own, other]) => (touching ? sharedMark(own, other) : colourMark(own, other))),
+      ]),
+      paints,
+      ...(third ? { third } : {}),
+    });
+    if (!lined) return;
+    const lines = pairs.map((edges) => [
+      edges.map(([own, other]) => (own === other ? LINE : BLANK)),
+    ]);
+    const flat = lines.flat(2);
+    if (flat.includes(LINE) && flat.includes(BLANK))
+      out.push({
+        colours: 1,
+        lines: true,
+        shared: true,
+        marks: lines,
+        paints: paints.map(() => 0),
+      });
+  };
   for (const k of counts) {
     // every c with c[0] = 0 (a colouring and its colours shifted are one)
     const offsets: number[][] = [];
@@ -173,43 +223,13 @@ export function paintings(
           for (let t = 0; t < types; t++)
             for (let i = 0; i < k; i++) for (let j = 0; j < k; j++) seen[colour(t, i, j)]!++;
           if (seen.some((n) => n !== seen[0])) continue;
-          const pairs = cells.map((piece, cell) => {
-            const verts = piece[0]!.verts;
-            const s = sites[cell]!;
-            const own = colour(s.type, s.i, s.j);
-            return verts.map((_, e) => {
-              const across = atlas.get(`${s.type}:${mod(e - s.shift, verts.length)}`)!;
-              return [own, colour(across.type, s.i + across.di, s.j + across.dj)] as const;
-            });
-          });
-          const paints = pairs.map((edges) => edges[0]![0]);
-          // where tiles of one colour touch, each edge carries the colour it
-          // lies between, the same both sides; where colours alternate, each
-          // tile says what lies across it
-          const touching = pairs.some((edges) => edges.some(([own, other]) => own === other));
-          out.push({
-            colours: k,
-            lines: false,
-            shared: touching,
-            marks: pairs.map((edges) => [
-              edges.map(([own, other]) =>
-                touching ? sharedMark(own, other) : colourMark(own, other),
-              ),
-            ]),
-            paints,
-          });
-          const lined = pairs.map((edges) => [
-            edges.map(([own, other]) => (own === other ? LINE : BLANK)),
-          ]);
-          const flat = lined.flat(2);
-          if (flat.includes(LINE) && flat.includes(BLANK))
-            out.push({
-              colours: 1,
-              lines: true,
-              shared: true,
-              marks: lined,
-              paints: paints.map(() => 0),
-            });
+          paint(colour, k, true);
+          // and in two colours, one of the three by itself: a third of the
+          // tiles one colour, the rest the other (the hexagons' only way
+          // in two colours with neither all of one tile)
+          if (k === 3)
+            for (let alone = 0; alone < 3; alone++)
+              paint((t, i, j) => (colour(t, i, j) === alone ? 1 : 0), 2, false, true);
         }
       }
     }
