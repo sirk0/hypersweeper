@@ -54,12 +54,19 @@ describe("sameFigure", () => {
 describe("figure sets", () => {
   const sets = figureSets();
 
-  it("puts every level under exactly one set, its tray", () => {
-    for (const level of LEVELS) {
+  it("puts every level under exactly one set, its tray — a marked one under the tiling it marks", () => {
+    for (const level of LEVELS.filter((l) => !l.decor)) {
       const under = sets.filter((s) => s.levels.includes(level));
       expect(under, level.key).toHaveLength(1);
       expect(under[0]!.figures, level.key).toHaveLength(level.tiles.length);
       expect(figureSetOf(level)).toBe(under[0]);
+    }
+    for (const level of LEVELS.filter((l) => l.decor)) {
+      expect(
+        sets.some((s) => s.levels.includes(level)),
+        level.key,
+      ).toBe(false);
+      expect(figureSetOf(level)).toBe(figureSetOf(levelByKey(level.decor!.of)!));
     }
   });
 
@@ -70,12 +77,8 @@ describe("figure sets", () => {
     for (const set of sets) {
       const n = set.figures.length;
       const count = sides(set.figures[0]!.shape);
-      const decor = set.levels[0]!.decor;
-      const row = decor
-        ? decor.rules
-          ? "rules"
-          : "colourings"
-        : n >= 3
+      const row =
+        n >= 3
           ? "packs"
           : n === 2
             ? set.figures.every((f) => f.regular)

@@ -964,8 +964,10 @@ button:disabled {
   align-items: center;
 }
 
-/* How many boards a tiling has, where it has more than one. */
-.card-boards {
+/* How many boards a tiling has, where it has more than one; how many marked
+   levels (matching rules, colourings) it has, where any. */
+.card-boards,
+.card-marked {
   color: var(--muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;

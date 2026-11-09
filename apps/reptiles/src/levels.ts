@@ -594,10 +594,19 @@ export const GROUPS = [
     name: familyLabel("aperiodic"),
     hint: "A window onto a tiling that repeats nowhere",
   },
+] as const;
+
+/** A level's family: one of `GROUPS`, or for a level of marked tiles (its
+ * `decor`) what it marks them with — listed with the tiling it marks, not as
+ * a family of its own (`markedOf`). */
+export type GroupKey = (typeof GROUPS)[number]["key"] | "rules" | "colourings";
+
+/** The two kinds of marked level, in the order a tiling's page lists them. */
+export const MARKED_GROUPS = [
   {
     key: "rules",
     name: "Matching rules",
-    hint: "Marked tiles — lines or arrows that must meet across every edge",
+    hint: "Lines or arrows on the tiles that must meet across every edge",
   },
   {
     key: "colourings",
@@ -605,8 +614,6 @@ export const GROUPS = [
     hint: "Coloured tiles — each edge must match the one it meets",
   },
 ] as const;
-
-export type GroupKey = (typeof GROUPS)[number]["key"];
 
 const NOTATIONS = catalog.tilingNotations as Record<string, string>;
 
@@ -1365,6 +1372,12 @@ export const LEVELS: Level[] = FIRST_BOARDS.map((level) => ({
   ...level,
   boards: 1 + variantsOf(level.key).length,
 }));
+
+/** The levels that mark the tiles of the tiling `key` is the first board
+ * of — its matching rules and colourings — easiest first. */
+export function markedOf(key: string): Level[] {
+  return LEVELS.filter((l) => l.decor?.of === key);
+}
 
 /** One board of a tiling, by key: `<base>` for the first, `<base>-<n>` for
  * the n-th — built only when it is opened. */

@@ -29,8 +29,12 @@ some back off.
   the way), or turn on ✕ remove, the control beside rotate (or X), and tap
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
   A lifted tile dropped anywhere else it cannot land goes back where it was.
-- **Matching rules and colourings** — two sections of Tilings, two rows of
-  Figures. Each tile carries a **mark** on each edge, and a tile lands only
+- **Matching rules and colourings** — listed with the tiling they mark,
+  not as families of their own: a tiling that has them says how many on its
+  Tilings card ("+5 marked") and opens its own page (`?tiling=<key>`: Plain
+  tiles, then Matching rules, then Colourings), and a figure set's page lists
+  them after its plain tilings (`markedOf` in `levels.ts`; their `group`,
+  `rules` or `colourings`, is in `MARKED_GROUPS`, not `GROUPS`). Each tile carries a **mark** on each edge, and a tile lands only
   where its marks meet their partners (the rim takes any), so a pattern no one
   tile can check is checked edge by edge. Every mark is drawn so that two
   tiles meeting as they should make one shape across their edge
