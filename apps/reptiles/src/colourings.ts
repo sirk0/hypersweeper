@@ -10,7 +10,8 @@
 //
 // No one tile can check a colouring, but every edge can: a tile of colour a
 // with b across an edge carries the mark (a, b) there (geometry/marks.ts),
-// and the tile across carries (b, a). So each colouring becomes a tray of
+// and the tile across carries (b, a) — drawn, wherever the two differ, as a
+// half disc of the colour across. So each colouring becomes a tray of
 // marked tiles, and the frontier checks the marks as tiles go down. A
 // colouring is kept only where every tile of one colour is the same marked
 // tile, up to a turn (`makeLevel` reads off the kinds; the caller checks
@@ -52,11 +53,15 @@ export interface Painting {
   colours: number;
   /** Lines in one colour, rather than colours. */
   lines: boolean;
-  /** The edges' marks are shared edge colours (`sharedMark`: a board where
-   * tiles of one colour touch), not colour pairs (`colourMark`: one where
-   * the colours alternate). */
-  shared: boolean;
+  /** Each edge's mark: the colour pair (`colourMark`) — this tile's, the one
+   * across. */
   marks: number[][][];
+  /** The same edges with the colours' order forgotten (`sharedMark`: the two
+   * colours an edge lies between, or `SAME`): where these make one tile per
+   * shape, every tile reads alike but for its own colour, and the colouring
+   * plays as its lined board does. Unset on a lined board, and where no two
+   * tiles of a colour touch. */
+  alike?: number[][][];
   /** Each cell's colour, 0 on a lined board. */
   paints: number[];
   /** One colour of a 3-colouring by itself, the other two made one: a third
@@ -181,17 +186,16 @@ export function paintings(
       });
     });
     const paints = pairs.map((edges) => edges[0]![0]);
-    // where tiles of one colour touch, each edge carries the colour it lies
-    // between, the same both sides; where colours alternate, each tile says
-    // what lies across it
-    const touching = pairs.some((edges) => edges.some(([own, other]) => own === other));
     out.push({
       colours: count,
       lines: false,
-      shared: touching,
-      marks: pairs.map((edges) => [
-        edges.map(([own, other]) => (touching ? sharedMark(own, other) : colourMark(own, other))),
-      ]),
+      marks: pairs.map((edges) => [edges.map(([own, other]) => colourMark(own, other))]),
+      // (only where tiles of one colour touch: where colours alternate, every
+      // edge lies between two colours and reads alike, yet the tiles must
+      // alternate — the checkerboard)
+      ...(pairs.some((edges) => edges.some(([own, other]) => own === other))
+        ? { alike: pairs.map((edges) => [edges.map(([own, other]) => sharedMark(own, other))]) }
+        : {}),
       paints,
       ...(third ? { third } : {}),
     });
@@ -204,7 +208,6 @@ export function paintings(
       out.push({
         colours: 1,
         lines: true,
-        shared: true,
         marks: lines,
         paints: paints.map(() => 0),
       });

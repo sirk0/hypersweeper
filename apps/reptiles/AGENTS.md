@@ -56,14 +56,13 @@ some back off.
   - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
     colouring repeats more coarsely than the tiling — squares as a
     checkerboard, or in rows of three colours, or hexagons a third of them
-    blue. Each mark is a half disc on the middle of its edge. Where the
-    colours alternate (apart), each tile keeps its colour and its half discs
-    are the colour that must lie across. Where tiles of one colour touch, the
-    mark is the *edge's*: the first colour that is neither of the two it lies
-    between, drawn alike on both tiles, so the halves make a disc, and an
-    edge between two of one colour is plain. A colouring whose tiles all read
-    alike — one tile, however many colours — plays as a lined board does, so
-    it is left to the lined boards; and a coloured board never draws lines.
+    blue. Each mark is a half disc on the middle of its edge, inside the
+    tile, in the colour that must lie across it — a red tile's blue half
+    disc against a blue tile — and an edge with a tile of its own colour
+    across has none. A colouring whose tiles all read alike but for their
+    colour (a striped one: `Painting.alike`) plays as its lined board does,
+    so it is left to the lined boards; and a coloured board never draws
+    lines.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
   marks ask for turning a plain board never needs, and every marked level
@@ -440,11 +439,9 @@ quick way to see the win state.
   Hypersweeper builder.
 - `src/geometry/marks.ts` — **edge marks**: a coloured or lined tile's label
   per edge — `NONE` (a plain tile's, and the rim's, which takes any), `LINE`
-  and `BLANK` (each its own partner); on a board whose colours touch,
-  `sharedMark(x, y)`, the edge's own colour, unordered, and `SAME` between
-  two of one colour (each its own partner); on one whose colours alternate,
-  a colour pair `colourMark(own, other)`, whose partner is the pair the other
-  way round; and Penrose's arrows, `arrowMark(kind, forward)` — kinds 1 and
+  and `BLANK` (each its own partner); a coloured board's colour pair
+  `colourMark(own, other)`, whose partner is the pair the other way round;
+  and Penrose's arrows, `arrowMark(kind, forward)` — kinds 1 and
   2 the rhombi's single and double, 3 and 4 the kites' and darts' long and
   short edges' — pointing along the tile's outline or against it: its
   partner points the other way, and a mirror (`mirrored`) turns it round. A
@@ -461,8 +458,9 @@ quick way to see the win state.
   class t at lattice point (i, j) is colour (a·i + b·j + c[t]) mod k — with
   each colour equally common, and each 3-colouring with two of its colours
   made one (a third of the tiles one colour: the hexagons' only way in two),
-  as edge marks (shared edge colours where some tile touches its own colour,
-  colour pairs where none does) and each cell's colour, and for each
+  as edge marks (colour pairs; and, where tiles of one colour touch, the
+  same edges unordered, `alike`, to find a colouring that plays as its lined
+  board does) and each cell's colour, and for each
   balanced one the lined board in
   one colour, where it has lines. Each cell's class and lattice point are
   solved for in floats and checked exactly; which class lies across each edge

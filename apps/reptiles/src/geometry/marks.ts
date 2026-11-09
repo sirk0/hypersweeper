@@ -15,13 +15,12 @@
 //   one across is `other`. Its partner is the pair the other way round. How
 //   a board whose colours alternate — no two tiles of a colour touching — is
 //   marked: a red tile's bands say blue goes there, a blue one's red.
-// - a shared edge colour, `sharedMark(x, y)`, and `SAME`: on a board where
-//   tiles of one colour do touch (stripes, pairs), an edge's mark belongs to
-//   the edge, not to either tile — the two colours it lies between, in no
-//   order, or `SAME` between two of one colour — and each is its own
-//   partner: a band meets the same band. So tiles whose edges read alike are
-//   one tile, whatever colour they were (red and blue squares striped across
-//   are one square, banded on two sides), and only turning tells them apart.
+// - a shared edge colour, `sharedMark(x, y)`, and `SAME`: an edge as the two
+//   colours it lies between, in no order, or `SAME` between two of one
+//   colour — each its own partner. No level is marked with these: the
+//   colourings read them to find the ones whose tiles all read alike but for
+//   their colour (src/colourings.ts, `Painting.alike`), which play as their
+//   lined boards do.
 // - an arrow, `arrowMark(kind, forward)`: the Penrose rhombi's matching
 //   rule — each edge carries a single or a double arrow, pointing one way
 //   along it, and two tiles meet only where their arrows there are the same

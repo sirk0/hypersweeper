@@ -21,7 +21,7 @@ import { aperiodicPatch } from "./geometry/aperiodic";
 import { socolarTaylorPatch } from "./geometry/socolarTaylor";
 import { hatPatch, type HatTile } from "./geometry/hat";
 import { ccw, outline } from "./geometry/outline";
-import { paintings, sameEdges, traySignature, type Lattice } from "./colourings";
+import { paintings, sameEdges, traySignature, type Lattice, type Painting } from "./colourings";
 import {
   curveOnto,
   piece,
@@ -1126,10 +1126,11 @@ const ROMAN = ["", " II", " III", " IV", " V", " VI"];
 
 /** The coloured and lined levels painted on `plain`'s board (see
  * src/colourings.ts): each painting that marks all of a colour's tiles
- * alike — one tray tile per colour, or fewer where colours read alike (a
- * striped board's: shared edge colours) — that asks something of where tiles
- * go (no tray of one mark all round), and whose tray no painting before it
- * had; lined ones first, then by colours.
+ * alike — one tray tile per colour — that asks something of where tiles go
+ * (no tray of one mark all round), whose tiles do not all read alike but for
+ * their colour (a striped board's, which plays as its lined board does:
+ * `Painting.alike`), and whose tray no painting before it had; lined ones
+ * first, then by colours.
  * Keyed `<plain>.<label>` — `squares.lines`, `squares.2striped` — a second of
  * one label numbered on. */
 function colouredLevels(plain: Level, lattice: Lattice): Level[] {
@@ -1138,8 +1139,8 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
   const all = paintings(plain.ring, plain.cells, lattice).sort(
     (a, b) => Number(b.lines) - Number(a.lines) || a.colours - b.colours,
   );
-  for (const painting of all) {
-    const level = makeLevel(
+  const build = (marks: number[][][], painting: Painting): Level =>
+    makeLevel(
       plain.key,
       plain.label,
       plain.ring,
@@ -1148,9 +1149,16 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
       plain.configs,
       plain.name,
       undefined,
-      painting.marks,
+      marks,
       painting.lines ? undefined : painting.paints,
     );
+  for (const painting of all) {
+    // a colouring whose tiles read alike but for their colour plays as a
+    // lined board does: it is one (the marks in another dress), so it is
+    // left to the lined boards
+    if (painting.alike && build(painting.alike, painting).tiles.length === plain.tiles.length)
+      continue;
+    const level = build(painting.marks, painting);
     // all of a colour's tiles one kind
     const kindOf = (cell: Piece[]): number =>
       level.tiles.findIndex(
@@ -1167,9 +1175,6 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
       byColour.set(c, (byColour.get(c) ?? new Set()).add(kindOf(cell)));
     });
     if ([...byColour.values()].some((kinds) => kinds.size !== 1)) continue;
-    // a colouring of one tile per shape plays as a lined board does: it is
-    // one (the marks in another dress), so it is left to the lined boards
-    if (!painting.lines && level.tiles.length === plain.tiles.length) continue;
     // a tray whose every edge carries one mark asks nothing
     if (new Set(level.tiles.flatMap((t) => t.pieces[0]!.marks!)).size < 2) continue;
     const signature = `${painting.lines}|${traySignature(level.tiles)}`;

@@ -30,7 +30,7 @@ import {
 } from "../../src/geometry/shape";
 import { LEVELS, levelByKey, type Level } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
-import { decorParts, sharedBand } from "../../src/view/decor";
+import { decorParts } from "../../src/view/decor";
 import { loopsOf } from "../../src/view/curve";
 
 const Z4 = cyclotomic(4);
@@ -244,9 +244,10 @@ describe("colourings", () => {
         plain,
       ).toBe(true);
     const third = levelByKey("hexagons.2oneinthree2")!;
-    // the blue hexagons apart, each ringed by red: one half disc on every side
+    // the blue hexagons apart, each ringed by red: red across every side
     expect(third.need).toEqual([12, 8]);
-    expect(third.tiles[1]!.pieces[0]!.marks!.every((m) => shared(m) !== null)).toBe(true);
+    const ringed = third.tiles[1]!.pieces[0]!.marks!.map((m) => colours(m)!);
+    expect(ringed.every(({ own, other }) => own !== other)).toBe(true);
   });
 
   it("draws a colour as a half disc on the edge: the colour across, or the edge's own", () => {
@@ -256,16 +257,18 @@ describe("colourings", () => {
     expect(apartParts.map((p) => p.class)).toEqual([`decor band paint-${1 - own}`]);
     // four half discs, each an arc closed along its edge
     expect(apartParts[0]!.d.match(/A/g)).toHaveLength(4);
-    // where colours touch: the edge's own colour, the first that is neither
-    // of its two, on both tiles alike — and never a line across the stripes
+    // where colours touch, the same: each half disc the colour across, and
+    // none where that is the tile's own — the hexagons a third of them blue
     const level = levelByKey("hexagons.2oneinthree2")!;
-    for (const t of level.tiles)
-      expect(decorParts(loopsOf(level.ring, t.pieces)).map((p) => p.class)).toEqual([
-        "decor band paint-2",
-      ]);
-    expect(sharedBand(0, 1)).toBe(2);
-    expect(sharedBand(0, 2)).toBe(1);
-    expect(sharedBand(1, 2)).toBe(0);
+    level.tiles.forEach((t, kind) => {
+      const marks = t.pieces[0]!.marks!.map((m) => colours(m)!);
+      const own = marks[0]!.own;
+      expect(level.colours[kind]).toContain(`paint-${own}`);
+      const across = [...new Set(marks.filter((m) => m.other !== own).map((m) => m.other))];
+      expect(decorParts(loopsOf(level.ring, t.pieces)).map((p) => p.class)).toEqual(
+        across.map((c) => `decor band paint-${c}`),
+      );
+    });
     for (const coloured of COLOURED.filter((l) => !l.decor!.rules))
       for (const t of coloured.tiles)
         expect(decorParts(loopsOf(coloured.ring, t.pieces)).map((p) => p.class)).not.toContain(

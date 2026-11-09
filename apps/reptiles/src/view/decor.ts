@@ -3,12 +3,9 @@
 // their edge, and two that would not, a broken one:
 //
 // - A colour — a coloured board's: a half disc on the middle of the edge,
-//   inside the tile. Where colours alternate it is the colour that must lie
-//   across (a red tile's blue half disc against a blue tile); where tiles of
-//   one colour touch it is the edge's own colour, drawn alike on both tiles,
-//   so the two halves make one disc, in the first colour that is neither of
-//   the edge's two (between red and blue, gold). An edge between two of one
-//   colour has nothing.
+//   inside the tile, in the colour that must lie across it (a red tile's
+//   blue half disc against a blue tile). An edge with a tile of its own
+//   colour across has none: no half disc, the same colour.
 // - A line — a lined board's: across the tile from edge to edge, meeting
 //   each edge square on and ending on it, so lines run on unbroken from tile
 //   to tile: straight across to the opposite edge, or round the corner two
@@ -28,7 +25,7 @@
 // `pointer-events: none`.
 
 import { centroid, type XY } from "../geometry/shape";
-import { LINE, arrow, colours, shared } from "../geometry/marks";
+import { LINE, arrow, colours } from "../geometry/marks";
 import type { Loop } from "./curve";
 
 export interface DecorPart {
@@ -56,15 +53,6 @@ const fmt = (n: number): string => (Math.abs(n) < 1e-9 ? "0" : n.toFixed(4));
 const pt = ([x, y]: XY): string => `${fmt(x)} ${fmt(y)}`;
 const sub = (a: XY, b: XY): XY => [a[0] - b[0], a[1] - b[1]];
 const cross = (a: XY, b: XY): number => a[0] * b[1] - a[1] * b[0];
-
-/** The colour an edge shared between colours `lo` and `hi` is drawn in:
- * the first colour that is neither — never a tile's own, so it shows on both
- * (between red and blue, gold; between red and gold, blue). */
-export function sharedBand(lo: number, hi: number): number {
-  let c = 0;
-  while (c === lo || c === hi) c++;
-  return c;
-}
 
 /** The arc from `from` to `to` about `centre`, the short way round — or,
  * with `long`, the long way — all three already mapped: the SVG sweep flag is
@@ -162,12 +150,7 @@ export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p
         return;
       }
       const pair = colours(mark);
-      const edge = shared(mark);
-      const colour = edge
-        ? sharedBand(edge.lo, edge.hi)
-        : pair && pair.own !== pair.other
-          ? pair.other
-          : null;
+      const colour = pair && pair.own !== pair.other ? pair.other : null;
       if (colour !== null) add(`decor band paint-${colour}`, halfDisc(a, b, mid, HALF * len, map));
     });
     const mid = (i: number): XY => {
