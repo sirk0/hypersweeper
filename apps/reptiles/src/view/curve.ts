@@ -11,16 +11,22 @@ import type { Bulge, Piece, XY } from "../geometry/shape";
 export interface Loop {
   xy: XY[];
   curve?: readonly Bulge[] | undefined;
+  /** Edge marks, on a coloured or lined tile (see view/decor.ts). */
+  marks?: readonly number[] | undefined;
 }
 
 /** `pieces` as loops to draw. */
 export function loopsOf(ring: Ring, pieces: readonly Piece[]): Loop[] {
-  return pieces.map((p) => ({ xy: p.verts.map((v) => ring.toXY(v)), curve: p.curve }));
+  return pieces.map((p) => ({
+    xy: p.verts.map((v) => ring.toXY(v)),
+    curve: p.curve,
+    marks: p.marks,
+  }));
 }
 
 /** `loops` moved by `f` (a shift: the curves keep). */
 export function shiftLoops(loops: readonly Loop[], f: (p: XY) => XY): Loop[] {
-  return loops.map((l) => ({ xy: l.xy.map(f), curve: l.curve }));
+  return loops.map((l) => ({ xy: l.xy.map(f), curve: l.curve, marks: l.marks }));
 }
 
 /** One SVG path for a whole tile: a closed sub-path per loop. */

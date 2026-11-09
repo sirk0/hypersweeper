@@ -8,7 +8,7 @@
 import { BARS, bandOf, scoreOf, type Band } from "../difficulty";
 import { BUCKETS, type Bucket, type FigureSet } from "../figures";
 import type { Level } from "../levels";
-import { levelCard } from "./catalog";
+import { levelCard, renderMarked } from "./catalog";
 import { barsIcon, figureIcon } from "./icons";
 
 const ROWS: Record<Bucket, { name: string; hint: string }> = {
@@ -85,7 +85,8 @@ function figureCard(
   return button;
 }
 
-/** One set's tilings, easiest first, under Easy, Medium and Hard. */
+/** One set's tilings, easiest first, under Easy, Medium and Hard — then
+ * their matching rules and colourings. */
 export function renderFigure(
   host: HTMLElement,
   set: FigureSet,
@@ -118,4 +119,6 @@ export function renderFigure(
     section.append(heading, grid);
     host.appendChild(section);
   }
+  // then the same tilings with marked tiles: matching rules, colourings
+  renderMarked(host, set.levels, stars, pick);
 }

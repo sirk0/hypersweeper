@@ -73,7 +73,9 @@ test("Figures lists the tile sets, and a set its tilings by difficulty", async (
   await expect(page).toHaveURL(/\?figure=squares$/);
   await expect(page.locator("#figure-title")).toHaveText("Square");
   await expect(page.locator("#figure-list .band-heading").first()).toContainText("Easy");
-  const card = page.locator("#figure-list .card", { hasText: "4⁴" });
+  const card = page
+    .locator("#figure-list .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^4⁴$/ }) });
   await expect(card.locator(".bars")).toHaveAttribute("aria-label", "easy");
   await card.click();
   await expect(page.locator("#game")).toBeVisible();
@@ -349,6 +351,85 @@ test("Tilings' families are named as Hypersweeper names them", async ({ page }) 
     "Spirals",
     "Aperiodic",
   ]);
+});
+
+test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows as arcs", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  // the hexagons in two colours, a third of them blue: two tiles, half
+  // discs where the colours meet, and no line — a coloured board never
+  // draws one
+  await page.goto("/?level=hexagons.2oneinthree2");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.band")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(0);
+
+  // a lined board's lines are its rule; its first square goes into the
+  // corner either way round (the rim takes any)
+  await page.goto("/?level=squares.lines");
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(1);
+  const tray = page.locator("svg.board .tile.in-tray").first();
+  const t = (await tray.boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + t.width / 2, r.y + r.height - t.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+  await expect(page.locator("svg.board .world .decor.line")).toHaveCount(1);
+
+  // Penrose's rhombi and his kites and darts with their arrows: two arcs
+  // on each tile, one of each kind
+  for (const key of ["penrose.rules", "kitedart.rules"]) {
+    await page.goto(`/?level=${key}`);
+    await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
+    await expect(page.locator("svg.board .tray-layer .decor.arc.double")).toHaveCount(2);
+    await expect(page.locator("svg.board .tray-layer .decor.arc:not(.double)")).toHaveCount(2);
+  }
+
+  // no setting for lines any more
+  await page.goto("/?settings");
+  await expect(page.locator('[data-action="toggle-lines"]')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("a tiling's marked levels: on its own page in Tilings, and on its figure's page", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  // Tilings has no section of its own for them: the hexagons' card opens a
+  // page of plain tiles, matching rules and colourings
+  await page.goto("/?tilings");
+  await expect(page.locator("#catalog .family h2", { hasText: "Colourings" })).toHaveCount(0);
+  const hexagons = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^6³$/ }) });
+  await expect(hexagons.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
+  await hexagons.click();
+  await expect(page).toHaveURL(/\?tiling=hexagons$/);
+  await expect(page.locator("#tiling .hud-title")).toHaveText("6³");
+  await expect(page.locator("#tiling-list .family h2")).toHaveText([
+    "Plain tiles",
+    "Matching rules",
+    "Colourings",
+  ]);
+  await page.locator('#tiling-list [data-group="colourings"] .card').first().click();
+  await expect(page).toHaveURL(/\?level=hexagons\./);
+  await page.goBack();
+  await expect(page.locator("#tiling")).toBeVisible();
+  // a tiling with none opens straight away
+  await page.goto("/?tilings");
+  await page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^3\.6\.3\.6$/ }) })
+    .click();
+  await expect(page).toHaveURL(/\?level=trihex$/);
+  // the triangle's page: its plain tilings by difficulty, then the marked ones
+  await page.goto("/?figure=triangles");
+  await expect(page.locator('#figure-list [data-group="rules"] .card').first()).toBeVisible();
+  await expect(page.locator('#figure-list [data-group="colourings"] .card').first()).toBeVisible();
+  expect(errors).toEqual([]);
 });
 
 test("the Spectre's edges are round, Tile(1,1)'s straight", async ({ page }) => {

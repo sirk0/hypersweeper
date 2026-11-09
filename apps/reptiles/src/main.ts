@@ -5,7 +5,7 @@ import { figureSetByKey, figureSets, type FigureSet } from "./figures";
 import { BOARDS, LEVELS, boardKeys, levelByKey, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
-import { renderCatalog } from "./view/catalog";
+import { renderCatalog, renderTiling } from "./view/catalog";
 import { renderFigure, renderFigures } from "./view/figures";
 import { renderHome } from "./view/home";
 import { fillGlyphs } from "./view/icons";
@@ -28,12 +28,13 @@ const tilingStars = (base: string): number => Math.max(...boardKeys(base).map(st
 fillGlyphs(document);
 
 // -- screens ------------------------------------------------------------------
-// Six: home (no query), Tilings — the catalog — (?tilings; old links say
-// ?catalog), Figures (?figures), one figure set's tilings (?figure=<key>), the
-// settings (?settings) and a level (?level=<key>). Each move between them is a history entry, so the
+// Seven: home (no query), Tilings — the catalog — (?tilings; old links say
+// ?catalog), one tiling's plain and marked levels (?tiling=<key>), Figures
+// (?figures), one figure set's tilings (?figure=<key>), the settings
+// (?settings) and a level (?level=<key>). Each move between them is a history entry, so the
 // browser's Back goes back.
 
-const SCREENS = ["home", "catalog", "figures", "figure", "settings", "game"] as const;
+const SCREENS = ["home", "catalog", "tiling", "figures", "figure", "settings", "game"] as const;
 type Screen = (typeof SCREENS)[number];
 
 function show(screen: Screen): void {
@@ -61,8 +62,23 @@ function goSettings(push = true): void {
 
 function goCatalog(push = true): void {
   if (push) history.pushState(null, "", "?tilings");
-  renderCatalog(byId("catalog-list"), LEVELS, tilingStars, (level) => open(level));
+  renderCatalog(
+    byId("catalog-list"),
+    LEVELS.filter((l) => !l.decor),
+    tilingStars,
+    (level) => open(level),
+    (level) => goTiling(level),
+  );
   show("catalog");
+}
+
+/** A tiling with marked levels: its plain tiles, matching rules and
+ * colourings. */
+function goTiling(level: Level, push = true): void {
+  if (push) history.pushState(null, "", `?tiling=${level.key}`);
+  byId("tiling-title").textContent = level.name;
+  renderTiling(byId("tiling-list"), level, tilingStars, (l) => open(l));
+  show("tiling");
 }
 
 function goFigures(push = true): void {
@@ -101,7 +117,11 @@ function route(): void {
   const level = levelByKey(query.get("level") ?? "");
   if (level) open(level, false);
   else if (query.has("tilings") || query.has("catalog")) goCatalog(false);
-  else if (query.has("figure")) {
+  else if (query.has("tiling")) {
+    const tiling = levelByKey(query.get("tiling") ?? "");
+    if (tiling && !tiling.decor) goTiling(tiling, false);
+    else goCatalog(false);
+  } else if (query.has("figure")) {
     const set = figureSetByKey(query.get("figure") ?? "");
     if (set) goFigure(set, false);
     else goFigures(false);

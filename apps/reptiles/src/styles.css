@@ -67,6 +67,20 @@
   --tile-twin-edge: #7d3453;
   --tile-pieces: #9aa3b5;
   --tile-pieces-edge: #48505f;
+  /* A coloured board's paints (Colourings): a tile is painted by the colour
+     its marks give it, whatever its sides, and each edge's band is painted
+     the colour that must lie across it. Four hues well apart — terracotta,
+     blue, gold, green — so a band reads against any tile it sits on. The
+     line drawn across a lined board's tiles, and a coloured board's stripes. */
+  --paint-0: #e07f72;
+  --paint-0-edge: #8f3a2f;
+  --paint-1: #6e9fca;
+  --paint-1-edge: #2f5679;
+  --paint-2: #e3c75a;
+  --paint-2-edge: #7f6914;
+  --paint-3: #86b872;
+  --paint-3-edge: #3f6b2e;
+  --decor-line: #3b3228;
   --stick: #7b4fd0;
   --stick-ring: #fffdf8;
   --star: #d49a1f;
@@ -130,6 +144,15 @@
     --tile-twin-edge: #f2c0d2;
     --tile-pieces: #7c859a;
     --tile-pieces-edge: #d3d9e6;
+    --paint-0: #c9665a;
+    --paint-0-edge: #f4b8ae;
+    --paint-1: #5f8db8;
+    --paint-1-edge: #b8d4ee;
+    --paint-2: #c2a743;
+    --paint-2-edge: #f1e1a6;
+    --paint-3: #6f9f5c;
+    --paint-3-edge: #c3e2b4;
+    --decor-line: #f9f4ed;
     --stick: #b394ff;
     --stick-ring: #1d1c1a;
     --star: #f2c14e;
@@ -431,6 +454,105 @@ button.primary {
 .tile.twin {
   fill: var(--tile-twin);
   stroke: var(--tile-twin-edge);
+}
+
+.tile.paint-0 {
+  fill: var(--paint-0);
+  stroke: var(--paint-0-edge);
+}
+
+.decor.band.paint-0 {
+  fill: var(--paint-0);
+  stroke: var(--paint-0-edge);
+}
+
+.tile.paint-1 {
+  fill: var(--paint-1);
+  stroke: var(--paint-1-edge);
+}
+
+.decor.band.paint-1 {
+  fill: var(--paint-1);
+  stroke: var(--paint-1-edge);
+}
+
+.tile.paint-2 {
+  fill: var(--paint-2);
+  stroke: var(--paint-2-edge);
+}
+
+.decor.band.paint-2 {
+  fill: var(--paint-2);
+  stroke: var(--paint-2-edge);
+}
+
+.tile.paint-3 {
+  fill: var(--paint-3);
+  stroke: var(--paint-3-edge);
+}
+
+.decor.band.paint-3 {
+  fill: var(--paint-3);
+  stroke: var(--paint-3-edge);
+}
+
+/* A tile's marks (view/decor.ts): drawn over it, never in the way of a tap
+   on it. */
+.decor {
+  pointer-events: none;
+}
+
+.decor.band {
+  stroke-width: 0.02;
+  stroke-linejoin: round;
+}
+
+/* A lined board's line: cut square at each end, which lies on the edge, so
+   it never pokes past the tile and runs on into the next one unbroken. */
+.decor.line {
+  fill: none;
+  stroke: var(--decor-line);
+  stroke-width: 0.06;
+  stroke-linecap: butt;
+  opacity: 0.75;
+}
+
+.level-tile .decor.line,
+.figure-icon .decor.line {
+  stroke-width: 0.1;
+}
+
+/* Penrose's arrows as arcs about the tiles' corners: one kind dark, the
+   other blue; butt ends on the edges, as a line's. */
+.decor.arc {
+  fill: none;
+  stroke: var(--decor-line);
+  stroke-width: 0.06;
+  stroke-linecap: butt;
+  opacity: 0.8;
+}
+
+.decor.arc.double {
+  stroke: var(--paint-1);
+  opacity: 1;
+}
+
+.level-tile .decor.arc,
+.figure-icon .decor.arc {
+  stroke-width: 0.1;
+}
+
+/* A lone line's half disc, and an arrow's where no arc can be drawn. */
+.decor.dot {
+  fill: var(--decor-line);
+  opacity: 0.75;
+}
+
+.decor.dot.double {
+  fill: var(--paint-1);
+  stroke: var(--paint-1-edge);
+  stroke-width: 0.02;
+  opacity: 1;
 }
 
 .tray {
@@ -842,8 +964,10 @@ button:disabled {
   align-items: center;
 }
 
-/* How many boards a tiling has, where it has more than one. */
-.card-boards {
+/* How many boards a tiling has, where it has more than one; how many marked
+   levels (matching rules, colourings) it has, where any. */
+.card-boards,
+.card-marked {
   color: var(--muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;

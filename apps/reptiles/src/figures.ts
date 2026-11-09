@@ -17,7 +17,12 @@
 
 import { cyclotomic, dotSign, orient, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { posedCurve, regular, sides, signedArea, type Piece, type Shape } from "./geometry/shape";
-import { LEVELS, type Level } from "./levels";
+import { LEVELS, levelByKey, type Level } from "./levels";
+
+/** The levels of plain tiles: what the figures are read from. A level of
+ * marked tiles (`decor`) belongs to the set of the tiling it marks
+ * (`figureSetOf`), listed on that set's page with it. */
+const PLAIN = LEVELS.filter((l) => !l.decor);
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
 const lcm = (a: number, b: number): number => (a / gcd(a, b)) * b;
@@ -222,7 +227,7 @@ let memo: Figures | undefined;
 function build(): Figures {
   const figures: Figure[] = [];
   const byLevel = new Map<string, number[]>();
-  for (const level of LEVELS) {
+  for (const level of PLAIN) {
     byLevel.set(
       level.key,
       level.tiles.map((shape, kind) => {
@@ -236,7 +241,7 @@ function build(): Figures {
   }
   // levels grouped by the set of figures in their tray, in order of first use
   const groups = new Map<string, Level[]>();
-  for (const level of LEVELS) {
+  for (const level of PLAIN) {
     const ids = [...byLevel.get(level.key)!].sort((x, y) => x - y);
     // a lone figure joins the first lone figure of its shape at any size:
     // V4.8²'s triangle and the isosceles right rep-tile are one figure
@@ -365,9 +370,11 @@ export function allFigures(): Figure[] {
   return figuresMemo().figures;
 }
 
-/** The set `level`'s tray is. */
+/** The set `level`'s tray is — for a level of marked tiles, the set of the
+ * tiling it marks. */
 export function figureSetOf(level: Level): FigureSet {
-  return figuresMemo().sets.find((s) => s.levels.includes(level))!;
+  const plain = level.decor ? levelByKey(level.decor.of)! : level;
+  return figuresMemo().sets.find((s) => s.levels.includes(plain))!;
 }
 
 export function figureSetByKey(key: string): FigureSet | undefined {

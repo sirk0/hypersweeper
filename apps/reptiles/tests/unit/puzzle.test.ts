@@ -42,11 +42,12 @@ import {
   sideCount,
   spotKey,
   turnsOnto,
+  turnsOntoPieces,
   type Piece,
   type XY,
 } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
-import { BOARDS, LEVELS, levelByKey, notation, parseNotation } from "../../src/levels";
+import { BOARDS, LEVELS, levelByKey, notation, parseNotation, type Level } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
 /** A one-piece tile's or cell's polygon — every level's but the rep-tiles
@@ -75,10 +76,7 @@ describe("puzzle", () => {
       for (const [kind, t] of tiles.entries()) {
         for (const flip of [false, true]) {
           const pieces = posed(t, { rot: 0, flip, t: ring.zero });
-          const [rot] = turnsOnto(
-            { ring, pieces },
-            cell.map((c) => c.verts),
-          );
+          const [rot] = turnsOntoPieces({ ring, pieces }, cell);
           if (rot !== undefined) return [kind, rot, flip];
         }
       }
@@ -189,7 +187,13 @@ describe("puzzle", () => {
   // Hypersweeper board to match, nor has the hat's family:
   // tests/unit/hat.test.ts is its oracle)
   const unturned = BOARD_LEVELS.filter(
-    (l) => !l.window?.turned && !isDual(l.group) && !l.pieceTile && !l.socolarTaylor && !l.hat,
+    (l) =>
+      !l.window?.turned &&
+      !isDual(l.group) &&
+      !l.pieceTile &&
+      !l.socolarTaylor &&
+      !l.hat &&
+      !l.decor,
   ).map((l) => l.key);
   /** A board past a tiling's first, cut from Hypersweeper's template as
    * `archimedeanBoard` cuts it — every tile that fits whole in the square, a
@@ -229,10 +233,14 @@ describe("puzzle", () => {
 
   // (a bond, a pentagonal tiling, a rep-tile, a spiral or an aperiodic tiling
   // has no one vertex configuration, and an isogonal one is not edge to edge)
+  // (a marked level goes by the board it marks)
+  const familyOf = (l: Level): string => (l.decor ? levelByKey(l.decor.of)!.group : l.group);
   const ofPolygons = BOARD_LEVELS.filter(
     (l) =>
-      !isDual(l.group) &&
-      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic"].includes(l.group),
+      !isDual(familyOf(l)) &&
+      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic"].includes(
+        familyOf(l),
+      ),
   ).map((l) => l.key);
   it.each(ofPolygons)("%s is one outline, every inner point its vertex configuration", (key) => {
     const level = levelByKey(key)!;
@@ -705,7 +713,9 @@ describe("puzzle", () => {
       "hexringsdual",
       "hexrowsdual",
       "kitedart",
+      "kitedart.rules",
       "penrose",
+      "penrose.rules",
       "pythagorean",
       "snubelongated2dual",
       "snubelongateddual",
@@ -721,7 +731,7 @@ describe("puzzle", () => {
     // rep-tiles whose dissection reflects a child, and the Socolar–Taylor
     // tile, which tiles only with its mirror image
     expect(
-      LEVELS.filter((l) => l.mirror)
+      LEVELS.filter((l) => l.mirror && !l.decor)
         .map((l) => l.key)
         .sort(),
     ).toEqual([

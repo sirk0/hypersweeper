@@ -99,6 +99,25 @@ interface PenroseCell {
   color: number;
   index: number;
   verts: ZPoint[];
+  /** A rhombus's, per edge, verts[i] → verts[i + 1]: which leg of its
+   * half-rhombus Robinson triangle it is (`PenroseLeg`). */
+  legs?: PenroseLeg[];
+  /** A kite's or dart's, the same (`KiteDartLeg`). */
+  kiteLegs?: KiteDartLeg[];
+}
+
+/**
+ * Where a Penrose rhombus's edge came from: a leg of one of the two
+ * half-rhombus Robinson triangles (colour, apex a, base b c) it was merged
+ * from — `leg` 0 the side a–b, 1 the side a–c — and whether the edge, as the
+ * rhombus lists it, runs away from that triangle's apex. The deflation names
+ * a, b and c the same way at every step, so a leg is a leg wherever it lies:
+ * what the P3 tiling's matching rules (its edge arrows) are stated on.
+ */
+export interface PenroseLeg {
+  color: number;
+  leg: 0 | 1;
+  fromApex: boolean;
 }
 
 // -- windowing an aperiodic patch --------------------------------------------
@@ -433,6 +452,42 @@ export function penroseExact(
   return { order: 10, cells: penroseKept(subdivisions, keep, variant).map((c) => [...c.verts]) };
 }
 
+/**
+ * Where a kite's or dart's edge came from: a leg of one of the two half-tile
+ * Robinson triangles (colour, apex, side, axis) it was merged from — merged
+ * along apex–axis, the tile's mirror line — `leg` 0 the side apex–side, 1 the
+ * side side–axis, and whether the edge, as the tile lists it, runs away from
+ * that triangle's `side` corner (the one off the mirror line). What the P2
+ * tiling's matching rules are stated on, as `PenroseLeg` is for the rhombi.
+ */
+export interface KiteDartLeg {
+  color: number;
+  leg: 0 | 1;
+  fromSide: boolean;
+}
+
+/** For each kite and dart `kiteDartExact(subdivisions, keep, variant)`
+ * lists, in its order, where each of its edges came from (`KiteDartLeg`),
+ * edge i running from its vertex i to vertex i + 1. */
+export function kiteDartLegs(
+  subdivisions: number,
+  keep: number | null = null,
+  variant = 0,
+): KiteDartLeg[][] {
+  return kiteDartKept(subdivisions, keep, variant).map((c) => c.kiteLegs!);
+}
+
+/** For each rhombus `penroseExact(subdivisions, keep, variant)` lists, in
+ * its order, where each of its edges came from (`PenroseLeg`), edge i running
+ * from its vertex i to vertex i + 1. */
+export function penroseLegs(
+  subdivisions: number,
+  keep: number | null = null,
+  variant = 0,
+): PenroseLeg[][] {
+  return penroseKept(subdivisions, keep, variant).map((c) => c.legs!);
+}
+
 /** The rhombi the Penrose board keeps, in its cell order. */
 function penroseKept(subdivisions: number, keep: number | null, variant: number): PenroseCell[] {
   const zero: ZPoint = [0, 0, 0, 0];
@@ -476,17 +531,29 @@ function penroseKept(subdivisions: number, keep: number | null, variant: number)
   }
 
   // Merge mirror halves: partners share the colour and the base edge.
-  const waiting = new Map<string, ZPoint>();
+  const waiting = new Map<string, { a: ZPoint; b: ZPoint }>();
   const cells: PenroseCell[] = [];
   for (const [color, a, b, c] of triangles) {
     const edge = zCmp(b, c) <= 0 ? `${zKey(b)}|${zKey(c)}` : `${zKey(c)}|${zKey(b)}`;
     const key = `${color}|${edge}`;
-    const otherApex = waiting.get(key);
-    if (otherApex !== undefined) {
+    const other = waiting.get(key);
+    if (other !== undefined) {
       waiting.delete(key);
-      cells.push({ color, index: cells.length, verts: [a, b, otherApex, c] });
+      // the other half's leg to b is its a–b side if its own b is this b
+      const toB: 0 | 1 = zKey(other.b) === zKey(b) ? 0 : 1;
+      cells.push({
+        color,
+        index: cells.length,
+        verts: [a, b, other.a, c],
+        legs: [
+          { color, leg: 0, fromApex: true },
+          { color, leg: toB, fromApex: false },
+          { color, leg: toB === 0 ? 1 : 0, fromApex: true },
+          { color, leg: 1, fromApex: false },
+        ],
+      });
     } else {
-      waiting.set(key, a);
+      waiting.set(key, { a, b });
     }
   }
 
@@ -616,8 +683,20 @@ function kiteDartKept(subdivisions: number, keep: number | null, variant: number
     const otherSide = waiting.get(key);
     if (otherSide !== undefined) {
       waiting.delete(key);
-      // apex, side, axis-end, mirrored side: the tile's outline in order
-      cells.push({ color, index: cells.length, verts: [apex, side, axis, otherSide] });
+      // apex, side, axis-end, mirrored side: the tile's outline in order —
+      // this half's two legs, then the mirrored half's, which names its
+      // corners alike
+      cells.push({
+        color,
+        index: cells.length,
+        verts: [apex, side, axis, otherSide],
+        kiteLegs: [
+          { color, leg: 0, fromSide: false },
+          { color, leg: 1, fromSide: true },
+          { color, leg: 1, fromSide: false },
+          { color, leg: 0, fromSide: true },
+        ],
+      });
     } else {
       waiting.set(key, side);
     }

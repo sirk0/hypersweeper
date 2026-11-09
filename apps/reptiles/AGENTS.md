@@ -29,6 +29,44 @@ some back off.
   the way), or turn on ✕ remove, the control beside rotate (or X), and tap
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
   A lifted tile dropped anywhere else it cannot land goes back where it was.
+- **Matching rules and colourings** — listed with the tiling they mark,
+  not as families of their own: a tiling that has them says how many on its
+  Tilings card ("+5 marked") and opens its own page (`?tiling=<key>`: Plain
+  tiles, then Matching rules, then Colourings), and a figure set's page lists
+  them after its plain tilings (`markedOf` in `levels.ts`; their `group`,
+  `rules` or `colourings`, is in `MARKED_GROUPS`, not `GROUPS`). Each tile carries a **mark** on each edge, and a tile lands only
+  where its marks meet their partners (the rim takes any), so a pattern no one
+  tile can check is checked edge by edge. Every mark is drawn so that two
+  tiles meeting as they should make one shape across their edge
+  (`src/view/decor.ts`).
+  - *Matching rules* (`?level=squares.lines`, `?level=penrose.rules`,
+    `?level=kitedart.rules`): a *lined* board is a colouring (below) in one
+    colour, with a line across every edge between two tiles that were one
+    colour — a line meets a line, a blank edge a blank one. A line runs from
+    edge to edge, square on to each and ending on it, straight across or
+    round the corner two lined edges share; a tile with one lined edge has a
+    half disc there instead. **Penrose's tilings** carry his arrows: on the
+    rhombi a single or a double arrow on each edge, on the kites and darts
+    his two-colour vertex rule (every edge pointing from one colour of corner
+    to the other, so a kite never fills a dart's notch to make a rhombus).
+    Each arrow is drawn as an arc about one of the tile's corners, crossing
+    its edge a share of the way back from the arrow's head, so the arcs run
+    on unbroken only where the arrows agree — Ammann's on the rhombi,
+    Conway's on the kites and darts.
+  - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
+    colouring repeats more coarsely than the tiling — squares as a
+    checkerboard, or in rows of three colours, or hexagons a third of them
+    blue. Each mark is a half disc on the middle of its edge, inside the
+    tile, in the colour that must lie across it — a red tile's blue half
+    disc against a blue tile — and an edge with a tile of its own colour
+    across has none. A colouring whose tiles all read alike but for their
+    colour (a striped one: `Painting.alike`) plays as its lined board does,
+    so it is left to the lined boards; and a coloured board never draws
+    lines.
+  A marked tile is held, where it can be, so that it fits none of the board's
+  cells as the tray has it — the tray does not hand over the turn — so the
+  marks ask for turning a plain board never needs, and every marked level
+  measures at least as hard as its plain one (a test holds that).
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
   from still to go (past zero, how many extra). Finishing at all is one star;
   with no more tiles than that, two; and within the level's time limit
@@ -133,7 +171,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, 388 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 6 matching rules (lines on the regular three, Penrose's arrows on his rhombi and his kites and darts) and 13 colourings of the regular three in two more, 407 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -197,7 +235,7 @@ builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
-edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a won board and
+edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, a won board and
 its ✕). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -399,6 +437,56 @@ quick way to see the win state.
   19 tiles, so the board carries on at least two rings further. The tests
   (`tests/unit/socolarTaylor.test.ts`) are its oracle instead of a
   Hypersweeper builder.
+- `src/geometry/marks.ts` — **edge marks**: a coloured or lined tile's label
+  per edge — `NONE` (a plain tile's, and the rim's, which takes any), `LINE`
+  and `BLANK` (each its own partner); a coloured board's colour pair
+  `colourMark(own, other)`, whose partner is the pair the other way round;
+  and Penrose's arrows, `arrowMark(kind, forward)` — kinds 1 and
+  2 the rhombi's single and double, 3 and 4 the kites' and darts' long and
+  short edges' — pointing along the tile's outline or against it: its
+  partner points the other way, and a mirror (`mirrored`) turns it round. A
+  `Piece` carries
+  them as `marks`, edge for edge as it carries `curve`; `posed`, `moved`,
+  `curveOnto` and `restFlat` keep them, `turnsOnto` (given the cell's marks)
+  and `selfTurns` count them — a square striped across is the same only after
+  a half turn — and `spotKey` names them, so one spot turned two ways is two
+  placements. The frontier treats a marked edge as a round one: each open edge
+  holds the mark the tile across must bring (`partner`), a tile lies along it
+  only with that mark, whole, and covering a tile leaves its marks' partners.
+- `src/colourings.ts` — **the colourings**: `paintings` tries every linear
+  colouring of a periodic board in 2 or 3 colours — a tile of translation
+  class t at lattice point (i, j) is colour (a·i + b·j + c[t]) mod k — with
+  each colour equally common, and each 3-colouring with two of its colours
+  made one (a third of the tiles one colour: the hexagons' only way in two),
+  as edge marks (colour pairs; and, where tiles of one colour touch, the
+  same edges unordered, `alike`, to find a colouring that plays as its lined
+  board does) and each cell's colour, and for each
+  balanced one the lined board in
+  one colour, where it has lines. Each cell's class and lattice point are
+  solved for in floats and checked exactly; which class lies across each edge
+  of each class is read off the window's inner edges (`atlasOf`), so a rim
+  tile's marks are its marks in the tiling. `colouredLevels` in `levels.ts`
+  builds each with `makeLevel` (its `marks` and `paints`: a kind takes the
+  first colour among its cells), keeps those that mark all of a colour's
+  tiles alike — the colourings that look alike everywhere; one tile per
+  colour, or fewer where colours read alike — and ask something (not one mark
+  all round) and need more than one tile per shape (one reads as a lined
+  board), and drops any whose tray another already had (`traySignature`: the same up to
+  turning a tile, a mirror and renaming the colours — rows and columns are
+  one). `COLOURED` lists the boards painted and each one's lattice; the
+  level is `<plain>.<label>`, `Level.decor` saying what it marks — lined
+  ones in the Matching rules section (`decor.rules`), the rest in
+  Colourings. `arrowLevel` gives an aperiodic board arrows from its builder's Robinson
+  triangles, which name their corners alike at every step: which leg each
+  edge was (`penroseLegs`, `kiteDartLegs` in @tiling/geometry), and a rule
+  stated on the legs. The rhombi's (`penroseRulesLevel`): every a–b leg a
+  double arrow, pointing in to the apex on a thin half and out on a thick
+  one, every a–c leg a single arrow pointing out — up to renaming and
+  reversing, the only rule of that shape every shared edge of the builder's
+  430-rhombus patch keeps. The kites' and darts' (`kiteDartRulesLevel`):
+  every edge pointing to a kite's side corners and from a dart's — of the
+  rules every shared edge of the 705-tile patch keeps, the one that forbids a
+  kite in a dart's notch.
 - `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
   boards congruent to a given one (turned, mirrored or moved, tile for tile),
   how the board search tells a new board from one it has.
@@ -472,6 +560,18 @@ quick way to see the win state.
   along the arcs: what a round tile's bounds and tray circle are taken from).
   Every tile, the region, the open edges and the icons are paths drawn
   through it.
+- `src/view/decor.ts` — drawing a tile's marks over it, so that tiles that
+  meet as they should make one shape across their edge: a colour as a half
+  disc on the edge's middle; a lined board's lines from edge to edge, square
+  on and ending on each (straight across, or a Truchet arc about the corner
+  two lined edges share; butt-capped, so never past the edge), and a lone
+  lined edge as a half disc; Penrose's arrows as arcs about the tile's
+  corners (`arcsOf` finds the corners whose two edges' crossings are one kind
+  and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —
+  chosen so every arc stays inside its tile, a thin rhombus's round its wide
+  corners small, a dart's round its notch the long way). Every tile, tray
+  tile, dragged tile and icon is decorated through it; its parts are
+  `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's
@@ -542,8 +642,9 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1),
   the Spectre, the hat and the turtle, violet at its end — real corners, `sideCount`), a tile
   of several pieces in slate, off the ramp (`.pieces`), and a second kind
-  coloured as another in rose (`.twin`) — read a kind's
-  classes from `level.colours`, never from its side count.
+  coloured as another in rose (`.twin`), and a coloured board's tile in its
+  colour's paint (`.paint-<c>`, `--paint-<c>`: terracotta, blue, gold, green)
+  — read a kind's classes from `level.colours`, never from its side count.
 - Import the geometry as `@tiling/geometry` (its index) and nothing from
   `apps/hypersweeper/` (renderer, UI, game rules) — that is Hypersweeper's own.
   A name the geometry has but does not export gets a line in
