@@ -5,6 +5,7 @@ import {
   penroseBoard,
   spectreBoard,
 } from "@tiling/geometry/aperiodic";
+import { hatBoard, hatMetatilesBoard, turtleBoard } from "@tiling/geometry/hat";
 import {
   boundaryComponents,
   eulerCharacteristic,
@@ -37,9 +38,26 @@ const CASES: [string, (variant: number) => Board, number][] = [
   ["spectre easy", (v) => spectreBoard(3, 81, 14.361, v), 81],
   ["spectre medium", (v) => spectreBoard(4, 256, 9.437, v), 256],
   ["spectre hard", (v) => spectreBoard(4, 480, 8.512, v), 480],
+  ["hat easy", (v) => hatBoard(3, 81, 11.159, v), 81],
+  ["hat medium", (v) => hatBoard(3, 256, 7.343, v), 256],
+  ["hat hard", (v) => hatBoard(4, 480, 6.636, v), 480],
+  ["turtle easy", (v) => turtleBoard(3, 81, 10.201, v), 81],
+  ["turtle medium", (v) => turtleBoard(3, 256, 6.669, v), 256],
+  ["turtle hard", (v) => turtleBoard(4, 480, 5.884, v), 480],
+  ["hatmetatiles easy", (v) => hatMetatilesBoard(3, 81, 6.951, v), 81],
+  ["hatmetatiles medium", (v) => hatMetatilesBoard(4, 256, 4.426, v), 256],
+  ["hatmetatiles hard", (v) => hatMetatilesBoard(4, 480, 4.047, v), 480],
 ];
 
 const cells = (board: Board): string => [...board.polygons.keys()].sort().join(" ");
+
+/** A board by its tiles rather than its cell ids: the hat's family labels a
+ * cell by its kind alone, so two windows can share every id. */
+const tiles = (board: Board): string =>
+  [...board.polygons.values()]
+    .map((polygon) => polygon.map(([x, y]) => `${x},${y}`).join(" "))
+    .sort()
+    .join("|");
 
 /** Every cell reachable from any one of them, over the board's own adjacency —
  * a window that slid off the patch would leave part of the board unplayable. */
@@ -62,20 +80,23 @@ describe("aperiodic patch variants", () => {
   for (const [name, build, keep] of CASES) {
     it(`${name} is a board of ${keep} cells at every variant`, () => {
       const seen = new Set<string>();
-      for (let variant = 0; variant < 8; variant++) {
+      for (let variant = 0; variant < 16; variant++) {
         const board = build(variant);
         expect(board.polygons.size).toBe(keep);
         expect(isConnected(board)).toBe(true);
         // A disc: an island would be 2, a hole 0.
         expect(eulerCharacteristic(board)).toBe(1);
         expect(boundaryComponents(board)).toBe(1);
-        seen.add(cells(board));
+        seen.add(tiles(board));
       }
       // …and different boards, not one board eight times. Not necessarily
       // eight of them: a variant whose own window is rejected (bitten into by
       // the end of the patch, or not a disc) walks on to the next candidate,
       // so two neighbouring variants can land on the same window. What the game
       // deals is deduplicated — see "deals only windows the solver measured".
+      // Sixteen of them, because the stride can alias with a pool: the hat
+      // metatiles' medium pool is 1129 centres, and 65537 is −3 modulo 1130,
+      // so the first few variants walk off its end back to the centred window.
       expect(seen.size).toBeGreaterThanOrEqual(6);
     });
 

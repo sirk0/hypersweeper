@@ -46,6 +46,10 @@ import {
   pentaSpiralBoard,
   phyllotaxisBoard,
   spectreBoard,
+  hatBoard,
+  hatMetatiles,
+  hatMetatilesBoard,
+  turtleBoard,
   z7ToXy,
   deltoidalHexecontahedronBoard,
   deltoidalIcositetrahedronBoard,
@@ -1627,14 +1631,14 @@ function draw(rawKey: string): string[] {
       parts.push(shape([at(), at(k), at(k, k + 1), at(k + 1)], LIGHT, 3));
       parts.push(shape([at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)], BASE, 3));
     }
-  } else if (key === "spectre") {
-    // The Spectre's menu icon keeps the nicer silhouette of its removed
-    // sibling "The Hat" (the two aperiodic monotiles share a family
-    // resemblance -- Tile(1,1) is a member of the hat continuum -- and this
-    // outline reads better at icon size than a walk of the Spectre's own
-    // edge directions).
+  } else if (key === "spectre" || key === "hat" || key === "turtle") {
+    // The monotile itself, one tile filling the icon. The hat is Kaplan's
+    // outline (hex coordinates, the long side two short edges in a line); the
+    // turtle is the same walk with every edge's length swapped — a short edge
+    // (or the doubled one) √3 times as long, a long one √3 times shorter — and
+    // the Spectre is Tile(1,1), its fourteen unit steps at multiples of 30°.
     const hr3 = Math.sqrt(3) / 2;
-    const ab: P[] = [
+    const hatHex: P[] = [
       [0, 0],
       [-1, -1],
       [0, -2],
@@ -1649,7 +1653,29 @@ function draw(rawKey: string): string[] {
       [0, 2],
       [-1, 2],
     ];
-    const raw: P[] = ab.map(([a, b]) => [a + 0.5 * b, hr3 * b]);
+    const hat: P[] = hatHex.map(([a, b]) => [a + 0.5 * b, hr3 * b]);
+    let raw: P[] = hat;
+    if (key === "turtle") {
+      raw = [[0, 0]];
+      hat.forEach((p, i) => {
+        const q = hat[(i + 1) % hat.length]!;
+        const [dx, dy] = [q[0] - p[0], q[1] - p[1]];
+        // a long edge is √3; a short one 1, the doubled one 2
+        const k =
+          Math.abs(Math.hypot(dx, dy) - Math.sqrt(3)) < 1e-9 ? 1 / Math.sqrt(3) : Math.sqrt(3);
+        const last = raw[raw.length - 1]!;
+        if (i < hat.length - 1) raw.push([last[0] + dx * k, last[1] + dy * k]);
+      });
+    } else if (key === "spectre") {
+      raw = [[0, 0]];
+      for (const dir of [0, 10, 1, 3, 0, 2, 5, 7, 4, 6, 6, 8, 11, 9].slice(0, -1)) {
+        const last = raw[raw.length - 1]!;
+        raw.push([
+          last[0] + Math.cos((dir * Math.PI) / 6),
+          last[1] + Math.sin((dir * Math.PI) / 6),
+        ]);
+      }
+    }
     const xs = raw.map((p) => p[0]);
     const ys = raw.map((p) => p[1]);
     const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
@@ -1659,6 +1685,28 @@ function draw(rawKey: string): string[] {
     const ox = (d - (maxX - minX) * sc) / 2;
     const oy = (d - (maxY - minY) * sc) / 2;
     parts.push(shape(raw.map(([x, y]) => [ox + (x - minX) * sc, oy + (maxY - y) * sc])));
+  } else if (key === "hatmetatiles") {
+    // the four metatiles of a once-substituted H — the H hexagons in one
+    // shade, the triangle, parallelograms and pentagons in the other
+    const hr3 = Math.sqrt(3) / 2;
+    const metas = hatMetatiles(1);
+    const polygons = metas.map((m) => m.corners.map(([a, b]): P => [a + 0.5 * b, hr3 * b]));
+    const xs = polygons.flat().map(([x]) => x!);
+    const ys = polygons.flat().map(([, y]) => y!);
+    const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+    const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+    const sc = (d * 0.86) / Math.max(maxX - minX, maxY - minY);
+    const ox = (d - (maxX - minX) * sc) / 2;
+    const oy = (d - (maxY - minY) * sc) / 2;
+    polygons.forEach((polygon, i) => {
+      parts.push(
+        shape(
+          polygon.map(([x, y]): P => [ox + (x! - minX) * sc, oy + (maxY - y!) * sc]),
+          metas[i]!.kind === "H" ? LIGHT : BASE,
+          3,
+        ),
+      );
+    });
   } else if (key === "phyllotaxis") {
     // the innermost ten tiles of the spiral: the five 72°/144° hexagons that
     // meet at the centre, and the five of the odd wedges, offset one edge out —
@@ -1994,6 +2042,9 @@ const PATCH_BOARDS: Record<string, PatchBoard> = {
   kitedart: { build: () => kiteDartBoard(5, 437.727, null) },
   ammannbeenker: { build: () => ammannBeenkerBoard(3, 35.891, null) },
   spectre: { build: () => spectreBoard(3, null, 14.361) },
+  hat: { build: () => hatBoard(3, null, 11.159) },
+  turtle: { build: () => turtleBoard(3, null, 10.201) },
+  hatmetatiles: { build: () => hatMetatilesBoard(3, null, 6.951) },
   phyllotaxis: { build: () => phyllotaxisBoard(5, null, 22.907), ...SPIRAL },
   klaassen: { build: () => klaassenBoard(3, null, 29.521), ...SPIRAL, centre: klaassenSeed },
   pentaspiral5: { build: () => pentaSpiralBoard(5, 4, null, 10.85), ...SPIRAL },

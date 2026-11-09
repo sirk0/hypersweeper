@@ -269,6 +269,17 @@ describe("per-board shape classing", () => {
     expect(new Set(tones.map((t) => `${t.sides}/${t.regularity}`)).size).toBe(1);
   });
 
+  it("measures the hat and the turtle as 13-gons, mirrored or not", () => {
+    // Like the Spectre, each keeps a 14th, collinear corner (the middle of its
+    // long side) as a vertex id, and is drawn and measured as the tridecagon it
+    // is. A mirrored tile is the same shape class: one monotile, one colour.
+    for (const mode of ["hat", "turtle"]) {
+      const tones = [...classifyShapes(buildBoard(mode, "easy").polygons).values()];
+      expect(new Set(tones.map((t) => t.sides)), mode).toEqual(new Set([13]));
+      expect(new Set(tones.map((t) => `${t.sides}/${t.regularity}`)).size, mode).toBe(1);
+    }
+  });
+
   it("splits one shape into its sizes, and only where they really differ", () => {
     const sizes = (mode: string): number =>
       [...classifyShapes(buildBoard(mode, "easy").polygons).values()][0]!.sizeCount!;

@@ -859,10 +859,8 @@ def _klaassen_grow(rows: list, keep: int) -> list:
 # to six and a Mystic; the Mystic is a *cluster*, so it contributes two
 # cells to the board, not one.
 #
-# It is a genuinely different tiling from The Hat (this game's original
-# aperiodic monotile board, since removed as a menu entry -- there was no
-# gameplay difference and Spectre's construction is the stricter of the
-# two), not a re-skin: the deformation that carries a hat patch to
+# It is a genuinely different tiling from the hat's (hat.py), not a
+# re-skin: the deformation that carries a hat patch to
 # Tile(1,1) keeps the hat's ~1-in-7 mirrored tiles and its cell graph,
 # whereas here no tile is ever mirrored.
 #
@@ -871,8 +869,8 @@ def _klaassen_grow(rows: list, keep: int) -> list:
 # Kaplan). No floating point is involved at any stage: every edge direction
 # is a multiple of 30 degrees and every placement is z -> zeta^k*z + t with
 # zeta = exp(i*pi/6), so all of it runs in the ring Z[zeta12] (below) with
-# integer arithmetic -- unlike the Hat's Eisenstein-lattice vertices, which
-# did need floats. That matters here in a way it did not there: Z[zeta12]
+# integer arithmetic -- unlike the hat's Eisenstein-lattice vertices, which
+# do need floats (hat.py reads them back onto the lattice). That matters here in a way it did not there: Z[zeta12]
 # is *dense* in the plane rather than discrete, so there is no lattice to
 # snap a float vertex back to. Carrying the placements exactly is the only
 # way to get exact vertex ids.

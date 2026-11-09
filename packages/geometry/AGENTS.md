@@ -5,7 +5,9 @@ tilings, aperiodic and fractal tilings, hyperbolic tilings, the closed solids
 and the surfaces (torus, cylinder, Möbius strip, Klein bottle…). Each is a set
 of cells with their vertices, adjacency and symmetries, built exactly.
 Hypersweeper (`apps/hypersweeper`) plays minesweeper on them, and Rep-tiles
-(`apps/reptiles`) cuts its levels from the periodic ones.
+(`apps/reptiles`) cuts its levels from them — the periodic ones, the spirals,
+the aperiodic windows, and the hat's patch (`hat.ts`, `hatMetatiles`), which
+both games cut their own way.
 
 It is pure geometry: no DOM, no rendering, no mine counts, no levels, no menus.
 

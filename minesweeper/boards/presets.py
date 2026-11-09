@@ -65,6 +65,7 @@ from minesweeper.boards.fractal import (
     trapezoid_board,
     ttetromino_board,
 )
+from minesweeper.boards.hat import hat_board, hat_metatiles_board, turtle_board
 from minesweeper.boards.hurwitz import hurwitz_board
 from minesweeper.boards.hyperbolic import (
     binary_board,
@@ -226,6 +227,11 @@ _JSON_BUILDERS = {
     # ammann_beenker_board(levels, mine_count, scale, keep), Penrose's order.
     "ammann_beenker_board": ammann_beenker_board,
     "spectre_board": spectre_board,
+    # The hat's family, hat.py: each builder(depth, mine_count, keep, scale),
+    # the Spectre's order, the three cut from one patch.
+    "hat_board": hat_board,
+    "turtle_board": turtle_board,
+    "hat_metatiles_board": hat_metatiles_board,
     "phyllotaxis_board": phyllotaxis_board,
     # klaassen_board(turns, mine_count, keep, scale): ``turns`` only has to
     # grow the spiral well past ``keep``, as ``rings`` does for phyllotaxis.
@@ -718,6 +724,7 @@ ARCH_PRESETS = {
 #: on purpose: each has one distinguished centre and no second window onto it.
 _VARIANT_BUILDERS = frozenset({
     "penrose_board", "kitedart_board", "ammann_beenker_board", "spectre_board",
+    "hat_board", "turtle_board", "hat_metatiles_board",
 })
 
 # Load the shared presets (data/presets.json) into _PRESETS. Each row is

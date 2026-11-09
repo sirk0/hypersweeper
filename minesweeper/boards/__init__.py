@@ -201,6 +201,17 @@ from minesweeper.boards.fractal import (  # noqa: F401
     trapezoid_board,
     ttetromino_board,
 )
+from minesweeper.boards.hat import (  # noqa: F401
+    _GLYPH_WEIGHTS,
+    _HAT14,
+    _deform_hats,
+    _hat_family_patch,
+    _hat_metatiles,
+    _metatile_cells,
+    hat_board,
+    hat_metatiles_board,
+    turtle_board,
+)
 from minesweeper.boards.hurwitz import (  # noqa: F401
     CLOSED_SURFACES,
     hurwitz_board,

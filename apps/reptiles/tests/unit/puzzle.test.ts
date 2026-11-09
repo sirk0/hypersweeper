@@ -579,7 +579,11 @@ describe("puzzle", () => {
   // tests/unit/socolarTaylor.test.ts)
   const aperiodic = LEVELS.filter((l) => l.group === "aperiodic" && l.aperiodic);
   it("has Hypersweeper's aperiodic tilings, in its order — the Spectre's twice", () => {
-    const theirs = catalog.menu.aperiodic as string[];
+    // the hat's family follows the Spectre in both, but Rep-tiles cuts those
+    // levels from the patch itself (`hatLevel`), not a builder's window
+    const HAT_FAMILY = ["hat", "turtle", "hatmetatiles"];
+    const theirs = (catalog.menu.aperiodic as string[]).filter((m) => !HAT_FAMILY.includes(m));
+    expect((catalog.menu.aperiodic as string[]).slice(-3)).toEqual(HAT_FAMILY);
     expect(theirs.at(-1)).toBe("spectre");
     // the Spectre's board is Tile(1,1) with straight edges, then round
     expect(aperiodic.map((l) => l.key)).toEqual([...theirs.slice(0, -1), "tile11", "spectre"]);

@@ -57,7 +57,7 @@ Import order is a strict DAG; a module only imports from the ones above it.
 | `surfaces.py` | Wrapping tilings onto surfaces: the three immersion points (`_torus_point`, `_cylinder_point`, `_mobius_point`), the shared `_assemble` tail, the nine simple `*_board` wrappers, and the Archimedean `arch_torus_board` / `arch_cylinder_board` / `arch_mobius_board`. Also `double_torus_board`, the one board here that is *not* wrapped from a rectangle: two overlapping square-tiled donuts cut apart along the plane between them and sewn back together, a connected sum rather than a seam gluing. And `projective_board` / `projective_triangle_board` / `projective_hex_board`, the real projective plane: a cubed sphere (`solids._cubed_sphere`), a geodesic sphere or its Goldberg dual with antipodes glued, drawn as the whole sphere through `Board3D.faces` -- or `boy_board`, the same square board drawn once on Boy's surface. |
 | `volume.py` | The volume boards — a solid block of cells rather than a surface of them. One so far: `solid_cube_board`, the `n**3` cube of cubes, whose 26-neighbour adjacency comes off the lattice and whose drawing is the `n` slices laid out on a grid and stepped back in depth. |
 | `catalog.py` | The menu, **derived**: `SURFACE_SPECS` and `TILING_SPECS` (leaf data loaded from `data/catalog.json`) produce `MODE_LABELS`, `TILINGS`, `SURFACE_LABELS`, the geometry-first menu tables (`MENU_ROOT`/`MANIFOLD_*`/`FAMILY_*`/`SOLID_GROUP_*`/`SOLID_MODES`/`SHAPED_MODES`) and the picker helpers (`family_rows`, `picker_families`, `picker_modes`), `MODES_3D`, `mode_for`, `surface_of`, `view_hint`. |
-| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/kitedart/ammannbeenker/spectre/phyllotaxis/…) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
+| `presets.py` | Difficulty presets and `build_board`. Flat regular, solid, Archimedean/Laves and aperiodic (penrose/kitedart/ammannbeenker/spectre/hat/turtle/hatmetatiles/phyllotaxis/…) presets all load from `data/presets.json` (shared with the web port). The Archimedean rows are authored in the compact **`ARCH_PRESETS`** table (tiling → surface → difficulty → args) that `scripts/export_data.py` expands into `data/presets.json`. |
 
 `__init__.py` re-exports the whole public surface, so `from
 minesweeper.boards import ...` is unchanged by the split.
@@ -616,13 +616,15 @@ projective plane: no new topology, a new drawing.
 
 ## The aperiodic boards
 
-**Four of them are a family of boards rather than one board.** Both Penrose
-boards, Ammann–Beenker and the Spectre are built by *substitution*, so the
+**Seven of them are a family of boards rather than one board.** Both Penrose
+boards, Ammann–Beenker, the Spectre and the hat's family — the hat, the turtle
+and the hat's metatiles — are built by *substitution*, so the
 tiling repeats nowhere and each builder grows far more of a patch than a board
 keeps — the Penrose wheel is 430 rhombi where the easy board is 81, the
-Ammann–Beenker star 7784 tiles and the Spectre cluster 4401 where the hard board
-is 480. The `variant` argument (`aperiodic._window`, ported to
-`windowRows` in `packages/geometry/src/aperiodic.ts`, shared by all four) picks *which* window onto that
+Ammann–Beenker star 7784 tiles, the Spectre cluster 4401 and the hat patch 7921
+hats where the hard board is 480. The `variant` argument (`aperiodic._window`,
+ported to `windowRows` in `packages/geometry/src/aperiodic.ts`, shared by all
+seven) picks *which* window onto that
 patch the board is: 0 is the centred trim this game shipped with, and any other
 integer a block of the same size somewhere else in the same tiling, so a
 finished game followed by another is played on tiles that have never sat
@@ -675,18 +677,40 @@ one distinguished centre (the rosette, the seed, the 2×2 core) and a
 window anywhere else would be a crop of a structured picture rather than another
 board.
 
-Five of the aperiodic boards keep exact vertex ids in a cyclotomic ring:
+The aperiodic boards keep exact vertex ids in a cyclotomic ring:
 ℤ[ζ5] (both Penrose boards and the phyllotactic spiral), ℤ[ζ7] (Klaassen's
-spiral), ℤ[ζ8] (Ammann–Beenker) and ℤ[ζ12] (Spectre). Only ℤ[ζ5] is discrete — ℤ[ζ12]
-is dense in the plane, so `spectre_board` cannot snap a float vertex back
-to a lattice the way the game's original third aperiodic board, The Hat
-(since removed as a menu entry), did — and instead carries every
+spiral), ℤ[ζ8] (Ammann–Beenker) and ℤ[ζ12] (the Spectre and the hat's family).
+ℤ[ζ12] is dense in the plane, so `spectre_board` cannot snap a float vertex back
+to a lattice the way the hat's boards do (below) — and instead carries every
 placement of the paper's chiral
 substitution as an exact `(rotation mod 12, mirror, translation)` triple.
 Its tile is Tile(1,1) held as an equilateral **14-gon**: the 14th corner
 is the collinear one, kept so a neighbour's corner landing there is a
 shared vertex id, dropped again by `shapeMetrics`/`corners` so the tile
 measures as the 13-gon it is drawn as.
+**The hat's family** (`minesweeper/boards/hat.py`, ported line for line to
+`packages/geometry/src/hat.ts`, which Rep-tiles' hat levels are cut from too) is
+three boards cut from one patch: `hat_board`, Tile(1,√3), the first aperiodic
+monotile, about one tile in seven mirrored (labelled `flip`); `turtle_board`,
+Tile(√3,1), the same outline with its two edge lengths swapped; and
+`hat_metatiles_board`, the four metatiles H, T, P and F the hats are grouped
+into. The patch is Craig Kaplan's hatviz substitution, ported as it is, floats
+and all — but every corner it lays is a point of the Eisenstein lattice ℤ[ω]
+(ω = ζ², points a whole unit apart) at twice hatviz's size, so each is read back
+onto it and the read raises unless the corner is within 1e-6 of a lattice point:
+discrete identity, not rounding. The ids are then the ℤ[ζ12] tuples
+`(x, 0, y, 0)`, and the Spectre's window code cuts the patch unchanged. The
+turtle is the hat tiling with each edge's length changed (`_deform_hats`): the
+hats' edges walked from one corner and laid again, a short edge √3 long and a
+long one a unit, exactly in ℤ[ζ12], the walk checking each tile closes and each
+shared corner lands once. Like the Spectre, the hat and the turtle keep a 14th,
+collinear corner (the middle of the long side) because a neighbour plants one
+there; the metatiles are not edge to edge at all — a T's side runs along part of
+an H's — so each one's sides are cut at every patch corner lying inside them
+before the window is taken. The hat and the turtle are not convex, and the
+number goes at the centre of the biggest circle each holds (`glyph_anchors`, a
+fixed affine combination of three corners, as the kite and dart's are).
+
 `kitedart_board` is Penrose's **kites and darts** (P2), in the same ring and
 from the same two Robinson triangles as the rhombi — the acute 36-72-72 and
 the obtuse 108-36-36 — paired along a **leg** instead of the base: two acute

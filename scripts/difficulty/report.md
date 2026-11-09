@@ -12,7 +12,7 @@ Every board's mine count, chosen so its win probability under the reference solv
 
 ## Coverage
 
-- 1074 rows, 1025 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
+- 1083 rows, 1034 on target (within 4 points of the classic win rate -- about what 350 games per measurement can resolve, and far below what a player would notice)
 - 49 could not be brought on target:
   - `cube3d`/hard: 33.3% vs 50.9% — the search could not resolve it -- its thinnest measurement finished 0 game(s), so the rate here is noise rather than a crossing the search walked to. Re-measure at a bigger `--budget`
   - `cylhexrows`/medium: 81.7% vs 87.1% — no integer mine count lands within tolerance; this is the closest
@@ -183,6 +183,8 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `gosper` | 5.5 | 49c 7m (14%) 99% | 343c 54m (16%) 86% | 343c 71m (21%) 49% |
 | `gp21` | 6.0 | 72c 13m (18%) 99% | 282c 64m (23%) 89% | 492c 125m (25%) 53% |
 | `halftrapezoid` | 7.6 | 64c 6m (9%) 96% | 256c 25m (10%) 85% | 256c 41m (16%) 54% |
+| `hat` | 5.5 | 81c 8m (10%) 97% | 256c 35m (14%) 88% | 480c 90m (19%) 48% |
+| `hatmetatiles` | 5.5 | 81c 6m (7%) 98% | 256c 37m (14%) 83% | 480c 81m (17%) 54% |
 | `herringbone` | 5.6 | 84c 13m (15%) 95% | 265c 41m (15%) 91% | 480c 98m (20%) 49% |
 | `hex` | 5.6 | 80c 11m (14%) 97% | 255c 43m (17%) 87% | 480c 100m (21%) 49% |
 | `hexbands` | 8.7 | 74c 5m (7%) 96% | 276c 18m (7%) 87% | 488c 47m (10%) 55% |
@@ -441,5 +443,6 @@ The only floor under the search is the **opening**: the fewest mines at which th
 | `truncsquare` | 5.7 | 85c 7m (8%) 98% | 265c 35m (13%) 86% | 481c 81m (17%) 53% |
 | `trunctrihex` | 5.2 | 71c 7m (10%) 91% ⚠ | 269c 22m (8%) 87% | 475c 63m (13%) 52% |
 | `ttetromino` | 6.2 | 256c 12m (5%) 98% | 256c 28m (11%) 83% | 256c 41m (16%) 54% |
+| `turtle` | 6.1 | 81c 9m (11%) 97% | 256c 32m (12%) 89% | 480c 87m (18%) 52% |
 
 `c` cells, `m` mines, then density and the measured win rate. ⚠ marks a row the calibration could not bring on target.
