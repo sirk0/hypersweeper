@@ -169,7 +169,8 @@ his kites and darts, Ammann–Beenker's squares and rhombi, the Spectre — each
 the centred window of its builder's patch, 24 to 33 tiles, the sun or star in
 the middle; any cover wins, so the matching rules that keep the other three
 aperiodic are not enforced — the Spectre, never flipped, needs none — then
-**the hat's family**, which Hypersweeper has no board for (`?level=hat`,
+**the hat's family**, cut from the patch Hypersweeper's three boards of it are
+(`hatMetatiles` in `@tiling/geometry`) but windowed Rep-tiles' own way (`?level=hat`,
 `?level=turtle`, `?level=hatmetatiles`): *the hat*, Tile(1,√3), the first
 aperiodic monotile, 36 of them, used both ways up — about one in seven
 mirrored and no two of those sharing a side, so the flip control is the
@@ -365,7 +366,9 @@ quick way to see the win state.
   Tile(1,1) — but for the round Spectre (`keepFlat`), whose two curves meet
   there. `APERIODIC` in `levels.ts` keys each level and names the board it is
   cut from (`aperiodic.mode`: both Spectre levels are `spectre`'s).
-- `src/geometry/hat.ts` — the hat's family: Craig Kaplan's hatviz
+- `src/geometry/hat.ts` — the hat's family, cut from `hatMetatiles` in
+  `@tiling/geometry` (`packages/geometry/src/hat.ts`, shared with
+  Hypersweeper's hat, turtle and metatile boards): Craig Kaplan's hatviz
   substitution (BSD 3-Clause; the four metatiles H, T, P and F, glued into a
   patch and cut into bigger ones, `depth` times from the H) ported as it is,
   floats and all, then every corner of every hat and metatile read back onto
@@ -526,8 +529,9 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and
   checked by covering their grown tile exactly, and the Socolar–Taylor tile in
   `src/geometry/socolarTaylor.ts`, checked by its patch having no overlap and
-  no gap — and for the hat's family, which Hypersweeper has no board for,
-  defined in `src/geometry/hat.ts` and checked the same way. Build its cells exactly — for a
+  no gap — and for the hat's family, cut in `src/geometry/hat.ts` from
+  the shared patch (`hatMetatiles`) with windows of its own, and checked the
+  same way. Build its cells exactly — for a
   periodic tiling, `uniformLevel` with the template key and a box size found by
   scanning (square, one outline, a couple of dozen tiles) — and the tests check
   it tile for tile against the Hypersweeper board (`archimedeanBoard` for a

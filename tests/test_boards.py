@@ -9,6 +9,7 @@ import pytest
 
 from minesweeper.boards import (
     _ARCH_CONFIGS,
+    _HAT14,
     _PHYLLO_HEX,
     _SPECTRE_OUTLINE,
     APERIODIC_MODES,
@@ -43,8 +44,12 @@ from minesweeper.boards import (
     TTETROMINO,
     _arch_template,
     _brick_rings_tiles,
+    _deform_hats,
     _finalize_flat,
+    _hat_family_patch,
+    _hat_metatiles,
     _klaassen_tiles,
+    _metatile_cells,
     _pentaspiral_tiles,
     _phyllotaxis_tiles,
     _shared_vertex_adjacency,
@@ -83,6 +88,8 @@ from minesweeper.boards import (
     gosper_board,
     gp21_board,
     half_trapezoid_board,
+    hat_board,
+    hat_metatiles_board,
     hex_board,
     hexhex_board,
     hextriangle_board,
@@ -132,6 +139,7 @@ from minesweeper.boards import (
     triangle_board,
     triangle_grid_board,
     ttetromino_board,
+    turtle_board,
 )
 from minesweeper.boards import (
     boundary_components as _boundary_components,
@@ -796,6 +804,167 @@ class TestSpectre:
             tile_area * scale**2 * len(board.polygons), rel=1e-9)
 
 
+class TestHat:
+    """The hat's family: the hat, Tile(1, sqrt3); the turtle, Tile(sqrt3, 1);
+    and the four metatiles H, T, P and F every hat tiling is built from.
+
+    hatviz's float substitution read onto the Eisenstein lattice is what these
+    tests hold to account: the patch is the published one, every hat is the
+    hat turned by sixths (mirrored for "flip"), the deformation to the turtle
+    is exact, the tiles cover the patch exactly, and every board is edge to
+    edge on exact ids -- the metatiles only once their sides carry their
+    neighbours' corners.
+    """
+
+    @staticmethod
+    def _hats(depth):
+        return [h for m in _hat_metatiles(depth) for h in m.hats]
+
+    def test_the_patch_is_the_h_metatile_substituted(self):
+        # 1, 4 hats in one H; then 64/169, 442/1156, 3025/7921 metatiles/hats
+        for depth, metas, hats, flips in ((2, 64, 169, 22), (3, 442, 1156, 147),
+                                          (4, 3025, 7921, 1009)):
+            patch = _hat_metatiles(depth)
+            assert len(patch) == metas
+            assert len(self._hats(depth)) == hats
+            assert sum(mirrored for _, mirrored in self._hats(depth)) == flips
+        kinds = Counter(m.kind for m in _hat_metatiles(3))
+        assert [kinds[k] for k in "HTPF"] == [147, 22, 105, 168]
+        # H carries four hats, one of them mirrored; T one; P and F two
+        for m in _hat_metatiles(3):
+            assert len(m.hats) == {"H": 4, "T": 1, "P": 2, "F": 2}[m.kind]
+            assert sum(mirrored for _, mirrored in m.hats) == (m.kind == "H")
+
+    def test_no_two_mirrored_hats_share_a_side(self):
+        sides = Counter()
+        for corners, mirrored in self._hats(3):
+            if mirrored:
+                for a, b in zip(corners, corners[1:] + corners[:1]):
+                    sides[frozenset((a, b))] += 1
+        assert max(sides.values()) == 1
+
+    def test_every_hat_is_the_hat_turned_by_sixths(self):
+        # edge vectors in hex coordinates, turned by omega = (x, y) -> (-y, x + y)
+        def turn(v):
+            return (-v[1], v[0] + v[1])
+
+        def edges(corners):
+            return [(b[0] - a[0], b[1] - a[1]) for a, b in zip(corners, corners[1:] + corners[:1])]
+
+        ref = edges(_HAT14)
+        turns = []
+        for _ in range(6):
+            turns.append(ref)
+            ref = [turn(v) for v in ref]
+        # a mirror reflects in the x axis: x + y*omega -> (x + y) - y*omega
+        mirrored = [[(x + y, -y) for x, y in t] for t in turns]
+        for corners, flip in self._hats(3):
+            assert edges(corners) in (mirrored if flip else turns)
+
+    def test_the_turtle_swaps_the_two_edge_lengths(self):
+        board = turtle_board(3, 28, None, 1.0)
+        for polygon in board.polygons.values():
+            lengths = sorted(round(math.dist(a, b), 9)
+                             for a, b in zip(polygon, polygon[1:] + polygon[:1]))
+            # the hat's eight short edges (two of them its doubled side) are
+            # sqrt3 long now, its six long ones a unit
+            assert lengths == [1.0] * 6 + [round(math.sqrt(3), 9)] * 8
+
+    def test_deforming_by_one_and_one_is_the_spectres_tile(self):
+        hats = [corners for corners, _ in self._hats(2)]
+        one = (1, 0, 0, 0)
+        tile = _deform_hats(hats, one, one)[0]
+        polygon = [_z12_to_xy(v) for v in tile]
+        assert all(abs(math.dist(a, b) - 1) < 1e-12
+                   for a, b in zip(polygon, polygon[1:] + polygon[:1]))
+        reference = [_z12_to_xy(v) for v in _SPECTRE_OUTLINE]
+
+        def area(p):
+            return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(p, p[1:] + p[:1]))) / 2
+
+        assert math.isclose(area(polygon), area(reference))
+
+    @pytest.mark.parametrize("builder", [hat_board, turtle_board, hat_metatiles_board])
+    def test_vertex_ids_are_exact_integers(self, builder):
+        patch = _hat_family_patch({hat_board: "hat", turtle_board: "turtle",
+                                   hat_metatiles_board: "metatiles"}[builder], 3)
+        for ids in patch.cells:
+            for v in ids:
+                assert len(v) == 4 and all(isinstance(c, int) for c in v)
+
+    @pytest.mark.parametrize("tile", ["hat", "turtle", "metatiles"])
+    def test_the_patch_is_edge_to_edge_and_covers_exactly(self, tile):
+        # each directed edge once (consistent winding, no doubled tile), and
+        # the edges no other tile meets from the far side make one loop: a
+        # corner strictly inside another tile's side would leave that side
+        # and the two halves of it unmatched, a little loop of their own.
+        # The tiles' areas add up to the loop's, so there is neither an
+        # overlap nor a gap
+        patch = _hat_family_patch(tile, 3)
+        directed = Counter()
+        for ids in patch.cells:
+            for a, b in zip(ids, ids[1:] + ids[:1]):
+                directed[(a, b)] += 1
+        assert set(directed.values()) == {1}
+        def shoelace(points):
+            return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(points, points[1:] + points[:1])) / 2
+
+        step = {a: b for a, b in directed if (b, a) not in directed}
+        start = next(iter(step))
+        loop, at = [start], step[start]
+        while at != start:
+            loop.append(at)
+            at = step[at]
+        assert len(loop) == len(step)  # one outline, no holes
+        tiles = sum(shoelace([_z12_to_xy(v) for v in ids]) for ids in patch.cells)
+        assert all(shoelace([_z12_to_xy(v) for v in ids]) > 0 for ids in patch.cells)
+        assert math.isclose(tiles, shoelace([_z12_to_xy(v) for v in loop]))
+
+    def test_metatiles_carry_their_neighbours_corners(self):
+        # a T's side runs along part of an H's, so some metatiles have more
+        # points on their outline than corners -- and without those points
+        # the H would not count the T as a neighbour
+        metas = _hat_metatiles(3)
+        cells = _metatile_cells(metas)
+        assert any(len(cell) > len(m.corners) for m, cell in zip(metas, cells))
+        for m, cell in zip(metas, cells):
+            assert set(m.corners) <= set(cell)
+
+    @pytest.mark.parametrize("mode", ["hat", "turtle"])
+    @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
+    def test_glyph_sits_in_the_biggest_circle(self, mode, difficulty):
+        """The numbers have room: the hat's vertex mean sits just above its
+        notch, so each tile's number goes at the centre of the biggest circle
+        it holds -- for the hat through its two reflex corners and touching
+        a long side, for the turtle touching both sides of its 120-degree
+        corner and through a reflex one."""
+        board = build_board(mode, difficulty)
+        assert board.glyph_anchors.keys() == board.polygons.keys()
+
+        def to_segment(p, a, b):
+            (ax, ay), (bx, by) = a, b
+            t = ((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / math.dist(a, b) ** 2
+            t = min(1.0, max(0.0, t))
+            return math.dist(p, (ax + t * (bx - ax), ay + t * (by - ay)))
+
+        unit = min(math.dist(a, b) for polygon in board.polygons.values()
+                   for a, b in zip(polygon, polygon[1:] + polygon[:1]))
+        radius = {"hat": 1.3764764008373694, "turtle": 3 / (1 + math.sqrt(3) / 2)}[mode]
+        for cell, polygon in board.polygons.items():
+            anchor = board.glyph_anchors[cell]
+            edges = list(zip(polygon, polygon[1:] + polygon[:1]))
+            reach = min(to_segment(anchor, a, b) for a, b in edges)
+            assert math.isclose(reach, radius * unit, rel_tol=1e-9)
+            mean = (sum(x for x, _ in polygon) / 14, sum(y for _, y in polygon) / 14)
+            assert reach > min(to_segment(mean, a, b) for a, b in edges)
+            # and inside the tile: a ray to the right crosses the outline an
+            # odd number of times
+            x, y = anchor
+            crossings = sum(1 for (ax, ay), (bx, by) in edges
+                            if (ay > y) != (by > y) and x < ax + (y - ay) * (bx - ax) / (by - ay))
+            assert crossings % 2 == 1
+
+
 class TestAmmannBeenker:
     """The Ammann-Beenker tiling: squares and 45-degree rhombi, eight-fold.
 
@@ -963,25 +1132,41 @@ class TestAperiodicVariants:
         ("spectre easy", spectre_board, (3, 11, 81, 14.361), 81),
         ("spectre medium", spectre_board, (4, 37, 256, 9.437), 256),
         ("spectre hard", spectre_board, (4, 89, 480, 8.512), 480),
+        ("hat easy", hat_board, (3, 8, 81, 11.159), 81),
+        ("hat medium", hat_board, (3, 35, 256, 7.343), 256),
+        ("hat hard", hat_board, (4, 90, 480, 6.636), 480),
+        ("turtle easy", turtle_board, (3, 9, 81, 10.201), 81),
+        ("turtle medium", turtle_board, (3, 32, 256, 6.669), 256),
+        ("turtle hard", turtle_board, (4, 87, 480, 5.884), 480),
+        ("hatmetatiles easy", hat_metatiles_board, (3, 6, 81, 6.951), 81),
+        ("hatmetatiles medium", hat_metatiles_board, (4, 37, 256, 4.426), 256),
+        ("hatmetatiles hard", hat_metatiles_board, (4, 81, 480, 4.047), 480),
     ]
 
     @pytest.mark.parametrize("name,builder,args,keep", CASES)
     def test_every_variant_is_a_board(self, name, builder, args, keep):
         seen = set()
-        for variant in range(8):
+        for variant in range(16):
             board = builder(*args, variant)
             assert len(board.polygons) == keep
             # a disc: an island would be 2, a hole 0
             assert _euler_characteristic(board) == 1
             assert _boundary_components(board) == 1
             assert _connected(board)
-            seen.add(frozenset(board.polygons))
+            # by its tiles, not its cell ids: the hat's family labels a cell
+            # by its kind alone, so two windows can share every id
+            seen.add(frozenset(tuple(polygon) for polygon in board.polygons.values()))
         # ...and different boards, not one board eight times. Not necessarily
         # eight of them: a variant whose own window is rejected (bitten into,
         # or not a disc) walks on to the next candidate in the pool, so two
         # neighbouring variants can land on the same window. What the game
         # deals is deduplicated -- scripts/difficulty/windows.py drops a
         # repeat, and test_every_measured_window_is_a_board checks that.
+        # Sixteen of them, because the stride can alias with a pool: the hat
+        # metatiles' medium pool is 1129 centres, and 65537 is -3 modulo 1130,
+        # so variant v starts 3v from the end and the first few walk off it
+        # back to the centred window -- two boards in the first eight, 76 in
+        # the first 96, which is what the deal draws on.
         assert len(seen) >= 6
 
     @pytest.mark.parametrize("name,builder,args,keep", CASES)
@@ -1034,7 +1219,8 @@ class TestAperiodicVariants:
         }
         assert len(patches) == 5
 
-    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre",
+                                  "hat", "turtle", "hatmetatiles"])
     @pytest.mark.parametrize("difficulty", list(DIFFICULTIES))
     def test_only_measured_windows_are_dealt(self, mode, difficulty):
         # A window is a board of its own, so which ones a difficulty may
@@ -1050,7 +1236,8 @@ class TestAperiodicVariants:
         assert dealt <= set(windows)
         assert dealt == set(windows)  # ...and every one of them is reachable
 
-    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre",
+                                  "hat", "turtle", "hatmetatiles"])
     def test_no_dealt_window_is_bitten_into(self, mode):
         """Every window the game deals is a filled square, not one with a
         chunk missing.
@@ -1106,7 +1293,8 @@ class TestAperiodicVariants:
                     f"{deepest / tile:.2f} tiles deep"
                 )
 
-    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre"])
+    @pytest.mark.parametrize("mode", ["penrose", "kitedart", "ammannbeenker", "spectre",
+                                  "hat", "turtle", "hatmetatiles"])
     def test_every_measured_window_is_a_board(self, mode):
         # The list is data, and data can go stale against a preset that
         # changed shape under it -- so each window it names still has to
@@ -1119,7 +1307,7 @@ class TestAperiodicVariants:
                 board = build_board(mode, difficulty, seed)
                 assert len(board.polygons) == cells
                 assert _euler_characteristic(board) == 1
-                seen.add(frozenset(board.polygons))
+                seen.add(frozenset(tuple(polygon) for polygon in board.polygons.values()))
             # ...and no two of them are the same board under two numbers
             assert len(seen) == len(_WINDOWS[mode][difficulty]["windows"])
 

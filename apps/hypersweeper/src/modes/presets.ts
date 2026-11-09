@@ -15,6 +15,9 @@ import {
   penroseBoard,
   kiteDartBoard,
   spectreBoard,
+  hatBoard,
+  turtleBoard,
+  hatMetatilesBoard,
   klaassenBoard,
   pentaSpiral5Board,
   pentaSpiral6Board,
@@ -205,6 +208,9 @@ const BUILDERS: Record<string, Builder> = {
   kitedart_board: kiteDartBoard,
   ammann_beenker_board: ammannBeenkerBoard,
   spectre_board: spectreBoard,
+  hat_board: hatBoard,
+  turtle_board: turtleBoard,
+  hat_metatiles_board: hatMetatilesBoard,
   phyllotaxis_board: phyllotaxisBoard,
   klaassen_board: klaassenBoard,
   pentaspiral5_board: pentaSpiral5Board,
@@ -246,6 +252,9 @@ const VARIANT_BUILDERS = new Set([
   "kitedart_board",
   "ammann_beenker_board",
   "spectre_board",
+  "hat_board",
+  "turtle_board",
+  "hat_metatiles_board",
 ]);
 
 interface PresetSpec {

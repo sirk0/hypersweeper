@@ -145,8 +145,8 @@ export interface Level {
    * round the middle hexagon the board keeps. */
   socolarTaylor?: { rings: number };
   /** For a level of the hat's family — the hat, the turtle or the hat's four
-   * metatiles, which Hypersweeper has no board for, defined here in
-   * `geometry/hat.ts` — which tile, how many substitutions grow the H
+   * metatiles, cut in `geometry/hat.ts` from the patch Hypersweeper's boards
+   * of them are cut from (`hatMetatiles` in @tiling/geometry) — which tile, how many substitutions grow the H
    * metatile its patch is, and how many tiles its centred window keeps. */
   hat?: { tile: HatTile; depth: number; keep: number; centre?: number };
 }
@@ -855,7 +855,8 @@ function aperiodicLevel(
   };
 }
 
-/** The hat's family, which Hypersweeper has no board for (`geometry/hat.ts`):
+/** The hat's family (`geometry/hat.ts`, from the patch Hypersweeper's three
+ * boards of it are cut from, but windowed here, Rep-tiles' own way):
  * the hat, Tile(1,√3), the first aperiodic monotile, used both ways up —
  * about one tile in seven mirrored, no two of those touching; the turtle,
  * Tile(√3,1), the same outline with its two edge lengths swapped, laid as the

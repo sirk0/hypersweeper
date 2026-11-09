@@ -96,7 +96,7 @@ classic expert board's 30x16 -- but the classic boards remain the
 yardstick every row is calibrated against (`calibrate.CLASSIC`), so the
 targets in `targets.json` did not move.
 
-The four substitution boards trim to that `keep` from a **variable** centre —
+The seven substitution boards trim to that `keep` from a **variable** centre —
 one preset is a family of boards, one per window onto the grown patch (see
 "The aperiodic boards" in [`geometry.md`](geometry.md)) — and **the mine count
 does not carry from one window to the next by itself**. A patch of an aperiodic

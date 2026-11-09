@@ -73,6 +73,21 @@ export {
   type ExactTiles,
 } from "./aperiodic";
 
+// The hat's family: the hat, the turtle and the hat's metatiles, one patch.
+export {
+  hatBoard,
+  hatExact,
+  hatMetatiles,
+  hatMetatilesBoard,
+  hatMetatilesExact,
+  turtleBoard,
+  turtleExact,
+  type HatMeta,
+  type HatTile,
+  type Hex,
+  type MetaKind,
+} from "./hat";
+
 // The self-similar boards.
 export {
   carpetBoard,

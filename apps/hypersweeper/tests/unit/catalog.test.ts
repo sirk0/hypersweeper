@@ -186,6 +186,9 @@ describe("catalog families", () => {
       "kitedart",
       "ammannbeenker",
       "spectre",
+      "hat",
+      "turtle",
+      "hatmetatiles",
     ]);
     expect(pickerFamilies("klein")).not.toContain("spiral");
   });

@@ -49,7 +49,10 @@ Pick a surface, then a tiling:
   in how the courses are staggered. Several tilings have no translation at
   all: two Penrose mosaics (P3 rhombi, and P2 kites and darts), the eight-fold
   Ammann–Beenker tiling of squares and 45° rhombi, "the spectre" (Tile(1,1)), the *chiral*
-  monotile whose tiling uses rotations only and never mirrors a tile, a
+  monotile whose tiling uses rotations only and never mirrors a tile, the
+  hat (Tile(1,√3), the first aperiodic monotile, about one tile in seven
+  mirrored), the turtle (the hat with its two edge lengths swapped) and the
+  hat's four metatiles every hat tiling is built from, a
   phyllotactic spiral of one equilateral hexagon in five arms, and Klaassen's
   spirals of one convex pentagon, in five, six and seven arms. Five more are
   self-similar — one tile inflated into a patch shaped like itself: the

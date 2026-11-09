@@ -22,7 +22,7 @@ export interface ExactTiles {
 }
 
 /** Draw exact tiles as a flat board: vertex ids are the coefficients. */
-function exactBoard(
+export function exactBoard(
   mode: string,
   rows: { id: CellId; ids: readonly (readonly number[])[] }[],
   toXy: (p: readonly number[]) => Vertex,
@@ -369,7 +369,7 @@ function windowRows(
 /** `windowRows` on tiles given by their exact corners: each tile's vertex ids
  * are its coefficient tuples and its centroid the mean of its corners drawn by
  * `toXy`. The tiles kept, in the window's order. */
-function windowTiles<T extends { verts: readonly (readonly number[])[] }>(
+export function windowTiles<T extends { verts: readonly (readonly number[])[] }>(
   cells: readonly T[],
   toXy: (p: readonly number[]) => Vertex,
   tiebreak: (a: T, b: T) => number,
@@ -967,10 +967,9 @@ function klaassenGrow<T extends KlaassenTile>(rows: T[], keep: number): T[] {
 //
 // There is no floating point anywhere: every edge direction is a multiple of
 // 30° and every placement is z ↦ ζᵏz + t with ζ = exp(iπ/6), so all of it runs
-// in ℤ[ζ12] with integer arithmetic — unlike the Hat (this game's original
-// aperiodic monotile board, since removed as a menu entry: no gameplay
-// difference, and Spectre's construction is the stricter of the two), whose
-// Eisenstein-lattice vertices did need floats. That matters here in a way it
+// in ℤ[ζ12] with integer arithmetic — unlike the hat's (hat.ts), whose
+// substitution runs in floats and is read back onto the Eisenstein lattice.
+// That matters here in a way it
 // did not there — ℤ[ζ12] is *dense* in the plane, not discrete, so there is
 // no lattice to snap a float vertex back to. Line-for-line port of
 // minesweeper/boards/aperiodic.py; see that file for the fuller commentary.
@@ -978,7 +977,7 @@ function klaassenGrow<T extends KlaassenTile>(rows: T[], keep: number): T[] {
 /** A point of ℤ[ζ12] as 4 integer coefficients over the basis (1, ζ, ζ², ζ³),
  * reduced by ζ⁴ = ζ² − 1. Vertex ids are these tuples, so shared-vertex
  * adjacency is exact. */
-type Z12Point = readonly [number, number, number, number];
+export type Z12Point = readonly [number, number, number, number];
 
 const Z12_ZERO: Z12Point = [0, 0, 0, 0];
 
@@ -988,7 +987,7 @@ function zeta12Mul(p: Z12Point): Z12Point {
   return [-d, a, b + d, c];
 }
 
-function z12Add(p: Z12Point, q: Z12Point): Z12Point {
+export function z12Add(p: Z12Point, q: Z12Point): Z12Point {
   return [p[0] + q[0], p[1] + q[1], p[2] + q[2], p[3] + q[3]];
 }
 
@@ -997,7 +996,7 @@ function z12Sub(p: Z12Point, q: Z12Point): Z12Point {
 }
 
 /** Multiply by ζᵏ, i.e. rotate k·30° about the origin. */
-function z12Rot(p: Z12Point, k: number): Z12Point {
+export function z12Rot(p: Z12Point, k: number): Z12Point {
   let out = p;
   for (let i = ((k % 12) + 12) % 12; i > 0; i--) out = zeta12Mul(out);
   return out;
@@ -1015,7 +1014,7 @@ const ZETA12_BASIS: Vertex[] = [0, 1, 2, 3].map((k) => [
   Math.sin((Math.PI * k) / 6),
 ]);
 
-function z12ToXy(p: Z12Point): Vertex {
+export function z12ToXy(p: Z12Point): Vertex {
   let x = 0;
   let y = 0;
   for (let i = 0; i < 4; i++) {
@@ -1029,14 +1028,14 @@ const z12Key = (p: Z12Point): string => p.join(",");
 
 /** Lexicographic order on ℤ[ζ12] coefficient tuples (matches Python tuple sort;
  * used only as the `keep` trim's tie-break). */
-function z12Cmp(a: Z12Point, b: Z12Point): number {
+export function z12Cmp(a: Z12Point, b: Z12Point): number {
   for (let i = 0; i < 4; i++) {
     if (a[i]! !== b[i]!) return a[i]! - b[i]!;
   }
   return 0;
 }
 
-const Z12_POWERS: Z12Point[] = [[1, 0, 0, 0]];
+export const Z12_POWERS: Z12Point[] = [[1, 0, 0, 0]];
 for (let k = 0; k < 11; k++) Z12_POWERS.push(zeta12Mul(Z12_POWERS[k]!));
 
 // The 14 edge directions of Tile(1,1) in units of 30°, read off Kaplan's
@@ -1201,7 +1200,7 @@ interface SpectreRow {
 }
 
 /** Lexicographic order on two tiles' sorted vertex-id lists (equal length). */
-function cmpSortedZ12(A: Z12Point[], B: Z12Point[]): number {
+export function cmpSortedZ12(A: Z12Point[], B: Z12Point[]): number {
   const n = Math.min(A.length, B.length);
   for (let i = 0; i < n; i++) {
     const c = z12Cmp(A[i]!, B[i]!);

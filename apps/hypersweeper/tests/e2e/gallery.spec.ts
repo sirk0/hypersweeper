@@ -64,6 +64,13 @@ const MODES = [
   // number is not centred on its vertex mean (see the revealed shot below).
   "kitedart",
   "spectre",
+  // and the hat's family, cut from one patch: the hat (a 13-gon, about one tile
+  // in seven mirrored), the turtle (its edge lengths swapped) and the hat's
+  // metatiles -- the one aperiodic board whose tiles meet corner to side, each
+  // carrying its neighbours' corners on its sides as T-vertices.
+  "hat",
+  "turtle",
+  "hatmetatiles",
   // and Ammann–Beenker: unit squares and 45° rhombi, the eight-fold one.
   "ammannbeenker",
   // and the phyllotactic spiral: one equilateral hexagon in five arms, whose

@@ -510,7 +510,7 @@ export const MENU_FAMILY_HINTS: Record<string, string> = {
   // A grab-bag rather than a symmetry class, so the hint names its members
   // instead of a property they share.
   other: "Two rep-tiles, and Dürer's pentagons",
-  aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre",
+  aperiodic: "Never repeats: Penrose, Ammann–Beenker, the Spectre, the hat",
   spiral: "Wound round a centre: sunflower, pentagons, brick rings",
   reptile: "One tile split into smaller copies of itself",
   fractal: "Holes, or a ragged edge, at every scale",

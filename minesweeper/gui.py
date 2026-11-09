@@ -62,6 +62,7 @@ from minesweeper.boards import (
     surface_of,
     view_hint,
 )
+from minesweeper.boards.hat import _hat_metatiles
 from minesweeper.boards.hurwitz import CLOSED_SURFACES, SURFACE_MODES
 from minesweeper.boards.surfaces import _boy_point, _trefoil_core
 from minesweeper.game import CellState, Game, GameState
@@ -1369,16 +1370,28 @@ def _render_icon(key: str) -> pygame.Surface:
             _icon_shape(s, [at(k + 1), at(k, k + 1), at(k, k + 1, k + 2), at(k + 1, k + 2)],
                         fill=ICON_BLUE, width=3)
         _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
-    elif key == "spectre":
-        # the Spectre's menu icon keeps the nicer silhouette of its removed
-        # sibling "The Hat" (the two aperiodic monotiles share a family
-        # resemblance -- Tile(1,1) is a member of the hat continuum -- and
-        # this outline reads better at icon size than a walk of the
-        # Spectre's own edge directions).
+    elif key in ("spectre", "hat", "turtle"):
+        # the monotile itself, one tile filling the icon: the hat is Kaplan's
+        # outline (hex coordinates, the long side two short edges in a line);
+        # the turtle is the same walk with every edge's length swapped -- a
+        # short edge (or the doubled one) sqrt3 times as long, a long one sqrt3
+        # times shorter -- and the Spectre is Tile(1,1), its fourteen unit
+        # steps at multiples of 30 degrees
         hr3 = math.sqrt(3) / 2
         ab = [(0, 0), (-1, -1), (0, -2), (2, -2), (2, -1), (4, -2), (5, -1),
               (4, 0), (3, 0), (2, 2), (0, 3), (0, 2), (-1, 2)]
         raw = [(a + 0.5 * b, hr3 * b) for a, b in ab]
+        if key == "turtle":
+            hat, raw = raw, [(0.0, 0.0)]
+            for (px, py), (qx, qy) in zip(hat[:-1], hat[1:]):
+                dx, dy = qx - px, qy - py
+                k = 1 / math.sqrt(3) if abs(math.hypot(dx, dy) - math.sqrt(3)) < 1e-9 else math.sqrt(3)
+                raw.append((raw[-1][0] + dx * k, raw[-1][1] + dy * k))
+        elif key == "spectre":
+            raw = [(0.0, 0.0)]
+            for direction in (0, 10, 1, 3, 0, 2, 5, 7, 4, 6, 6, 8, 11):
+                raw.append((raw[-1][0] + math.cos(direction * math.pi / 6),
+                            raw[-1][1] + math.sin(direction * math.pi / 6)))
         xs = [p[0] for p in raw]
         ys = [p[1] for p in raw]
         span = max(max(xs) - min(xs), max(ys) - min(ys))
@@ -1388,6 +1401,21 @@ def _render_icon(key: str) -> pygame.Surface:
         pts = [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc) for x, y in raw]
         _icon_shape(s, pts, width=4)
         _icon_gloss(s, pygame.Rect(d * 0.1, d * 0.06, d * 0.8, d * 0.55))
+    elif key == "hatmetatiles":
+        # the four metatiles of a once-substituted H -- the H hexagons in one
+        # shade, the triangle, parallelograms and pentagons in the other
+        hr3 = math.sqrt(3) / 2
+        metas = _hat_metatiles(1)
+        polygons = [[(a + 0.5 * b, hr3 * b) for a, b in m.corners] for m in metas]
+        xs = [x for poly in polygons for x, _ in poly]
+        ys = [y for poly in polygons for _, y in poly]
+        sc = d * 0.86 / max(max(xs) - min(xs), max(ys) - min(ys))
+        ox = (d - (max(xs) - min(xs)) * sc) / 2
+        oy = (d - (max(ys) - min(ys)) * sc) / 2
+        for m, poly in zip(metas, polygons):
+            _icon_shape(s, [(ox + (x - min(xs)) * sc, oy + (max(ys) - y) * sc) for x, y in poly],
+                        fill=ICON_BLUE_LIGHT if m.kind == "H" else ICON_BLUE, width=3)
+        _icon_gloss(s, pygame.Rect(d * 0.06, d * 0.06, d * 0.88, d * 0.6))
     elif key == "phyllotaxis":
         # the innermost ten tiles of the spiral: the five 72/144 hexagons
         # that meet at the centre, and the five of the odd wedges, offset

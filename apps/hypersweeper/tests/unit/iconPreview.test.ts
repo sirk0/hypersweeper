@@ -102,7 +102,15 @@ describe("card previews", () => {
     // uses — and must not take it: repeating a sample of an aperiodic tiling
     // or a substitution claims the one thing that is not true of it. Cropped
     // from the real patch, they fill the card like any other tiling.
-    for (const key of ["penrose", "kitedart", "ammannbeenker", "spectre"]) {
+    for (const key of [
+      "penrose",
+      "kitedart",
+      "ammannbeenker",
+      "spectre",
+      "hat",
+      "turtle",
+      "hatmetatiles",
+    ]) {
       const preview = previewIcon(key);
       expect(preview.tiled, key).toBe(true);
       expect(paths(preview.svg), key).toBeGreaterThan(10);

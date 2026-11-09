@@ -15,7 +15,7 @@ twice.
 - `data/presets.json` — the difficulty presets for the **ported** modes
   (the flat regular ones — square/triangle/trigrid/hex/hexhex/hextriangle —
   the solids, the regular-tiling surface wraps, every Archimedean/Laves
-  tiling × surface, the aperiodic tilings — penrose/kitedart/ammannbeenker/spectre —
+  tiling × surface, the aperiodic tilings — penrose/kitedart/ammannbeenker/spectre/hat/turtle/hatmetatiles —
   and the spirals — phyllotaxis/klaassen/pentaspiral5/6/7/brickrings), as
   `{mode: {builder, mineArg, args}}`. The Archimedean/Laves rows carry the
   tiling key as their first arg. The args are positional for the *Python*
@@ -29,11 +29,11 @@ twice.
   is their authoring source.
 - `data/conformance.json` — board statistics (cell/mine/euler/boundary/…)
   per ported mode × difficulty, the TypeScript conformance oracle. Its
-  `seeds` block repeats the three aperiodic substitution modes (penrose,
-  kitedart, ammannbeenker, spectre) at fixed game seeds, where one preset is a family of boards
+  `seeds` block repeats the aperiodic substitution modes (penrose,
+  kitedart, ammannbeenker, spectre, hat, turtle, hatmetatiles) at fixed game seeds, where one preset is a family of boards
   rather than a single one — see "The aperiodic boards" in
   [`geometry.md`](geometry.md).
-- `data/windows.json` — which windows onto those three aperiodic patches a
+- `data/windows.json` — which windows onto those aperiodic patches a
   board may be dealt from, measured with the reference solver so that every
   one of them plays like the window the mine count was fitted on. Read by
   `presets.window_for` / `windowFor`. Like `data/difficulty.json` it is

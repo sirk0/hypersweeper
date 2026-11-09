@@ -1144,6 +1144,78 @@
         ]
       }
     },
+    "hat": {
+      "builder": "hat_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          8,
+          81,
+          11.159
+        ],
+        "medium": [
+          3,
+          35,
+          256,
+          7.343
+        ],
+        "hard": [
+          4,
+          90,
+          480,
+          6.636
+        ]
+      }
+    },
+    "turtle": {
+      "builder": "turtle_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          9,
+          81,
+          10.201
+        ],
+        "medium": [
+          3,
+          32,
+          256,
+          6.669
+        ],
+        "hard": [
+          4,
+          87,
+          480,
+          5.884
+        ]
+      }
+    },
+    "hatmetatiles": {
+      "builder": "hat_metatiles_board",
+      "mineArg": 1,
+      "args": {
+        "easy": [
+          3,
+          6,
+          81,
+          6.951
+        ],
+        "medium": [
+          4,
+          37,
+          256,
+          4.426
+        ],
+        "hard": [
+          4,
+          81,
+          480,
+          4.047
+        ]
+      }
+    },
     "phyllotaxis": {
       "builder": "phyllotaxis_board",
       "mineArg": 1,

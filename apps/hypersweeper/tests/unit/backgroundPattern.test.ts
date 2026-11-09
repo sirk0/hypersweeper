@@ -63,7 +63,7 @@ describe("which pattern a mode gets", () => {
     // backgroundPattern.ts would leave that board on a blank page.
     const missing = MODES.filter((mode) => patternKey(mode) === null);
     expect(missing).toEqual([]);
-    expect(MODES.length).toBe(358);
+    expect(MODES.length).toBe(361);
   });
 
   it("follows the tiling, not the surface", () => {
@@ -137,6 +137,11 @@ describe("which pattern a mode gets", () => {
     expect(patternKey("ammannbeenker")).toBe("ammannbeenker");
     expect(patternKey("phyllotaxis")).toBe("phyllotaxis");
     expect(patternKey("spectre")).toBe("deltoidal");
+    // The hat's family: the hat and the turtle are polykites on that tiling
+    // too, and the metatiles are patches of the triangular lattice.
+    expect(patternKey("hat")).toBe("deltoidal");
+    expect(patternKey("turtle")).toBe("deltoidal");
+    expect(patternKey("hatmetatiles")).toBe("tri");
     // The brick rings are the other way about: their tile is a plain 2:1
     // brick and tiles the plane as any wall does, so the page is that wall —
     // what does not repeat is the winding, which no page can draw.

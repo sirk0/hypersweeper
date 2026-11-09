@@ -874,6 +874,13 @@ const MODE_PATTERN = new Map<string, string>();
   // is the one that cannot (see SPECTRE_PATTERN).
   for (const mode of [...APERIODIC_MODES, ...SPIRAL_MODES]) MODE_PATTERN.set(mode, mode);
   MODE_PATTERN.set("spectre", SPECTRE_PATTERN);
+  // The hat and the turtle are polykites on that same tiling — the hat eight
+  // kites, the turtle ten — so they take it too; the hat's metatiles are each
+  // a patch of the triangular lattice the hats are drawn on, so theirs is
+  // the triangles.
+  MODE_PATTERN.set("hat", SPECTRE_PATTERN);
+  MODE_PATTERN.set("turtle", SPECTRE_PATTERN);
+  MODE_PATTERN.set("hatmetatiles", "tri");
   // ...and so are the brick rings, for the opposite reason: their tile has a
   // period, its winding has not (see BRICK_PATTERN).
   MODE_PATTERN.set("brickrings", BRICK_PATTERN);

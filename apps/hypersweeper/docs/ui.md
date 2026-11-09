@@ -672,7 +672,9 @@ menu is in anyway.
   rhombs has a rectangular sublattice. So it takes the **deltoidal
   trihexagonal** tiling instead — the hat continuum, of which Tile(1,1) is the
   equilateral member, is drawn as polykites on exactly that, eight kites to a
-  hat.
+  hat. The hat and the turtle (ten kites) take that page too, being polykites
+  on it; the hat's metatiles, each a patch of the triangular lattice, take the
+  triangles.
 
   A tiling whose lattice is not rectangular — the phyllotactic
   one is a rhombus at 36° — goes through `latticeDomain`, which finds the
