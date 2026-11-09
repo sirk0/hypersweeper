@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "colourings": "vite-node scripts/find-colourings.mts",
     "difficulty": "vite-node scripts/measure-difficulty.mts",
     "boards": "vite-node scripts/find-boards.mts",
     "format": "prettier --write .",

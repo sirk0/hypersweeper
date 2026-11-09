@@ -63,6 +63,17 @@ some back off.
     colour (a striped one: `Painting.alike`) plays as its lined board does,
     so it is left to the lined boards; and a coloured board never draws
     lines.
+  - *The other eight uniform tilings* (`?level=trihex.lines`,
+    `?level=trihex.3byshape`, `?level=trunctrihex.lines`) are lined and
+    coloured the same way, one tray tile per colour *and shape*: a colouring
+    may give every shape every colour, or give a shape colours of its own
+    ("by shape": 3.6.3.6's hexagons one colour, its up and down triangles
+    the two others). Each keeps at most two lined boards and three coloured
+    ones — fewest tray tiles first, then the hardest as measured, one
+    balanced and one by shape among the coloured where it has both. On an
+    octagon or a dodecagon a line between two edges further apart than
+    neighbours runs round the point past the tile where their lines meet,
+    square on to both.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
   marks ask for turning a plain board never needs, and every marked level
@@ -171,7 +182,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 6 matching rules (lines on the regular three, Penrose's arrows on his rhombi and his kites and darts) and 13 colourings of the regular three in two more, 407 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 22 matching rules (lines on the eleven uniform tilings, Penrose's arrows on his rhombi and his kites and darts) and 37 colourings of the eleven uniform tilings in two more, 447 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -280,6 +291,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
+npm run colourings   # choose each uniform tiling's lined and coloured levels into src/colourings.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
@@ -473,10 +485,25 @@ quick way to see the win state.
   all round) and need more than one tile per shape (one reads as a lined
   board), and drops any whose tray another already had (`traySignature`: the same up to
   turning a tile, a mirror and renaming the colours — rows and columns are
-  one). `COLOURED` lists the boards painted and each one's lattice; the
+  one). `COLOURED` lists the regular boards painted and each one's lattice; the
   level is `<plain>.<label>`, `Level.decor` saying what it marks — lined
   ones in the Matching rules section (`decor.rules`), the rest in
-  Colourings. `arrowLevel` gives an aperiodic board arrows from its builder's Robinson
+  Colourings. The other eight uniform tilings (`UNIFORM`) are painted the
+  same way, with three differences. `paintedCandidates` asks for one tray
+  tile per colour *and plain kind*, and drops a tray of one tile per shape
+  each one mark all round (the shapes decide it). Their lattice is found
+  from the cells (`latticeOf`: the shortest translation that carries the
+  patch onto itself, and the shortest not along it), and what lies past the
+  rim is read off a patch twice the window's size (`uniformContext`, moved
+  onto the window exactly) — the snub hexagonal's window holds one hexagon,
+  too few to see its period. And searching them all takes seconds (sixty
+  thousand colourings on the snub hexagonal), so `npm run colourings`
+  (`scripts/find-colourings.mts`, choosing in `src/colouringChoice.ts`)
+  writes each one's chosen `PaintingParams` to `src/colourings.json`, and
+  the game builds only those (`paintingOf`); the tests choose again for all
+  but the two slowest and fail while the file is out of step. Labels on a
+  board of several shapes say lines, how many colours, "one in three" and
+  "by shape" (`trihex.2oneinthreebyshape`), not how many edges match. `arrowLevel` gives an aperiodic board arrows from its builder's Robinson
   triangles, which name their corners alike at every step: which leg each
   edge was (`penroseLegs`, `kiteDartLegs` in @tiling/geometry), and a rule
   stated on the legs. The rhombi's (`penroseRulesLevel`): every a–b leg a
@@ -564,7 +591,9 @@ quick way to see the win state.
   meet as they should make one shape across their edge: a colour as a half
   disc on the edge's middle; a lined board's lines from edge to edge, square
   on and ending on each (straight across, or a Truchet arc about the corner
-  two lined edges share; butt-capped, so never past the edge), and a lone
+  two lined edges share — or, two edges further apart on an octagon or a
+  dodecagon, about the point their lines meet, `meet`; butt-capped, so
+  never past the edge), and a lone
   lined edge as a half disc; Penrose's arrows as arcs about the tile's
   corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —

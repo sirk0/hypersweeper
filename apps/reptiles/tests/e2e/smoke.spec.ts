@@ -379,6 +379,17 @@ test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows
   await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
   await expect(page.locator("svg.board .world .decor.line")).toHaveCount(1);
 
+  // the other uniform tilings: one tray tile per colour and shape — 3.6.3.6
+  // in three colours by shape, its hexagons one colour and its triangles
+  // the two others — and 4.6.12's lines, one tray tile per shape
+  await page.goto("/?level=trihex.3byshape");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(3);
+  await expect(page.locator("svg.board .tray-layer .decor.band")).not.toHaveCount(0);
+  await expect(page.locator("svg.board .tray-layer .decor.line")).toHaveCount(0);
+  await page.goto("/?level=trunctrihex.lines");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(3);
+  await expect(page.locator("svg.board .tray-layer .decor.line")).not.toHaveCount(0);
+
   // Penrose's rhombi and his kites and darts with their arrows: two arcs
   // on each tile, one of each kind
   for (const key of ["penrose.rules", "kitedart.rules"]) {
@@ -418,13 +429,21 @@ test("a tiling's marked levels: on its own page in Tilings, and on its figure's 
   await expect(page).toHaveURL(/\?level=hexagons\./);
   await page.goBack();
   await expect(page.locator("#tiling")).toBeVisible();
+  // so does a uniform tiling's: 3.6.3.6's
+  await page.goto("/?tilings");
+  const trihex = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^3\.6\.3\.6$/ }) });
+  await expect(trihex.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
+  await trihex.click();
+  await expect(page).toHaveURL(/\?tiling=trihex$/);
   // a tiling with none opens straight away
   await page.goto("/?tilings");
   await page
     .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^3\.6\.3\.6$/ }) })
+    .filter({ has: page.locator(".card-name", { hasText: /^V4\.8²$/ }) })
     .click();
-  await expect(page).toHaveURL(/\?level=trihex$/);
+  await expect(page).toHaveURL(/\?level=tetrakis$/);
   // the triangle's page: its plain tilings by difficulty, then the marked ones
   await page.goto("/?figure=triangles");
   await expect(page.locator('#figure-list [data-group="rules"] .card').first()).toBeVisible();
