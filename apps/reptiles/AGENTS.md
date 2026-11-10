@@ -81,6 +81,15 @@ some back off.
     octagon or a dodecagon a line between two edges further apart than
     neighbours runs round the point past the tile where their lines meet,
     square on to both.
+  - *The eight Laves tilings* (`?level=cairo.lines`,
+    `?level=deltoidal.2oneinthree`, `?level=kisrhombille.3mixed`) are lined
+    and coloured just as the uniform ones are, and named as the regular
+    boards are, one tile each: "V3.12² · linked pairs". On their kites,
+    rhombi, pentagons and triangles a line between two edges is a curve
+    leaving each edge's middle square on. The Cairo and V3⁴.6 have lined
+    boards only: no colouring of theirs measures as hard as the plain board.
+  No marked level measures easier than its plain board: the choice drops
+  any that would.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
   marks ask for turning a plain board never needs, and every marked level
@@ -189,7 +198,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 22 matching rules (lines on the eleven uniform tilings, Penrose's arrows on his rhombi and his kites and darts) and 37 colourings of the eleven uniform tilings in two more, 447 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 37 matching rules (lines on the eleven uniform tilings and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts) and 52 colourings of the uniform and Laves tilings in two more, 477 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -299,7 +308,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # choose each uniform and Laves tiling's lined and coloured levels into src/colourings.json (seconds)
+npm run colourings   # choose each uniform and Laves tiling's lined and coloured levels into src/colourings.json (ten minutes, nearly all the kisrhombille's; `-- <key>…` for only those)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
@@ -513,12 +522,15 @@ quick way to see the win state.
   too few to see its period. The eight Laves tilings (`LAVES`) are painted
   just as these are, their wider patch a wider dual window (`lavesWindow`,
   in the same ring); one tile each, they are labelled as the regular boards
-  are. And searching them all takes seconds (sixty
-  thousand colourings on the snub hexagonal), so `npm run colourings`
+  are. And searching them all takes minutes (sixty
+  thousand colourings on the snub hexagonal, a million and a half on the
+  kisrhombille), so `npm run colourings`
   (`scripts/find-colourings.mts`, choosing in `src/colouringChoice.ts`)
   writes each one's chosen `PaintingParams` to `src/colourings.json`, and
   the game builds only those (`paintingOf`); the tests choose again for all
-  but the two slowest and fail while the file is out of step. Labels on a
+  but the three slowest (`SLOW_CHOICE`: the snub hexagonal, the truncated
+  trihexagonal and the kisrhombille, whose twelve translation classes take
+  ten minutes) and fail while the file is out of step. Labels on a
   board of several shapes say lines, how many colours, "one in three" and
   "by shape" (`trihex.2oneinthreebyshape`), not how many edges match. `arrowLevel` gives an aperiodic board arrows from its builder's Robinson
   triangles, which name their corners alike at every step: which leg each

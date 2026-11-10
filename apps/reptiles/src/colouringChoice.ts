@@ -21,7 +21,8 @@ export const COLOURS_CAP = 3;
 
 /**
  * The paintings of the uniform or Laves board `plain` (its window `box` edges square)
- * worth a level, at most `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
+ * worth a level — none measuring easier than `plain` itself — at most
+ * `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
  * tray tiles first, then the hardest as measured — but a lined board with a
  * line still on it (not all cut back to half discs) before any without; among the coloured, the
  * best balanced one (every shape in every colour) and the best by shape (a
@@ -32,8 +33,12 @@ export function chooseColourings(plain: Level, box: number): PaintingParams[] {
   const context = periodicContext(plain, box);
   const lattice = latticeOf(plain.ring, context);
   const all = paintings(plain.ring, plain.cells, lattice, [2, 3], context, plainKinds(plain));
+  // never one that measures easier than the plain board: the marks only
+  // ever ask more of the player
+  const floor = measure(plain).score - 1e-9;
   const ranked = paintedCandidates(plain, all)
     .map((c) => ({ ...c, score: measure(c.level).score }))
+    .filter((c) => c.score >= floor)
     .sort((a, b) => a.level.tiles.length - b.level.tiles.length || b.score - a.score);
   // a lined board with a line left on it before one cut back to nothing but
   // half discs

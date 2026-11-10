@@ -2224,6 +2224,156 @@
     "presses": 14,
     "flips": 0
   },
+  "tetrakis.lines": {
+    "score": 0.662,
+    "presses": 11,
+    "flips": 2
+  },
+  "tetrakis.lines2": {
+    "score": 0.662,
+    "presses": 11,
+    "flips": 2
+  },
+  "tetrakis.2apart": {
+    "score": 0.603,
+    "presses": 8,
+    "flips": 0
+  },
+  "rhombille.lines": {
+    "score": 1.188,
+    "presses": 19,
+    "flips": 0
+  },
+  "rhombille.2oneinthree": {
+    "score": 1.93,
+    "presses": 23,
+    "flips": 12
+  },
+  "rhombille.2oneinthree2": {
+    "score": 1.651,
+    "presses": 19,
+    "flips": 10
+  },
+  "rhombille.2oneinthree3": {
+    "score": 1.122,
+    "presses": 15,
+    "flips": 0
+  },
+  "triakis.lines": {
+    "score": 0.732,
+    "presses": 12,
+    "flips": 0
+  },
+  "triakis.linkedpairs": {
+    "score": 0.732,
+    "presses": 12,
+    "flips": 0
+  },
+  "triakis.2oneinthree": {
+    "score": 1.263,
+    "presses": 17,
+    "flips": 3
+  },
+  "triakis.2oneinthree2": {
+    "score": 1.263,
+    "presses": 17,
+    "flips": 3
+  },
+  "triakis.3mixed": {
+    "score": 1.222,
+    "presses": 10,
+    "flips": 7
+  },
+  "cairo.lines": {
+    "score": 2.672,
+    "presses": 25,
+    "flips": 0
+  },
+  "cairo.lines2": {
+    "score": 2.672,
+    "presses": 25,
+    "flips": 0
+  },
+  "prismaticpent.lines": {
+    "score": 0.182,
+    "presses": 1,
+    "flips": 0
+  },
+  "prismaticpent.branchinglines": {
+    "score": 0.182,
+    "presses": 1,
+    "flips": 0
+  },
+  "prismaticpent.2oneinthree": {
+    "score": 0.417,
+    "presses": 2,
+    "flips": 2
+  },
+  "prismaticpent.2oneinthree2": {
+    "score": 0.417,
+    "presses": 2,
+    "flips": 2
+  },
+  "prismaticpent.3paired": {
+    "score": 0.491,
+    "presses": 0,
+    "flips": 1
+  },
+  "floret.lines": {
+    "score": 1.131,
+    "presses": 17,
+    "flips": 0
+  },
+  "floret.lines2": {
+    "score": 1.131,
+    "presses": 17,
+    "flips": 0
+  },
+  "deltoidal.lines": {
+    "score": 0.458,
+    "presses": 8,
+    "flips": 0
+  },
+  "deltoidal.linkedpairs": {
+    "score": 0.641,
+    "presses": 9,
+    "flips": 5
+  },
+  "deltoidal.2oneinthree": {
+    "score": 0.935,
+    "presses": 13,
+    "flips": 5
+  },
+  "deltoidal.2oneinthree2": {
+    "score": 0.929,
+    "presses": 12,
+    "flips": 6
+  },
+  "deltoidal.2oneinthree3": {
+    "score": 0.732,
+    "presses": 9,
+    "flips": 3
+  },
+  "kisrhombille.lines": {
+    "score": 1.07,
+    "presses": 11,
+    "flips": 7
+  },
+  "kisrhombille.lines2": {
+    "score": 1.07,
+    "presses": 11,
+    "flips": 7
+  },
+  "kisrhombille.2apart": {
+    "score": 1.342,
+    "presses": 17,
+    "flips": 0
+  },
+  "kisrhombille.3mixed": {
+    "score": 1.777,
+    "presses": 17,
+    "flips": 8
+  },
   "penrose.rules": {
     "score": 0.84,
     "presses": 10,

@@ -239,15 +239,27 @@ export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p
       // as far from it: then the arc meets each edge square on — round the
       // corner two neighbouring edges share, or round a point past the
       // tile for two further apart (an octagon's or a dodecagon's)
-      else if (centre && centre !== "parallel")
-        lines.push(`M${pt(p)}${arcTo(map(centre), p, q)}`);
+      else if (centre && centre !== "parallel") lines.push(`M${pt(p)}${arcTo(map(centre), p, q)}`);
       // an irregular tile's (a Laves tile's kite, rhombus or pentagon): a
       // curve leaving each middle along the edge's inward normal, so it
-      // still meets each edge square on and runs on into the tile across
-      else
-        lines.push(
-          `M${pt(p)}C${pt(map(off(i, gap * 0.4)))} ${pt(map(off(j, gap * 0.4)))} ${pt(q)}`,
-        );
+      // still meets each edge square on and runs on into the tile across —
+      // round the corner two neighbouring edges share as an arc round it
+      // would, each arm as long as a circle's through that middle (4/3 ·
+      // tan(φ/4) of its distance from the corner, φ the turn); between two
+      // edges further apart, a share of the gap
+      else {
+        const corner = j === (i + 1) % m ? j : i === (j + 1) % m ? i : null;
+        let [hi, hj] = [gap * 0.4, gap * 0.4];
+        if (corner !== null) {
+          const c = xy[corner]!;
+          const [ni, nj] = [inward(i), inward(j)];
+          const turn = Math.acos(Math.max(-1, Math.min(1, ni[0] * nj[0] + ni[1] * nj[1])));
+          const kappa = (4 / 3) * Math.tan((Math.PI - turn) / 4);
+          hi = kappa * Math.hypot(...sub(mid(i), c));
+          hj = kappa * Math.hypot(...sub(mid(j), c));
+        }
+        lines.push(`M${pt(p)}C${pt(map(off(i, hi)))} ${pt(map(off(j, hj)))} ${pt(q)}`);
+      }
     } else if (lined.length > 2) {
       // spokes to the middle of the tile, each leaving its edge square on
       const hub = centroid(xy);

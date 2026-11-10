@@ -39,7 +39,7 @@ import { loopsOf } from "../../src/view/curve";
 const Z4 = cyclotomic(4);
 const COLOURED = LEVELS.filter((l) => l.decor);
 /** The tilings whose full colouring choice is too slow for a unit test. */
-const SLOW_CHOICE = ["snubhex", "trunctrihex"];
+const SLOW_CHOICE = ["snubhex", "trunctrihex", "kisrhombille"];
 
 /** A unit square at (x, y) with `marks` on its edges: bottom, right, top,
  * left. */
@@ -179,6 +179,36 @@ describe("colourings", () => {
       "trunctrihex.2oneinthreebyshape",
       "trunctrihex.2byshape",
       "trunctrihex.3byshape",
+      "tetrakis.lines",
+      "tetrakis.lines2",
+      "tetrakis.2apart",
+      "rhombille.lines",
+      "rhombille.2oneinthree",
+      "rhombille.2oneinthree2",
+      "rhombille.2oneinthree3",
+      "triakis.lines",
+      "triakis.linkedpairs",
+      "triakis.2oneinthree",
+      "triakis.2oneinthree2",
+      "triakis.3mixed",
+      "cairo.lines",
+      "cairo.lines2",
+      "prismaticpent.lines",
+      "prismaticpent.branchinglines",
+      "prismaticpent.2oneinthree",
+      "prismaticpent.2oneinthree2",
+      "prismaticpent.3paired",
+      "floret.lines",
+      "floret.lines2",
+      "deltoidal.lines",
+      "deltoidal.linkedpairs",
+      "deltoidal.2oneinthree",
+      "deltoidal.2oneinthree2",
+      "deltoidal.2oneinthree3",
+      "kisrhombille.lines",
+      "kisrhombille.lines2",
+      "kisrhombille.2apart",
+      "kisrhombille.3mixed",
       "penrose.rules",
       "kitedart.rules",
     ]);
