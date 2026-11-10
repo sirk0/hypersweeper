@@ -73,8 +73,11 @@ some back off.
     may give every shape every colour, or give a shape colours of its own
     ("by shape": 3.6.3.6's hexagons one colour, its up and down triangles
     the two others). Each keeps at most two lined boards and three coloured
-    ones — fewest tray tiles first, then the hardest as measured, one
-    balanced and one by shape among the coloured where it has both. On an
+    ones — fewest tray tiles first, then the hardest as measured (a lined
+    board with a line left before one cut back to half discs only), one
+    balanced and one by shape among the coloured where it has both. A lined
+    board cut back to half discs only is named dots
+    (`?level=rhombitrihex.dots`, "3.4.6.4 · dots"). On an
     octagon or a dodecagon a line between two edges further apart than
     neighbours runs round the point past the tile where their lines meet,
     square on to both.

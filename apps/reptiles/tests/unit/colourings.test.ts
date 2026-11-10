@@ -138,7 +138,7 @@ describe("colourings", () => {
       "hexagons.3striped",
       "hexagons.3apart",
       "trihex.lines",
-      "trihex.lines2",
+      "trihex.dots",
       "trihex.2oneinthreebyshape",
       "trihex.2oneinthree",
       "trihex.3byshape",
@@ -163,12 +163,12 @@ describe("colourings", () => {
       "snubsquare.2oneinthree",
       "snubsquare.3byshape",
       "snubhex.lines",
-      "snubhex.lines2",
+      "snubhex.dots",
       "snubhex.2oneinthreebyshape",
       "snubhex.2oneinthreebyshape2",
       "snubhex.2oneinthreebyshape3",
       "rhombitrihex.lines",
-      "rhombitrihex.lines2",
+      "rhombitrihex.dots",
       "rhombitrihex.2oneinthreebyshape",
       "rhombitrihex.2oneinthreebyshape2",
       "rhombitrihex.3byshape",
@@ -394,6 +394,9 @@ describe("colourings", () => {
     (key) => {
       const level = levelByKey(key)!;
       expect(level.decor!.rules).toBe(true);
+      // "dots" where every line was cut back to half discs, else lines
+      const hasLine = level.tiles.some((t) => t.pieces[0]!.marks!.includes(LINE));
+      if (level.tiles.length > 1) expect(level.decor!.label).toMatch(hasLine ? /^lines/ : /^dots/);
       const marks = sides(level);
       for (const t of level.tiles) {
         const lines = t.pieces[0]!.marks!.filter((m) => m === LINE).length;

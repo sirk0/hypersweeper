@@ -2029,7 +2029,7 @@
     "presses": 7,
     "flips": 0
   },
-  "trihex.lines2": {
+  "trihex.dots": {
     "score": 0.663,
     "presses": 7,
     "flips": 0
@@ -2154,7 +2154,7 @@
     "presses": 10,
     "flips": 0
   },
-  "snubhex.lines2": {
+  "snubhex.dots": {
     "score": 0.7,
     "presses": 10,
     "flips": 0
@@ -2179,7 +2179,7 @@
     "presses": 10,
     "flips": 0
   },
-  "rhombitrihex.lines2": {
+  "rhombitrihex.dots": {
     "score": 1.349,
     "presses": 16,
     "flips": 0
