@@ -99,16 +99,25 @@ function dualPatch(tiling: string, box: number, moved: boolean): DualPatch {
   }
   if (duals.length === 0) throw new Error(`lavesWindow: no whole vertex in the ${tiling} patch`);
 
-  // Centre on the face centre nearest the middle.
-  const pts = duals.flat().map((v) => ring.toXY(v));
+  // Centre on the face centre nearest the middle. Two can be as near (a
+  // patch is often symmetric about its middle), and which a float calls
+  // nearer is then its last bit's say — Safari's and Chrome's sin and cos
+  // can differ there, and cut two different boards. So "as near" is within
+  // a float's error, and a tie goes to the least exact key, the same in
+  // every browser.
+  const corners = duals.flat();
+  const pts = corners.map((v) => ring.toXY(v));
   const mx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
   const my = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+  const dist = pts.map((p) => (p[0] - mx) ** 2 + (p[1] - my) ** 2);
+  const nearest = Math.min(...dist);
   let c0: XY = [0, 0];
-  let best = Infinity;
-  for (const p of pts) {
-    const d = (p[0] - mx) ** 2 + (p[1] - my) ** 2;
-    if (d < best) [best, c0] = [d, p];
-  }
+  let least: string | null = null;
+  corners.forEach((v, i) => {
+    if (dist[i]! > nearest + 1e-9 * Math.max(1, nearest)) return;
+    const key = ring.key(v);
+    if (least === null || key < least) [least, c0] = [key, pts[i]!];
+  });
   const patch = { ring, duals, c0, toFrame: uniform.toFrame };
   DUAL_PATCHES.set(memo, patch);
   return patch;

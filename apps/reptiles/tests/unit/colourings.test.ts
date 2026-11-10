@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import colouringsData from "../../src/colourings.json";
-import { COLOURS_CAP, RULES_CAP, chooseColourings } from "../../src/colouringChoice";
+import {
+  COLOURS_CAP,
+  RULES_CAP,
+  chooseColourings,
+  regularColourings,
+} from "../../src/colouringChoice";
 import { latticeOf, traySignature } from "../../src/colourings";
 import { measure } from "../../src/difficulty";
 import { cyclotomic, type Cyc } from "../../src/geometry/cyclotomic";
@@ -31,13 +36,23 @@ import {
   type Piece,
   type Shape,
 } from "../../src/geometry/shape";
-import { LEVELS, UNIFORM, levelByKey, plainKinds, type Level } from "../../src/levels";
+import {
+  COLOURED as COLOURED_LATTICES,
+  LAVES,
+  LEVELS,
+  UNIFORM,
+  levelByKey,
+  plainKinds,
+  type Level,
+} from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 import { decorParts, meet } from "../../src/view/decor";
 import { loopsOf } from "../../src/view/curve";
 
 const Z4 = cyclotomic(4);
 const COLOURED = LEVELS.filter((l) => l.decor);
+/** The tilings whose full colouring choice is too slow for a unit test. */
+const SLOW_CHOICE = ["snubhex", "trunctrihex", "kisrhombille"];
 
 /** A unit square at (x, y) with `marks` on its edges: bottom, right, top,
  * left. */
@@ -118,7 +133,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones as src/colourings.json lists; and gives Penrose's tilings their arrows", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones and the Laves ones as src/colourings.json lists; and gives Penrose's tilings their arrows", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -177,6 +192,36 @@ describe("colourings", () => {
       "trunctrihex.2oneinthreebyshape",
       "trunctrihex.2byshape",
       "trunctrihex.3byshape",
+      "tetrakis.lines",
+      "tetrakis.lines2",
+      "tetrakis.2apart",
+      "rhombille.lines",
+      "rhombille.2oneinthree",
+      "rhombille.2oneinthree2",
+      "rhombille.2oneinthree3",
+      "triakis.lines",
+      "triakis.linkedpairs",
+      "triakis.2oneinthree",
+      "triakis.2oneinthree2",
+      "triakis.3mixed",
+      "cairo.lines",
+      "cairo.lines2",
+      "prismaticpent.lines",
+      "prismaticpent.branchinglines",
+      "prismaticpent.2oneinthree",
+      "prismaticpent.2oneinthree2",
+      "prismaticpent.3paired",
+      "floret.lines",
+      "floret.lines2",
+      "deltoidal.lines",
+      "deltoidal.linkedpairs",
+      "deltoidal.2oneinthree",
+      "deltoidal.2oneinthree2",
+      "deltoidal.2oneinthree3",
+      "kisrhombille.lines",
+      "kisrhombille.lines2",
+      "kisrhombille.2apart",
+      "kisrhombille.3mixed",
       "penrose.rules",
       "kitedart.rules",
     ]);
@@ -280,8 +325,8 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling", () => {
-    for (const [key] of UNIFORM) {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling and each Laves one", () => {
+    for (const [key] of [...UNIFORM, ...LAVES]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
       expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
@@ -291,14 +336,24 @@ describe("colourings", () => {
 
   // The full choice on the snub hexagonal (nine translation classes, sixty
   // thousand colourings) and the truncated trihexagonal takes seconds each:
-  // those two are left to `npm run colourings`, and their listed paintings
-  // are checked only by building them (`uniformColouredLevels` throws on one
+  // those are left to `npm run colourings` (`SLOW_CHOICE`), and their listed paintings
+  // are checked only by building them (`periodicColouredLevels` throws on one
   // that no longer makes a level) and by the tests above.
-  it.each(UNIFORM.filter(([key]) => key !== "snubhex" && key !== "trunctrihex"))(
+  it.each([...UNIFORM, ...LAVES].filter(([key]) => !SLOW_CHOICE.includes(key)))(
     "%s: src/colourings.json is in step with the choice (npm run colourings)",
     (key, box) => {
       const plain = levelByKey(key)!;
       expect(chooseColourings(plain, box)).toEqual(
+        (colouringsData as Record<string, unknown>)[key],
+      );
+    },
+    30_000,
+  );
+
+  it.each(COLOURED_LATTICES)(
+    "%s: src/colourings.json lists every painting worth a level (npm run colourings)",
+    (key, lattice) => {
+      expect(regularColourings(levelByKey(key)!, lattice)).toEqual(
         (colouringsData as Record<string, unknown>)[key],
       );
     },
@@ -487,6 +542,59 @@ describe("colourings", () => {
     expect(decorParts(loopsOf(pairs.ring, pairs.tiles[0]!.pieces)).map((p) => p.class)).toEqual([
       "decor dot",
     ]);
+  });
+
+  it("draws a line on an irregular tile as a curve square on to each edge: a kite's, a rhombus's", () => {
+    const num = (d: string): number[] => (d.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
+    const s = Math.sqrt(3);
+    // a kite (V3.4.6.4's), two neighbouring edges lined, 1 and √3 long;
+    // and a 60° rhombus (V3.6.3.6's), two opposite edges lined —
+    // parallel, but not facing each other
+    const kite: [number, number][] = [
+      [0, 0],
+      [1, 0],
+      [1.5, s / 2],
+      [0, s],
+    ];
+    const rhombus: [number, number][] = [
+      [0, 0],
+      [1, 0],
+      [1.5, s / 2],
+      [0.5, s / 2],
+    ];
+    for (const [xy, i, j] of [
+      [kite, 1, 2],
+      [rhombus, 0, 2],
+    ] as const) {
+      const marks = xy.map((_, n) => (n === i || n === j ? LINE : BLANK));
+      const [line] = decorParts([{ xy: [...xy], marks }]);
+      expect(line!.class).toBe("decor line");
+      expect(line!.d).toMatch(/^M[^A-Z]*C[^A-Z]*$/);
+      const [x0, y0, c1x, c1y, c2x, c2y, x1, y1] = num(line!.d) as [
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+      ];
+      const mid = (n: number): [number, number] => {
+        const [a, b] = [xy[n]!, xy[(n + 1) % xy.length]!];
+        return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      };
+      // from one lined edge's middle to the other's
+      expect(Math.hypot(x0 - mid(i)[0], y0 - mid(i)[1])).toBeLessThan(1e-3);
+      expect(Math.hypot(x1 - mid(j)[0], y1 - mid(j)[1])).toBeLessThan(1e-3);
+      // leaving each square on: the control point's step along the edge is 0
+      const along = (n: number, [px, py]: [number, number], [cx, cy]: [number, number]): number => {
+        const [a, b] = [xy[n]!, xy[(n + 1) % xy.length]!];
+        return (cx - px) * (b[0] - a[0]) + (cy - py) * (b[1] - a[1]);
+      };
+      expect(along(i, [x0, y0], [c1x, c1y])).toBeCloseTo(0, 3);
+      expect(along(j, [x1, y1], [c2x, c2y])).toBeCloseTo(0, 3);
+    }
   });
 
   it("gives the Penrose rhombi their arrows: a single and a double on each, two kinds of tile", () => {

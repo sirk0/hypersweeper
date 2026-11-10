@@ -22,10 +22,10 @@ import { socolarTaylorPatch } from "./geometry/socolarTaylor";
 import { hatPatch, type HatTile } from "./geometry/hat";
 import { ccw, outline } from "./geometry/outline";
 import colouringsData from "./colourings.json";
+import levelIndexData from "./levelIndex.json";
 import {
   latticeOf,
   paintingOf,
-  paintings,
   sameEdges,
   split,
   traySignature,
@@ -734,7 +734,7 @@ function twoIsohedralLevel(primal: string, box: number, at?: Variant): Level {
  * edges): the squarest near two or three dozen tiles with one outline. The
  * three with hexagonal symmetry — rhombille, triakis, kisrhombille — come no
  * nearer square than 0.87 at that size; the rhombille's next is 50 tiles. */
-const LAVES: [string, number][] = [
+export const LAVES: [string, number][] = [
   ["tetrakis", 7.3],
   ["rhombille", 7],
   ["triakis", 8.7],
@@ -755,7 +755,7 @@ const TWO_ISOHEDRAL: [string, number][] = [
   ["studdedtri2", 6.65],
   ["elongated2", 5.9],
   ["elongated3", 6.5],
-  ["trirhombitrihex", 6.08],
+  ["trirhombitrihex", 6.17],
   ["tritrunctrihex", 9],
   ["fannedhex", 6.65],
   ["hexbands", 7.5],
@@ -1042,10 +1042,20 @@ export interface BoardSource {
 /** Every level that can have more than one board, by its first board's key. */
 export const BOARD_SOURCES = new Map<string, BoardSource>();
 
-/** A level's first board, its source registered for the rest. */
-function firstBoard(key: string, source: BoardSource): Level {
+/** How each tiling's first board is made, by its key: nothing is built
+ * until a level is asked for (see `LEVELS`). */
+const MAKERS = new Map<string, () => Level>();
+
+/** Register how the first board `key` is made; its key. */
+function maker(key: string, make: () => Level): string {
+  MAKERS.set(key, make);
+  return key;
+}
+
+/** A level's first board, its source registered for the rest: its key. */
+function firstBoard(key: string, source: BoardSource): string {
   BOARD_SOURCES.set(key, source);
-  return source.make();
+  return maker(key, () => source.make());
 }
 
 const asNumber = (at: Variant | undefined): number | undefined => {
@@ -1053,21 +1063,21 @@ const asNumber = (at: Variant | undefined): number | undefined => {
   return at;
 };
 
-const windowBoards = (tiling: string, box: number): Level =>
+const windowBoards = (tiling: string, box: number): string =>
   firstBoard(tiling, {
     kind: "window",
     cut: (at) => windowCut(tiling, box, at),
     make: (at) => windowLevel(tiling, box, at),
   });
 
-const lavesBoards = (dual: string, box: number): Level =>
+const lavesBoards = (dual: string, box: number): string =>
   firstBoard(dual, {
     kind: "window",
     cut: (at) => lavesWindow(lavesPrimal(dual), boxOf(box, at), gridOffset(lavesPrimal(dual), at)),
     make: (at) => lavesLevel(dual, box, at),
   });
 
-const twoIsohedralBoards = (primal: string, box: number): Level =>
+const twoIsohedralBoards = (primal: string, box: number): string =>
   firstBoard(`${primal}dual`, {
     kind: "window",
     cut: (at) => lavesWindow(primal, boxOf(box, at), gridOffset(primal, at)),
@@ -1080,14 +1090,14 @@ const aperiodicBoards = (
   depth: number,
   keep: number,
   round?: Bulge,
-): Level =>
+): string =>
   firstBoard(key, {
     kind: "variant",
     cut: (at) => aperiodicPatch(mode, depth, keep, round !== undefined, asNumber(at)),
     make: (at) => aperiodicLevel(key, mode, depth, keep, round, asNumber(at)),
   });
 
-const hatBoards = (key: string, tile: HatTile, depth: number, keep: number): Level =>
+const hatBoards = (key: string, tile: HatTile, depth: number, keep: number): string =>
   firstBoard(key, {
     kind: "centre",
     cut: (at) => hatPatch(tile, depth, keep, asNumber(at)),
@@ -1097,7 +1107,7 @@ const hatBoards = (key: string, tile: HatTile, depth: number, keep: number): Lev
 /** The lattice each regular board repeats by, for its colourings: the
  * squares' unit steps; the up triangles' side and its 60° turn; the
  * hexagons' centre-to-centre step, √3 along a row, and its 60° turn. */
-const COLOURED: [key: string, lattice: Lattice][] = [
+export const COLOURED: [key: string, lattice: Lattice][] = [
   ["squares", { u: Z4.one, v: Z4.zeta(1) }],
   ["triangles", { u: Z12.one, v: Z12.zeta(2) }],
   [
@@ -1301,24 +1311,41 @@ function keyed(plain: Level, made: readonly Level[]): Level[] {
   });
 }
 
-/** The coloured and lined levels painted on a regular board, every one
- * `paintedCandidates` keeps. */
-function colouredLevels(plain: Level, lattice: Lattice): Level[] {
-  return keyed(
-    plain,
-    paintedCandidates(plain, paintings(plain.ring, plain.cells, lattice)).map((c) => c.level),
-  );
+/** Where a painted tiling's paintings are laid: the lattice it repeats by,
+ * and a wider patch past its window's rim (none for a regular board, whose
+ * window shows every neighbour) — worked out once per tiling, when its
+ * first marked level is built. */
+const SETUPS = new Map<string, { lattice: Lattice; context: Piece[][] }>();
+
+export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[][] } {
+  let setup = SETUPS.get(plain.key);
+  if (!setup) {
+    const regular = COLOURED.find(([key]) => key === plain.key);
+    const box = [...UNIFORM, ...LAVES].find(([key]) => key === plain.key)?.[1];
+    if (regular) setup = { lattice: regular[1], context: [] };
+    else if (box !== undefined) {
+      const context = periodicContext(plain, box);
+      setup = { lattice: latticeOf(plain.ring, context), context };
+    } else throw new Error(`${plain.key} is not painted`);
+    SETUPS.set(plain.key, setup);
+  }
+  return setup;
 }
 
-/** A uniform tiling's window, `box` edges square, and a patch of the same
- * tiling twice that size round it, moved onto the window's coordinates:
- * what lies past the window's rim, for its colourings (and, for the snub
- * hexagonal, whose window holds one hexagon, the only place its lattice
- * shows). */
-export function uniformContext(plain: Level, box: number): Piece[][] {
+/** A uniform or Laves tiling's window, `box` edges square, and a patch of
+ * the same tiling twice that size round it, moved onto the window's
+ * coordinates: what lies past the window's rim, for its colourings (and, for
+ * the snub hexagonal, whose window holds one hexagon, the only place its
+ * lattice shows). A Laves board's wider patch is a wider dual window
+ * (`lavesWindow`), in the same ring: the same scale, the same unit. */
+export function periodicContext(plain: Level, box: number): Piece[][] {
   const { ring } = plain;
-  const wide = templateWindow(plain.key, 2 * box);
-  if (wide.ring.n !== ring.n) throw new Error(`${plain.key}: the wider patch is in another ring`);
+  const wide =
+    plain.group === "laves"
+      ? lavesWindow(lavesPrimal(plain.key), 2 * box)
+      : templateWindow(plain.key, 2 * box);
+  if (wide.ring.n !== ring.n || wide.ring.unit !== ring.unit)
+    throw new Error(`${plain.key}: the wider patch is in another ring`);
   const cells = wide.cells.map((c) => ccw(ring, c));
   const keys = (cs: Cyc[][]): Set<string> =>
     new Set(
@@ -1343,26 +1370,23 @@ export function uniformContext(plain: Level, box: number): Piece[][] {
   throw new Error(`${plain.key}: the window is not in the wider patch`);
 }
 
-/** Which of a uniform board's paintings to make levels of
- * (`npm run colourings`, scripts/find-colourings.mts): searching them all
- * takes seconds, so the choice is written down and only those are built. */
-const UNIFORM_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
+/** Which of a painted board's paintings to make levels of
+ * (`npm run colourings`, scripts/find-colourings.mts): every one a regular
+ * board's `paintedCandidates` keeps, and the chosen few of a uniform or
+ * Laves board's — searching takes from a second to minutes, so the choice
+ * is written down and only those are built. */
+const CHOSEN_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
 
-/** The lined and coloured levels of a uniform tiling, as
- * `src/colourings.json` lists them. */
-function uniformColouredLevels(plain: Level, box: number): Level[] {
-  const chosen = UNIFORM_PAINTINGS[plain.key] ?? [];
-  if (!chosen.length) return [];
-  const context = uniformContext(plain, box);
-  const lattice = latticeOf(plain.ring, context);
-  const all = chosen.map((p) => paintingOf(plain.ring, plain.cells, lattice, p, context));
-  // each kept as it was chosen, in the order written
-  const made = all.map((painting) => {
-    const [kept] = paintedCandidates(plain, [painting]);
-    if (!kept) throw new Error(`${plain.key}: a listed painting no longer makes a level`);
-    return kept.level;
-  });
-  return keyed(plain, made);
+/** The `i`-th painting `src/colourings.json` lists for `plain`, as a level,
+ * unkeyed — `keyed` (or the level index) names it. */
+function paintedLevel(plain: Level, i: number): Level {
+  const params = CHOSEN_PAINTINGS[plain.key]?.[i];
+  if (!params) throw new Error(`${plain.key}: no painting ${i} in src/colourings.json`);
+  const { lattice, context } = paintingSetup(plain);
+  const painting = paintingOf(plain.ring, plain.cells, lattice, params, context);
+  const [kept] = paintedCandidates(plain, [painting]);
+  if (!kept) throw new Error(`${plain.key}: a listed painting no longer makes a level`);
+  return kept.level;
 }
 
 /** An aperiodic board with arrows on its edges (geometry/marks.ts:
@@ -1467,83 +1491,214 @@ export const UNIFORM: [tiling: string, box: number][] = [
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
 
-const FIRST_BOARDS: Level[] = [
-  // The three regular tilings, one tile each.
-  makeLevel("squares", "Squares", Z4, whole(squareCells(4, 4)), "regular", [[4, 4, 4, 4]]),
-  makeLevel("triangles", "Triangles", Z12, whole(triangleGridCells(4, 6)), "regular", [
-    [3, 3, 3, 3, 3, 3],
-  ]),
-  makeLevel("hexagons", "Hexagons", Z12, whole(hexCells(5, 4)), "regular", [[6, 6, 6]]),
-  // The eight other uniform tilings — every vertex alike, regular polygons
-  // edge to edge — roughly easiest first: two tile kinds, then three
-  // (`UNIFORM`, with their windows). The snub hexagonal
-  // is mostly triangles whatever the window — eight to each hexagon — and its
-  // squarest is one hexagon in thirty triangles; the next square one is 65.
-  ...UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)),
-  // The twenty 2-uniform tilings.
-  ...TWO_UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)).sort(byEase),
-  // The eight Laves tilings with more than one kind of vertex (the regular
-  // tilings are their own Laves duals, already above).
-  ...LAVES.map(([dual, box]) => lavesBoards(dual, box)),
-  // The twenty 2-isohedral tilings, the 2-uniform tilings' duals: two kinds
-  // of tile, neither regular.
-  ...TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralBoards(primal, box)).sort(byEase),
-  // The three pentagonal tilings: one convex pentagon, turned and mirrored.
-  ...PENTAGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
-  // The six isogonal tilings: regular polygons, every vertex alike, a corner
-  // meeting the middle of a side at each.
-  ...ISOGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
-  // The five congruent-rectangle bonds: one brick, laid in rows staggered or
-  // turned.
-  ...RECTANGLES.map(([tiling, box]) => windowBoards(tiling, box)),
-  // The rep-tiles: one tile, a big copy of it to fill with small ones.
-  ...REPTILES.map(([mode, inflations]) => repTileLevel(mode, inflations)),
-  // …and those of several pieces: a fish's tail and body, squares or
-  // triangles corner to corner, moved as one.
-  ...PIECE_REPTILES.map(([key, name, inflations]) => pieceTileLevel(key, name, inflations)),
-  // The spirals: one tile, wound round a centre.
-  ...SPIRALS.map(([mode, rings, keep]) => spiralLevel(mode, rings, keep)),
-  // The aperiodic tilings: a window onto a tiling that repeats nowhere.
-  ...APERIODIC.map(([key, mode, depth, keep, round]) =>
-    aperiodicBoards(key, mode, depth, keep, round),
-  ),
-  // …the hat's family: the hat and the turtle, both ways up, and the hat's
-  // four metatiles…
-  ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatBoards(key, tile, depth, keep)),
-  // …and one tile that does it alone, in nineteen pieces.
-  socolarTaylorLevel(2),
+/** The tilings painted, in the order their marked levels are listed: the
+ * regular three, the other eight uniform ones and the eight Laves ones. */
+export const PAINTED: string[] = [
+  ...COLOURED.map(([key]) => key),
+  ...UNIFORM.map(([key]) => key),
+  ...LAVES.map(([key]) => key),
 ];
 
-// The regular boards painted: lined, then in two and three colours; the
-// other uniform ones as src/colourings.json lists; and Penrose's rhombi and
-// his kites and darts with their arrows.
-FIRST_BOARDS.push(
-  ...COLOURED.flatMap(([key, lattice]) =>
-    colouredLevels(
-      FIRST_BOARDS.find((l) => l.key === key)!,
-      lattice,
-    ),
-  ),
-  ...UNIFORM.flatMap(([key, box]) =>
-    uniformColouredLevels(
-      FIRST_BOARDS.find((l) => l.key === key)!,
-      box,
-    ),
-  ),
-  penroseRulesLevel(FIRST_BOARDS.find((l) => l.key === "penrose")!),
-  kiteDartRulesLevel(FIRST_BOARDS.find((l) => l.key === "kitedart")!),
-);
+/** The aperiodic boards with arrows on their edges, after the paintings. */
+const ARROWS: [plain: string, rules: (plain: Level) => Level][] = [
+  ["penrose", penroseRulesLevel],
+  ["kitedart", kiteDartRulesLevel],
+];
+
+/** The first boards, a section at a time in the order the catalog lists
+ * them, each a key `MAKERS` builds — and whether a section is put easiest
+ * first (`byEase`), which takes the levels built: `buildFirstBoards` does
+ * that, and `src/levelIndex.json` keeps the order it found. */
+const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
+  {
+    keys: [
+      // The three regular tilings, one tile each.
+      maker("squares", () =>
+        makeLevel("squares", "Squares", Z4, whole(squareCells(4, 4)), "regular", [[4, 4, 4, 4]]),
+      ),
+      maker("triangles", () =>
+        makeLevel("triangles", "Triangles", Z12, whole(triangleGridCells(4, 6)), "regular", [
+          [3, 3, 3, 3, 3, 3],
+        ]),
+      ),
+      maker("hexagons", () =>
+        makeLevel("hexagons", "Hexagons", Z12, whole(hexCells(5, 4)), "regular", [[6, 6, 6]]),
+      ),
+      // The eight other uniform tilings — every vertex alike, regular
+      // polygons edge to edge — roughly easiest first: two tile kinds, then
+      // three (`UNIFORM`, with their windows). The snub hexagonal is mostly
+      // triangles whatever the window — eight to each hexagon — and its
+      // squarest is one hexagon in thirty triangles; the next square one
+      // is 65.
+      ...UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)),
+    ],
+  },
+  // The twenty 2-uniform tilings.
+  { keys: TWO_UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)), byEase: true },
+  // The eight Laves tilings with more than one kind of vertex (the regular
+  // tilings are their own Laves duals, already above).
+  { keys: LAVES.map(([dual, box]) => lavesBoards(dual, box)) },
+  // The twenty 2-isohedral tilings, the 2-uniform tilings' duals: two kinds
+  // of tile, neither regular.
+  {
+    keys: TWO_ISOHEDRAL.map(([primal, box]) => twoIsohedralBoards(primal, box)),
+    byEase: true,
+  },
+  {
+    keys: [
+      // The three pentagonal tilings: one convex pentagon, turned and
+      // mirrored.
+      ...PENTAGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
+      // The six isogonal tilings: regular polygons, every vertex alike, a
+      // corner meeting the middle of a side at each.
+      ...ISOGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
+      // The five congruent-rectangle bonds: one brick, laid in rows
+      // staggered or turned.
+      ...RECTANGLES.map(([tiling, box]) => windowBoards(tiling, box)),
+      // The rep-tiles: one tile, a big copy of it to fill with small ones.
+      ...REPTILES.map(([mode, inflations]) => maker(mode, () => repTileLevel(mode, inflations))),
+      // …and those of several pieces: a fish's tail and body, squares or
+      // triangles corner to corner, moved as one.
+      ...PIECE_REPTILES.map(([key, name, inflations]) =>
+        maker(key, () => pieceTileLevel(key, name, inflations)),
+      ),
+      // The spirals: one tile, wound round a centre.
+      ...SPIRALS.map(([mode, rings, keep]) => maker(mode, () => spiralLevel(mode, rings, keep))),
+      // The aperiodic tilings: a window onto a tiling that repeats nowhere.
+      ...APERIODIC.map(([key, mode, depth, keep, round]) =>
+        aperiodicBoards(key, mode, depth, keep, round),
+      ),
+      // …the hat's family: the hat and the turtle, both ways up, and the
+      // hat's four metatiles…
+      ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatBoards(key, tile, depth, keep)),
+      // …and one tile that does it alone, in nineteen pieces.
+      maker("socolartaylor", () => socolarTaylorLevel(2)),
+    ],
+  },
+];
+
+/**
+ * Every tiling's first board, built — the plain ones section by section
+ * (`SECTIONS`), then the marked ones: each painted board's paintings as
+ * `src/colourings.json` lists them, and Penrose's tilings with their arrows.
+ * Seconds of work: the game never does it, but reads the order, names and
+ * marks it finds from `src/levelIndex.json` (`npm run levels`); the tests
+ * build it to hold that file to it.
+ */
+export function buildFirstBoards(): Level[] {
+  const plain = SECTIONS.flatMap(({ keys, byEase: sorted }) => {
+    const built = keys.map((key) => MAKERS.get(key)!());
+    return sorted ? built.sort(byEase) : built;
+  });
+  const find = (key: string): Level => plain.find((l) => l.key === key)!;
+  return [
+    ...plain,
+    ...PAINTED.flatMap((key) => {
+      const of = find(key);
+      return keyed(
+        of,
+        (CHOSEN_PAINTINGS[key] ?? []).map((_, i) => paintedLevel(of, i)),
+      );
+    }),
+    ...ARROWS.map(([key, rules]) => rules(find(key))),
+  ];
+}
+
+/** What the game knows of a first board before it is built: enough to list
+ * it, count it, deal it and name it — and, for a painted one, which of its
+ * tiling's paintings (`src/colourings.json`) it is. */
+export interface IndexEntry {
+  key: string;
+  label: string;
+  name: string;
+  group: GroupKey;
+  decor?: { of: string; colours: number; rules: boolean; label: string };
+  painting?: number;
+}
+
+/** The index of `levels` (`buildFirstBoards`'), as `src/levelIndex.json`
+ * keeps it. */
+export function indexOf(levels: readonly Level[]): IndexEntry[] {
+  const arrows = new Set(ARROWS.map(([key]) => `${key}.rules`));
+  const count = new Map<string, number>();
+  return levels.map(({ key, label, name, group, decor }) => {
+    if (!decor) return { key, label, name, group };
+    if (arrows.has(key)) return { key, label, name, group, decor };
+    const painting = count.get(decor.of) ?? 0;
+    count.set(decor.of, painting + 1);
+    return { key, label, name, group, decor, painting };
+  });
+}
+
+/** The plain first board `key`, built afresh (for the scripts, which run
+ * before src/levelIndex.json lists it). */
+export function makeFirstBoard(key: string): Level {
+  const make = MAKERS.get(key);
+  if (!make) throw new Error(`no tiling ${key}`);
+  return make();
+}
+
+/** A first board, built: its tiling's maker, or its tiling's painting or
+ * arrows on its tiling's level. */
+function buildEntry(entry: IndexEntry): Level {
+  const make = MAKERS.get(entry.key);
+  if (make) return make();
+  const of = entry.decor && levelByKey(entry.decor.of);
+  if (!of) throw new Error(`no way to build ${entry.key}`);
+  if (entry.painting !== undefined) return paintedLevel(of, entry.painting);
+  const arrows = ARROWS.find(([key]) => `${key}.rules` === entry.key);
+  if (!arrows) throw new Error(`no way to build ${entry.key}`);
+  return arrows[1](of);
+}
+
+/** The fields a level stub answers without building the level. */
+const STUB_FIELDS = new Set(["key", "base", "board", "boards", "label", "name", "group", "decor"]);
+type Stub = Pick<Level, "key" | "base" | "board" | "boards" | "label" | "name" | "group" | "decor">;
+
+/**
+ * A level that is built the first time anything past its stub is read —
+ * its tiles, its cells, its region — and is that level from then on. Every
+ * screen but a level's own and the lists that draw its tray needs only the
+ * stub, so the page starts without building any (building them all takes
+ * seconds on a phone). Spreading it or listing its keys builds it too.
+ */
+function lazyLevel(stub: Stub, make: () => Level): Level {
+  let built: Level | undefined;
+  const full = (): Level => (built ??= { ...make(), ...stub });
+  return new Proxy(stub as Level, {
+    get: (target, prop, receiver) =>
+      typeof prop === "symbol" || prop === "then" || STUB_FIELDS.has(prop)
+        ? Reflect.get(target, prop, receiver)
+        : Reflect.get(full(), prop),
+    has: (target, prop) =>
+      typeof prop === "string" && STUB_FIELDS.has(prop) ? prop in target : prop in full(),
+    ownKeys: () => Reflect.ownKeys(full()),
+    getOwnPropertyDescriptor: (_, prop) => {
+      const d = Reflect.getOwnPropertyDescriptor(full(), prop);
+      return d && { ...d, configurable: true };
+    },
+  });
+}
 
 /** A level's boards past the first, as `boards.json` lists them. */
 const variantsOf = (key: string): Variant[] =>
   BOARD_SOURCES.has(key) ? (BOARD_VARIANTS[key] ?? []) : [];
 
 /** Every tiling's first board, in the order the catalog lists them — the
- * levels themselves, for everything that lists tilings rather than boards. */
-export const LEVELS: Level[] = FIRST_BOARDS.map((level) => ({
-  ...level,
-  boards: 1 + variantsOf(level.key).length,
-}));
+ * levels themselves, for everything that lists tilings rather than boards —
+ * each built only when it is first looked into (`lazyLevel`), from what
+ * `src/levelIndex.json` says of it. */
+export const LEVELS: Level[] = (levelIndexData as IndexEntry[]).map((entry) => {
+  const { painting: _, decor, ...named } = entry;
+  const stub: Stub = {
+    ...named,
+    ...(decor ? { decor } : {}),
+    base: entry.key,
+    board: 1,
+    boards: 1 + variantsOf(entry.key).length,
+  };
+  return lazyLevel(stub, () => buildEntry(entry));
+});
 
 /** The levels that mark the tiles of the tiling `key` is the first board
  * of — its matching rules and colourings — easiest first. */

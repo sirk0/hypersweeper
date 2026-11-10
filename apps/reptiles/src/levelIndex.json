@@ -1,0 +1,1256 @@
+[
+  { "key": "squares", "label": "Squares", "name": "4⁴", "group": "regular" },
+  { "key": "triangles", "label": "Triangles", "name": "3⁶", "group": "regular" },
+  { "key": "hexagons", "label": "Hexagons", "name": "6³", "group": "regular" },
+  { "key": "trihex", "label": "Trihexagonal", "name": "3.6.3.6", "group": "uniform" },
+  { "key": "truncsquare", "label": "Truncated square", "name": "4.8²", "group": "uniform" },
+  { "key": "trunchex", "label": "Truncated hexagonal", "name": "3.12²", "group": "uniform" },
+  { "key": "elongated", "label": "Elongated triangular", "name": "3³.4²", "group": "uniform" },
+  { "key": "snubsquare", "label": "Snub square", "name": "3².4.3.4", "group": "uniform" },
+  { "key": "snubhex", "label": "Snub hexagonal", "name": "3⁴.6", "group": "uniform" },
+  { "key": "rhombitrihex", "label": "Rhombitrihexagonal", "name": "3.4.6.4", "group": "uniform" },
+  { "key": "trunctrihex", "label": "Truncated trihexagonal", "name": "4.6.12", "group": "uniform" },
+  {
+    "key": "elongated2",
+    "label": "Half-elongated triangular",
+    "name": "[3⁶; 3³.4²]₁",
+    "group": "2-uniform"
+  },
+  {
+    "key": "snubelongated",
+    "label": "Zigzag snub square",
+    "name": "[3³.4²; 3².4.3.4]₂",
+    "group": "2-uniform"
+  },
+  {
+    "key": "squarerows2",
+    "label": "Doubly elongated triangular",
+    "name": "[3³.4²; 4⁴]₁",
+    "group": "2-uniform"
+  },
+  {
+    "key": "hexrows",
+    "label": "Bow-tie hexagonal",
+    "name": "[3².6²; 3.6.3.6]",
+    "group": "2-uniform"
+  },
+  { "key": "fannedhex", "label": "Fanned hexagonal", "name": "[3⁶; 3².6²]", "group": "2-uniform" },
+  {
+    "key": "trirhombitrihex",
+    "label": "Fanned rhombitrihexagonal",
+    "name": "[3⁶; 3².4.3.4]",
+    "group": "2-uniform"
+  },
+  {
+    "key": "snubelongated2",
+    "label": "Pinwheel snub square",
+    "name": "[3³.4²; 3².4.3.4]₁",
+    "group": "2-uniform"
+  },
+  {
+    "key": "elongated3",
+    "label": "Third-elongated triangular",
+    "name": "[3⁶; 3³.4²]₂",
+    "group": "2-uniform"
+  },
+  {
+    "key": "squarerows3",
+    "label": "Triply elongated triangular",
+    "name": "[3³.4²; 4⁴]₂",
+    "group": "2-uniform"
+  },
+  {
+    "key": "studdedtri",
+    "label": "Studded triangular",
+    "name": "[3⁶; 3⁴.6]₁",
+    "group": "2-uniform"
+  },
+  { "key": "hexbands", "label": "Banded hexagonal", "name": "[3⁴.6; 3².6²]", "group": "2-uniform" },
+  {
+    "key": "studdedtri2",
+    "label": "Twisted studded triangular",
+    "name": "[3⁶; 3⁴.6]₂",
+    "group": "2-uniform"
+  },
+  {
+    "key": "squaretrihex2",
+    "label": "Staggered elongated trihexagonal",
+    "name": "[3.4².6; 3.6.3.6]₂",
+    "group": "2-uniform"
+  },
+  {
+    "key": "squaretrihex",
+    "label": "Elongated trihexagonal",
+    "name": "[3.4².6; 3.6.3.6]₁",
+    "group": "2-uniform"
+  },
+  {
+    "key": "dissectedtrunchex",
+    "label": "Dissected truncated hexagonal",
+    "name": "[3².4.3.4; 3.4.6.4]",
+    "group": "2-uniform"
+  },
+  {
+    "key": "dissectedtrunchex2",
+    "label": "Turned dissected truncated hexagonal",
+    "name": "[3³.4²; 3.4.6.4]",
+    "group": "2-uniform"
+  },
+  {
+    "key": "hexrings",
+    "label": "Dissected truncated trihexagonal",
+    "name": "[3.4².6; 3.4.6.4]",
+    "group": "2-uniform"
+  },
+  {
+    "key": "dodecasquare",
+    "label": "Square dodecagonal",
+    "name": "[3.4.3.12; 3.12²]",
+    "group": "2-uniform"
+  },
+  {
+    "key": "tritrunctrihex",
+    "label": "Fanned truncated trihexagonal",
+    "name": "[3⁶; 3².4.12]",
+    "group": "2-uniform"
+  },
+  {
+    "key": "dodecarhombitrihex",
+    "label": "Studded rhombitrihexagonal",
+    "name": "[3.4.6.4; 4.6.12]",
+    "group": "2-uniform"
+  },
+  { "key": "tetrakis", "label": "Tetrakis square", "name": "V4.8²", "group": "laves" },
+  { "key": "rhombille", "label": "Rhombille", "name": "V3.6.3.6", "group": "laves" },
+  { "key": "triakis", "label": "Triakis triangular", "name": "V3.12²", "group": "laves" },
+  { "key": "cairo", "label": "Cairo pentagonal", "name": "V3².4.3.4", "group": "laves" },
+  { "key": "prismaticpent", "label": "Prismatic pentagonal", "name": "V3³.4²", "group": "laves" },
+  { "key": "floret", "label": "Floret pentagonal", "name": "V3⁴.6", "group": "laves" },
+  { "key": "deltoidal", "label": "Deltoidal trihexagonal", "name": "V3.4.6.4", "group": "laves" },
+  { "key": "kisrhombille", "label": "Kisrhombille", "name": "V4.6.12", "group": "laves" },
+  {
+    "key": "dodecasquaredual",
+    "label": "Square dodecagonal dual",
+    "name": "V[3.4.3.12; 3.12²]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "elongated2dual",
+    "label": "Half-elongated triangular dual",
+    "name": "V[3⁶; 3³.4²]₁",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "dodecarhombitrihexdual",
+    "label": "Studded rhombitrihexagonal dual",
+    "name": "V[3.4.6.4; 4.6.12]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "snubelongateddual",
+    "label": "Zigzag snub square dual",
+    "name": "V[3³.4²; 3².4.3.4]₂",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "fannedhexdual",
+    "label": "Fanned hexagonal dual",
+    "name": "V[3⁶; 3².6²]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "snubelongated2dual",
+    "label": "Pinwheel snub square dual",
+    "name": "V[3³.4²; 3².4.3.4]₁",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "hexrowsdual",
+    "label": "Bow-tie hexagonal dual",
+    "name": "V[3².6²; 3.6.3.6]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "squaretrihex2dual",
+    "label": "Staggered elongated trihexagonal dual",
+    "name": "V[3.4².6; 3.6.3.6]₂",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "studdedtri2dual",
+    "label": "Twisted studded triangular dual",
+    "name": "V[3⁶; 3⁴.6]₂",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "trirhombitrihexdual",
+    "label": "Fanned rhombitrihexagonal dual",
+    "name": "V[3⁶; 3².4.3.4]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "hexringsdual",
+    "label": "Dissected truncated trihexagonal dual",
+    "name": "V[3.4².6; 3.4.6.4]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "squaretrihexdual",
+    "label": "Elongated trihexagonal dual",
+    "name": "V[3.4².6; 3.6.3.6]₁",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "dissectedtrunchexdual",
+    "label": "Dissected truncated hexagonal dual",
+    "name": "V[3².4.3.4; 3.4.6.4]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "squarerows2dual",
+    "label": "Doubly elongated triangular dual",
+    "name": "V[3³.4²; 4⁴]₁",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "studdedtridual",
+    "label": "Studded triangular dual",
+    "name": "V[3⁶; 3⁴.6]₁",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "elongated3dual",
+    "label": "Third-elongated triangular dual",
+    "name": "V[3⁶; 3³.4²]₂",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "hexbandsdual",
+    "label": "Banded hexagonal dual",
+    "name": "V[3⁴.6; 3².6²]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "squarerows3dual",
+    "label": "Triply elongated triangular dual",
+    "name": "V[3³.4²; 4⁴]₂",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "dissectedtrunchex2dual",
+    "label": "Turned dissected truncated hexagonal dual",
+    "name": "V[3³.4²; 3.4.6.4]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "tritrunctrihexdual",
+    "label": "Fanned truncated trihexagonal dual",
+    "name": "V[3⁶; 3².4.12]",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "pentagon10",
+    "label": "Type 10 (James, 1975)",
+    "name": "Type 10 (James, 1975)",
+    "group": "pentagonal"
+  },
+  {
+    "key": "pentagon13",
+    "label": "Type 13 (Rice, 1977)",
+    "name": "Type 13 (Rice, 1977)",
+    "group": "pentagonal"
+  },
+  {
+    "key": "pentagon15",
+    "label": "Type 15 (Mann et al., 2015)",
+    "name": "Type 15 (Mann et al., 2015)",
+    "group": "pentagonal"
+  },
+  { "key": "offsetsquare", "label": "Offset square", "name": "Offset square", "group": "isogonal" },
+  {
+    "key": "staggeredtri",
+    "label": "Staggered triangular",
+    "name": "Staggered triangular",
+    "group": "isogonal"
+  },
+  { "key": "pythagorean", "label": "Pythagorean", "name": "Pythagorean", "group": "isogonal" },
+  {
+    "key": "rotatedhex",
+    "label": "Rotated hexagonal",
+    "name": "Rotated hexagonal",
+    "group": "isogonal"
+  },
+  {
+    "key": "rotatedtri",
+    "label": "Rotated triangular",
+    "name": "Rotated triangular",
+    "group": "isogonal"
+  },
+  {
+    "key": "threescaletri",
+    "label": "Three-scale triangular",
+    "name": "Three-scale triangular",
+    "group": "isogonal"
+  },
+  { "key": "stackedbond", "label": "Stacked bond", "name": "Stacked bond", "group": "rectangle" },
+  { "key": "runningbond", "label": "Running bond", "name": "Running bond", "group": "rectangle" },
+  { "key": "basketweave", "label": "Basket weave", "name": "Basket weave", "group": "rectangle" },
+  {
+    "key": "basketweave3",
+    "label": "Basket weave 3x3",
+    "name": "Basket weave 3x3",
+    "group": "rectangle"
+  },
+  { "key": "herringbone", "label": "Herringbone", "name": "Herringbone", "group": "rectangle" },
+  { "key": "sphinx", "label": "Sphinx", "name": "Sphinx", "group": "reptile" },
+  { "key": "chair", "label": "Chair", "name": "Chair", "group": "reptile" },
+  { "key": "ltetromino", "label": "L-tetromino", "name": "L-tetromino", "group": "reptile" },
+  { "key": "ppentomino", "label": "P-pentomino", "name": "P-pentomino", "group": "reptile" },
+  { "key": "trapezoid", "label": "Trapezoid", "name": "Trapezoid", "group": "reptile" },
+  {
+    "key": "righttrapezoid",
+    "label": "Right trapezoid",
+    "name": "Right trapezoid",
+    "group": "reptile"
+  },
+  {
+    "key": "halftrapezoid",
+    "label": "Half trapezoid",
+    "name": "Half trapezoid",
+    "group": "reptile"
+  },
+  {
+    "key": "stretchedchair",
+    "label": "Stretched chair",
+    "name": "Stretched chair",
+    "group": "reptile"
+  },
+  { "key": "rhombicl", "label": "Rhombic L", "name": "Rhombic L", "group": "reptile" },
+  {
+    "key": "rightisosceles",
+    "label": "Isosceles right triangle",
+    "name": "Isosceles right triangle",
+    "group": "reptile"
+  },
+  {
+    "key": "drafter",
+    "label": "30-60-90 triangle",
+    "name": "30-60-90 triangle",
+    "group": "reptile"
+  },
+  { "key": "ttetromino", "label": "T-tetromino", "name": "T-tetromino", "group": "reptile" },
+  { "key": "fish", "label": "Right-angled fish", "name": "Right-angled fish", "group": "reptile" },
+  { "key": "fish60", "label": "60° fish", "name": "60° fish", "group": "reptile" },
+  {
+    "key": "kissingsquares",
+    "label": "Kissing squares",
+    "name": "Kissing squares",
+    "group": "reptile"
+  },
+  {
+    "key": "kissingtriangles",
+    "label": "Kissing triangles",
+    "name": "Kissing triangles",
+    "group": "reptile"
+  },
+  {
+    "key": "kissingchain",
+    "label": "Kissing square chain",
+    "name": "Kissing square chain",
+    "group": "reptile"
+  },
+  {
+    "key": "phyllotaxis",
+    "label": "Phyllotactic spiral",
+    "name": "Phyllotactic spiral",
+    "group": "spiral"
+  },
+  { "key": "klaassen", "label": "Klaassen spiral", "name": "Klaassen spiral", "group": "spiral" },
+  {
+    "key": "pentaspiral5",
+    "label": "Pentagonal spiral (5-fold)",
+    "name": "Pentagonal spiral (5-fold)",
+    "group": "spiral"
+  },
+  {
+    "key": "pentaspiral6",
+    "label": "Pentagonal spiral (6-fold)",
+    "name": "Pentagonal spiral (6-fold)",
+    "group": "spiral"
+  },
+  {
+    "key": "pentaspiral7",
+    "label": "Pentagonal spiral (7-fold)",
+    "name": "Pentagonal spiral (7-fold)",
+    "group": "spiral"
+  },
+  { "key": "penrose", "label": "Penrose rhombi", "name": "Penrose rhombi", "group": "aperiodic" },
+  {
+    "key": "kitedart",
+    "label": "Penrose kites & darts",
+    "name": "Penrose kites & darts",
+    "group": "aperiodic"
+  },
+  {
+    "key": "ammannbeenker",
+    "label": "Ammann–Beenker",
+    "name": "Ammann–Beenker",
+    "group": "aperiodic"
+  },
+  { "key": "tile11", "label": "Tile(1,1)", "name": "Tile(1,1)", "group": "aperiodic" },
+  { "key": "spectre", "label": "The Spectre", "name": "The Spectre", "group": "aperiodic" },
+  { "key": "hat", "label": "The hat", "name": "The hat", "group": "aperiodic" },
+  { "key": "turtle", "label": "The turtle", "name": "The turtle", "group": "aperiodic" },
+  {
+    "key": "hatmetatiles",
+    "label": "Hat metatiles",
+    "name": "Hat metatiles",
+    "group": "aperiodic"
+  },
+  {
+    "key": "socolartaylor",
+    "label": "Socolar–Taylor tile",
+    "name": "Socolar–Taylor tile",
+    "group": "aperiodic"
+  },
+  {
+    "key": "squares.lines",
+    "label": "Squares, lines",
+    "name": "4⁴ · lines",
+    "group": "rules",
+    "decor": { "of": "squares", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squares.2apart",
+    "label": "Squares, 2 colours, apart",
+    "name": "4⁴ · 2 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "squares", "colours": 2, "rules": false, "label": "2 colours, apart" },
+    "painting": 1
+  },
+  {
+    "key": "squares.2oneinthree",
+    "label": "Squares, 2 colours, one in three",
+    "name": "4⁴ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "squares", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 2
+  },
+  {
+    "key": "squares.2oneinthree2",
+    "label": "Squares, 2 colours, one in three II",
+    "name": "4⁴ · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "squares",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "squares.3striped",
+    "label": "Squares, 3 colours, striped",
+    "name": "4⁴ · 3 colours, striped",
+    "group": "colourings",
+    "decor": { "of": "squares", "colours": 3, "rules": false, "label": "3 colours, striped" },
+    "painting": 4
+  },
+  {
+    "key": "squares.3apart",
+    "label": "Squares, 3 colours, apart",
+    "name": "4⁴ · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "squares", "colours": 3, "rules": false, "label": "3 colours, apart" },
+    "painting": 5
+  },
+  {
+    "key": "triangles.lines",
+    "label": "Triangles, lines",
+    "name": "3⁶ · lines",
+    "group": "rules",
+    "decor": { "of": "triangles", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "triangles.linkedpairs",
+    "label": "Triangles, linked pairs",
+    "name": "3⁶ · linked pairs",
+    "group": "rules",
+    "decor": { "of": "triangles", "colours": 1, "rules": true, "label": "linked pairs" },
+    "painting": 1
+  },
+  {
+    "key": "triangles.2apart",
+    "label": "Triangles, 2 colours, apart",
+    "name": "3⁶ · 2 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "triangles", "colours": 2, "rules": false, "label": "2 colours, apart" },
+    "painting": 2
+  },
+  {
+    "key": "triangles.2oneinthree",
+    "label": "Triangles, 2 colours, one in three",
+    "name": "3⁶ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "triangles",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "triangles.3paired",
+    "label": "Triangles, 3 colours, paired",
+    "name": "3⁶ · 3 colours, paired",
+    "group": "colourings",
+    "decor": { "of": "triangles", "colours": 3, "rules": false, "label": "3 colours, paired" },
+    "painting": 4
+  },
+  {
+    "key": "triangles.3paired2",
+    "label": "Triangles, 3 colours, paired II",
+    "name": "3⁶ · 3 colours, paired II",
+    "group": "colourings",
+    "decor": { "of": "triangles", "colours": 3, "rules": false, "label": "3 colours, paired II" },
+    "painting": 5
+  },
+  {
+    "key": "hexagons.lines",
+    "label": "Hexagons, lines",
+    "name": "6³ · lines",
+    "group": "rules",
+    "decor": { "of": "hexagons", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "hexagons.2oneinthree",
+    "label": "Hexagons, 2 colours, one in three",
+    "name": "6³ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "hexagons", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 1
+  },
+  {
+    "key": "hexagons.2oneinthree2",
+    "label": "Hexagons, 2 colours, one in three II",
+    "name": "6³ · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "hexagons",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 2
+  },
+  {
+    "key": "hexagons.3striped",
+    "label": "Hexagons, 3 colours, striped",
+    "name": "6³ · 3 colours, striped",
+    "group": "colourings",
+    "decor": { "of": "hexagons", "colours": 3, "rules": false, "label": "3 colours, striped" },
+    "painting": 3
+  },
+  {
+    "key": "hexagons.3apart",
+    "label": "Hexagons, 3 colours, apart",
+    "name": "6³ · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "hexagons", "colours": 3, "rules": false, "label": "3 colours, apart" },
+    "painting": 4
+  },
+  {
+    "key": "trihex.lines",
+    "label": "Trihexagonal, lines",
+    "name": "3.6.3.6 · lines",
+    "group": "rules",
+    "decor": { "of": "trihex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "trihex.dots",
+    "label": "Trihexagonal, dots",
+    "name": "3.6.3.6 · dots",
+    "group": "rules",
+    "decor": { "of": "trihex", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "trihex.2oneinthreebyshape",
+    "label": "Trihexagonal, 2 colours, one in three, by shape",
+    "name": "3.6.3.6 · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "trihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "trihex.2oneinthree",
+    "label": "Trihexagonal, 2 colours, one in three",
+    "name": "3.6.3.6 · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "trihex", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "trihex.3byshape",
+    "label": "Trihexagonal, 3 colours, by shape",
+    "name": "3.6.3.6 · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "trihex", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "truncsquare.lines",
+    "label": "Truncated square, lines",
+    "name": "4.8² · lines",
+    "group": "rules",
+    "decor": { "of": "truncsquare", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "truncsquare.lines2",
+    "label": "Truncated square, lines II",
+    "name": "4.8² · lines II",
+    "group": "rules",
+    "decor": { "of": "truncsquare", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "truncsquare.2oneinthree",
+    "label": "Truncated square, 2 colours, one in three",
+    "name": "4.8² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "truncsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "truncsquare.2oneinthree2",
+    "label": "Truncated square, 2 colours, one in three II",
+    "name": "4.8² · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "truncsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "truncsquare.3colours",
+    "label": "Truncated square, 3 colours",
+    "name": "4.8² · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "truncsquare", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "trunchex.lines",
+    "label": "Truncated hexagonal, lines",
+    "name": "3.12² · lines",
+    "group": "rules",
+    "decor": { "of": "trunchex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "trunchex.lines2",
+    "label": "Truncated hexagonal, lines II",
+    "name": "3.12² · lines II",
+    "group": "rules",
+    "decor": { "of": "trunchex", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "trunchex.2oneinthreebyshape",
+    "label": "Truncated hexagonal, 2 colours, one in three, by shape",
+    "name": "3.12² · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "trunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "trunchex.2oneinthree",
+    "label": "Truncated hexagonal, 2 colours, one in three",
+    "name": "3.12² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "trunchex", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "trunchex.3byshape",
+    "label": "Truncated hexagonal, 3 colours, by shape",
+    "name": "3.12² · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "trunchex", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "elongated.lines",
+    "label": "Elongated triangular, lines",
+    "name": "3³.4² · lines",
+    "group": "rules",
+    "decor": { "of": "elongated", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "elongated.lines2",
+    "label": "Elongated triangular, lines II",
+    "name": "3³.4² · lines II",
+    "group": "rules",
+    "decor": { "of": "elongated", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "elongated.2oneinthreebyshape",
+    "label": "Elongated triangular, 2 colours, one in three, by shape",
+    "name": "3³.4² · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "elongated.2oneinthree",
+    "label": "Elongated triangular, 2 colours, one in three",
+    "name": "3³.4² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "elongated.3byshape",
+    "label": "Elongated triangular, 3 colours, by shape",
+    "name": "3³.4² · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "elongated", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "snubsquare.lines",
+    "label": "Snub square, lines",
+    "name": "3².4.3.4 · lines",
+    "group": "rules",
+    "decor": { "of": "snubsquare", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "snubsquare.lines2",
+    "label": "Snub square, lines II",
+    "name": "3².4.3.4 · lines II",
+    "group": "rules",
+    "decor": { "of": "snubsquare", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "snubsquare.2oneinthreebyshape",
+    "label": "Snub square, 2 colours, one in three, by shape",
+    "name": "3².4.3.4 · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "snubsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "snubsquare.2oneinthree",
+    "label": "Snub square, 2 colours, one in three",
+    "name": "3².4.3.4 · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "snubsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "snubsquare.3byshape",
+    "label": "Snub square, 3 colours, by shape",
+    "name": "3².4.3.4 · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "snubsquare", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "snubhex.lines",
+    "label": "Snub hexagonal, lines",
+    "name": "3⁴.6 · lines",
+    "group": "rules",
+    "decor": { "of": "snubhex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "snubhex.dots",
+    "label": "Snub hexagonal, dots",
+    "name": "3⁴.6 · dots",
+    "group": "rules",
+    "decor": { "of": "snubhex", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "snubhex.2oneinthreebyshape",
+    "label": "Snub hexagonal, 2 colours, one in three, by shape",
+    "name": "3⁴.6 · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "snubhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "snubhex.2oneinthreebyshape2",
+    "label": "Snub hexagonal, 2 colours, one in three, by shape II",
+    "name": "3⁴.6 · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "snubhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "snubhex.2oneinthreebyshape3",
+    "label": "Snub hexagonal, 2 colours, one in three, by shape III",
+    "name": "3⁴.6 · 2 colours, one in three, by shape III",
+    "group": "colourings",
+    "decor": {
+      "of": "snubhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "rhombitrihex.lines",
+    "label": "Rhombitrihexagonal, lines",
+    "name": "3.4.6.4 · lines",
+    "group": "rules",
+    "decor": { "of": "rhombitrihex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "rhombitrihex.dots",
+    "label": "Rhombitrihexagonal, dots",
+    "name": "3.4.6.4 · dots",
+    "group": "rules",
+    "decor": { "of": "rhombitrihex", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "rhombitrihex.2oneinthreebyshape",
+    "label": "Rhombitrihexagonal, 2 colours, one in three, by shape",
+    "name": "3.4.6.4 · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "rhombitrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "rhombitrihex.2oneinthreebyshape2",
+    "label": "Rhombitrihexagonal, 2 colours, one in three, by shape II",
+    "name": "3.4.6.4 · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "rhombitrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "rhombitrihex.3byshape",
+    "label": "Rhombitrihexagonal, 3 colours, by shape",
+    "name": "3.4.6.4 · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "rhombitrihex", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "trunctrihex.lines",
+    "label": "Truncated trihexagonal, lines",
+    "name": "4.6.12 · lines",
+    "group": "rules",
+    "decor": { "of": "trunctrihex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "trunctrihex.lines2",
+    "label": "Truncated trihexagonal, lines II",
+    "name": "4.6.12 · lines II",
+    "group": "rules",
+    "decor": { "of": "trunctrihex", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "trunctrihex.2oneinthreebyshape",
+    "label": "Truncated trihexagonal, 2 colours, one in three, by shape",
+    "name": "4.6.12 · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "trunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "trunctrihex.2byshape",
+    "label": "Truncated trihexagonal, 2 colours, by shape",
+    "name": "4.6.12 · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "trunctrihex", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "trunctrihex.3byshape",
+    "label": "Truncated trihexagonal, 3 colours, by shape",
+    "name": "4.6.12 · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "trunctrihex", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "tetrakis.lines",
+    "label": "Tetrakis square, lines",
+    "name": "V4.8² · lines",
+    "group": "rules",
+    "decor": { "of": "tetrakis", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "tetrakis.lines2",
+    "label": "Tetrakis square, lines II",
+    "name": "V4.8² · lines II",
+    "group": "rules",
+    "decor": { "of": "tetrakis", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "tetrakis.2apart",
+    "label": "Tetrakis square, 2 colours, apart",
+    "name": "V4.8² · 2 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "tetrakis", "colours": 2, "rules": false, "label": "2 colours, apart" },
+    "painting": 2
+  },
+  {
+    "key": "rhombille.lines",
+    "label": "Rhombille, lines",
+    "name": "V3.6.3.6 · lines",
+    "group": "rules",
+    "decor": { "of": "rhombille", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "rhombille.2oneinthree",
+    "label": "Rhombille, 2 colours, one in three",
+    "name": "V3.6.3.6 · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "rhombille",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 1
+  },
+  {
+    "key": "rhombille.2oneinthree2",
+    "label": "Rhombille, 2 colours, one in three II",
+    "name": "V3.6.3.6 · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "rhombille",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 2
+  },
+  {
+    "key": "rhombille.2oneinthree3",
+    "label": "Rhombille, 2 colours, one in three III",
+    "name": "V3.6.3.6 · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "rhombille",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 3
+  },
+  {
+    "key": "triakis.lines",
+    "label": "Triakis triangular, lines",
+    "name": "V3.12² · lines",
+    "group": "rules",
+    "decor": { "of": "triakis", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "triakis.linkedpairs",
+    "label": "Triakis triangular, linked pairs",
+    "name": "V3.12² · linked pairs",
+    "group": "rules",
+    "decor": { "of": "triakis", "colours": 1, "rules": true, "label": "linked pairs" },
+    "painting": 1
+  },
+  {
+    "key": "triakis.2oneinthree",
+    "label": "Triakis triangular, 2 colours, one in three",
+    "name": "V3.12² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "triakis", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 2
+  },
+  {
+    "key": "triakis.2oneinthree2",
+    "label": "Triakis triangular, 2 colours, one in three II",
+    "name": "V3.12² · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "triakis",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "triakis.3mixed",
+    "label": "Triakis triangular, 3 colours, mixed",
+    "name": "V3.12² · 3 colours, mixed",
+    "group": "colourings",
+    "decor": { "of": "triakis", "colours": 3, "rules": false, "label": "3 colours, mixed" },
+    "painting": 4
+  },
+  {
+    "key": "cairo.lines",
+    "label": "Cairo pentagonal, lines",
+    "name": "V3².4.3.4 · lines",
+    "group": "rules",
+    "decor": { "of": "cairo", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "cairo.lines2",
+    "label": "Cairo pentagonal, lines II",
+    "name": "V3².4.3.4 · lines II",
+    "group": "rules",
+    "decor": { "of": "cairo", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "prismaticpent.lines",
+    "label": "Prismatic pentagonal, lines",
+    "name": "V3³.4² · lines",
+    "group": "rules",
+    "decor": { "of": "prismaticpent", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "prismaticpent.branchinglines",
+    "label": "Prismatic pentagonal, branching lines",
+    "name": "V3³.4² · branching lines",
+    "group": "rules",
+    "decor": { "of": "prismaticpent", "colours": 1, "rules": true, "label": "branching lines" },
+    "painting": 1
+  },
+  {
+    "key": "prismaticpent.2oneinthree",
+    "label": "Prismatic pentagonal, 2 colours, one in three",
+    "name": "V3³.4² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "prismaticpent",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "prismaticpent.2oneinthree2",
+    "label": "Prismatic pentagonal, 2 colours, one in three II",
+    "name": "V3³.4² · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "prismaticpent",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "prismaticpent.3paired",
+    "label": "Prismatic pentagonal, 3 colours, paired",
+    "name": "V3³.4² · 3 colours, paired",
+    "group": "colourings",
+    "decor": { "of": "prismaticpent", "colours": 3, "rules": false, "label": "3 colours, paired" },
+    "painting": 4
+  },
+  {
+    "key": "floret.lines",
+    "label": "Floret pentagonal, lines",
+    "name": "V3⁴.6 · lines",
+    "group": "rules",
+    "decor": { "of": "floret", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "floret.lines2",
+    "label": "Floret pentagonal, lines II",
+    "name": "V3⁴.6 · lines II",
+    "group": "rules",
+    "decor": { "of": "floret", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "deltoidal.lines",
+    "label": "Deltoidal trihexagonal, lines",
+    "name": "V3.4.6.4 · lines",
+    "group": "rules",
+    "decor": { "of": "deltoidal", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "deltoidal.linkedpairs",
+    "label": "Deltoidal trihexagonal, linked pairs",
+    "name": "V3.4.6.4 · linked pairs",
+    "group": "rules",
+    "decor": { "of": "deltoidal", "colours": 1, "rules": true, "label": "linked pairs" },
+    "painting": 1
+  },
+  {
+    "key": "deltoidal.2oneinthree",
+    "label": "Deltoidal trihexagonal, 2 colours, one in three",
+    "name": "V3.4.6.4 · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "deltoidal",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "deltoidal.2oneinthree2",
+    "label": "Deltoidal trihexagonal, 2 colours, one in three II",
+    "name": "V3.4.6.4 · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "deltoidal",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "deltoidal.2oneinthree3",
+    "label": "Deltoidal trihexagonal, 2 colours, one in three III",
+    "name": "V3.4.6.4 · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "deltoidal",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "kisrhombille.lines",
+    "label": "Kisrhombille, lines",
+    "name": "V4.6.12 · lines",
+    "group": "rules",
+    "decor": { "of": "kisrhombille", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "kisrhombille.lines2",
+    "label": "Kisrhombille, lines II",
+    "name": "V4.6.12 · lines II",
+    "group": "rules",
+    "decor": { "of": "kisrhombille", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "kisrhombille.2apart",
+    "label": "Kisrhombille, 2 colours, apart",
+    "name": "V4.6.12 · 2 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "kisrhombille", "colours": 2, "rules": false, "label": "2 colours, apart" },
+    "painting": 2
+  },
+  {
+    "key": "kisrhombille.3mixed",
+    "label": "Kisrhombille, 3 colours, mixed",
+    "name": "V4.6.12 · 3 colours, mixed",
+    "group": "colourings",
+    "decor": { "of": "kisrhombille", "colours": 3, "rules": false, "label": "3 colours, mixed" },
+    "painting": 3
+  },
+  {
+    "key": "penrose.rules",
+    "label": "Penrose rhombi, matching rules",
+    "name": "Penrose rhombi · matching rules",
+    "group": "rules",
+    "decor": { "of": "penrose", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "kitedart.rules",
+    "label": "Penrose kites & darts, matching rules",
+    "name": "Penrose kites & darts · matching rules",
+    "group": "rules",
+    "decor": { "of": "kitedart", "colours": 1, "rules": true, "label": "matching rules" }
+  }
+]

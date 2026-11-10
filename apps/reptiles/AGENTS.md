@@ -81,6 +81,15 @@ some back off.
     octagon or a dodecagon a line between two edges further apart than
     neighbours runs round the point past the tile where their lines meet,
     square on to both.
+  - *The eight Laves tilings* (`?level=cairo.lines`,
+    `?level=deltoidal.2oneinthree`, `?level=kisrhombille.3mixed`) are lined
+    and coloured just as the uniform ones are, and named as the regular
+    boards are, one tile each: "V3.12² · linked pairs". On their kites,
+    rhombi, pentagons and triangles a line between two edges is a curve
+    leaving each edge's middle square on. The Cairo and V3⁴.6 have lined
+    boards only: no colouring of theirs measures as hard as the plain board.
+  No marked level measures easier than its plain board: the choice drops
+  any that would.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
   marks ask for turning a plain board never needs, and every marked level
@@ -166,10 +175,19 @@ same wherever they are cut; so are the rep-tiles (a big copy of the tile, not
 a window), the spirals (one true centre) and the Socolar–Taylor tile (its
 patch holds one two-ring window). Boards past the first are built when first
 opened (`levelByKey`), so the page loads no slower; `BOARDS` lists them all,
-`LEVELS` the first boards. `tests/unit/boards.test.ts` holds every listed
+`LEVELS` the first boards — and no level at all is built as the page loads
+(building them all takes seconds, a quarter of a minute on a phone, which
+showed a blank page): `src/levelIndex.json` (`npm run levels`,
+`scripts/index-levels.mts`) lists every first board's key, label, name,
+section and marks in catalog order, and `LEVELS` is a stub of each
+(`lazyLevel`) that builds the level the first time anything else of it is
+read — its tiles, cells or region, when its card or board is drawn.
+`tests/unit/levelIndex.test.ts` builds them all (`buildFirstBoards`) and
+fails while the file is out of step. `tests/unit/boards.test.ts` holds every listed
 board to the search's promises, so a changed window that leaves
 `boards.json` behind fails there; re-run `npm run boards`, then
-`npm run difficulty`.
+`npm run difficulty`. After changing a level's window, name or tiles, or
+`npm run colourings`, re-run `npm run levels` too.
 
 **Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
 player lays the board the level was cut from, always taking a tile it can
@@ -189,7 +207,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 22 matching rules (lines on the eleven uniform tilings, Penrose's arrows on his rhombi and his kites and darts) and 37 colourings of the eleven uniform tilings in two more, 447 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 37 matching rules (lines on the eleven uniform tilings and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts) and 52 colourings of the uniform and Laves tilings in two more, 477 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -255,7 +273,8 @@ test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, a won board and
-its ✕). It packages as an offline desktop app through the
+its ✕) and every level and tiling page opening with no error
+(`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
 its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
@@ -299,7 +318,8 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # choose each uniform tiling's lined and coloured levels into src/colourings.json (seconds)
+npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (ten minutes, nearly all the kisrhombille's; `-- <key>…` for only those)
+npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
@@ -499,7 +519,9 @@ quick way to see the win state.
   all round) and need more than one tile per shape (one reads as a lined
   board), and drops any whose tray another already had (`traySignature`: the same up to
   turning a tile, a mirror and renaming the colours — rows and columns are
-  one). `COLOURED` lists the regular boards painted and each one's lattice; the
+  one). `COLOURED` lists the regular boards painted and each one's lattice
+  (their paintings listed in `src/colourings.json` too, all that are kept,
+  so nothing is searched as the page loads); the
   level is `<plain>.<label>`, `Level.decor` saying what it marks — lined
   ones in the Matching rules section (`decor.rules`), the rest in
   Colourings. The other eight uniform tilings (`UNIFORM`) are painted the
@@ -508,14 +530,20 @@ quick way to see the win state.
   each one mark all round (the shapes decide it). Their lattice is found
   from the cells (`latticeOf`: the shortest translation that carries the
   patch onto itself, and the shortest not along it), and what lies past the
-  rim is read off a patch twice the window's size (`uniformContext`, moved
+  rim is read off a patch twice the window's size (`periodicContext`, moved
   onto the window exactly) — the snub hexagonal's window holds one hexagon,
-  too few to see its period. And searching them all takes seconds (sixty
-  thousand colourings on the snub hexagonal), so `npm run colourings`
+  too few to see its period. The eight Laves tilings (`LAVES`) are painted
+  just as these are, their wider patch a wider dual window (`lavesWindow`,
+  in the same ring); one tile each, they are labelled as the regular boards
+  are. And searching them all takes minutes (sixty
+  thousand colourings on the snub hexagonal, a million and a half on the
+  kisrhombille), so `npm run colourings`
   (`scripts/find-colourings.mts`, choosing in `src/colouringChoice.ts`)
   writes each one's chosen `PaintingParams` to `src/colourings.json`, and
   the game builds only those (`paintingOf`); the tests choose again for all
-  but the two slowest and fail while the file is out of step. Labels on a
+  but the three slowest (`SLOW_CHOICE`: the snub hexagonal, the truncated
+  trihexagonal and the kisrhombille, whose twelve translation classes take
+  ten minutes) and fail while the file is out of step. Labels on a
   board of several shapes say lines, how many colours, "one in three" and
   "by shape" (`trihex.2oneinthreebyshape`), not how many edges match. `arrowLevel` gives an aperiodic board arrows from its builder's Robinson
   triangles, which name their corners alike at every step: which leg each
@@ -606,8 +634,10 @@ quick way to see the win state.
   disc on the edge's middle; a lined board's lines from edge to edge, square
   on and ending on each (straight across, or a Truchet arc about the corner
   two lined edges share — or, two edges further apart on an octagon or a
-  dodecagon, about the point their lines meet, `meet`; butt-capped, so
-  never past the edge), and a line cut back (`END`) as a half disc;
+  dodecagon, about the point their lines meet, `meet`; on an irregular tile,
+  a Laves tile's kite, rhombus or pentagon, a cubic leaving each edge's
+  middle along its inward normal, and spokes to the middle the same way;
+  butt-capped, so never past the edge), and a line cut back (`END`) as a half disc;
   Penrose's arrows as arcs about the tile's corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —
   chosen so every arc stays inside its tile, a thin rhombus's round its wide
@@ -663,6 +693,19 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   (the repo rule in the root `AGENTS.md`). Floats are for drawing, for bounding
   boxes, for ordering points already known to be on one segment, and for the
   sign of a value already known to be non-zero.
+- **No float breaks a tie.** Safari's `Math.sin` and `Math.cos` (the system
+  libm) and Chrome's (V8's own) can differ in the last bit, so wherever a
+  float picks one of several — the shortest of six equally long translations
+  (`latticeOf`), the nearest of two equally near centres (`lavesWindow`) —
+  "as short" or "as near" is within a float's error, and a tie goes to the
+  least exact key (`ring.key`), the same in every browser. A float tie broke
+  this before: a painting written down in one lattice basis was another
+  colouring in Safari's, so the level threw and V4.6.12's page never opened
+  on an iPhone. `tests/unit/engines.test.ts` builds every level with sin and
+  cos one ulp off, up, down and by turns, and fails on any level that comes
+  out differently; `tests/e2e/every-level.spec.ts` opens every level and
+  every tiling's page, in Chromium and, in CI, in WebKit as an iPhone
+  (`PW_WEBKIT=1` locally, after `npx playwright install webkit`).
 - **A level follows a Hypersweeper board** — but for the tiles of several
   pieces, which Hypersweeper cannot have (a minesweeper cell is one polygon):
   the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and

@@ -11,7 +11,9 @@
 //   to tile: straight across to the opposite edge, or round the corner two
 //   neighbouring edges share, on a circle about it (a Truchet tile's arc) —
 //   or, for two edges further apart on an octagon or a dodecagon, about the
-//   point past the tile where their lines meet.
+//   point past the tile where their lines meet. On an irregular tile (a
+//   Laves tile's kite, rhombus or pentagon) it is a curve that leaves each
+//   edge along its inward normal: square on all the same.
 //   A line that would end in a tile is cut back to a half disc (`END`, see
 //   src/colourings.ts), with one across it: two such tiles together make one
 //   disc, and a half disc never meets a line.
@@ -208,22 +210,68 @@ export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p
         const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
         add(`decor dot${kind % 2 === 0 ? " double" : ""}`, halfDisc(a, b, at, DOT * len, map));
       }
+    // edge i's unit normal into the tile (on its left: tiles run
+    // counter-clockwise)
+    const inward = (i: number): XY => {
+      const [a, b] = [xy[i]!, xy[(i + 1) % m]!];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      return [-(b[1] - a[1]) / len, (b[0] - a[0]) / len];
+    };
+    // `h` along edge i's inward normal from its middle
+    const off = (i: number, h: number): XY => {
+      const [n, c] = [inward(i), mid(i)];
+      return [c[0] + n[0] * h, c[1] + n[1] * h];
+    };
+    // whether `to` lies square on from edge i's middle (floats: a drawing)
+    const squareOn = (i: number, to: XY): boolean => {
+      const d = sub(to, mid(i));
+      return Math.abs(cross(inward(i), d)) < 1e-6 * Math.max(1, Math.hypot(...d));
+    };
     // (never one: a line that would end here is cut back to a half disc)
     if (lined.length === 2) {
       const [i, j] = lined as [number, number];
       const [p, q] = [map(mid(i)), map(mid(j))];
       const centre = meet(xy, i, j);
-      // two parallel edges: straight across
-      if (centre === "parallel") lines.push(`M${pt(p)}L${pt(q)}`);
+      const gap = Math.hypot(...sub(mid(j), mid(i)));
+      // two parallel edges facing each other: straight across
+      if (centre === "parallel" && squareOn(i, mid(j))) lines.push(`M${pt(p)}L${pt(q)}`);
       // about the point the two edges' lines meet, where both middles are
       // as far from it: then the arc meets each edge square on — round the
       // corner two neighbouring edges share, or round a point past the
       // tile for two further apart (an octagon's or a dodecagon's)
-      else if (centre) lines.push(`M${pt(p)}${arcTo(map(centre), p, q)}`);
-      else lines.push(`M${pt(p)}Q${pt(map(centroid(xy)))} ${pt(q)}`);
+      else if (centre && centre !== "parallel") lines.push(`M${pt(p)}${arcTo(map(centre), p, q)}`);
+      // an irregular tile's (a Laves tile's kite, rhombus or pentagon): a
+      // curve leaving each middle along the edge's inward normal, so it
+      // still meets each edge square on and runs on into the tile across —
+      // round the corner two neighbouring edges share as an arc round it
+      // would, each arm as long as a circle's through that middle (4/3 ·
+      // tan(φ/4) of its distance from the corner, φ the turn); between two
+      // edges further apart, a share of the gap
+      else {
+        const corner = j === (i + 1) % m ? j : i === (j + 1) % m ? i : null;
+        let [hi, hj] = [gap * 0.4, gap * 0.4];
+        if (corner !== null) {
+          const c = xy[corner]!;
+          const [ni, nj] = [inward(i), inward(j)];
+          const turn = Math.acos(Math.max(-1, Math.min(1, ni[0] * nj[0] + ni[1] * nj[1])));
+          const kappa = (4 / 3) * Math.tan((Math.PI - turn) / 4);
+          hi = kappa * Math.hypot(...sub(mid(i), c));
+          hj = kappa * Math.hypot(...sub(mid(j), c));
+        }
+        lines.push(`M${pt(p)}C${pt(map(off(i, hi)))} ${pt(map(off(j, hj)))} ${pt(q)}`);
+      }
     } else if (lined.length > 2) {
-      const c = map(centroid(xy));
-      for (const i of lined) lines.push(`M${pt(map(mid(i)))}L${pt(c)}`);
+      // spokes to the middle of the tile, each leaving its edge square on
+      const hub = centroid(xy);
+      const c = map(hub);
+      for (const i of lined) {
+        const from = map(mid(i));
+        if (squareOn(i, hub)) lines.push(`M${pt(from)}L${pt(c)}`);
+        else {
+          const reach = Math.hypot(...sub(hub, mid(i)));
+          lines.push(`M${pt(from)}Q${pt(map(off(i, reach * 0.6)))} ${pt(c)}`);
+        }
+      }
     }
   }
   const out: DecorPart[] = [...discs.entries()]
