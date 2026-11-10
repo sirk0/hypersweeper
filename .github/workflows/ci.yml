@@ -376,7 +376,7 @@ jobs:
     name: game-e2e (${{ matrix.game }})
     needs: games
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -396,6 +396,14 @@ jobs:
         run: npm ci
       - name: Install Playwright Chromium headless shell
         run: npx playwright install --only-shell chromium
+      # A game whose Playwright config has a WebKit project (Rep-tiles: every
+      # level opened as an iPhone would, since every iOS browser is WebKit)
+      # gets WebKit too.
+      - name: Install Playwright WebKit (games tested in it)
+        run: |
+          if grep -q 'name: "webkit"' playwright.config.ts; then
+            npx playwright install --with-deps webkit
+          fi
       - name: Smoke test
         run: npx playwright test
       - name: Upload Playwright report

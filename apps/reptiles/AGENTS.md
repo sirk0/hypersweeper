@@ -273,7 +273,8 @@ test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, a won board and
-its ✕). It packages as an offline desktop app through the
+its ✕) and every level and tiling page opening with no error
+(`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
 its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
@@ -692,6 +693,19 @@ and the shared data the `@tiling/data` one (`data/`) — both listed in
   (the repo rule in the root `AGENTS.md`). Floats are for drawing, for bounding
   boxes, for ordering points already known to be on one segment, and for the
   sign of a value already known to be non-zero.
+- **No float breaks a tie.** Safari's `Math.sin` and `Math.cos` (the system
+  libm) and Chrome's (V8's own) can differ in the last bit, so wherever a
+  float picks one of several — the shortest of six equally long translations
+  (`latticeOf`), the nearest of two equally near centres (`lavesWindow`) —
+  "as short" or "as near" is within a float's error, and a tie goes to the
+  least exact key (`ring.key`), the same in every browser. A float tie broke
+  this before: a painting written down in one lattice basis was another
+  colouring in Safari's, so the level threw and V4.6.12's page never opened
+  on an iPhone. `tests/unit/engines.test.ts` builds every level with sin and
+  cos one ulp off, up, down and by turns, and fails on any level that comes
+  out differently; `tests/e2e/every-level.spec.ts` opens every level and
+  every tiling's page, in Chromium and, in CI, in WebKit as an iPhone
+  (`PW_WEBKIT=1` locally, after `npx playwright install webkit`).
 - **A level follows a Hypersweeper board** — but for the tiles of several
   pieces, which Hypersweeper cannot have (a minesweeper cell is one polygon):
   the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and

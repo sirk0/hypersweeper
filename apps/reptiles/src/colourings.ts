@@ -495,9 +495,22 @@ export function latticeOf(ring: Ring, cells: Piece[][]): Lattice {
       found.push({ t, x, y, len: Math.hypot(x, y) });
     }
   }
-  found.sort((p, q) => p.len - q.len);
-  const u = found[0];
-  const v = u && found.find((q) => Math.abs(u.x * q.y - u.y * q.x) > 1e-9 * u.len * q.len);
+  // The shortest — but a lattice has several as short (six on a hexagonal
+  // one), and which a float calls shorter is then its last bit's say, which
+  // Safari's and Chrome's sin and cos can differ in: a painting written down
+  // in one basis would be another colouring in the other. So "as short" is
+  // within a float's error, and a tie goes to the least exact key, the same
+  // in every browser.
+  const shortest = (from: typeof found): (typeof found)[number] | undefined => {
+    const min = Math.min(...from.map((p) => p.len));
+    let pick: (typeof found)[number] | undefined;
+    for (const p of from)
+      if (p.len <= min * (1 + 1e-9) && (!pick || ring.key(p.t) < ring.key(pick.t))) pick = p;
+    return pick;
+  };
+  const u = shortest(found);
+  const v =
+    u && shortest(found.filter((q) => Math.abs(u.x * q.y - u.y * q.x) > 1e-9 * u.len * q.len));
   if (!u || !v) throw new Error("colourings: the patch shows no lattice");
   return { u: u.t, v: v.t };
 }
