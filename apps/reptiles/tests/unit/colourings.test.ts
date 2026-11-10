@@ -229,6 +229,7 @@ describe("colourings", () => {
       "penrose.rules",
       "kitedart.rules",
       "ammannbeenker.rules",
+      "ammannbeenker.3apart",
       "tile11.rules",
       "spectre.rules",
       "hat.rules",

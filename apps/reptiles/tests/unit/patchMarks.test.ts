@@ -161,10 +161,12 @@ describe("colourings read off a patch", () => {
       const listed = LEVELS.filter((l) => l.decor?.of === key && !l.decor.rules);
       expect(listed.length, key).toBe(CHOSEN[key]!.tiles <= MAX_COLOURED_TRAY ? 1 : 0);
     }
-    // none is, so far: the fewest tray tiles any takes is Ammann–Beenker's 5
-    expect(Math.min(...PATCH_MARKED.map((key) => CHOSEN[key]!.tiles))).toBeGreaterThan(
-      MAX_COLOURED_TRAY,
-    );
+    // so far only Ammann–Beenker's, at five tray tiles
+    expect(
+      LEVELS.filter((l) => l.decor && PATCH_MARKED.includes(l.decor.of) && !l.decor.rules).map(
+        (l) => l.key,
+      ),
+    ).toEqual(["ammannbeenker.3apart"]);
   });
 
   it.each(PATCH_MARKED)(

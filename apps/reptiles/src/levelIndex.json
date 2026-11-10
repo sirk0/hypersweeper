@@ -1261,6 +1261,13 @@
     "decor": { "of": "ammannbeenker", "colours": 1, "rules": true, "label": "matching rules" }
   },
   {
+    "key": "ammannbeenker.3apart",
+    "label": "Ammann–Beenker, 3 colours, apart",
+    "name": "Ammann–Beenker · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "ammannbeenker", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
     "key": "tile11.rules",
     "label": "Tile(1,1), matching rules",
     "name": "Tile(1,1) · matching rules",

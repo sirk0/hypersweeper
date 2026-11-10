@@ -1687,12 +1687,12 @@ function patchRulesLevel(plain: Level): Level {
 const apartLabel = (colours: number): string => `${colours} colours, apart`;
 
 /** The most tray tiles an aperiodic colouring may take and still be a
- * level: past four, a tray of tiles that differ only in which colours ring
- * them is a search, not a puzzle. None so far is under it — the fewest any
- * of the nine take is Ammann–Beenker's five — so none is listed, but the
- * choice is still made and written down (`npm run colourings`), and a window
- * that colours with fewer is listed by itself. */
-export const MAX_COLOURED_TRAY = 4;
+ * level: past five, a tray of tiles that differ only in which colours ring
+ * them is a search, not a puzzle. Only Ammann–Beenker's is under it (five
+ * tiles); the rest take 12 to 26. Every choice is still made and written
+ * down (`npm run colourings`), and a window that colours with fewer is
+ * listed by itself. */
+export const MAX_COLOURED_TRAY = 5;
 
 /** Whether `of`'s colouring is few enough tray tiles to play. */
 export const playableColouring = (of: string): boolean =>
