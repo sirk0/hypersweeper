@@ -9,7 +9,9 @@
 // - A line — a lined board's: across the tile from edge to edge, meeting
 //   each edge square on and ending on it, so lines run on unbroken from tile
 //   to tile: straight across to the opposite edge, or round the corner two
-//   neighbouring edges share, on a circle about it (a Truchet tile's arc).
+//   neighbouring edges share, on a circle about it (a Truchet tile's arc) —
+//   or, for two edges further apart on an octagon or a dodecagon, about the
+//   point past the tile where their lines meet.
 //   A tile with one lined edge has a half disc there instead of a stub: two
 //   such tiles together make one disc.
 // - An arrow — Penrose's matching rules, on his rhombi and his kites and
@@ -98,6 +100,24 @@ function arcsOf(xy: XY[], crossings: Map<number, { kind: number; at: XY }>): num
     return null;
   };
   return pick(0, new Set(), []);
+}
+
+/** Where the lines of the polygon `xy`'s edges i and j meet — "parallel"
+ * if they never do — when the two edges' middles are as far from it (as on
+ * a regular polygon): a circle about it through both middles crosses each
+ * edge square on. Null where they are not (floats: a drawing, not an
+ * identity). */
+export function meet(xy: readonly XY[], i: number, j: number): XY | "parallel" | null {
+  const m = xy.length;
+  const [a, b, c, d] = [xy[i]!, xy[(i + 1) % m]!, xy[j]!, xy[(j + 1) % m]!];
+  const [d1, d2] = [sub(b, a), sub(d, c)];
+  const den = cross(d1, d2);
+  if (Math.abs(den) < 1e-9 * Math.hypot(...d1) * Math.hypot(...d2)) return "parallel";
+  const t = cross(sub(c, a), d2) / den;
+  const x: XY = [a[0] + t * d1[0], a[1] + t * d1[1]];
+  const r1 = Math.hypot(x[0] - (a[0] + b[0]) / 2, x[1] - (a[1] + b[1]) / 2);
+  const r2 = Math.hypot(x[0] - (c[0] + d[0]) / 2, x[1] - (c[1] + d[1]) / 2);
+  return Math.abs(r1 - r2) < 1e-6 * Math.max(1, r1) ? x : null;
 }
 
 /** A half disc of radius `r` centred at `at` on the edge a → b, on its left
@@ -190,11 +210,15 @@ export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p
       add("decor dot", halfDisc(a, b, mid(i), HALF * Math.hypot(b[0] - a[0], b[1] - a[1]), map));
     } else if (lined.length === 2) {
       const [i, j] = lined as [number, number];
-      // two neighbouring edges: round the corner they share
-      const corner = j === (i + 1) % m ? xy[j] : i === (j + 1) % m ? xy[i] : null;
       const [p, q] = [map(mid(i)), map(mid(j))];
-      if (corner) lines.push(`M${pt(p)}${arcTo(map(corner), p, q)}`);
-      else if (Math.abs(i - j) * 2 === m) lines.push(`M${pt(p)}L${pt(q)}`);
+      const centre = meet(xy, i, j);
+      // two parallel edges: straight across
+      if (centre === "parallel") lines.push(`M${pt(p)}L${pt(q)}`);
+      // about the point the two edges' lines meet, where both middles are
+      // as far from it: then the arc meets each edge square on — round the
+      // corner two neighbouring edges share, or round a point past the
+      // tile for two further apart (an octagon's or a dodecagon's)
+      else if (centre) lines.push(`M${pt(p)}${arcTo(map(centre), p, q)}`);
       else lines.push(`M${pt(p)}Q${pt(map(centroid(xy)))} ${pt(q)}`);
     } else if (lined.length > 2) {
       const c = map(centroid(xy));

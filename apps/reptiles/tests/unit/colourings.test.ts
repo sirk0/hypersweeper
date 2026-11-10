@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { traySignature } from "../../src/colourings";
+import colouringsData from "../../src/colourings.json";
+import { COLOURS_CAP, RULES_CAP, chooseColourings } from "../../src/colouringChoice";
+import { latticeOf, traySignature } from "../../src/colourings";
 import { measure } from "../../src/difficulty";
-import { cyclotomic } from "../../src/geometry/cyclotomic";
+import { cyclotomic, type Cyc } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
 import {
   BLANK,
@@ -28,9 +30,9 @@ import {
   type Piece,
   type Shape,
 } from "../../src/geometry/shape";
-import { LEVELS, levelByKey, type Level } from "../../src/levels";
+import { LEVELS, UNIFORM, levelByKey, plainKinds, type Level } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
-import { decorParts } from "../../src/view/decor";
+import { decorParts, meet } from "../../src/view/decor";
 import { loopsOf } from "../../src/view/curve";
 
 const Z4 = cyclotomic(4);
@@ -112,7 +114,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; and gives Penrose's tilings their arrows", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones as src/colourings.json lists; and gives Penrose's tilings their arrows", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -131,6 +133,46 @@ describe("colourings", () => {
       "hexagons.2oneinthree2",
       "hexagons.3striped",
       "hexagons.3apart",
+      "trihex.lines",
+      "trihex.lines2",
+      "trihex.2oneinthreebyshape",
+      "trihex.2oneinthree",
+      "trihex.3byshape",
+      "truncsquare.lines",
+      "truncsquare.lines2",
+      "truncsquare.2oneinthree",
+      "truncsquare.2oneinthree2",
+      "truncsquare.3colours",
+      "trunchex.lines",
+      "trunchex.lines2",
+      "trunchex.2oneinthreebyshape",
+      "trunchex.2oneinthree",
+      "trunchex.3byshape",
+      "elongated.lines",
+      "elongated.lines2",
+      "elongated.2oneinthreebyshape",
+      "elongated.2oneinthree",
+      "elongated.3byshape",
+      "snubsquare.lines",
+      "snubsquare.lines2",
+      "snubsquare.2oneinthreebyshape",
+      "snubsquare.2oneinthree",
+      "snubsquare.3byshape",
+      "snubhex.lines",
+      "snubhex.lines2",
+      "snubhex.2oneinthreebyshape",
+      "snubhex.2oneinthreebyshape2",
+      "snubhex.2oneinthreebyshape3",
+      "rhombitrihex.lines",
+      "rhombitrihex.lines2",
+      "rhombitrihex.2oneinthreebyshape",
+      "rhombitrihex.2oneinthreebyshape2",
+      "rhombitrihex.3byshape",
+      "trunctrihex.lines",
+      "trunctrihex.lines2",
+      "trunctrihex.2oneinthreebyshape",
+      "trunctrihex.2byshape",
+      "trunctrihex.3byshape",
       "penrose.rules",
       "kitedart.rules",
     ]);
@@ -164,8 +206,19 @@ describe("colourings", () => {
       const alternate = marks.some((m) => colours(m) !== null);
       expect(marks.every((m) => (colours(m) !== null) === alternate)).toBe(true);
       if (rules) expect(level.tiles).toHaveLength(plain.tiles.length);
-      else if (alternate) expect(level.tiles).toHaveLength(count);
+      else if (alternate && plain.tiles.length === 1) expect(level.tiles).toHaveLength(count);
       expect(level.tiles.length).toBeLessThanOrEqual(count * plain.tiles.length);
+      // one tray tile per colour and shape: every cell of one colour and
+      // plain kind is one kind of the tray
+      const kinds = plainKinds(plain);
+      const marked = plainKinds(level);
+      const byGroup = new Map<string, Set<number>>();
+      level.cells.forEach((_, i) => {
+        const own = colours(level.cells[i]![0]!.marks![0]!)?.own ?? 0;
+        const group = `${own}:${kinds[i]}`;
+        byGroup.set(group, (byGroup.get(group) ?? new Set()).add(marked[i]!));
+      });
+      for (const group of byGroup.values()) expect(group.size).toBe(1);
       const all = sides(level);
       let shared = 0;
       for (const [edge, mark] of all) {
@@ -183,7 +236,7 @@ describe("colourings", () => {
           expect(own.size).toBe(1);
           expect(level.colours[kind]).toContain(`paint-${[...own][0]}`);
         });
-        expect(new Set(level.colours).size).toBe(count);
+        expect(new Set(level.colours.flatMap((c) => c.match(/paint-\d/g) ?? [])).size).toBe(count);
       }
     },
   );
@@ -194,6 +247,59 @@ describe("colourings", () => {
     );
     expect(new Set(signatures).size).toBe(signatures.length);
   });
+
+  it("finds each regular board's lattice from its cells, the one its colourings are painted on", () => {
+    const Z12 = cyclotomic(12);
+    const hand: [string, Cyc, Cyc][] = [
+      ["squares", Z4.one, Z4.zeta(1)],
+      ["triangles", Z12.one, Z12.zeta(2)],
+      ["hexagons", Z12.add(Z12.zeta(1), Z12.zeta(-1)), Z12.add(Z12.zeta(3), Z12.zeta(1))],
+    ];
+    for (const [key, u, v] of hand) {
+      const { ring, cells } = levelByKey(key)!;
+      const found = latticeOf(ring, cells);
+      // each basis a whole combination of the other: one lattice
+      const spans = (p: Cyc, q: Cyc, w: Cyc): boolean => {
+        const [px, py] = ring.toXY(p);
+        const [qx, qy] = ring.toXY(q);
+        const [wx, wy] = ring.toXY(w);
+        const det = px * qy - py * qx;
+        const i = Math.round((wx * qy - wy * qx) / det);
+        const j = Math.round((px * wy - py * wx) / det);
+        return ring.eq(
+          w,
+          p.map((x, n) => i * x + j * q[n]!),
+        );
+      };
+      for (const w of [u, v]) expect(spans(found.u, found.v, w), key).toBe(true);
+      for (const w of [found.u, found.v]) expect(spans(u, v, w), key).toBe(true);
+    }
+  });
+
+  it("keeps at most two lined and three coloured levels on each other uniform tiling", () => {
+    for (const [key] of UNIFORM) {
+      const marked = COLOURED.filter((l) => l.decor!.of === key);
+      expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
+      expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
+      expect(marked.length, key).toBeGreaterThan(0);
+    }
+  });
+
+  // The full choice on the snub hexagonal (nine translation classes, sixty
+  // thousand colourings) and the truncated trihexagonal takes seconds each:
+  // those two are left to `npm run colourings`, and their listed paintings
+  // are checked only by building them (`uniformColouredLevels` throws on one
+  // that no longer makes a level) and by the tests above.
+  it.each(UNIFORM.filter(([key]) => key !== "snubhex" && key !== "trunctrihex"))(
+    "%s: src/colourings.json is in step with the choice (npm run colourings)",
+    (key, box) => {
+      const plain = levelByKey(key)!;
+      expect(chooseColourings(plain, box)).toEqual(
+        (colouringsData as Record<string, unknown>)[key],
+      );
+    },
+    30_000,
+  );
 
   it("holds a marked tile so that it fits no cell as the tray has it, where it can", () => {
     // squares striped across rest striped up and down: one turn to lay them
@@ -274,6 +380,37 @@ describe("colourings", () => {
         expect(decorParts(loopsOf(coloured.ring, t.pieces)).map((p) => p.class)).not.toContain(
           "decor line",
         );
+  });
+
+  it("draws a line between two edges further apart about where their lines meet, square on to each", () => {
+    // a dodecagon lined on edges 0 and 3: a quarter turn apart
+    const Z12 = cyclotomic(12);
+    const twelve = regular(Z12, 12).pieces[0]!.verts;
+    const marks = twelve.map((_, i) => (i === 0 || i === 3 ? LINE : BLANK));
+    const tile = { ring: Z12, pieces: [piece(twelve, undefined, marks)] };
+    const xy = twelve.map((v) => Z12.toXY(v));
+    const [line] = decorParts(loopsOf(Z12, tile.pieces));
+    expect(line!.class).toBe("decor line");
+    expect(line!.d).toMatch(/^M[^A-Z]*A[^A-Z]*$/);
+    const centre = meet(xy, 0, 3);
+    if (centre === null || centre === "parallel") throw new Error("the lines meet");
+    for (const i of [0, 3]) {
+      const [a, b] = [xy[i]!, xy[(i + 1) % 12]!];
+      const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      // the centre lies on the edge's line, so the circle crosses the edge
+      // square on at its middle
+      const along = (mid[0]! - centre[0]) * (b[1] - a[1]) - (mid[1]! - centre[1]) * (b[0] - a[0]);
+      expect(along).toBeCloseTo(0, 9);
+    }
+    // the arc's radius reaches both middles
+    const r = Number(line!.d.split("A")[1]!.split(" ")[0]);
+    const [a, b] = [xy[0]!, xy[1]!];
+    expect(r).toBeCloseTo(
+      Math.hypot((a[0] + b[0]) / 2 - centre[0], (a[1] + b[1]) / 2 - centre[1]),
+      3,
+    );
+    // opposite edges never meet: straight across
+    expect(meet(xy, 0, 6)).toBe("parallel");
   });
 
   it("draws a line from edge to edge, ending on each edge's middle, or a half disc alone", () => {

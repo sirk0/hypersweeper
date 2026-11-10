@@ -21,7 +21,18 @@ import { aperiodicPatch } from "./geometry/aperiodic";
 import { socolarTaylorPatch } from "./geometry/socolarTaylor";
 import { hatPatch, type HatTile } from "./geometry/hat";
 import { ccw, outline } from "./geometry/outline";
-import { paintings, sameEdges, traySignature, type Lattice, type Painting } from "./colourings";
+import colouringsData from "./colourings.json";
+import {
+  latticeOf,
+  paintingOf,
+  paintings,
+  sameEdges,
+  split,
+  traySignature,
+  type Lattice,
+  type Painting,
+  type PaintingParams,
+} from "./colourings";
 import {
   curveOnto,
   piece,
@@ -1123,23 +1134,57 @@ function decorLabel(colours: number, lines: boolean, same: number | null, third 
   return `${colours} colours, ${how}`;
 }
 
+/** What a painting of a board of several shapes is called: its tiles differ
+ * anyway, so not by their same-coloured edges — lines, or how many colours,
+ * "one in three" for a third, and "by shape" where some shape is not in
+ * every colour (3.6.3.6's hexagons one colour, its triangles two others). */
+function shapesLabel(painting: Painting, byShape: boolean): string {
+  if (painting.lines) return "lines";
+  const parts = [`${painting.colours} colours`];
+  if (painting.third) parts.push("one in three");
+  if (byShape) parts.push("by shape");
+  return parts.join(", ");
+}
+
 const ROMAN = ["", " II", " III", " IV", " V", " VI"];
 
-/** The coloured and lined levels painted on `plain`'s board (see
- * src/colourings.ts): each painting that marks all of a colour's tiles
- * alike — one tray tile per colour — that asks something of where tiles go
- * (no tray of one mark all round), whose tiles do not all read alike but for
- * their colour (a striped board's, which plays as its lined board does:
- * `Painting.alike`), and whose tray no painting before it had; lined ones
- * first, then by colours.
- * Keyed `<plain>.<label>` — `squares.lines`, `squares.2striped` — a second of
- * one label numbered on. */
-function colouredLevels(plain: Level, lattice: Lattice): Level[] {
-  const seen = new Set<string>();
-  const made: Level[] = [];
-  const all = paintings(plain.ring, plain.cells, lattice).sort(
-    (a, b) => Number(b.lines) - Number(a.lines) || a.colours - b.colours,
+/** A painting that passed `paintedCandidates`: its level (unkeyed: the plain
+ * level's key, `decor` saying what it marks) and whether a shape skips a
+ * colour. */
+export interface PaintedCandidate {
+  level: Level;
+  painting: Painting;
+  byShape: boolean;
+}
+
+/** Which of `plain`'s tile kinds each of its cells is. */
+export function plainKinds(plain: Level): number[] {
+  return plain.cells.map((cell) =>
+    plain.tiles.findIndex(
+      (t) =>
+        turnsOntoPieces(t, cell).length > 0 ||
+        turnsOntoPieces(
+          { ring: t.ring, pieces: posed(t, { rot: 0, flip: true, t: t.ring.zero }) },
+          cell,
+        ).length > 0,
+    ),
   );
+}
+
+/**
+ * The paintings of `plain`'s board worth a level (see src/colourings.ts):
+ * each that marks all of a colour's tiles of one shape alike — one tray tile
+ * per colour and shape (on a regular board, one per colour) — that asks
+ * something of where tiles go (no tray of one mark all round), whose tiles do
+ * not all read alike but for their colour (a striped board's, which plays as
+ * its lined board does: `Painting.alike`), and whose tray no painting before
+ * it had; lined ones first, then by colours. A cheap test on each cell's
+ * marks read round it (`marksKey`) turns away most before a level is built.
+ */
+export function paintedCandidates(plain: Level, all: Iterable<Painting>): PaintedCandidate[] {
+  const seen = new Set<string>();
+  const made: PaintedCandidate[] = [];
+  const kinds = plainKinds(plain);
   const build = (marks: number[][][], painting: Painting): Level =>
     makeLevel(
       plain.key,
@@ -1153,14 +1198,32 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
       marks,
       painting.lines ? undefined : painting.paints,
     );
-  for (const painting of all) {
+  // all of a colour's tiles of one shape one kind, as far as their marks
+  // read round them tell (the rest is checked on the level)
+  const sorted: Painting[] = [];
+  for (const painting of all)
+    if (
+      !split(
+        painting.marks.map((cell) => cell[0]!),
+        (i) => `${painting.paints[i]}:${kinds[i]}`,
+      )
+    )
+      sorted.push(painting);
+  sorted.sort((a, b) => Number(b.lines) - Number(a.lines) || a.colours - b.colours);
+  for (const painting of sorted) {
     // a colouring whose tiles read alike but for their colour plays as a
     // lined board does: it is one (the marks in another dress), so it is
     // left to the lined boards
-    if (painting.alike && build(painting.alike, painting).tiles.length === plain.tiles.length)
+    if (
+      painting.alike &&
+      !split(
+        painting.alike.map((cell) => cell[0]!),
+        (i) => String(kinds[i]),
+      ) &&
+      build(painting.alike, painting).tiles.length === plain.tiles.length
+    )
       continue;
     const level = build(painting.marks, painting);
-    // all of a colour's tiles one kind
     const kindOf = (cell: Piece[]): number =>
       level.tiles.findIndex(
         (t) =>
@@ -1170,29 +1233,50 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
             cell,
           ).length > 0,
       );
-    const byColour = new Map<number, Set<number>>();
+    const byColour = new Map<string, Set<number>>();
     level.cells.forEach((cell, i) => {
-      const c = painting.paints[i]!;
+      const c = `${painting.paints[i]!}:${kinds[i]}`;
       byColour.set(c, (byColour.get(c) ?? new Set()).add(kindOf(cell)));
     });
-    if ([...byColour.values()].some((kinds) => kinds.size !== 1)) continue;
-    // a tray whose every edge carries one mark asks nothing
-    if (new Set(level.tiles.flatMap((t) => t.pieces[0]!.marks!)).size < 2) continue;
+    if ([...byColour.values()].some((ks) => ks.size !== 1)) continue;
+    // a tray of one tile per shape, each one mark all round, asks nothing:
+    // the shapes decide the marks (one mark on every edge; 3.6.3.6's
+    // triangles one colour, its hexagons another)
+    if (
+      level.tiles.length === plain.tiles.length &&
+      level.tiles.every((t) => new Set(t.pieces[0]!.marks!).size === 1)
+    )
+      continue;
     const signature = `${painting.lines}|${traySignature(level.tiles)}`;
     if (seen.has(signature)) continue;
     seen.add(signature);
-    const label = decorLabel(
-      painting.colours,
-      painting.lines,
-      sameEdges(level.tiles),
-      painting.third,
-    );
+    // a shape not in every colour
+    const byShape =
+      !painting.lines &&
+      plain.tiles.some(
+        (_, kind) =>
+          new Set(painting.paints.filter((_, i) => kinds[i] === kind)).size < painting.colours,
+      );
+    const label =
+      plain.tiles.length > 1
+        ? shapesLabel(painting, byShape)
+        : decorLabel(painting.colours, painting.lines, sameEdges(level.tiles), painting.third);
     made.push({
-      ...level,
-      decor: { of: plain.key, colours: painting.colours, rules: painting.lines, label },
+      level: {
+        ...level,
+        decor: { of: plain.key, colours: painting.colours, rules: painting.lines, label },
+      },
+      painting,
+      byShape,
     });
   }
-  // keys and names: one per label, numbered past the first
+  return made;
+}
+
+/** `made`, keyed and named: `<plain>.<label>` — `squares.lines`,
+ * `squares.2striped`, `trihex.3byshape` — a second of one label numbered
+ * on. */
+function keyed(plain: Level, made: readonly Level[]): Level[] {
   const count = new Map<string, number>();
   return made.map((level) => {
     const label = level.decor!.label;
@@ -1210,6 +1294,70 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
       decor: { ...level.decor!, label: full },
     };
   });
+}
+
+/** The coloured and lined levels painted on a regular board, every one
+ * `paintedCandidates` keeps. */
+function colouredLevels(plain: Level, lattice: Lattice): Level[] {
+  return keyed(
+    plain,
+    paintedCandidates(plain, paintings(plain.ring, plain.cells, lattice)).map((c) => c.level),
+  );
+}
+
+/** A uniform tiling's window, `box` edges square, and a patch of the same
+ * tiling twice that size round it, moved onto the window's coordinates:
+ * what lies past the window's rim, for its colourings (and, for the snub
+ * hexagonal, whose window holds one hexagon, the only place its lattice
+ * shows). */
+export function uniformContext(plain: Level, box: number): Piece[][] {
+  const { ring } = plain;
+  const wide = templateWindow(plain.key, 2 * box);
+  if (wide.ring.n !== ring.n) throw new Error(`${plain.key}: the wider patch is in another ring`);
+  const cells = wide.cells.map((c) => ccw(ring, c));
+  const keys = (cs: Cyc[][]): Set<string> =>
+    new Set(
+      cs.map((c) =>
+        c
+          .map((v) => ring.key(v))
+          .sort()
+          .join("|"),
+      ),
+    );
+  const first = plain.cells[0]![0]!.verts;
+  for (const cell of cells) {
+    if (cell.length !== first.length) continue;
+    for (let s = 0; s < cell.length; s++) {
+      const t = ring.sub(first[0]!, cell[s]!);
+      const moved = cells.map((c) => c.map((v) => ring.add(v, t)));
+      const all = keys(moved);
+      if ([...keys(plain.cells.map((c) => c[0]!.verts))].every((k) => all.has(k)))
+        return moved.map((c) => [{ verts: c }]);
+    }
+  }
+  throw new Error(`${plain.key}: the window is not in the wider patch`);
+}
+
+/** Which of a uniform board's paintings to make levels of
+ * (`npm run colourings`, scripts/find-colourings.mts): searching them all
+ * takes seconds, so the choice is written down and only those are built. */
+const UNIFORM_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
+
+/** The lined and coloured levels of a uniform tiling, as
+ * `src/colourings.json` lists them. */
+function uniformColouredLevels(plain: Level, box: number): Level[] {
+  const chosen = UNIFORM_PAINTINGS[plain.key] ?? [];
+  if (!chosen.length) return [];
+  const context = uniformContext(plain, box);
+  const lattice = latticeOf(plain.ring, context);
+  const all = chosen.map((p) => paintingOf(plain.ring, plain.cells, lattice, p, context));
+  // each kept as it was chosen, in the order written
+  const made = all.map((painting) => {
+    const [kept] = paintedCandidates(plain, [painting]);
+    if (!kept) throw new Error(`${plain.key}: a listed painting no longer makes a level`);
+    return kept.level;
+  });
+  return keyed(plain, made);
 }
 
 /** An aperiodic board with arrows on its edges (geometry/marks.ts:
@@ -1296,6 +1444,20 @@ function kiteDartRulesLevel(plain: Level): Level {
   });
 }
 
+/** The eight uniform tilings past the regular three, and each one's window:
+ * the squarest near two or three dozen tiles that keeps one outline (`box`,
+ * in edges, measured by scanning sizes). */
+export const UNIFORM: [tiling: string, box: number][] = [
+  ["trihex", 5.5],
+  ["truncsquare", 8.7],
+  ["trunchex", 11.95],
+  ["elongated", 5],
+  ["snubsquare", 4.6],
+  ["snubhex", 5.2],
+  ["rhombitrihex", 7],
+  ["trunctrihex", 11.95],
+];
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -1308,19 +1470,11 @@ const FIRST_BOARDS: Level[] = [
   ]),
   makeLevel("hexagons", "Hexagons", Z12, whole(hexCells(5, 4)), "regular", [[6, 6, 6]]),
   // The eight other uniform tilings — every vertex alike, regular polygons
-  // edge to edge — roughly easiest first: two tile kinds, then three. Each
-  // window is the squarest near two or three dozen tiles that keeps one
-  // outline (`box`, in edges, measured by scanning sizes). The snub hexagonal
+  // edge to edge — roughly easiest first: two tile kinds, then three
+  // (`UNIFORM`, with their windows). The snub hexagonal
   // is mostly triangles whatever the window — eight to each hexagon — and its
   // squarest is one hexagon in thirty triangles; the next square one is 65.
-  windowBoards("trihex", 5.5),
-  windowBoards("truncsquare", 8.7),
-  windowBoards("trunchex", 11.95),
-  windowBoards("elongated", 5),
-  windowBoards("snubsquare", 4.6),
-  windowBoards("snubhex", 5.2),
-  windowBoards("rhombitrihex", 7),
-  windowBoards("trunctrihex", 11.95),
+  ...UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)),
   // The twenty 2-uniform tilings.
   ...TWO_UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)).sort(byEase),
   // The eight Laves tilings with more than one kind of vertex (the regular
@@ -1355,13 +1509,20 @@ const FIRST_BOARDS: Level[] = [
   socolarTaylorLevel(2),
 ];
 
-// The regular boards painted: lined, then in two and three colours; and
-// Penrose's rhombi and his kites and darts with their arrows.
+// The regular boards painted: lined, then in two and three colours; the
+// other uniform ones as src/colourings.json lists; and Penrose's rhombi and
+// his kites and darts with their arrows.
 FIRST_BOARDS.push(
   ...COLOURED.flatMap(([key, lattice]) =>
     colouredLevels(
       FIRST_BOARDS.find((l) => l.key === key)!,
       lattice,
+    ),
+  ),
+  ...UNIFORM.flatMap(([key, box]) =>
+    uniformColouredLevels(
+      FIRST_BOARDS.find((l) => l.key === key)!,
+      box,
     ),
   ),
   penroseRulesLevel(FIRST_BOARDS.find((l) => l.key === "penrose")!),
