@@ -3,7 +3,14 @@ import aperiodicColourings from "../../src/aperiodicColourings.json";
 import { cyclotomic, strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import { colours, label, labelMark, mirrored, partner } from "../../src/geometry/marks";
 import { piece, posed, regular } from "../../src/geometry/shape";
-import { PATCH_MARKED, aperiodicFrames, levelByKey, patchWindow } from "../../src/levels";
+import {
+  LEVELS,
+  MAX_COLOURED_TRAY,
+  PATCH_MARKED,
+  aperiodicFrames,
+  levelByKey,
+  patchWindow,
+} from "../../src/levels";
 import {
   deriveRules,
   meetings,
@@ -149,6 +156,17 @@ describe("rules read off a patch", () => {
 });
 
 describe("colourings read off a patch", () => {
+  it("lists an aperiodic colouring only where its tray is small enough to play", () => {
+    for (const key of PATCH_MARKED) {
+      const listed = LEVELS.filter((l) => l.decor?.of === key && !l.decor.rules);
+      expect(listed.length, key).toBe(CHOSEN[key]!.tiles <= MAX_COLOURED_TRAY ? 1 : 0);
+    }
+    // none is, so far: the fewest tray tiles any takes is Ammann–Beenker's 5
+    expect(Math.min(...PATCH_MARKED.map((key) => CHOSEN[key]!.tiles))).toBeGreaterThan(
+      MAX_COLOURED_TRAY,
+    );
+  });
+
   it.each(PATCH_MARKED)(
     "%s: src/aperiodicColourings.json is a proper colouring of the window and round it, in as few colours as can be",
     (key) => {

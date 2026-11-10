@@ -228,22 +228,13 @@ describe("colourings", () => {
       "kisrhombille.3mixed",
       "penrose.rules",
       "kitedart.rules",
-      "penrose.3apart",
-      "kitedart.3apart",
       "ammannbeenker.rules",
-      "ammannbeenker.3apart",
       "tile11.rules",
-      "tile11.4apart",
       "spectre.rules",
-      "spectre.4apart",
       "hat.rules",
-      "hat.4apart",
       "turtle.rules",
-      "turtle.4apart",
       "hatmetatiles.rules",
-      "hatmetatiles.4apart",
       "socolartaylor.rules",
-      "socolartaylor.4apart",
     ]);
     for (const level of COLOURED) {
       // matching rules and colourings: two groups

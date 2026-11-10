@@ -1686,6 +1686,18 @@ function patchRulesLevel(plain: Level): Level {
  * two tiles of one colour touching. */
 const apartLabel = (colours: number): string => `${colours} colours, apart`;
 
+/** The most tray tiles an aperiodic colouring may take and still be a
+ * level: past four, a tray of tiles that differ only in which colours ring
+ * them is a search, not a puzzle. None so far is under it — the fewest any
+ * of the nine take is Ammann–Beenker's five — so none is listed, but the
+ * choice is still made and written down (`npm run colourings`), and a window
+ * that colours with fewer is listed by itself. */
+export const MAX_COLOURED_TRAY = 4;
+
+/** Whether `of`'s colouring is few enough tray tiles to play. */
+export const playableColouring = (of: string): boolean =>
+  (APERIODIC_COLOURINGS[of]?.tiles ?? Infinity) <= MAX_COLOURED_TRAY;
+
 /** An aperiodic level's colouring: `src/aperiodicColourings.json`'s proper
  * colouring of its window and the cells round it, each edge the colour pair
  * of the tile and the one across (`colourMark`). */
@@ -1748,7 +1760,15 @@ const MARKED_BY_HAND: [key: string, of: string, make: (plain: Level) => Level][]
     ...(of === "penrose" || of === "kitedart"
       ? []
       : [[`${of}.rules`, of, patchRulesLevel] as [string, string, (plain: Level) => Level]]),
-    [`${of}.${APERIODIC_COLOURINGS[of]?.colours ?? 0}apart`, of, patchColouredLevel],
+    ...(playableColouring(of)
+      ? [
+          [`${of}.${APERIODIC_COLOURINGS[of]!.colours}apart`, of, patchColouredLevel] as [
+            string,
+            string,
+            (plain: Level) => Level,
+          ],
+        ]
+      : []),
   ]),
 ];
 

@@ -83,9 +83,8 @@ some back off.
     colour (a striped one: `Painting.alike`) plays as its lined board does,
     so it is left to the lined boards; and a coloured board never draws
     lines.
-  - *The aperiodic levels* (`?level=penrose.3apart`,
-    `?level=ammannbeenker.3apart`, `?level=hat.4apart`) are coloured
-    properly — no two tiles of a colour share an edge — in three colours
+  - *The aperiodic levels* have no colourings listed — yet. Each is
+    coloured properly — no two tiles of a colour share an edge — in three colours
     where the window and the tiles round it can be (Penrose's two tilings
     and Ammann–Beenker), else four (the Spectre's, the hat's family's and
     the Socolar–Taylor tile's windows have none in three: a test searches
@@ -94,7 +93,11 @@ some back off.
     tray holds one tile per distinct marked tile, and `npm run colourings`
     searches for the colouring with the fewest (`chooseColouring`), from 5
     on Ammann–Beenker to 26 on the hat, and writes it to
-    `src/aperiodicColourings.json`.
+    `src/aperiodicColourings.json`. A colouring is a level only with at most
+    four tray tiles (`MAX_COLOURED_TRAY`): past that, a tray of tiles that
+    differ only in the colours round them is a search, not a puzzle — so
+    none is listed, and one that a window colours with fewer will be by
+    itself.
   - *The other eight uniform tilings* (`?level=trihex.lines`,
     `?level=trihex.3byshape`, `?level=trunctrihex.lines`) are lined and
     coloured the same way, one tray tile per colour *and shape*: a colouring
@@ -235,7 +238,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 44 matching rules (lines on the eleven uniform tilings and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels) and 61 colourings of the uniform, Laves and aperiodic tilings in two more, 493 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 44 matching rules (lines on the eleven uniform tilings and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels) and 52 colourings of the uniform and Laves tilings in two more, 484 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -300,7 +303,7 @@ builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
-edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
+edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch, a won board and
 its ✕) and every level and tiling page opening with no error
 (`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
@@ -602,7 +605,8 @@ quick way to see the win state.
   DSATUR then Kempe-chain swaps from many starts, for the proper colouring
   of the window and the cells round it with the fewest tray tiles.
   `patchRulesLevel` and `patchColouredLevel` in `levels.ts` build the levels
-  (`<plain>.rules`, `<plain>.<k>apart`); a round Spectre's marked cells take
+  (`<plain>.rules`, and `<plain>.<k>apart` where its colouring is few
+  enough tray tiles, `MAX_COLOURED_TRAY`); a round Spectre's marked cells take
   its plain board's curves edge for edge (`makeLevel`'s `round`, given per
   cell). The tests (`tests/unit/patchMarks.test.ts`) check no patch edge is
   met part-way, every meeting keeps its rule, and each colouring is proper
