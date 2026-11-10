@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import colouringsData from "../../src/colourings.json";
-import { COLOURS_CAP, RULES_CAP, chooseColourings } from "../../src/colouringChoice";
+import {
+  COLOURS_CAP,
+  RULES_CAP,
+  chooseColourings,
+  regularColourings,
+} from "../../src/colouringChoice";
 import { latticeOf, traySignature } from "../../src/colourings";
 import { measure } from "../../src/difficulty";
 import { cyclotomic, type Cyc } from "../../src/geometry/cyclotomic";
@@ -31,7 +36,15 @@ import {
   type Piece,
   type Shape,
 } from "../../src/geometry/shape";
-import { LAVES, LEVELS, UNIFORM, levelByKey, plainKinds, type Level } from "../../src/levels";
+import {
+  COLOURED as COLOURED_LATTICES,
+  LAVES,
+  LEVELS,
+  UNIFORM,
+  levelByKey,
+  plainKinds,
+  type Level,
+} from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 import { decorParts, meet } from "../../src/view/decor";
 import { loopsOf } from "../../src/view/curve";
@@ -331,6 +344,16 @@ describe("colourings", () => {
     (key, box) => {
       const plain = levelByKey(key)!;
       expect(chooseColourings(plain, box)).toEqual(
+        (colouringsData as Record<string, unknown>)[key],
+      );
+    },
+    30_000,
+  );
+
+  it.each(COLOURED_LATTICES)(
+    "%s: src/colourings.json lists every painting worth a level (npm run colourings)",
+    (key, lattice) => {
+      expect(regularColourings(levelByKey(key)!, lattice)).toEqual(
         (colouringsData as Record<string, unknown>)[key],
       );
     },

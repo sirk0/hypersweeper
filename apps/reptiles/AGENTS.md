@@ -175,10 +175,19 @@ same wherever they are cut; so are the rep-tiles (a big copy of the tile, not
 a window), the spirals (one true centre) and the Socolar–Taylor tile (its
 patch holds one two-ring window). Boards past the first are built when first
 opened (`levelByKey`), so the page loads no slower; `BOARDS` lists them all,
-`LEVELS` the first boards. `tests/unit/boards.test.ts` holds every listed
+`LEVELS` the first boards — and no level at all is built as the page loads
+(building them all takes seconds, a quarter of a minute on a phone, which
+showed a blank page): `src/levelIndex.json` (`npm run levels`,
+`scripts/index-levels.mts`) lists every first board's key, label, name,
+section and marks in catalog order, and `LEVELS` is a stub of each
+(`lazyLevel`) that builds the level the first time anything else of it is
+read — its tiles, cells or region, when its card or board is drawn.
+`tests/unit/levelIndex.test.ts` builds them all (`buildFirstBoards`) and
+fails while the file is out of step. `tests/unit/boards.test.ts` holds every listed
 board to the search's promises, so a changed window that leaves
 `boards.json` behind fails there; re-run `npm run boards`, then
-`npm run difficulty`.
+`npm run difficulty`. After changing a level's window, name or tiles, or
+`npm run colourings`, re-run `npm run levels` too.
 
 **Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
 player lays the board the level was cut from, always taking a tile it can
@@ -308,7 +317,8 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # choose each uniform and Laves tiling's lined and coloured levels into src/colourings.json (ten minutes, nearly all the kisrhombille's; `-- <key>…` for only those)
+npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (ten minutes, nearly all the kisrhombille's; `-- <key>…` for only those)
+npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
@@ -508,7 +518,9 @@ quick way to see the win state.
   all round) and need more than one tile per shape (one reads as a lined
   board), and drops any whose tray another already had (`traySignature`: the same up to
   turning a tile, a mirror and renaming the colours — rows and columns are
-  one). `COLOURED` lists the regular boards painted and each one's lattice; the
+  one). `COLOURED` lists the regular boards painted and each one's lattice
+  (their paintings listed in `src/colourings.json` too, all that are kept,
+  so nothing is searched as the page loads); the
   level is `<plain>.<label>`, `Level.decor` saying what it marks — lined
   ones in the Matching rules section (`decor.rules`), the rest in
   Colourings. The other eight uniform tilings (`UNIFORM`) are painted the

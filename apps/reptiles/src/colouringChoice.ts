@@ -4,7 +4,7 @@
 // here and writes the choice to src/colourings.json, which the game builds
 // from. The tests choose again and fail while the file is out of step.
 
-import { latticeOf, paintings, type PaintingParams } from "./colourings";
+import { latticeOf, paintings, type Lattice, type PaintingParams } from "./colourings";
 import { measure } from "./difficulty";
 import { LINE } from "./geometry/marks";
 import {
@@ -58,4 +58,16 @@ export function chooseColourings(plain: Level, box: number): PaintingParams[] {
   const order = (c: PaintedCandidate): number => coloured.indexOf(c as (typeof coloured)[number]);
   picked.sort((a, b) => a.painting.colours - b.painting.colours || order(a) - order(b));
   return [...lined, ...picked].map((c) => c.painting.params);
+}
+
+/**
+ * Every painting of the regular board `plain` (squares, triangles,
+ * hexagons; painted on `lattice`) worth a level: all that
+ * `paintedCandidates` keeps — a second or so, but written down with the
+ * rest so the game only builds them.
+ */
+export function regularColourings(plain: Level, lattice: Lattice): PaintingParams[] {
+  return paintedCandidates(plain, paintings(plain.ring, plain.cells, lattice)).map(
+    (c) => c.painting.params,
+  );
 }
