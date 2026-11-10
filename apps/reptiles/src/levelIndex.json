@@ -171,12 +171,6 @@
     "group": "2-isohedral"
   },
   {
-    "key": "trirhombitrihexdual",
-    "label": "Fanned rhombitrihexagonal dual",
-    "name": "V[3⁶; 3².4.3.4]",
-    "group": "2-isohedral"
-  },
-  {
     "key": "squaretrihex2dual",
     "label": "Staggered elongated trihexagonal dual",
     "name": "V[3.4².6; 3.6.3.6]₂",
@@ -186,6 +180,12 @@
     "key": "studdedtri2dual",
     "label": "Twisted studded triangular dual",
     "name": "V[3⁶; 3⁴.6]₂",
+    "group": "2-isohedral"
+  },
+  {
+    "key": "trirhombitrihexdual",
+    "label": "Fanned rhombitrihexagonal dual",
+    "name": "V[3⁶; 3².4.3.4]",
     "group": "2-isohedral"
   },
   {

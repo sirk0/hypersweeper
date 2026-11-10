@@ -755,7 +755,7 @@ const TWO_ISOHEDRAL: [string, number][] = [
   ["studdedtri2", 6.65],
   ["elongated2", 5.9],
   ["elongated3", 6.5],
-  ["trirhombitrihex", 6.08],
+  ["trirhombitrihex", 6.17],
   ["tritrunctrihex", 9],
   ["fannedhex", 6.65],
   ["hexbands", 7.5],
