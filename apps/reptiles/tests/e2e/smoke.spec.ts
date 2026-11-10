@@ -437,13 +437,21 @@ test("a tiling's marked levels: on its own page in Tilings, and on its figure's 
   await expect(trihex.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
   await trihex.click();
   await expect(page).toHaveURL(/\?tiling=trihex$/);
+  // and a Laves tiling's: V4.8²'s
+  await page.goto("/?tilings");
+  const tetrakis = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^V4\.8²$/ }) });
+  await expect(tetrakis.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
+  await tetrakis.click();
+  await expect(page).toHaveURL(/\?tiling=tetrakis$/);
   // a tiling with none opens straight away
   await page.goto("/?tilings");
   await page
     .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^V4\.8²$/ }) })
+    .filter({ has: page.locator(".card-name", { hasText: /^\[3⁶; 3⁴\.6\]₁$/ }) })
     .click();
-  await expect(page).toHaveURL(/\?level=tetrakis$/);
+  await expect(page).toHaveURL(/\?level=studdedtri$/);
   // the triangle's page: its plain tilings by difficulty, then the marked ones
   await page.goto("/?figure=triangles");
   await expect(page.locator('#figure-list [data-group="rules"] .card').first()).toBeVisible();

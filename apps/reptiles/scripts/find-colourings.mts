@@ -1,18 +1,18 @@
-// Choose each uniform tiling's lined and coloured levels
+// Choose each uniform and Laves tiling's lined and coloured levels
 // (src/colouringChoice.ts) and write them to src/colourings.json, which the
 // game builds from — searching every painting takes seconds, too long for
-// every page load. `npm run colourings` after changing a uniform window or
+// every page load. `npm run colourings` after changing a uniform or Laves window or
 // the colourings, then `npm run difficulty`; the unit tests fail while the
 // file is out of step.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { chooseColourings } from "../src/colouringChoice";
-import { LEVELS, UNIFORM } from "../src/levels";
+import { LAVES, LEVELS, UNIFORM } from "../src/levels";
 
 // one painting to a line, as Prettier leaves it
 const json = (value: unknown): string => JSON.stringify(value).replace(/([:,])/g, "$1 ");
 const rows: string[] = [];
-for (const [key, box] of UNIFORM) {
+for (const [key, box] of [...UNIFORM, ...LAVES]) {
   const started = performance.now();
   const plain = LEVELS.find((l) => l.key === key)!;
   const chosen = chooseColourings(plain, box);

@@ -734,7 +734,7 @@ function twoIsohedralLevel(primal: string, box: number, at?: Variant): Level {
  * edges): the squarest near two or three dozen tiles with one outline. The
  * three with hexagonal symmetry — rhombille, triakis, kisrhombille — come no
  * nearer square than 0.87 at that size; the rhombille's next is 50 tiles. */
-const LAVES: [string, number][] = [
+export const LAVES: [string, number][] = [
   ["tetrakis", 7.3],
   ["rhombille", 7],
   ["triakis", 8.7],
@@ -1310,15 +1310,20 @@ function colouredLevels(plain: Level, lattice: Lattice): Level[] {
   );
 }
 
-/** A uniform tiling's window, `box` edges square, and a patch of the same
- * tiling twice that size round it, moved onto the window's coordinates:
- * what lies past the window's rim, for its colourings (and, for the snub
- * hexagonal, whose window holds one hexagon, the only place its lattice
- * shows). */
-export function uniformContext(plain: Level, box: number): Piece[][] {
+/** A uniform or Laves tiling's window, `box` edges square, and a patch of
+ * the same tiling twice that size round it, moved onto the window's
+ * coordinates: what lies past the window's rim, for its colourings (and, for
+ * the snub hexagonal, whose window holds one hexagon, the only place its
+ * lattice shows). A Laves board's wider patch is a wider dual window
+ * (`lavesWindow`), in the same ring: the same scale, the same unit. */
+export function periodicContext(plain: Level, box: number): Piece[][] {
   const { ring } = plain;
-  const wide = templateWindow(plain.key, 2 * box);
-  if (wide.ring.n !== ring.n) throw new Error(`${plain.key}: the wider patch is in another ring`);
+  const wide =
+    plain.group === "laves"
+      ? lavesWindow(lavesPrimal(plain.key), 2 * box)
+      : templateWindow(plain.key, 2 * box);
+  if (wide.ring.n !== ring.n || wide.ring.unit !== ring.unit)
+    throw new Error(`${plain.key}: the wider patch is in another ring`);
   const cells = wide.cells.map((c) => ccw(ring, c));
   const keys = (cs: Cyc[][]): Set<string> =>
     new Set(
@@ -1343,17 +1348,17 @@ export function uniformContext(plain: Level, box: number): Piece[][] {
   throw new Error(`${plain.key}: the window is not in the wider patch`);
 }
 
-/** Which of a uniform board's paintings to make levels of
+/** Which of a uniform or Laves board's paintings to make levels of
  * (`npm run colourings`, scripts/find-colourings.mts): searching them all
  * takes seconds, so the choice is written down and only those are built. */
-const UNIFORM_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
+const CHOSEN_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
 
-/** The lined and coloured levels of a uniform tiling, as
+/** The lined and coloured levels of a uniform or Laves tiling, as
  * `src/colourings.json` lists them. */
-function uniformColouredLevels(plain: Level, box: number): Level[] {
-  const chosen = UNIFORM_PAINTINGS[plain.key] ?? [];
+function periodicColouredLevels(plain: Level, box: number): Level[] {
+  const chosen = CHOSEN_PAINTINGS[plain.key] ?? [];
   if (!chosen.length) return [];
-  const context = uniformContext(plain, box);
+  const context = periodicContext(plain, box);
   const lattice = latticeOf(plain.ring, context);
   const all = chosen.map((p) => paintingOf(plain.ring, plain.cells, lattice, p, context));
   // each kept as it was chosen, in the order written
@@ -1515,8 +1520,8 @@ const FIRST_BOARDS: Level[] = [
 ];
 
 // The regular boards painted: lined, then in two and three colours; the
-// other uniform ones as src/colourings.json lists; and Penrose's rhombi and
-// his kites and darts with their arrows.
+// other uniform ones and the Laves ones as src/colourings.json lists; and
+// Penrose's rhombi and his kites and darts with their arrows.
 FIRST_BOARDS.push(
   ...COLOURED.flatMap(([key, lattice]) =>
     colouredLevels(
@@ -1524,8 +1529,8 @@ FIRST_BOARDS.push(
       lattice,
     ),
   ),
-  ...UNIFORM.flatMap(([key, box]) =>
-    uniformColouredLevels(
+  ...[...UNIFORM, ...LAVES].flatMap(([key, box]) =>
+    periodicColouredLevels(
       FIRST_BOARDS.find((l) => l.key === key)!,
       box,
     ),

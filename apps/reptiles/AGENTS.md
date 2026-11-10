@@ -299,7 +299,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # choose each uniform tiling's lined and coloured levels into src/colourings.json (seconds)
+npm run colourings   # choose each uniform and Laves tiling's lined and coloured levels into src/colourings.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
@@ -508,9 +508,12 @@ quick way to see the win state.
   each one mark all round (the shapes decide it). Their lattice is found
   from the cells (`latticeOf`: the shortest translation that carries the
   patch onto itself, and the shortest not along it), and what lies past the
-  rim is read off a patch twice the window's size (`uniformContext`, moved
+  rim is read off a patch twice the window's size (`periodicContext`, moved
   onto the window exactly) — the snub hexagonal's window holds one hexagon,
-  too few to see its period. And searching them all takes seconds (sixty
+  too few to see its period. The eight Laves tilings (`LAVES`) are painted
+  just as these are, their wider patch a wider dual window (`lavesWindow`,
+  in the same ring); one tile each, they are labelled as the regular boards
+  are. And searching them all takes seconds (sixty
   thousand colourings on the snub hexagonal), so `npm run colourings`
   (`scripts/find-colourings.mts`, choosing in `src/colouringChoice.ts`)
   writes each one's chosen `PaintingParams` to `src/colourings.json`, and
@@ -606,8 +609,10 @@ quick way to see the win state.
   disc on the edge's middle; a lined board's lines from edge to edge, square
   on and ending on each (straight across, or a Truchet arc about the corner
   two lined edges share — or, two edges further apart on an octagon or a
-  dodecagon, about the point their lines meet, `meet`; butt-capped, so
-  never past the edge), and a line cut back (`END`) as a half disc;
+  dodecagon, about the point their lines meet, `meet`; on an irregular tile,
+  a Laves tile's kite, rhombus or pentagon, a cubic leaving each edge's
+  middle along its inward normal, and spokes to the middle the same way;
+  butt-capped, so never past the edge), and a line cut back (`END`) as a half disc;
   Penrose's arrows as arcs about the tile's corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —
   chosen so every arc stays inside its tile, a thin rhombus's round its wide

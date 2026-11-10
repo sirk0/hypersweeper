@@ -1,4 +1,4 @@
-// Which of a uniform tiling's colourings become levels: searching every one
+// Which of a uniform or Laves tiling's colourings become levels: searching every one
 // takes seconds (thousands of paintings on a board of six translation
 // classes), so `npm run colourings` (scripts/find-colourings.mts) chooses
 // here and writes the choice to src/colourings.json, which the game builds
@@ -10,17 +10,17 @@ import { LINE } from "./geometry/marks";
 import {
   paintedCandidates,
   plainKinds,
-  uniformContext,
+  periodicContext,
   type Level,
   type PaintedCandidate,
 } from "./levels";
 
-/** How many lined levels a uniform tiling keeps, and how many coloured. */
+/** How many lined levels a uniform or Laves tiling keeps, and how many coloured. */
 export const RULES_CAP = 2;
 export const COLOURS_CAP = 3;
 
 /**
- * The paintings of the uniform board `plain` (its window `box` edges square)
+ * The paintings of the uniform or Laves board `plain` (its window `box` edges square)
  * worth a level, at most `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
  * tray tiles first, then the hardest as measured — but a lined board with a
  * line still on it (not all cut back to half discs) before any without; among the coloured, the
@@ -29,7 +29,7 @@ export const COLOURS_CAP = 3;
  * coloured by how many colours.
  */
 export function chooseColourings(plain: Level, box: number): PaintingParams[] {
-  const context = uniformContext(plain, box);
+  const context = periodicContext(plain, box);
   const lattice = latticeOf(plain.ring, context);
   const all = paintings(plain.ring, plain.cells, lattice, [2, 3], context, plainKinds(plain));
   const ranked = paintedCandidates(plain, all)
