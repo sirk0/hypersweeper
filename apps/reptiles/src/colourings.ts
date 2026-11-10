@@ -19,8 +19,12 @@
 //
 // The same colouring in one colour, with a line drawn across every edge
 // between two tiles that were the same colour, is a lined board: a line meets
-// a line, a blank edge a blank one. A colouring with no two tiles of a colour
-// touching has no lines, and no lined board.
+// a line, a blank edge a blank one. Where a line would end in a tile — one
+// with only one such edge — it is cut back to a pair of half discs, one each
+// side of the edge, and again from the tile across if that leaves it only
+// one (`cutEnds`): so a half disc meets only a half disc, and every line
+// runs on. A colouring with no two tiles of a colour touching has no lines,
+// and no lined board.
 //
 // The window's rim edges have no tile across them on the board, but they do
 // in the tiling, and a tray tile is the tiling's tile: which tile lies across
@@ -30,6 +34,7 @@
 import type { Cyc, Ring } from "./geometry/cyclotomic";
 import {
   BLANK,
+  END,
   LINE,
   SAME,
   colourMark,
@@ -168,6 +173,10 @@ interface Placed {
   /** Across each edge of each cell: the class and the lattice point. */
   across: { type: number; i: number; j: number }[][];
   types: number;
+  /** What lies across each edge of each class, past the window too. */
+  atlas: Atlas;
+  /** Each class's side count. */
+  sizes: number[];
 }
 
 /** Same vertices, in any order. */
@@ -197,19 +206,93 @@ function place(ring: Ring, cells: Piece[][], lattice: Lattice, context: Piece[][
       return { type: there.type, i: s.i + there.di, j: s.j + there.dj };
     });
   });
-  return { cells, sites, across, types };
+  const sizes: number[] = [];
+  all.forEach((cell, c) => (sizes[sites[c]!.type] ??= cell[0]!.verts.length));
+  return { cells, sites, across, types, atlas, sizes };
+}
+
+/**
+ * Where a lined board's lines are cut back to half discs (`END`): the edges
+ * between two tiles of one colour that leaf-pruning the same-colour graph
+ * takes away — over and over, an edge of a tile with only one — so a line
+ * runs on only where it never ends, and a line that would end in a tile ends
+ * instead as a half disc, with one across it: a half disc meets only a half
+ * disc. Worked out on the whole tiling, not the window, so a rim tile is cut
+ * as it is in the tiling: the colouring repeats every `k` steps along both
+ * lattice directions, so each tile is a node `(type, i mod k, j mod k)` with
+ * its own degree, and pruning the graph of those prunes every copy alike.
+ * Each cut edge as `type:i:j:edge`, the edge counted from its class's base.
+ */
+function cutEnds(
+  { atlas, sizes, types }: Placed,
+  colour: (t: number, i: number, j: number) => number,
+  k: number,
+): Set<string> {
+  type Slot = { t: number; i: number; j: number; e: number };
+  const key = ({ t, i, j, e }: Slot): string => `${t}:${i}:${j}:${e}`;
+  const node = (t: number, i: number, j: number): string => `${t}:${i}:${j}`;
+  const acrossOf = (t: number, e: number): { type: number; di: number; dj: number } => {
+    const there = atlas.get(`${t}:${e}`);
+    if (!there) throw new Error("colourings: the patch is too small to see every neighbour");
+    return there;
+  };
+  // the edge of class `t'` that leads back across edge `e` of class `t`
+  const back = (t: number, e: number): number => {
+    const { type, di, dj } = acrossOf(t, e);
+    for (let f = 0; f < sizes[type]!; f++) {
+      const there = acrossOf(type, f);
+      if (there.type === t && there.di === -di && there.dj === -dj) return f;
+    }
+    throw new Error("colourings: an edge with no way back");
+  };
+  // the tile across a slot, its slot back, if it is the same colour
+  const partnerOf = ({ t, i, j, e }: Slot): Slot | null => {
+    const { type, di, dj } = acrossOf(t, e);
+    const [i2, j2] = [mod(i + di, k), mod(j + dj, k)];
+    if (colour(type, i2, j2) !== colour(t, i, j)) return null;
+    return { t: type, i: i2, j: j2, e: back(t, e) };
+  };
+  const cut = new Set<string>();
+  const degree = new Map<string, number>();
+  const live = (t: number, i: number, j: number): Slot[] =>
+    Array.from({ length: sizes[t]! }, (_, e) => ({ t, i, j, e })).filter(
+      (s) => !cut.has(key(s)) && partnerOf(s) !== null,
+    );
+  const queue: [number, number, number][] = [];
+  for (let t = 0; t < types; t++)
+    for (let i = 0; i < k; i++)
+      for (let j = 0; j < k; j++) {
+        const n = live(t, i, j).length;
+        degree.set(node(t, i, j), n);
+        if (n === 1) queue.push([t, i, j]);
+      }
+  while (queue.length) {
+    const [t, i, j] = queue.pop()!;
+    if (degree.get(node(t, i, j)) !== 1) continue;
+    const [slot] = live(t, i, j);
+    const other = partnerOf(slot!)!;
+    cut.add(key(slot!));
+    cut.add(key(other));
+    degree.set(node(t, i, j), 0);
+    const there = node(other.t, other.i, other.j);
+    const left = degree.get(there)! - 1;
+    degree.set(there, left);
+    if (left === 1) queue.push([other.t, other.i, other.j]);
+  }
+  return cut;
 }
 
 /** The colouring `colour` in `count` colours as edge marks — and, with
  * `lined`, the lined board it makes in one colour, where it has lines. */
 function paint(
-  { sites, across }: Placed,
+  placed: Placed,
   colour: (t: number, i: number, j: number) => number,
   count: number,
   params: PaintingParams,
   lined: boolean,
   kinds?: readonly number[],
 ): Painting[] {
+  const { sites, across } = placed;
   const out: Painting[] = [];
   const pairs = across.map((edges, cell) => {
     const s = sites[cell]!;
@@ -242,10 +325,25 @@ function paint(
       params,
     });
   if (!lined) return out;
-  const lines = pairs.map((edges) => [edges.map(([own, other]) => (own === other ? LINE : BLANK))]);
+  // a line where two tiles of one colour meet, cut back to a half disc at
+  // each end it would have
+  const cut = cutEnds(placed, colour, params.k);
+  const lines = pairs.map((edges, c) => {
+    const s = sites[c]!;
+    const m = edges.length;
+    return [
+      edges.map(([own, other], e) =>
+        own !== other
+          ? BLANK
+          : cut.has(`${s.type}:${mod(s.i, params.k)}:${mod(s.j, params.k)}:${mod(e - s.shift, m)}`)
+            ? END
+            : LINE,
+      ),
+    ];
+  });
   const flat = lines.flat(2);
   if (
-    flat.includes(LINE) &&
+    (flat.includes(LINE) || flat.includes(END)) &&
     flat.includes(BLANK) &&
     !(
       kinds &&
@@ -494,7 +592,7 @@ export function sameEdges(tiles: readonly Shape[]): number | null {
   const counts = tiles.map(
     (t) =>
       (t.pieces[0]!.marks ?? []).filter((m) => {
-        if (m === LINE || m === SAME) return true;
+        if (m === LINE || m === END || m === SAME) return true;
         const pair = pairOf(m);
         return pair !== null && pair.own === pair.other;
       }).length,

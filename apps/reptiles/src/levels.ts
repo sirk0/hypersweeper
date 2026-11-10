@@ -10,7 +10,7 @@
 import catalog from "@tiling/data/catalog.json";
 import boardsData from "./boards.json";
 import { ARCH_TILINGS, archTemplate, kiteDartLegs, penroseLegs } from "@tiling/geometry";
-import { arrowMark } from "./geometry/marks";
+import { LINE, arrowMark } from "./geometry/marks";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow, type XY } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
@@ -1137,9 +1137,14 @@ function decorLabel(colours: number, lines: boolean, same: number | null, third 
 /** What a painting of a board of several shapes is called: its tiles differ
  * anyway, so not by their same-coloured edges — lines, or how many colours,
  * "one in three" for a third, and "by shape" where some shape is not in
- * every colour (3.6.3.6's hexagons one colour, its triangles two others). */
+ * every colour (3.6.3.6's hexagons one colour, its triangles two others);
+ * a lined board with every line cut back to half discs is "dots". */
 function shapesLabel(painting: Painting, byShape: boolean): string {
-  if (painting.lines) return "lines";
+  // lines — or, where every line was cut back to half discs, dots
+  if (painting.lines)
+    return painting.marks.some((cell) => cell.some((edges) => edges.includes(LINE)))
+      ? "lines"
+      : "dots";
   const parts = [`${painting.colours} colours`];
   if (painting.third) parts.push("one in three");
   if (byShape) parts.push("by shape");
