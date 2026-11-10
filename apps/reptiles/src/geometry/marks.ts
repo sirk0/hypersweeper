@@ -9,8 +9,10 @@
 //
 // - `NONE` (0): no mark — a plain tile's edge, or the region's rim, which
 //   takes any mark: a stripe may run off the board.
-// - `LINE` and `BLANK`: a one-colour tile with lines on it — a line meets a
-//   line, a blank edge a blank one. Each is its own partner.
+// - `LINE`, `END` and `BLANK`: a one-colour tile with lines on it — a line
+//   meets a line, a blank edge a blank one, and `END`, a line cut back to a
+//   half disc where it would end (src/colourings.ts), a half disc: so a half
+//   disc never meets a line. Each is its own partner.
 // - a colour pair, `colourMark(own, other)`: this tile is colour `own`, the
 //   one across is `other`. Its partner is the pair the other way round. How
 //   a board whose colours alternate — no two tiles of a colour touching — is
@@ -35,6 +37,7 @@ export const NONE = 0;
 export const LINE = 1;
 export const BLANK = 2;
 export const SAME = 3;
+export const END = 4;
 
 /** The most colours a level is painted in. */
 export const MAX_COLOURS = 4;

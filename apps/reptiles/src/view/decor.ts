@@ -12,8 +12,9 @@
 //   neighbouring edges share, on a circle about it (a Truchet tile's arc) —
 //   or, for two edges further apart on an octagon or a dodecagon, about the
 //   point past the tile where their lines meet.
-//   A tile with one lined edge has a half disc there instead of a stub: two
-//   such tiles together make one disc.
+//   A line that would end in a tile is cut back to a half disc (`END`, see
+//   src/colourings.ts), with one across it: two such tiles together make one
+//   disc, and a half disc never meets a line.
 // - An arrow — Penrose's matching rules, on his rhombi and his kites and
 //   darts: an arc about one of the tile's corners, crossing the edge a share
 //   of the way back from the arrow's head (so where it crosses shows which
@@ -27,7 +28,7 @@
 // `pointer-events: none`.
 
 import { centroid, type XY } from "../geometry/shape";
-import { LINE, arrow, colours } from "../geometry/marks";
+import { END, LINE, arrow, colours } from "../geometry/marks";
 import type { Loop } from "./curve";
 
 export interface DecorPart {
@@ -35,7 +36,7 @@ export interface DecorPart {
   class: string;
 }
 
-/** A colour's or a lone line's half disc: its radius, as a share of its
+/** A colour's or a cut line's half disc: its radius, as a share of its
  * edge. */
 const HALF = 0.17;
 /** An arrow's half disc, where no arcs can be drawn: its radius, a share
@@ -158,6 +159,10 @@ export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p
         lined.push(i);
         return;
       }
+      if (mark === END) {
+        add("decor dot", halfDisc(a, b, mid, HALF * len, map));
+        return;
+      }
       const way = arrow(mark);
       if (way) {
         // where its arc crosses: a share of the edge back from its head
@@ -203,12 +208,8 @@ export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p
         const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
         add(`decor dot${kind % 2 === 0 ? " double" : ""}`, halfDisc(a, b, at, DOT * len, map));
       }
-    if (lined.length === 1) {
-      const i = lined[0]!;
-      const a = xy[i]!;
-      const b = xy[(i + 1) % m]!;
-      add("decor dot", halfDisc(a, b, mid(i), HALF * Math.hypot(b[0] - a[0], b[1] - a[1]), map));
-    } else if (lined.length === 2) {
+    // (never one: a line that would end here is cut back to a half disc)
+    if (lined.length === 2) {
       const [i, j] = lined as [number, number];
       const [p, q] = [map(mid(i)), map(mid(j))];
       const centre = meet(xy, i, j);

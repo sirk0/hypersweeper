@@ -44,8 +44,12 @@ some back off.
     colour, with a line across every edge between two tiles that were one
     colour — a line meets a line, a blank edge a blank one. A line runs from
     edge to edge, square on to each and ending on it, straight across or
-    round the corner two lined edges share; a tile with one lined edge has a
-    half disc there instead. **Penrose's tilings** carry his arrows: on the
+    round the corner two lined edges share. A line never ends in a tile:
+    where one would (a tile with one lined edge), it is cut back to a half
+    disc each side of that edge, and again from the tile across while that
+    leaves a tile one line — so a half disc meets only a half disc, and the
+    lines left run on unbroken (3.12²'s dodecagons keep their line across,
+    its triangles a half disc each). **Penrose's tilings** carry his arrows: on the
     rhombi a single or a double arrow on each edge, on the kites and darts
     his two-colour vertex rule (every edge pointing from one colour of corner
     to the other, so a kite never fills a dart's notch to make a rhombus).
@@ -453,8 +457,9 @@ quick way to see the win state.
   (`tests/unit/socolarTaylor.test.ts`) are its oracle instead of a
   Hypersweeper builder.
 - `src/geometry/marks.ts` — **edge marks**: a coloured or lined tile's label
-  per edge — `NONE` (a plain tile's, and the rim's, which takes any), `LINE`
-  and `BLANK` (each its own partner); a coloured board's colour pair
+  per edge — `NONE` (a plain tile's, and the rim's, which takes any), `LINE`,
+  `END` (a line cut back to a half disc) and `BLANK` (each its own partner,
+  so a half disc never meets a line); a coloured board's colour pair
   `colourMark(own, other)`, whose partner is the pair the other way round;
   and Penrose's arrows, `arrowMark(kind, forward)` — kinds 1 and
   2 the rhombi's single and double, 3 and 4 the kites' and darts' long and
@@ -477,7 +482,10 @@ quick way to see the win state.
   same edges unordered, `alike`, to find a colouring that plays as its lined
   board does) and each cell's colour, and for each
   balanced one the lined board in
-  one colour, where it has lines. Each cell's class and lattice point are
+  one colour, where it has lines — each line that would end in a tile cut
+  back to a pair of half discs (`cutEnds`: leaf-pruning the same-colour
+  graph on the tiling's period, the colouring's k steps each way, so a rim
+  tile is cut as it is in the tiling). Each cell's class and lattice point are
   solved for in floats and checked exactly; which class lies across each edge
   of each class is read off the window's inner edges (`atlasOf`), so a rim
   tile's marks are its marks in the tiling. `colouredLevels` in `levels.ts`
@@ -596,9 +604,8 @@ quick way to see the win state.
   on and ending on each (straight across, or a Truchet arc about the corner
   two lined edges share — or, two edges further apart on an octagon or a
   dodecagon, about the point their lines meet, `meet`; butt-capped, so
-  never past the edge), and a lone
-  lined edge as a half disc; Penrose's arrows as arcs about the tile's
-  corners (`arcsOf` finds the corners whose two edges' crossings are one kind
+  never past the edge), and a line cut back (`END`) as a half disc;
+  Penrose's arrows as arcs about the tile's corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —
   chosen so every arc stays inside its tile, a thin rhombus's round its wide
   corners small, a dart's round its notch the long way). Every tile, tray

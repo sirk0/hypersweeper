@@ -7,6 +7,7 @@ import { cyclotomic, type Cyc } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
 import {
   BLANK,
+  END,
   LINE,
   NONE,
   SAME,
@@ -62,6 +63,9 @@ describe("edge marks", () => {
     expect(partner(colourMark(0, 1))).toBe(colourMark(1, 0));
     expect(partner(colourMark(2, 2))).toBe(colourMark(2, 2));
     expect(partner(LINE)).toBe(LINE);
+    // a line cut back to a half disc meets only a half disc
+    expect(partner(END)).toBe(END);
+    expect(END).not.toBe(LINE);
     expect(partner(BLANK)).toBe(BLANK);
     expect(partner(NONE)).toBe(NONE);
     expect(colours(colourMark(3, 1))).toEqual({ own: 3, other: 1 });
@@ -380,6 +384,42 @@ describe("colourings", () => {
         expect(decorParts(loopsOf(coloured.ring, t.pieces)).map((p) => p.class)).not.toContain(
           "decor line",
         );
+  });
+
+  const LINED = COLOURED.filter((l) =>
+    l.tiles.every((t) => t.pieces[0]!.marks!.every((m) => m === LINE || m === END || m === BLANK)),
+  );
+  it.each(LINED.map((l) => l.key))(
+    "%s: no line ends in a tile — it is cut back to half discs, which meet only half discs",
+    (key) => {
+      const level = levelByKey(key)!;
+      expect(level.decor!.rules).toBe(true);
+      const marks = sides(level);
+      for (const t of level.tiles) {
+        const lines = t.pieces[0]!.marks!.filter((m) => m === LINE).length;
+        expect(lines).not.toBe(1);
+      }
+      // across every shared edge, a line meets a line and a half disc a half disc
+      for (const [edge, mark] of marks) {
+        const [a, b] = edge.split(">");
+        const across = marks.get(`${b}>${a}`);
+        if (across !== undefined && (mark === LINE || mark === END)) expect(across).toBe(mark);
+      }
+    },
+  );
+
+  it("draws a line cut back as a half disc, and no line", () => {
+    const tile = { ring: Z4, pieces: square(0, 0, [END, BLANK, BLANK, BLANK]) };
+    const parts = decorParts(loopsOf(Z4, tile.pieces));
+    expect(parts.map((p) => p.class)).toEqual(["decor dot"]);
+    // 3.12²'s: a dodecagon's line runs on through it, and two lines that
+    // would end in its triangles are cut back to half discs
+    const lined = levelByKey("trunchex.lines2")!;
+    const twelve = lined.tiles.find((t) => t.pieces[0]!.verts.length === 12)!;
+    expect(decorParts(loopsOf(lined.ring, twelve.pieces)).map((p) => p.class)).toEqual([
+      "decor dot",
+      "decor line",
+    ]);
   });
 
   it("draws a line between two edges further apart about where their lines meet, square on to each", () => {

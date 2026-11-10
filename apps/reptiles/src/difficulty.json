@@ -2075,12 +2075,12 @@
     "flips": 0
   },
   "trunchex.lines": {
-    "score": 0.927,
-    "presses": 10,
+    "score": 0.542,
+    "presses": 4,
     "flips": 0
   },
   "trunchex.lines2": {
-    "score": 0.542,
+    "score": 0.466,
     "presses": 4,
     "flips": 0
   },
@@ -2130,8 +2130,8 @@
     "flips": 0
   },
   "snubsquare.lines2": {
-    "score": 3.638,
-    "presses": 29,
+    "score": 2.704,
+    "presses": 21,
     "flips": 0
   },
   "snubsquare.2oneinthreebyshape": {
@@ -2175,13 +2175,13 @@
     "flips": 0
   },
   "rhombitrihex.lines": {
-    "score": 1.349,
-    "presses": 16,
+    "score": 1.014,
+    "presses": 10,
     "flips": 0
   },
   "rhombitrihex.lines2": {
-    "score": 1.181,
-    "presses": 13,
+    "score": 1.349,
+    "presses": 16,
     "flips": 0
   },
   "rhombitrihex.2oneinthreebyshape": {
@@ -2200,13 +2200,13 @@
     "flips": 0
   },
   "trunctrihex.lines": {
-    "score": 1.349,
-    "presses": 16,
+    "score": 1.125,
+    "presses": 12,
     "flips": 0
   },
   "trunctrihex.lines2": {
-    "score": 1.293,
-    "presses": 15,
+    "score": 1.125,
+    "presses": 12,
     "flips": 0
   },
   "trunctrihex.2oneinthreebyshape": {

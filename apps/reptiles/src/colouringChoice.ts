@@ -6,6 +6,7 @@
 
 import { latticeOf, paintings, type PaintingParams } from "./colourings";
 import { measure } from "./difficulty";
+import { LINE } from "./geometry/marks";
 import {
   paintedCandidates,
   plainKinds,
@@ -21,7 +22,8 @@ export const COLOURS_CAP = 3;
 /**
  * The paintings of the uniform board `plain` (its window `box` edges square)
  * worth a level, at most `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
- * tray tiles first, then the hardest as measured; among the coloured, the
+ * tray tiles first, then the hardest as measured — but a lined board with a
+ * line still on it (not all cut back to half discs) before any without; among the coloured, the
  * best balanced one (every shape in every colour) and the best by shape (a
  * shape skipping a colour) both, where there are both. Lined first, then
  * coloured by how many colours.
@@ -33,7 +35,14 @@ export function chooseColourings(plain: Level, box: number): PaintingParams[] {
   const ranked = paintedCandidates(plain, all)
     .map((c) => ({ ...c, score: measure(c.level).score }))
     .sort((a, b) => a.level.tiles.length - b.level.tiles.length || b.score - a.score);
-  const lined = ranked.filter((c) => c.painting.lines).slice(0, RULES_CAP);
+  // a lined board with a line left on it before one cut back to nothing but
+  // half discs
+  const drawn = (c: PaintedCandidate): number =>
+    c.painting.marks.some((cell) => cell.some((edges) => edges.includes(LINE))) ? 0 : 1;
+  const lined = ranked
+    .filter((c) => c.painting.lines)
+    .sort((a, b) => drawn(a) - drawn(b))
+    .slice(0, RULES_CAP);
   const coloured = ranked.filter((c) => !c.painting.lines);
   const picked: PaintedCandidate[] = [];
   for (const byShape of [false, true]) {
