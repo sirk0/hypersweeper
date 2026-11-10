@@ -1252,5 +1252,117 @@
     "name": "Penrose kites & darts · matching rules",
     "group": "rules",
     "decor": { "of": "kitedart", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "penrose.3apart",
+    "label": "Penrose rhombi, 3 colours, apart",
+    "name": "Penrose rhombi · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "penrose", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "kitedart.3apart",
+    "label": "Penrose kites & darts, 3 colours, apart",
+    "name": "Penrose kites & darts · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "kitedart", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "ammannbeenker.rules",
+    "label": "Ammann–Beenker, matching rules",
+    "name": "Ammann–Beenker · matching rules",
+    "group": "rules",
+    "decor": { "of": "ammannbeenker", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "ammannbeenker.3apart",
+    "label": "Ammann–Beenker, 3 colours, apart",
+    "name": "Ammann–Beenker · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "ammannbeenker", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "tile11.rules",
+    "label": "Tile(1,1), matching rules",
+    "name": "Tile(1,1) · matching rules",
+    "group": "rules",
+    "decor": { "of": "tile11", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "tile11.4apart",
+    "label": "Tile(1,1), 4 colours, apart",
+    "name": "Tile(1,1) · 4 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "tile11", "colours": 4, "rules": false, "label": "4 colours, apart" }
+  },
+  {
+    "key": "spectre.rules",
+    "label": "The Spectre, matching rules",
+    "name": "The Spectre · matching rules",
+    "group": "rules",
+    "decor": { "of": "spectre", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "spectre.4apart",
+    "label": "The Spectre, 4 colours, apart",
+    "name": "The Spectre · 4 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "spectre", "colours": 4, "rules": false, "label": "4 colours, apart" }
+  },
+  {
+    "key": "hat.rules",
+    "label": "The hat, matching rules",
+    "name": "The hat · matching rules",
+    "group": "rules",
+    "decor": { "of": "hat", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "hat.4apart",
+    "label": "The hat, 4 colours, apart",
+    "name": "The hat · 4 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "hat", "colours": 4, "rules": false, "label": "4 colours, apart" }
+  },
+  {
+    "key": "turtle.rules",
+    "label": "The turtle, matching rules",
+    "name": "The turtle · matching rules",
+    "group": "rules",
+    "decor": { "of": "turtle", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "turtle.4apart",
+    "label": "The turtle, 4 colours, apart",
+    "name": "The turtle · 4 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "turtle", "colours": 4, "rules": false, "label": "4 colours, apart" }
+  },
+  {
+    "key": "hatmetatiles.rules",
+    "label": "Hat metatiles, matching rules",
+    "name": "Hat metatiles · matching rules",
+    "group": "rules",
+    "decor": { "of": "hatmetatiles", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "hatmetatiles.4apart",
+    "label": "Hat metatiles, 4 colours, apart",
+    "name": "Hat metatiles · 4 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "hatmetatiles", "colours": 4, "rules": false, "label": "4 colours, apart" }
+  },
+  {
+    "key": "socolartaylor.rules",
+    "label": "Socolar–Taylor tile, matching rules",
+    "name": "Socolar–Taylor tile · matching rules",
+    "group": "rules",
+    "decor": { "of": "socolartaylor", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "socolartaylor.4apart",
+    "label": "Socolar–Taylor tile, 4 colours, apart",
+    "name": "Socolar–Taylor tile · 4 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "socolartaylor", "colours": 4, "rules": false, "label": "4 colours, apart" }
   }
 ]

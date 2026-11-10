@@ -714,6 +714,7 @@ describe("puzzle", () => {
     // tilings of one polygon in two or three sizes
     expect(twins.map((l) => l.key).sort()).toEqual([
       "ammannbeenker",
+      "ammannbeenker.rules",
       "hexringsdual",
       "hexrowsdual",
       "kitedart",

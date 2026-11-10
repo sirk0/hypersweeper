@@ -51,6 +51,7 @@ export {
 export {
   ammannBeenkerBoard,
   ammannBeenkerExact,
+  ammannBeenkerFrames,
   brickRingsBoard,
   brickRingsTiles,
   kiteDartBoard,

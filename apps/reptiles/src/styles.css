@@ -555,6 +555,44 @@ button.primary {
   opacity: 1;
 }
 
+/* A matching rule read off an aperiodic patch: a half disc per edge, in its
+   class's colour (view/decor.ts) — the paints' dark edges, which stand out
+   on any tile's fill, and on its own light paint ringed. */
+.decor.label {
+  stroke-width: 0.02;
+  stroke-linejoin: round;
+}
+
+.decor.label-0 {
+  fill: var(--decor-line);
+  stroke: var(--decor-line);
+}
+
+.decor.label-1 {
+  fill: var(--paint-1-edge);
+  stroke: var(--paint-1);
+}
+
+.decor.label-2 {
+  fill: var(--paint-0-edge);
+  stroke: var(--paint-0);
+}
+
+.decor.label-3 {
+  fill: var(--paint-2-edge);
+  stroke: var(--paint-2);
+}
+
+.decor.label-4 {
+  fill: var(--paint-3-edge);
+  stroke: var(--paint-3);
+}
+
+.decor.label-5 {
+  fill: var(--stick);
+  stroke: var(--stick-ring);
+}
+
 .tray {
   fill: var(--tray);
 }

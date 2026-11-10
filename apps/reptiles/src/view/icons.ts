@@ -6,7 +6,7 @@
 import { centroidOf, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
-import { decorParts } from "./decor";
+import { decorParts, markUnit } from "./decor";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -73,13 +73,18 @@ export function tileIcon(level: Level, kind: number): SVGSVGElement {
   poly.setAttribute("class", `tile ${level.colours[kind]}`);
   poly.setAttribute("stroke-width", String(r * 0.1));
   svg.appendChild(poly);
-  decorate(svg, loops, ([x, y]) => [x - cx, cy - y]);
+  decorate(svg, loops, ([x, y]) => [x - cx, cy - y], markUnit(level));
   return svg;
 }
 
 /** A coloured or lined tile's bands and lines (view/decor.ts), over it. */
-function decorate(svg: SVGSVGElement, loops: ReturnType<typeof loopsOf>, map: (p: XY) => XY): void {
-  for (const part of decorParts(loops, map)) {
+function decorate(
+  svg: SVGSVGElement,
+  loops: ReturnType<typeof loopsOf>,
+  map: (p: XY) => XY,
+  unit: number | undefined,
+): void {
+  for (const part of decorParts(loops, map, unit)) {
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", part.d);
     path.setAttribute("class", part.class);
@@ -126,7 +131,7 @@ export function figureIcon(level: Level): SVGSVGElement {
     poly.setAttribute("class", `tile ${level.colours[kind]}`);
     poly.setAttribute("stroke-width", String(size * 0.025));
     svg.appendChild(poly);
-    decorate(svg, loops, ([x, y]) => [x + dx, -y]);
+    decorate(svg, loops, ([x, y]) => [x + dx, -y], markUnit(level));
   });
   return svg;
 }

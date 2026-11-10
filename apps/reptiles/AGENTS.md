@@ -56,7 +56,23 @@ some back off.
     Each arrow is drawn as an arc about one of the tile's corners, crossing
     its edge a share of the way back from the arrow's head, so the arcs run
     on unbroken only where the arrows agree — Ammann's on the rhombi,
-    Conway's on the kites and darts.
+    Conway's on the kites and darts. **Every other aperiodic level** —
+    Ammann–Beenker, Tile(1,1), the Spectre, the hat, the turtle, the hat's
+    metatiles and the Socolar–Taylor tile (`?level=ammannbeenker.rules`,
+    `?level=hatmetatiles.rules`) — has a rule read off its builder's own
+    patch (`src/patchMarks.ts`): each edge of the prototile is a *slot*,
+    slots that meet anywhere in the patch are one class, and a class whose
+    meetings all agree on a way along the edge is an arrow. That is the
+    finest rule of that shape every shared edge of the patch keeps:
+    Ammann–Beenker's comes out as his arrows, one kind on every edge; the
+    Spectre's one kind, the hat's and the turtle's two (their short and
+    long edges), the metatiles' five (one with no way), the Socolar–Taylor
+    tile's ten. A label is drawn as a half disc in its class's colour, a
+    third of the way back from its head (on the middle where it has no way),
+    so two tiles meeting as they should make one disc. An edge is cut first
+    wherever a corner of the tile across lands on it, every copy of its slot
+    alike — the metatiles and the Socolar–Taylor tile's pieces — so a mark
+    always lies on a whole edge.
   - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
     colouring repeats more coarsely than the tiling — squares as a
     checkerboard, or in rows of three colours, or hexagons a third of them
@@ -67,6 +83,18 @@ some back off.
     colour (a striped one: `Painting.alike`) plays as its lined board does,
     so it is left to the lined boards; and a coloured board never draws
     lines.
+  - *The aperiodic levels* (`?level=penrose.3apart`,
+    `?level=ammannbeenker.3apart`, `?level=hat.4apart`) are coloured
+    properly — no two tiles of a colour share an edge — in three colours
+    where the window and the tiles round it can be (Penrose's two tilings
+    and Ammann–Beenker), else four (the Spectre's, the hat's family's and
+    the Socolar–Taylor tile's windows have none in three: a test searches
+    exhaustively). No colouring of an aperiodic tiling reads alike
+    everywhere — a tile's neighbours differ from place to place — so the
+    tray holds one tile per distinct marked tile, and `npm run colourings`
+    searches for the colouring with the fewest (`chooseColouring`), from 5
+    on Ammann–Beenker to 26 on the hat, and writes it to
+    `src/aperiodicColourings.json`.
   - *The other eight uniform tilings* (`?level=trihex.lines`,
     `?level=trihex.3byshape`, `?level=trunctrihex.lines`) are lined and
     coloured the same way, one tray tile per colour *and shape*: a colouring
@@ -207,7 +235,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 37 matching rules (lines on the eleven uniform tilings and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts) and 52 colourings of the uniform and Laves tilings in two more, 477 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 44 matching rules (lines on the eleven uniform tilings and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels) and 61 colourings of the uniform, Laves and aperiodic tilings in two more, 493 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -272,7 +300,7 @@ builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
-edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, a won board and
+edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
 its ✕) and every level and tiling page opening with no error
 (`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
@@ -318,7 +346,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (ten minutes, nearly all the kisrhombille's; `-- <key>…` for only those)
+npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (ten minutes, nearly all the kisrhombille's; `-- <key>…` for only those), and each aperiodic level's colouring into src/aperiodicColourings.json (half a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
@@ -487,7 +515,9 @@ quick way to see the win state.
   and Penrose's arrows, `arrowMark(kind, forward)` — kinds 1 and
   2 the rhombi's single and double, 3 and 4 the kites' and darts' long and
   short edges' — pointing along the tile's outline or against it: its
-  partner points the other way, and a mirror (`mirrored`) turns it round. A
+  partner points the other way, and a mirror (`mirrored`) turns it round;
+  and a rule read off an aperiodic patch, `labelMark(cls, forward)`, an
+  arrow of any class, or with no way (`null`, its own partner). A
   `Piece` carries
   them as `marks`, edge for edge as it carries `curve`; `posed`, `moved`,
   `curveOnto` and `restFlat` keep them, `turnsOnto` (given the cell's marks)
@@ -556,6 +586,27 @@ quick way to see the win state.
   every edge pointing to a kite's side corners and from a dart's — of the
   rules every shared edge of the 705-tile patch keeps, the one that forbids a
   kite in a dart's notch.
+- `src/patchMarks.ts` — **marks read off an aperiodic patch**, for every
+  aperiodic level (`PATCH_MARKED` in `levels.ts`). `aperiodicFrames` lists
+  the level's whole patch with each tile in its prototile's own order
+  (Ammann–Beenker's from each tile's own first corner,
+  `ammannBeenkerFrames` in @tiling/geometry; the Spectre's fourteen corners;
+  `hatFrames`; the Socolar–Taylor tile's pieces as `SOCOLAR_TAYLOR` lists
+  them), so edge j of every copy is one slot. `refine` cuts every edge where
+  a corner of the tile across lands on it, every copy of a slot alike,
+  round and round until nothing more is cut; `deriveRules` is a union–find
+  with parity over the slots that meet (`meetings`), a class with an odd
+  cycle wayless; `locate` finds the level's cells in the patch and
+  `windowCells` reads them off it, counter-clockwise, with each edge's slot
+  and the cell across; `chooseColouring` (the script's) is a seeded search,
+  DSATUR then Kempe-chain swaps from many starts, for the proper colouring
+  of the window and the cells round it with the fewest tray tiles.
+  `patchRulesLevel` and `patchColouredLevel` in `levels.ts` build the levels
+  (`<plain>.rules`, `<plain>.<k>apart`); a round Spectre's marked cells take
+  its plain board's curves edge for edge (`makeLevel`'s `round`, given per
+  cell). The tests (`tests/unit/patchMarks.test.ts`) check no patch edge is
+  met part-way, every meeting keeps its rule, and each colouring is proper
+  and needs its colours.
 - `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
   boards congruent to a given one (turned, mirrored or moved, tile for tile),
   how the board search tells a new board from one it has.
@@ -641,7 +692,9 @@ quick way to see the win state.
   Penrose's arrows as arcs about the tile's corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —
   chosen so every arc stays inside its tile, a thin rhombus's round its wide
-  corners small, a dart's round its notch the long way). Every tile, tray
+  corners small, a dart's round its notch the long way); a label as a half
+  disc in its class's colour (`LABEL_COLOURS`, `LABEL_AT`: a third of the
+  way back from its head, a second six classes a fifth). Every tile, tray
   tile, dragged tile and icon is decorated through it; its parts are
   `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:

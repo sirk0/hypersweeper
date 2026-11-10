@@ -29,6 +29,7 @@ import {
   centroid,
   piece,
   posed,
+  realCorners,
   regular,
   selfTurns,
   spotKey,
@@ -42,14 +43,17 @@ import {
   LEVELS,
   UNIFORM,
   levelByKey,
+  PATCH_MARKED,
   plainKinds,
   type Level,
 } from "../../src/levels";
+import aperiodicColourings from "../../src/aperiodicColourings.json";
 import { Puzzle } from "../../src/puzzle";
 import { decorParts, meet } from "../../src/view/decor";
 import { loopsOf } from "../../src/view/curve";
 
 const Z4 = cyclotomic(4);
+const APERIODIC_COLOURINGS = aperiodicColourings as Record<string, { tiles: number }>;
 const COLOURED = LEVELS.filter((l) => l.decor);
 /** The tilings whose full colouring choice is too slow for a unit test. */
 const SLOW_CHOICE = ["snubhex", "trunctrihex", "kisrhombille"];
@@ -224,6 +228,22 @@ describe("colourings", () => {
       "kisrhombille.3mixed",
       "penrose.rules",
       "kitedart.rules",
+      "penrose.3apart",
+      "kitedart.3apart",
+      "ammannbeenker.rules",
+      "ammannbeenker.3apart",
+      "tile11.rules",
+      "tile11.4apart",
+      "spectre.rules",
+      "spectre.4apart",
+      "hat.rules",
+      "hat.4apart",
+      "turtle.rules",
+      "turtle.4apart",
+      "hatmetatiles.rules",
+      "hatmetatiles.4apart",
+      "socolartaylor.rules",
+      "socolartaylor.4apart",
     ]);
     for (const level of COLOURED) {
       // matching rules and colourings: two groups
@@ -231,15 +251,16 @@ describe("colourings", () => {
       expect(levelByKey(level.key)).toBe(level);
       const plain = levelByKey(level.decor!.of)!;
       expect(level.name.startsWith(`${plain.name} · `)).toBe(true);
-      // the plain board, tile for tile
-      expect(
-        level.cells.map((c) =>
-          spotKey(
-            level.ring,
-            c.map((p) => ({ verts: p.verts })),
-          ),
-        ),
-      ).toEqual(plain.cells.map((c) => spotKey(plain.ring, c)));
+      // the plain board, tile for tile (by its real corners: a marked
+      // aperiodic tile is cut where the tile across has a corner)
+      const real = (ring: Level["ring"], cell: Piece[]): string =>
+        spotKey(
+          ring,
+          cell.map((p) => ({ verts: p.verts.filter((_, i) => realCorners(ring, p.verts)[i]) })),
+        );
+      expect(level.cells.map((c) => real(level.ring, c))).toEqual(
+        plain.cells.map((c) => real(plain.ring, c)),
+      );
     }
   });
 
@@ -249,25 +270,32 @@ describe("colourings", () => {
       const level = levelByKey(key)!;
       const plain = levelByKey(level.decor!.of)!;
       const { colours: count, rules } = level.decor!;
-      const marks = level.tiles.flatMap((t) => t.pieces[0]!.marks!);
+      const marks = level.tiles.flatMap((t) => t.pieces.flatMap((p) => p.marks!));
       // colours alternate (each tile says what lies across it), or the
       // edges carry their own colour, alike both sides
       const alternate = marks.some((m) => colours(m) !== null);
       expect(marks.every((m) => (colours(m) !== null) === alternate)).toBe(true);
       if (rules) expect(level.tiles).toHaveLength(plain.tiles.length);
-      else if (alternate && plain.tiles.length === 1) expect(level.tiles).toHaveLength(count);
-      expect(level.tiles.length).toBeLessThanOrEqual(count * plain.tiles.length);
-      // one tray tile per colour and shape: every cell of one colour and
-      // plain kind is one kind of the tray
-      const kinds = plainKinds(plain);
-      const marked = plainKinds(level);
-      const byGroup = new Map<string, Set<number>>();
-      level.cells.forEach((_, i) => {
-        const own = colours(level.cells[i]![0]!.marks![0]!)?.own ?? 0;
-        const group = `${own}:${kinds[i]}`;
-        byGroup.set(group, (byGroup.get(group) ?? new Set()).add(marked[i]!));
-      });
-      for (const group of byGroup.values()) expect(group.size).toBe(1);
+      else if (PATCH_MARKED.includes(plain.key)) {
+        // an aperiodic colouring: proper — no two tiles of a colour share an
+        // edge — and as many tray tiles as the choice found
+        expect(marks.every((m) => colours(m)!.own !== colours(m)!.other)).toBe(true);
+        expect(level.tiles).toHaveLength(APERIODIC_COLOURINGS[plain.key]!.tiles);
+      } else {
+        if (alternate && plain.tiles.length === 1) expect(level.tiles).toHaveLength(count);
+        expect(level.tiles.length).toBeLessThanOrEqual(count * plain.tiles.length);
+        // one tray tile per colour and shape: every cell of one colour and
+        // plain kind is one kind of the tray
+        const kinds = plainKinds(plain);
+        const marked = plainKinds(level);
+        const byGroup = new Map<string, Set<number>>();
+        level.cells.forEach((_, i) => {
+          const own = colours(level.cells[i]![0]!.marks![0]!)?.own ?? 0;
+          const group = `${own}:${kinds[i]}`;
+          byGroup.set(group, (byGroup.get(group) ?? new Set()).add(marked[i]!));
+        });
+        for (const group of byGroup.values()) expect(group.size).toBe(1);
+      }
       const all = sides(level);
       let shared = 0;
       for (const [edge, mark] of all) {
@@ -281,7 +309,7 @@ describe("colourings", () => {
       if (!rules && alternate) {
         // each kind is its colour all round, painted so
         level.tiles.forEach((t, kind) => {
-          const own = new Set(t.pieces[0]!.marks!.map((m) => colours(m)!.own));
+          const own = new Set(t.pieces.flatMap((p) => p.marks!.map((m) => colours(m)!.own)));
           expect(own.size).toBe(1);
           expect(level.colours[kind]).toContain(`paint-${[...own][0]}`);
         });

@@ -27,7 +27,7 @@ import { exactPatch, type ExactPatch } from "./exact";
  * exact tiles, and whether the patch was deflated (its edges 1/φ^depth). */
 const APERIODIC: Record<
   string,
-  [(depth: number, keep: number, variant: number) => ExactTiles, boolean]
+  [(depth: number, keep: number | null, variant: number) => ExactTiles, boolean]
 > = {
   penrose: [penroseExact, true],
   kitedart: [kiteDartExact, true],
@@ -44,14 +44,14 @@ export function aperiodicShrink(mode: string, depth: number): number {
   return deflated ? ((1 + Math.sqrt(5)) / 2) ** -depth : 1;
 }
 
-/** The patch; with `keepFlat`, each tile keeps its flat corners (the
+/** The patch — the whole of it, with `keep` null; with `keepFlat`, each tile keeps its flat corners (the
  * Spectre's, where a round tile's two curves meet). `variant` is the
  * builder's: 0 the centred window, any other integer a window elsewhere in
  * the same patch. */
 export function aperiodicPatch(
   mode: string,
   depth: number,
-  keep: number,
+  keep: number | null,
   keepFlat = false,
   variant = 0,
 ): ExactPatch {
