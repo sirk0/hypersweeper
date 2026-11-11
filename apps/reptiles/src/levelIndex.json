@@ -3239,6 +3239,62 @@
     "painting": 4
   },
   {
+    "key": "pentagon10.linkedpairs",
+    "label": "Type 10 (James, 1975), linked pairs",
+    "name": "Type 10 (James, 1975) · linked pairs",
+    "group": "rules",
+    "decor": { "of": "pentagon10", "colours": 1, "rules": true, "label": "linked pairs" },
+    "painting": 0
+  },
+  {
+    "key": "pentagon10.3mixed",
+    "label": "Type 10 (James, 1975), 3 colours, mixed",
+    "name": "Type 10 (James, 1975) · 3 colours, mixed",
+    "group": "colourings",
+    "decor": { "of": "pentagon10", "colours": 3, "rules": false, "label": "3 colours, mixed" },
+    "painting": 1
+  },
+  {
+    "key": "pentagon13.lines",
+    "label": "Type 13 (Rice, 1977), lines",
+    "name": "Type 13 (Rice, 1977) · lines",
+    "group": "rules",
+    "decor": { "of": "pentagon13", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "pentagon13.linkedpairs",
+    "label": "Type 13 (Rice, 1977), linked pairs",
+    "name": "Type 13 (Rice, 1977) · linked pairs",
+    "group": "rules",
+    "decor": { "of": "pentagon13", "colours": 1, "rules": true, "label": "linked pairs" },
+    "painting": 1
+  },
+  {
+    "key": "pentagon13.2striped",
+    "label": "Type 13 (Rice, 1977), 2 colours, striped",
+    "name": "Type 13 (Rice, 1977) · 2 colours, striped",
+    "group": "colourings",
+    "decor": { "of": "pentagon13", "colours": 2, "rules": false, "label": "2 colours, striped" },
+    "painting": 2
+  },
+  {
+    "key": "pentagon15.linkedpairs",
+    "label": "Type 15 (Mann et al., 2015), linked pairs",
+    "name": "Type 15 (Mann et al., 2015) · linked pairs",
+    "group": "rules",
+    "decor": { "of": "pentagon15", "colours": 1, "rules": true, "label": "linked pairs" },
+    "painting": 0
+  },
+  {
+    "key": "pentagon15.3mixed",
+    "label": "Type 15 (Mann et al., 2015), 3 colours, mixed",
+    "name": "Type 15 (Mann et al., 2015) · 3 colours, mixed",
+    "group": "colourings",
+    "decor": { "of": "pentagon15", "colours": 3, "rules": false, "label": "3 colours, mixed" },
+    "painting": 1
+  },
+  {
     "key": "penrose.rules",
     "label": "Penrose rhombi, matching rules",
     "name": "Penrose rhombi · matching rules",

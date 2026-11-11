@@ -3339,6 +3339,41 @@
     "presses": 6,
     "flips": 0
   },
+  "pentagon10.linkedpairs": {
+    "score": 0.525,
+    "presses": 9,
+    "flips": 0
+  },
+  "pentagon10.3mixed": {
+    "score": 0.825,
+    "presses": 9,
+    "flips": 0
+  },
+  "pentagon13.lines": {
+    "score": 0.742,
+    "presses": 7,
+    "flips": 4
+  },
+  "pentagon13.linkedpairs": {
+    "score": 0.742,
+    "presses": 7,
+    "flips": 4
+  },
+  "pentagon13.2striped": {
+    "score": 0.846,
+    "presses": 7,
+    "flips": 3
+  },
+  "pentagon15.linkedpairs": {
+    "score": 1.394,
+    "presses": 14,
+    "flips": 4
+  },
+  "pentagon15.3mixed": {
+    "score": 1.93,
+    "presses": 17,
+    "flips": 4
+  },
   "penrose.rules": {
     "score": 0.84,
     "presses": 10,

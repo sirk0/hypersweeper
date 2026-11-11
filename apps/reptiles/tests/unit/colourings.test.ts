@@ -41,6 +41,7 @@ import {
   COLOURED as COLOURED_LATTICES,
   LAVES,
   LEVELS,
+  PENTAGONAL,
   RECTANGLES,
   TWO_ISOHEDRAL_KEYED,
   makeFirstBoard,
@@ -79,6 +80,7 @@ const SLOW_CHOICE = [
   "dissectedtrunchexdual",
   "hexringsdual",
   "dodecarhombitrihexdual",
+  "pentagon15",
 ];
 
 /** A unit square at (x, y) with `marks` on its edges: bottom, right, top,
@@ -160,7 +162,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones, the 2-isohedral ones and the congruent-rectangle bonds as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones, the 2-isohedral ones, the congruent-rectangle bonds and the pentagonal tilings as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -442,6 +444,13 @@ describe("colourings", () => {
       "herringbone.2oneinthree",
       "herringbone.2oneinthree2",
       "herringbone.2oneinthree3",
+      "pentagon10.linkedpairs",
+      "pentagon10.3mixed",
+      "pentagon13.lines",
+      "pentagon13.linkedpairs",
+      "pentagon13.2striped",
+      "pentagon15.linkedpairs",
+      "pentagon15.3mixed",
       "penrose.rules",
       "kitedart.rules",
       "ammannbeenker.rules",
@@ -626,18 +635,20 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one, each 2-isohedral one and each bond", () => {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one, each 2-isohedral one, each bond and each pentagonal tiling", () => {
     for (const [key] of [
       ...UNIFORM,
       ...TWO_UNIFORM,
       ...LAVES,
       ...TWO_ISOHEDRAL_KEYED,
       ...RECTANGLES,
+      ...PENTAGONAL,
     ]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
       expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
-      // every uniform and Laves tiling and every bond has some; a 2-uniform or 2-isohedral
+      // every uniform, Laves and pentagonal tiling and every bond has some; a
+      // 2-uniform or 2-isohedral
       // one may have none as hard as its plain board
       if (![...TWO_UNIFORM, ...TWO_ISOHEDRAL_KEYED].some(([two]) => two === key))
         expect(marked.length, key).toBeGreaterThan(0);
@@ -650,14 +661,20 @@ describe("colourings", () => {
 
   // The full choice on the 2-uniform tilings of a dozen or more translation
   // classes takes from half a minute to six (hexrings, nineteen classes), and
-  // on the 2-isohedral tilings of most classes from ten seconds to four:
+  // on the 2-isohedral tilings of most classes from ten seconds to four, and
+  // on the pentagonal type 15's twelve two minutes:
   // those are left to `npm run colourings` (`SLOW_CHOICE`), and their listed paintings
   // are checked only by building them (`paintedLevel` throws on one
   // that no longer makes a level) and by the tests above.
   it.each(
-    [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED, ...RECTANGLES].filter(
-      ([key]) => !SLOW_CHOICE.includes(key),
-    ),
+    [
+      ...UNIFORM,
+      ...TWO_UNIFORM,
+      ...LAVES,
+      ...TWO_ISOHEDRAL_KEYED,
+      ...RECTANGLES,
+      ...PENTAGONAL,
+    ].filter(([key]) => !SLOW_CHOICE.includes(key)),
   )(
     "%s: src/colourings.json is in step with the choice (npm run colourings)",
     (key, box) => {
@@ -679,19 +696,34 @@ describe("colourings", () => {
     30_000,
   );
 
-  it.each(RECTANGLES)(
-    "%s: painted on bricks cut into steps, one tile, every piece of a side meeting one piece across",
+  it.each([...RECTANGLES, ...PENTAGONAL])(
+    "%s: painted on tiles cut alike, one tile, every piece of a side meeting one piece across",
     (key, box) => {
       const plain = makeFirstBoard(key);
       const base = paintBase(plain);
       const { ring } = base;
-      // one tile, as the plain board's brick: the same real corners, cut
-      // alike all round (the stacked bond, edge to edge, not at all)
+      // one tile, as the plain board's: the same real corners, cut alike all
+      // round — a brick into steps (the stacked bond, edge to edge, not at
+      // all), a pentagon where some copy's side is met part-way (twice on
+      // type 10's, once on the others')
       expect(base.tiles).toHaveLength(1);
       expect(base.cells).toHaveLength(plain.cells.length);
       const verts = base.cells.map((c) => c[0]!.verts.length);
       expect(new Set(verts).size).toBe(1);
-      expect(verts[0]).toBe(key === "stackedbond" ? 4 : key === "basketweave3" ? 8 : 6);
+      expect(verts[0]).toBe(
+        (
+          {
+            stackedbond: 4,
+            runningbond: 6,
+            basketweave: 6,
+            basketweave3: 8,
+            herringbone: 6,
+            pentagon10: 7,
+            pentagon13: 6,
+            pentagon15: 6,
+          } as Record<string, number>
+        )[key],
+      );
       const real = (cell: Piece[]): string =>
         cell[0]!.verts
           .filter((_, i) => realCorners(ring, cell[0]!.verts)[i])
