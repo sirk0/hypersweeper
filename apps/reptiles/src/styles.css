@@ -555,9 +555,10 @@ button.primary {
   opacity: 1;
 }
 
-/* A matching rule read off an aperiodic patch: a half disc per edge, in its
-   class's colour (view/decor.ts) — the paints' dark edges, which stand out
-   on any tile's fill, and on its own light paint ringed. */
+/* A matching rule read off an aperiodic or spiral patch: where a class has
+   one mark on a tile, a half disc on its edge in the class's colour
+   (view/decor.ts) — the paints' dark edges, which stand out on any tile's
+   fill, and on its own light paint ringed. */
 .decor.label {
   stroke-width: 0.02;
   stroke-linejoin: round;
@@ -593,6 +594,31 @@ button.primary {
   stroke: var(--stick-ring);
 }
 
+/* …and joined across the tile: a line per class, in its colour's dark edge,
+   cut square on the edge so it runs on into the next tile's. Its width is
+   set on the path, by the level's edge length (view/decor.ts). */
+.decor.label-line {
+  fill: none;
+  stroke-linecap: butt;
+}
+.decor.label-line.label-0 {
+  stroke: var(--decor-line);
+}
+.decor.label-line.label-1 {
+  stroke: var(--paint-1-edge);
+}
+.decor.label-line.label-2 {
+  stroke: var(--paint-0-edge);
+}
+.decor.label-line.label-3 {
+  stroke: var(--paint-2-edge);
+}
+.decor.label-line.label-4 {
+  stroke: var(--paint-3-edge);
+}
+.decor.label-line.label-5 {
+  stroke: var(--stick-ring);
+}
 .tray {
   fill: var(--tray);
 }

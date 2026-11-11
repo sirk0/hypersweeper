@@ -40,6 +40,7 @@ import {
 } from "./cyclotomic";
 import {
   allVerts,
+  realCorners,
   centroid,
   centroidOf,
   loopEdges,
@@ -267,8 +268,14 @@ function sidesOf(shape: Shape, flip: boolean): Sides {
     const [x, y] = ring.toXY(v);
     return Math.atan2(y, x);
   };
-  const at = base.flatMap(({ verts: own }) =>
-    own.map((u, i) => {
+  // only its real corners: a point part-way along a side — a marked tile's
+  // cut, where a corner of the tile across lands, or a round tile's flat
+  // corner — laid on a frontier corner would stick the tile part-way along a
+  // straight edge
+  const at = base.flatMap(({ verts: own }) => {
+    const real = realCorners(ring, own);
+    return own.flatMap((u, i) => {
+      if (!real[i]) return [];
       const m = own.length;
       const leaving = ring.sub(own[(i + 1) % m]!, u);
       const entering = ring.sub(u, own[(i - 1 + m) % m]!);
@@ -281,8 +288,8 @@ function sidesOf(shape: Shape, flip: boolean): Sides {
         enteringAngle: angle(entering),
         off: [c[0] - ox, c[1] - oy] as XY,
       };
-    }),
-  );
+    });
+  });
   const inner = base.map((p) => interiorPoint(p.verts.map((u) => ring.toXY(u))));
   const sides = { flip, base, at, inner };
   const byFlip = SIDES.get(shape) ?? new Map<boolean, Sides>();

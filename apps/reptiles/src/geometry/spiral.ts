@@ -19,7 +19,7 @@ import {
 import { exactPatch, type ExactPatch } from "./exact";
 
 /** Hypersweeper's spiral builders, by mode: (rings, keep) → exact tiles. */
-const SPIRALS: Record<string, (rings: number, keep: number) => ExactTiles> = {
+const SPIRALS: Record<string, (rings: number, keep: number | null) => ExactTiles> = {
   phyllotaxis: phyllotaxisExact,
   klaassen: klaassenExact,
   pentaspiral5: (rings, keep) => pentaSpiralExact(5, rings, keep),
@@ -29,7 +29,9 @@ const SPIRALS: Record<string, (rings: number, keep: number) => ExactTiles> = {
 
 export const SPIRAL_MODES = Object.keys(SPIRALS);
 
-export function spiralPatch(mode: string, rings: number, keep: number): ExactPatch {
+/** The spiral `mode` grown `rings` out, trimmed to its `keep` centremost
+ * tiles — or, with `keep` null, all of it (the patch its marks are read off). */
+export function spiralPatch(mode: string, rings: number, keep: number | null): ExactPatch {
   const build = SPIRALS[mode];
   if (!build) throw new Error(`no spiral ${mode}`);
   return exactPatch(build(rings, keep));

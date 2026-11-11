@@ -10,7 +10,9 @@ some back off.
 - A dropped tile sticks to a corner of what is still uncovered — never
   part-way along a straight edge. While it would stick, a ✓ shows where it
   will land and a dot marks each of its corners that meets the edge (the rim
-  or a placed tile), wherever along it.
+  or a placed tile), wherever along it. Only a tile's real corners stick or
+  get a dot — never a point part-way along one of its sides, where a marked
+  tile's edge is cut (`sidesOf` in `frontier.ts`).
 - Every tray tile starts resting on a flat side. A tile lands only as it is
   held, and there is **one** rotate step, with a control for each direction at
   the end of the tray (R clockwise; Shift+R or E anticlockwise): it turns
@@ -67,12 +69,28 @@ some back off.
     Ammann–Beenker's comes out as his arrows, one kind on every edge; the
     Spectre's one kind, the hat's and the turtle's two (their short and
     long edges), the metatiles' five (one with no way), the Socolar–Taylor
-    tile's ten. A label is drawn as a half disc in its class's colour, a
-    third of the way back from its head (on the middle where it has no way),
-    so two tiles meeting as they should make one disc. An edge is cut first
+    tile's ten. A label is a point a third of the way back from its head (on
+    the middle where it has no way), and a tile's points of one class are
+    joined by a line in the class's colour, leaving each edge square on
+    there — two by one curve, more paired as they come round the outline,
+    three at a hub — so two tiles meeting as they should run one line on
+    across their edge. A class with one point on a tile is a half disc there
+    (two tiles make one disc), and a tile of several pieces, the
+    Socolar–Taylor tile, keeps half discs throughout: lines across its
+    pieces tangle. An edge is cut first
     wherever a corner of the tile across lands on it, every copy of its slot
     alike — the metatiles and the Socolar–Taylor tile's pieces — so a mark
     always lies on a whole edge.
+    **The spirals** (`?level=phyllotaxis.rules`, `?level=pentaspiral5.rules`)
+    are read off their builder's patch the same way, untrimmed — a spiral is
+    no more periodic than an aperiodic tiling, its centre a point unlike any
+    other — each tile framed as the patch's first turned (`spiralFrames`).
+    The phyllotactic hexagon's comes out as one kind of arrow, every one
+    pointing the same way across the tile, so it is told from itself turned
+    half round; the pentagonal spirals' as three classes on the cut-up edges,
+    one with a way. Klaassen's heptagon's patch asks nothing — every edge
+    meets every other either way along it — so it has no rule
+    (`NO_PATCH_RULES`): its seed and its shape force the spiral.
   - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
     colouring repeats more coarsely than the tiling — squares as a
     checkerboard, or in rows of three colours, or hexagons a third of them
@@ -88,16 +106,21 @@ some back off.
     where the window and the tiles round it can be (Penrose's two tilings
     and Ammann–Beenker), else four (the Spectre's, the hat's family's and
     the Socolar–Taylor tile's windows have none in three: a test searches
-    exhaustively). No colouring of an aperiodic tiling reads alike
+    exhaustively), every colour among the window's own tiles, not only at
+    its rim. No colouring of an aperiodic tiling reads alike
     everywhere — a tile's neighbours differ from place to place — so the
     tray holds one tile per distinct marked tile, and `npm run colourings`
     searches for the colouring with the fewest (`chooseColouring`), from 5
     on Ammann–Beenker to 26 on the hat, and writes it to
-    `src/aperiodicColourings.json`. A colouring is a level only with at most
-    five tray tiles (`MAX_COLOURED_TRAY`): past that, a tray of tiles that
-    differ only in the colours round them is a search, not a puzzle — so
-    only Ammann–Beenker's is listed, and one that a window colours with
-    fewer will be by itself.
+    `src/aperiodicColourings.json`. The spirals are coloured the same way
+    (none reads alike either: its centre is unlike its arms), from 5 tray
+    tiles on Klaassen's heptagon to 19 on the five-fold pentagons. A
+    colouring is a level only with at most five tray tiles
+    (`MAX_COLOURED_TRAY`): past that, a tray of tiles that differ only in
+    the colours round them is a search, not a puzzle — so only
+    Ammann–Beenker's and Klaassen's (`?level=klaassen.3apart`, its
+    heptagon's marks no longer symmetric, so it brings a flip control) are
+    listed, and one that a window colours with fewer will be by itself.
   - *The other eight uniform tilings* (`?level=trihex.lines`,
     `?level=trihex.3byshape`, `?level=trunctrihex.lines`) are lined and
     coloured the same way, one tray tile per colour *and shape*: a colouring
@@ -127,14 +150,18 @@ some back off.
     and coloured just as the uniform ones are, and named as the regular
     boards are, one tile each: "V3.12² · linked pairs". On their kites,
     rhombi, pentagons and triangles a line between two edges is a curve
-    leaving each edge's middle square on. The Cairo and V3⁴.6 have lined
-    boards only: no colouring of theirs measures as hard as the plain board.
+    leaving each edge's middle square on. The Cairo has lined boards only:
+    no colouring of its measures as hard as the plain board.
   No marked level measures easier than its plain board: the choice drops
   any that would.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
   marks ask for turning a plain board never needs, and every marked level
-  measures at least as hard as its plain one (a test holds that).
+  measures at least as hard as its plain one (a test holds that). But tray
+  tiles of one outline, marked differently, all rest the same way round —
+  the one that leaves fewest of them fitting as held — so a tray of one
+  shape never shows it at two angles (Klaassen's heptagons, the rhombille's
+  rhombi); a test holds that too.
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
   from still to go (past zero, how many extra). Finishing at all is one star;
   with no more tiles than that, two; and within the level's time limit
@@ -248,7 +275,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 82 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels) and 105 colourings of the uniform, 2-uniform and Laves tilings and Ammann–Beenker in two more, 575 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 86 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels and four of the five spirals) and 107 colourings of the uniform, 2-uniform and Laves tilings, Ammann–Beenker and Klaassen's spiral in two more, 581 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -359,7 +386,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (a quarter of an hour, nearly all the 2-uniform tilings of many classes; `-- <key>…` for only those), and each aperiodic level's colouring into src/aperiodicColourings.json (half a minute)
+npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (a quarter of an hour, nearly all the 2-uniform tilings of many classes; `-- <key>…` for only those), and each aperiodic level's and spiral's colouring into src/aperiodicColourings.json (half a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
@@ -473,7 +500,8 @@ quick way to see the win state.
 - `src/geometry/spiral.ts` — a spiral patch: the tiles Hypersweeper's
   spiral builder keeps (`phyllotaxisExact`, `klaassenExact`,
   `pentaSpiralExact`), read by `exactPatch` into ℤ[ζ10], ℤ[ζ12], or ℤ[ζ14]
-  for the ζ7 spirals.
+  for the ζ7 spirals — or, `keep` null, the whole patch the builder grew,
+  which its marks are read off.
 - `src/geometry/aperiodic.ts` — an aperiodic patch: the centred window
   Hypersweeper's builder keeps (`penroseExact`, `kiteDartExact`,
   `ammannBeenkerExact`, `spectreExact`), read by `exactPatch` into ℤ[ζ10],
@@ -613,12 +641,14 @@ quick way to see the win state.
   rules every shared edge of the 705-tile patch keeps, the one that forbids a
   kite in a dart's notch.
 - `src/patchMarks.ts` — **marks read off an aperiodic patch**, for every
-  aperiodic level (`PATCH_MARKED` in `levels.ts`). `aperiodicFrames` lists
-  the level's whole patch with each tile in its prototile's own order
-  (Ammann–Beenker's from each tile's own first corner,
+  aperiodic level and every spiral (`PATCH_MARKED` in `levels.ts`).
+  `patchFrames` lists the level's whole patch with each tile in its
+  prototile's own order (Ammann–Beenker's from each tile's own first corner,
   `ammannBeenkerFrames` in @tiling/geometry; the Spectre's fourteen corners;
   `hatFrames`; the Socolar–Taylor tile's pieces as `SOCOLAR_TAYLOR` lists
-  them), so edge j of every copy is one slot. `refine` cuts every edge where
+  them; a spiral's from the corner that turns it onto the patch's first
+  tile, `spiralFrames`, its builder's own first corner where that serves),
+  so edge j of every copy is one slot. `refine` cuts every edge where
   a corner of the tile across lands on it, every copy of a slot alike,
   round and round until nothing more is cut; `deriveRules` is a union–find
   with parity over the slots that meet (`meetings`), a class with an odd
@@ -626,7 +656,8 @@ quick way to see the win state.
   `windowCells` reads them off it, counter-clockwise, with each edge's slot
   and the cell across; `chooseColouring` (the script's) is a seeded search,
   DSATUR then Kempe-chain swaps from many starts, for the proper colouring
-  of the window and the cells round it with the fewest tray tiles.
+  of the window and the cells round it with the fewest tray tiles, every
+  colour used inside the window.
   `patchRulesLevel` and `patchColouredLevel` in `levels.ts` build the levels
   (`<plain>.rules`, and `<plain>.<k>apart` where its colouring is few
   enough tray tiles, `MAX_COLOURED_TRAY`); a round Spectre's marked cells take
@@ -719,9 +750,12 @@ quick way to see the win state.
   Penrose's arrows as arcs about the tile's corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —
   chosen so every arc stays inside its tile, a thin rhombus's round its wide
-  corners small, a dart's round its notch the long way); a label as a half
-  disc in its class's colour (`LABEL_COLOURS`, `LABEL_AT`: a third of the
-  way back from its head, a second six classes a fifth). Every tile, tray
+  corners small, a dart's round its notch the long way); a label as a point
+  (`LABEL_AT`: a third of the way back from its head, a second six classes a
+  fifth), a tile's points of one class joined by a cubic leaving each along
+  its inward normal (`LABEL_COLOURS`; a lone one a half disc), as wide as
+  `markUnit`'s `line`, the level's middle side length, so every line of a
+  level is one width. Every tile, tray
   tile, dragged tile and icon is decorated through it; its parts are
   `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:

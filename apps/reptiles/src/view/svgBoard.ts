@@ -30,7 +30,7 @@ import {
   type Loop,
 } from "./curve";
 import type { Puzzle } from "../puzzle";
-import { decorParts, markUnit } from "./decor";
+import { decorParts, markUnit, type MarkUnit } from "./decor";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -53,10 +53,18 @@ function decor(
   loops: readonly Loop[],
   parent: Element,
   map: ((p: XY) => XY) | undefined,
-  unit: number | undefined,
+  unit: MarkUnit | undefined,
 ): void {
   for (const part of decorParts(loops, map, unit))
-    el("path", { d: part.d, class: part.class }, parent);
+    el(
+      "path",
+      {
+        d: part.d,
+        class: part.class,
+        ...(part.width === undefined ? {} : { style: `stroke-width: ${part.width}` }),
+      },
+      parent,
+    );
 }
 
 /** The gap round the board, in tile edges, at zoom 1. */

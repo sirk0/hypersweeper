@@ -2695,18 +2695,18 @@
     "flips": 0
   },
   "rhombille.2oneinthree": {
-    "score": 1.93,
-    "presses": 23,
-    "flips": 12
+    "score": 1.372,
+    "presses": 15,
+    "flips": 8
   },
   "rhombille.2oneinthree2": {
-    "score": 1.651,
-    "presses": 19,
-    "flips": 10
-  },
-  "rhombille.2oneinthree3": {
     "score": 1.122,
     "presses": 15,
+    "flips": 0
+  },
+  "rhombille.3striped": {
+    "score": 1.705,
+    "presses": 23,
     "flips": 0
   },
   "triakis.lines": {
@@ -2779,6 +2779,11 @@
     "presses": 17,
     "flips": 0
   },
+  "floret.3paired": {
+    "score": 1.431,
+    "presses": 17,
+    "flips": 0
+  },
   "deltoidal.lines": {
     "score": 0.458,
     "presses": 8,
@@ -2840,9 +2845,9 @@
     "flips": 0
   },
   "ammannbeenker.3apart": {
-    "score": 1.552,
-    "presses": 12,
-    "flips": 3
+    "score": 1.646,
+    "presses": 15,
+    "flips": 1
   },
   "tile11.rules": {
     "score": 0.9,
@@ -2873,5 +2878,30 @@
     "score": 0.757,
     "presses": 7,
     "flips": 4
+  },
+  "phyllotaxis.rules": {
+    "score": 0.624,
+    "presses": 9,
+    "flips": 0
+  },
+  "klaassen.3apart": {
+    "score": 2.112,
+    "presses": 20,
+    "flips": 1
+  },
+  "pentaspiral5.rules": {
+    "score": 0.888,
+    "presses": 14,
+    "flips": 0
+  },
+  "pentaspiral6.rules": {
+    "score": 0.986,
+    "presses": 12,
+    "flips": 0
+  },
+  "pentaspiral7.rules": {
+    "score": 1.343,
+    "presses": 18,
+    "flips": 0
   }
 }

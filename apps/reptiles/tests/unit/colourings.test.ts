@@ -147,7 +147,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones and the Laves ones as src/colourings.json lists; and gives Penrose's tilings their arrows", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones and the Laves ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels and the spirals rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -302,7 +302,7 @@ describe("colourings", () => {
       "rhombille.lines",
       "rhombille.2oneinthree",
       "rhombille.2oneinthree2",
-      "rhombille.2oneinthree3",
+      "rhombille.3striped",
       "triakis.lines",
       "triakis.linkedpairs",
       "triakis.2oneinthree",
@@ -317,6 +317,7 @@ describe("colourings", () => {
       "prismaticpent.3paired",
       "floret.lines",
       "floret.lines2",
+      "floret.3paired",
       "deltoidal.lines",
       "deltoidal.linkedpairs",
       "deltoidal.2oneinthree",
@@ -336,6 +337,11 @@ describe("colourings", () => {
       "turtle.rules",
       "hatmetatiles.rules",
       "socolartaylor.rules",
+      "phyllotaxis.rules",
+      "klaassen.3apart",
+      "pentaspiral5.rules",
+      "pentaspiral6.rules",
+      "pentaspiral7.rules",
     ]);
     for (const level of COLOURED) {
       // matching rules and colourings: two groups
@@ -409,6 +415,45 @@ describe("colourings", () => {
       }
     },
   );
+
+  it("rests a marked tray's tiles of one outline all the same way round, a mirror image as its mirror", () => {
+    for (const level of COLOURED) {
+      const { ring } = level;
+      // a tray tile's real corners, moved to their centre (N·v − Σ), turned
+      // by ζ^k and mirrored or not
+      const outline = (s: Shape, k: number, flip: boolean): string => {
+        const pts = s.pieces.flatMap(({ verts }) => {
+          const real = realCorners(ring, verts);
+          return verts
+            .filter((_, i) => real[i])
+            .map((v) => ring.mul(ring.zeta(k), flip ? ring.conj(v) : v));
+        });
+        const sum = pts.reduce((a, v) => ring.add(a, v), ring.zero);
+        return pts
+          .map((v) => ring.key(ring.sub(v.map((x) => x * pts.length) as Cyc, sum)))
+          .sort()
+          .join("|");
+      };
+      const held = new Map<string, Set<string>>();
+      for (const tile of level.tiles) {
+        if (tile.pieces.length !== 1) continue;
+        let canon = "";
+        for (const flip of [false, true])
+          for (let k = 0; k < ring.n; k++) {
+            const key = outline(tile, k, flip);
+            if (!canon || key < canon) canon = key;
+          }
+        // a tile and its mirror image in the upright are held alike — but
+        // for one that is its own mirror image, which is only itself turned
+        const own = outline(tile, 0, false);
+        const mirror = outline(tile, ring.n / 2, true);
+        const symmetric = [...Array(ring.n).keys()].some((k) => outline(tile, k, true) === own);
+        const way = symmetric || own < mirror ? own : mirror;
+        held.set(canon, (held.get(canon) ?? new Set()).add(way));
+      }
+      for (const ways of held.values()) expect(ways.size, level.key).toBe(1);
+    }
+  });
 
   it("keeps one of every pair of colourings that make the same tray: rows, not columns too", () => {
     const signatures = COLOURED.map(

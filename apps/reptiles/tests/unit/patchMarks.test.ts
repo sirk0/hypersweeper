@@ -6,8 +6,9 @@ import { piece, posed, regular } from "../../src/geometry/shape";
 import {
   LEVELS,
   MAX_COLOURED_TRAY,
+  NO_PATCH_RULES,
   PATCH_MARKED,
-  aperiodicFrames,
+  patchFrames,
   levelByKey,
   patchWindow,
 } from "../../src/levels";
@@ -55,16 +56,68 @@ describe("labels", () => {
     expect(colours(labelMark(0, true))).toBeNull();
   });
 
-  it("draws a label as a half disc in its class's colour, nearer its head", () => {
-    const sq = (marks: number[]) =>
-      posed(regular(Z4, 4), { rot: 0, flip: false, t: Z4.zero }).map((p) =>
-        piece(p.verts, undefined, marks),
-      );
+  const sq = (marks: number[], t: Cyc = Z4.zero) =>
+    posed(regular(Z4, 4), { rot: 0, flip: false, t }).map((p) => piece(p.verts, undefined, marks));
+
+  it("draws a lone label as a half disc in its class's colour, nearer its head", () => {
     const ahead = decorParts(loopsOf(Z4, sq([labelMark(1, true), 0, 0, 0])));
     const behind = decorParts(loopsOf(Z4, sq([labelMark(1, false), 0, 0, 0])));
     expect(ahead.map((p) => p.class)).toEqual(["decor label label-1"]);
     // the same class the other way: the same disc, at the edge's other end
     expect(ahead[0]!.d).not.toBe(behind[0]!.d);
+  });
+
+  // the points a part's paths start and end at, and the way each leaves
+  const ends = (d: string): { at: string; dir: [number, number] }[] =>
+    d
+      .split("M")
+      .filter(Boolean)
+      .flatMap((seg) => {
+        const n = seg.match(/-?[\d.]+/g)!.map(Number);
+        const [x0, y0] = [n[0]!, n[1]!];
+        const [x1, y1] = [n[n.length - 2]!, n[n.length - 1]!];
+        const [cx, cy] = [n[2]!, n[3]!];
+        const [dx, dy] = [n[n.length - 4]!, n[n.length - 3]!];
+        const key = (x: number, y: number) => `${x.toFixed(3)},${y.toFixed(3)}`;
+        // a spoke ends at its hub, inside: only its start is on an edge
+        const hub = /Q/.test(seg);
+        return [
+          { at: key(x0, y0), dir: [cx - x0, cy - y0] as [number, number] },
+          ...(hub ? [] : [{ at: key(x1, y1), dir: [dx - x1, dy - y1] as [number, number] }]),
+        ];
+      });
+
+  it("joins a class's labels on a tile by a line, running on into the tile across", () => {
+    // two squares side by side; the left one's right edge (1) and top (2)
+    // carry class 1, the right one's left edge (3), its partner, and bottom
+    const left = decorParts(loopsOf(Z4, sq([0, labelMark(1, true), labelMark(1, false), 0])));
+    const right = decorParts(
+      loopsOf(Z4, sq([labelMark(1, true), 0, 0, partner(labelMark(1, true))], [1, 0])),
+    );
+    for (const parts of [left, right]) {
+      expect(parts.map((p) => p.class)).toEqual(["decor label-line label-1"]);
+      expect(parts[0]!.width).toBeGreaterThan(0);
+    }
+    // they meet at one point on the shared edge, x = 1, each square on to it
+    // from its own side: one line across
+    const [a, b] = [ends(left[0]!.d), ends(right[0]!.d)];
+    const shared = a.find((e) => e.at.startsWith("1.000,"))!;
+    const across = b.find((e) => e.at === shared.at)!;
+    expect(across).toBeDefined();
+    expect(Math.abs(shared.dir[1])).toBeLessThan(1e-3);
+    expect(Math.abs(across.dir[1])).toBeLessThan(1e-3);
+    expect(Math.sign(shared.dir[0])).toBe(-Math.sign(across.dir[0]));
+  });
+
+  it("meets three labels of a class at a hub, and pairs four", () => {
+    const three = decorParts(
+      loopsOf(Z4, sq([labelMark(2, null), labelMark(2, null), labelMark(2, null), 0])),
+    );
+    expect(three.map((p) => p.class)).toEqual(["decor label-line label-2"]);
+    expect(three[0]!.d.match(/M/g)).toHaveLength(3);
+    expect(three[0]!.d.match(/Q/g)).toHaveLength(3);
+    const four = decorParts(loopsOf(Z4, sq([1, 1, 1, 1].map(() => labelMark(0, null)))));
+    expect(four[0]!.d.match(/C/g)).toHaveLength(2);
   });
 });
 
@@ -139,7 +192,7 @@ describe("rules read off a patch", () => {
   it.each(PATCH_MARKED)(
     "%s: no edge of its patch is met part-way, and every meeting keeps the rule",
     (key) => {
-      const refined = refine(aperiodicFrames(key));
+      const refined = refine(patchFrames(key));
       expect(cutPartWay(refined)).toBe(false);
       const rules = deriveRules(refined);
       const slot = (at: { cell: number; piece: number; edge: number }) =>
@@ -155,18 +208,65 @@ describe("rules read off a patch", () => {
   );
 });
 
+describe("the spirals' rules", () => {
+  const SPIRALS = ["phyllotaxis", "klaassen", "pentaspiral5", "pentaspiral6", "pentaspiral7"];
+
+  it("frames every tile of a spiral's patch as its first, turned", () => {
+    for (const key of SPIRALS) {
+      const { ring, cells } = patchFrames(key);
+      const first = cells[0]!.pieces[0]!;
+      const edge = (c: Cyc[], i: number) => ring.sub(c[(i + 1) % c.length]!, c[i]!);
+      for (const { pieces } of cells) {
+        const [c] = pieces as [Cyc[]];
+        // the turn that carries the first edge onto this one carries them all
+        const k = [...Array(ring.n).keys()].find((k) =>
+          ring.eq(ring.mul(ring.zeta(k), edge(first, 0)), edge(c, 0)),
+        )!;
+        expect(k, key).toBeDefined();
+        for (let i = 0; i < c.length; i++)
+          expect(ring.eq(ring.mul(ring.zeta(k), edge(first, i)), edge(c, i)), key).toBe(true);
+      }
+    }
+  });
+
+  it("marks every spiral but Klaassen's, whose patch asks nothing", () => {
+    for (const key of SPIRALS) {
+      const rules = [...deriveRules(refine(patchFrames(key))).values()];
+      const trivial = rules.every((r) => r.cls === 0 && r.toEnd === null);
+      expect(trivial, key).toBe(NO_PATCH_RULES.has(key));
+      expect(
+        LEVELS.some((l) => l.key === `${key}.rules`),
+        key,
+      ).toBe(!trivial);
+    }
+    // the phyllotactic hexagon's: one class, every arrow pointing one way
+    // across the tile, so it is told from itself turned half round
+    const phyllo = deriveRules(refine(patchFrames("phyllotaxis")));
+    expect(new Set([...phyllo.values()].map((r) => r.cls))).toEqual(new Set([0]));
+    expect([...phyllo.values()].map((r) => r.toEnd)).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+    ]);
+  });
+});
+
 describe("colourings read off a patch", () => {
   it("lists an aperiodic colouring only where its tray is small enough to play", () => {
     for (const key of PATCH_MARKED) {
       const listed = LEVELS.filter((l) => l.decor?.of === key && !l.decor.rules);
       expect(listed.length, key).toBe(CHOSEN[key]!.tiles <= MAX_COLOURED_TRAY ? 1 : 0);
     }
-    // so far only Ammann–Beenker's, at five tray tiles
+    // so far Ammann–Beenker's, at five tray tiles, and Klaassen's spiral's,
+    // at four
     expect(
       LEVELS.filter((l) => l.decor && PATCH_MARKED.includes(l.decor.of) && !l.decor.rules).map(
         (l) => l.key,
       ),
-    ).toEqual(["ammannbeenker.3apart"]);
+    ).toEqual(["ammannbeenker.3apart", "klaassen.3apart"]);
   });
 
   it.each(PATCH_MARKED)(

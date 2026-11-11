@@ -55,6 +55,7 @@ import {
   curveOnto,
   piece,
   posed,
+  realCorners,
   restFlat,
   selfTurns,
   sides,
@@ -290,34 +291,127 @@ function makeLevel(
   // as ever, and a marked one that fits every cell whichever way it rests —
   // a checkerboard's — does too.)
   if (marks) {
-    for (const kind of kinds) {
-      const mine = sits.filter((s) => s.kind === kind);
-      const first = mine[0]!;
-      if (first.cell.length !== 1) continue;
-      const fitsAsHeld = (shape: Shape, rots: number[]): boolean => {
-        const period = selfTurns(shape).find((k) => k > 0) ?? ring.n;
-        return rots.some((r) => r % period === 0);
-      };
-      if (!fitsAsHeld(kind.shape, kind.ks)) continue;
+    const fitsAsHeld = (shape: Shape, rots: number[]): boolean => {
+      const period = selfTurns(shape).find((k) => k > 0) ?? ring.n;
+      return rots.some((r) => r % period === 0);
+    };
+    // `kind`'s first cell rested from its corner q on: its first longest
+    // side from there that the whole tile lies above
+    const restAt = (kind: Kind, q: number): Shape => {
+      const first = sits.find((s) => s.kind === kind)!;
       const verts = first.cell[0]!;
       const own = marks[first.i]![0]!;
-      const m = verts.length;
-      for (let q = 1; q < m; q++) {
-        const shape = restFlat(
-          ring,
-          [[...verts.slice(q), ...verts.slice(0, q)]],
-          [[...own.slice(q), ...own.slice(0, q)]],
-        );
-        const mirrored = { ring, pieces: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
-        const rots = mine.map((s) => turnsOnto(s.flip ? mirrored : shape, s.cell, marks[s.i])[0]);
-        if (rots.some((r) => r === undefined)) continue;
-        if (fitsAsHeld(shape, rots as number[])) continue;
-        kind.shape = shape;
-        kind.mirrored = mirrored;
-        kind.ks = rots as number[];
-        mine.forEach((s, n) => (s.rot = rots[n]!));
+      return restFlat(
+        ring,
+        [[...verts.slice(q), ...verts.slice(0, q)]],
+        [[...own.slice(q), ...own.slice(0, q)]],
+      );
+    };
+    // how each of `kind`'s cells sits for its tray tile `shape`, each flipped
+    // or not as it was: null if one does not
+    const rotsFor = (kind: Kind, shape: Shape, mirrored: Shape): number[] | null => {
+      const rots = sits
+        .filter((s) => s.kind === kind)
+        .map((s) => turnsOnto(s.flip ? mirrored : shape, s.cell, marks[s.i])[0]);
+      return rots.some((r) => r === undefined) ? null : (rots as number[]);
+    };
+    const settle = (kind: Kind, shape: Shape, mirrored: Shape, rots: number[]): void => {
+      kind.shape = shape;
+      kind.mirrored = mirrored;
+      kind.ks = rots;
+      sits.filter((s) => s.kind === kind).forEach((s, n) => (s.rot = rots[n]!));
+    };
+    const mirrorOf = (shape: Shape): Shape => ({
+      ring,
+      pieces: posed(shape, { rot: 0, flip: true, t: ring.zero }),
+    });
+    for (const kind of kinds) {
+      const first = sits.find((s) => s.kind === kind)!;
+      if (first.cell.length !== 1) continue;
+      if (!fitsAsHeld(kind.shape, kind.ks)) continue;
+      for (let q = 1; q < first.cell[0]!.length; q++) {
+        const shape = restAt(kind, q);
+        const mirrored = mirrorOf(shape);
+        const rots = rotsFor(kind, shape, mirrored);
+        if (!rots || fitsAsHeld(shape, rots)) continue;
+        settle(kind, shape, mirrored, rots);
         break;
       }
+    }
+    // …but tiles of one outline, marked differently, all rest the same way
+    // round — the one that leaves fewest of them fitting as held, then the
+    // one most of them rest at already: a tray of one shape at two angles
+    // reads as two shapes (Klaassen's heptagons, the rhombille's rhombi). A
+    // tile and its mirror image are one outline, and rest as mirror images
+    // side by side do (the kisrhombille's triangles). An outline is a tile's
+    // real corners, moved to their centre: N·v − Σ
+    const outlineAt = (shape: Shape, k = 0, flip = false): string => {
+      const pts = shape.pieces.flatMap(({ verts }) => {
+        const real = realCorners(ring, verts);
+        return verts
+          .filter((_, i) => real[i])
+          .map((v) => ring.mul(ring.zeta(k), flip ? ring.conj(v) : v));
+      });
+      const sum = pts.reduce((a, v) => ring.add(a, v), ring.zero);
+      return pts
+        .map((v) => ring.key(ring.sub(v.map((x) => x * pts.length) as Cyc, sum)))
+        .sort()
+        .join("|");
+    };
+    // how a tray tile is held, the same for a tile and its mirror image in
+    // the upright (x ↦ −x: conjugate, then turn half round) — but for an
+    // outline that is its own mirror image, whose mirror image is only
+    // itself turned: that must be held as the rest are
+    const heldAt = (shape: Shape): string => {
+      const own = outlineAt(shape);
+      const symmetric = [...Array(ring.n).keys()].some((k) => outlineAt(shape, k, true) === own);
+      if (symmetric) return own;
+      const mirror = outlineAt(shape, ring.n / 2, true);
+      return own < mirror ? own : mirror;
+    };
+    const outlines = new Map<string, Kind[]>();
+    for (const kind of kinds) {
+      if (kind.shape.pieces.length !== 1) continue;
+      let canon = "";
+      for (const flip of [false, true])
+        for (let k = 0; k < ring.n; k++) {
+          const key = outlineAt(kind.shape, k, flip);
+          if (!canon || key < canon) canon = key;
+        }
+      outlines.set(canon, [...(outlines.get(canon) ?? []), kind]);
+    }
+    for (const group of outlines.values()) {
+      const held = group.map((kind) => heldAt(kind.shape));
+      if (new Set(held).size < 2) continue;
+      // every way each kind can rest, by the outline it rests at
+      const ways = group.map((kind) => {
+        const byOutline = new Map<string, Shape>();
+        const m = sits.find((s) => s.kind === kind)!.cell[0]!.length;
+        for (let q = 0; q < m; q++) {
+          const shape = restAt(kind, q);
+          const at = heldAt(shape);
+          if (!byOutline.has(at)) byOutline.set(at, shape);
+        }
+        return byOutline;
+      });
+      let best: { fit: number; already: number; plan: [Shape, Shape, number[]][] } | null = null;
+      for (const at of ways[0]!.keys()) {
+        if (!ways.every((w) => w.has(at))) continue;
+        const plan: [Shape, Shape, number[]][] = [];
+        for (const [n, kind] of group.entries()) {
+          const shape = ways[n]!.get(at)!;
+          const mirrored = mirrorOf(shape);
+          const rots = rotsFor(kind, shape, mirrored);
+          if (!rots) break;
+          plan.push([shape, mirrored, rots]);
+        }
+        if (plan.length < group.length) continue;
+        const fit = plan.filter(([shape, , rots]) => fitsAsHeld(shape, rots)).length;
+        const already = held.filter((h) => h === at).length;
+        if (!best || fit < best.fit || (fit === best.fit && already > best.already))
+          best = { fit, already, plan };
+      }
+      if (best) group.forEach((kind, n) => settle(kind, ...best.plan[n]!));
     }
   }
   const area = (s: Shape): number =>
@@ -1044,16 +1138,18 @@ function socolarTaylorLevel(rings: number): Level {
   };
 }
 
-/** Every aperiodic level's whole patch — the one its window is cut from —
- * each tile in its prototile's own order, for the matching rules and
- * colourings read off it (src/patchMarks.ts): Ammann–Beenker's from each
+/** Every aperiodic or spiral level's whole patch — the one its window is
+ * cut from — each tile in its prototile's own order, for the matching rules
+ * and colourings read off it (src/patchMarks.ts): Ammann–Beenker's from each
  * tile's own first corner (`ammannBeenkerFrames`), the Spectre's fourteen
  * corners, its flat one kept, as its builder lays its outline, the hat's
  * family's as `hatFrames` lists them, the Socolar–Taylor tile's pieces as
- * `SOCOLAR_TAYLOR` lists them. Penrose's rhombi and his kites and darts are
- * cut nowhere part-way, so only their kinds matter: told apart by their
- * diagonals. */
-export function aperiodicFrames(key: string): FramedPatch {
+ * `SOCOLAR_TAYLOR` lists them, and a spiral's as `spiralFrames` finds them.
+ * Penrose's rhombi and his kites and darts are cut nowhere part-way, so only
+ * their kinds matter: told apart by their diagonals. */
+export function patchFrames(key: string): FramedPatch {
+  const spiral = SPIRALS.find(([mode]) => mode === key);
+  if (spiral) return spiralFrames(spiral[0], spiral[1]);
   const aperiodic = APERIODIC.find(([k]) => k === key);
   if (aperiodic) {
     const [, mode, depth] = aperiodic;
@@ -1102,6 +1198,34 @@ export function aperiodicFrames(key: string): FramedPatch {
       })),
     };
   throw new Error(`no aperiodic patch for ${key}`);
+}
+
+/** A spiral's whole patch — its builder grown `rings` out, untrimmed — each
+ * tile listed from the corner that carries it onto the patch's first tile by
+ * a turn: the builder lays every tile of a spiral as one tile turned and
+ * moved (the pentagonal spirals' two halves of a hexagon a half turn apart),
+ * and none mirrored. Each tile's edges are matched to the first tile's
+ * exactly, the builder's own first corner taken where it serves (the
+ * phyllotactic hexagon's 72° corner, Klaassen's heptagon's tip), so a tile
+ * with a turn of its own is still framed as its builder framed it. */
+function spiralFrames(mode: string, rings: number): FramedPatch {
+  const { ring, cells } = spiralPatch(mode, rings, null);
+  const edges = (c: readonly Cyc[]): Cyc[] => c.map((v, i) => ring.sub(c[(i + 1) % c.length]!, v));
+  const first = edges(cells[0]!);
+  const m = first.length;
+  return {
+    ring,
+    cells: cells.map((c) => {
+      const own = edges(c);
+      for (let s = 0; s < m; s++)
+        for (let k = 0; k < ring.n; k++) {
+          const z = ring.zeta(k);
+          if (first.every((e, i) => ring.eq(ring.mul(z, e), own[(i + s) % m]!)))
+            return { kind: 0, pieces: [[...c.slice(s), ...c.slice(0, s)]] };
+        }
+      throw new Error(`${mode}: a tile is not the first one turned`);
+    }),
+  };
 }
 
 // -- a tiling's boards ---------------------------------------------------------
@@ -1574,13 +1698,23 @@ function kiteDartRulesLevel(plain: Level): Level {
 
 // -- matching rules and colourings read off an aperiodic patch -----------------
 
-/** The aperiodic levels marked from their own patch (src/patchMarks.ts):
- * every one, but that Penrose's two keep his own arrows for their rules. */
+/** The levels marked from their own patch (src/patchMarks.ts): every
+ * aperiodic one and every spiral — a spiral is no more periodic than they
+ * are, its centre a point unlike any other. */
 export const PATCH_MARKED: string[] = [
   ...APERIODIC.map(([key]) => key),
   ...HAT_FAMILY.map(([key]) => key),
   "socolartaylor",
+  ...SPIRALS.map(([mode]) => mode),
 ];
+
+/** The patch-marked levels with no rule read off their patch: Penrose's two
+ * keep his own arrows for theirs, and Klaassen's heptagon's patch asks
+ * nothing — every edge meets every other, either way along it (one class
+ * with no way, `deriveRules`), so its rule would mark every edge alike. A
+ * seed and the tile's shape force that spiral; no rule of this shape adds
+ * to them. */
+export const NO_PATCH_RULES = new Set(["penrose", "kitedart", "klaassen"]);
 
 /** Each one's colouring, as `npm run colourings` chose it. */
 const APERIODIC_COLOURINGS = aperiodicColouringsData as Record<string, ChosenColouring>;
@@ -1604,7 +1738,7 @@ const PATCH_WINDOWS = new Map<string, PatchWindow>();
 export function patchWindow(plain: Level): PatchWindow {
   const hit = PATCH_WINDOWS.get(plain.key);
   if (hit) return hit;
-  const framed = aperiodicFrames(plain.key);
+  const framed = patchFrames(plain.key);
   const refined = refine(framed);
   const { window, shift } = locate(
     framed.ring,
@@ -1754,12 +1888,13 @@ export const PAINTED: string[] = [
 
 /** The marked levels made otherwise than from src/colourings.json, after
  * the paintings, each by its key: Penrose's tilings with his arrows, then
- * every aperiodic level's matching rules and colouring read off its patch. */
+ * every aperiodic level's and spiral's matching rules and colouring read off
+ * its patch. */
 const MARKED_BY_HAND: [key: string, of: string, make: (plain: Level) => Level][] = [
   ["penrose.rules", "penrose", penroseRulesLevel],
   ["kitedart.rules", "kitedart", kiteDartRulesLevel],
   ...PATCH_MARKED.flatMap((of): [string, string, (plain: Level) => Level][] => [
-    ...(of === "penrose" || of === "kitedart"
+    ...(NO_PATCH_RULES.has(of)
       ? []
       : [[`${of}.rules`, of, patchRulesLevel] as [string, string, (plain: Level) => Level]]),
     ...(playableColouring(of)
@@ -1850,7 +1985,7 @@ const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
  * Every tiling's first board, built — the plain ones section by section
  * (`SECTIONS`), then the marked ones: each painted board's paintings as
  * `src/colourings.json` lists them, Penrose's tilings with their arrows, and
- * every aperiodic level's rules and colouring read off its patch.
+ * every aperiodic level's and spiral's rules and colouring read off its patch.
  * Seconds of work: the game never does it, but reads the order, names and
  * marks it finds from `src/levelIndex.json` (`npm run levels`); the tests
  * build it to hold that file to it.

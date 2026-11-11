@@ -3,7 +3,8 @@
 // An aperiodic level is a window onto a patch its builder grows far past it
 // (the Penrose wheel's 430 rhombi round a 29-rhombus window). That patch is
 // the tiling, as far as anything here knows it, so both kinds of marks are
-// read off it:
+// read off it. A spiral is read the same way: grown past its window, it is
+// no more periodic than they are — its centre is a point unlike any other.
 //
 // - **Matching rules.** Every tile of the patch is listed in its prototile's
 //   own order (`FramedPatch`): edge j of every copy is the same edge of the
@@ -514,8 +515,8 @@ function correspondences(
 
 /**
  * The proper colouring of the window and the cells round it with the
- * fewest distinct marked tiles in the window: three colours where some
- * three-colouring is found, else four. A seeded search — Kempe-chain swaps,
+ * fewest distinct marked tiles in the window, every colour among them:
+ * three colours where some such three-colouring is found, else four. A seeded search — Kempe-chain swaps,
  * which keep a colouring proper, from many starts — so the same every run;
  * what it finds is written to src/aperiodicColourings.json and the game
  * reads that.
@@ -543,7 +544,12 @@ export function chooseColouring(
   const acrossOf = cells.map((cell) =>
     cell.pieces.flatMap((p) => p.across.map((c) => (c < 0 ? -1 : index.get(c)!))),
   );
-  const tiles = (col: number[]): number => {
+  // a colouring that leaves a colour out of the window paints its tray in
+  // fewer colours than it is named for, the missing one only a mark at the
+  // rim (Klaassen's window alone takes two): one is never chosen
+  const MISSING = 1000;
+  const tiles = (col: number[], k: number): number => {
+    const used = new Set(col.slice(0, cells.length)).size;
     const seen = new Set<string>();
     cells.forEach((_, w) => {
       const { kind, maps } = kinds[w]!;
@@ -555,7 +561,7 @@ export function chooseColouring(
       }
       seen.add(`${kind}|${col[w]}|${best}`);
     });
-    return seen.size;
+    return seen.size + MISSING * (k - used);
   };
   // how unequal the colours are: a tie-break among as many tiles
   const spread = (col: number[], k: number): number => {
@@ -597,7 +603,7 @@ export function chooseColouring(
       const rand = random(seed * 1000 + start);
       const col = dsatur(k, rand);
       if (!col) continue;
-      let cost = tiles(col);
+      let cost = tiles(col, k);
       let even = spread(col, k);
       for (let move = 0; move < moves; move++) {
         // a Kempe chain: v's colour and another, swapped on v's component
@@ -613,7 +619,7 @@ export function chooseColouring(
               chain.push(u);
             }
         for (const u of chain) col[u] = col[u] === x ? y : x;
-        const now = tiles(col);
+        const now = tiles(col, k);
         const nowEven = spread(col, k);
         // keep a move no worse (a sideways one too, to wander), and now and
         // then a worse one
@@ -626,7 +632,7 @@ export function chooseColouring(
       if (!best || cost < best.tiles || (cost === best.tiles && even < best.spread))
         best = { col: [...col], tiles: cost, spread: even };
     }
-    if (best) {
+    if (best && best.tiles < MISSING) {
       // colours named as they first come
       const names = new Map<number, number>();
       const named = best.col.map((c) => {

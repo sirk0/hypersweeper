@@ -24,17 +24,21 @@
 //   there — as the 3⁶ lines go round a triangle's corner — dark for one kind
 //   and blue for the other. A tile's arcs run on into its neighbours' only
 //   where their arrows agree.
-// - A label — a matching rule read off an aperiodic tiling's own patch
-//   (src/patchMarks.ts): a half disc in its class's colour, a third of the
-//   way back from its head (a second six classes a fifth), or on the
-//   middle of its edge where it has no way. Two tiles meeting as they should
-//   make one disc; the wrong class or the wrong way, two halves apart.
+// - A label — a matching rule read off an aperiodic tiling's or a spiral's
+//   own patch (src/patchMarks.ts): a point on its edge a third of the way
+//   back from its head (a second six classes a fifth), or on the middle of
+//   its edge where it has no way, and the tile's points of one class joined
+//   by a line in the class's colour, leaving each edge square on there — so
+//   two tiles meeting as they should run one line on across their edge; the
+//   wrong class or the wrong way, two lines apart. A class with one point on
+//   a tile is a half disc there instead: two tiles together make one disc.
 //
 // Each part is a path's `d` and class, in the coordinates `map` gives; the
 // caller makes the elements. Nothing here is hit-tested: the classes carry
 // `pointer-events: none`.
 
-import { centroid, type XY } from "../geometry/shape";
+import type { Cyc } from "../geometry/cyclotomic";
+import { centroid, realCorners, type XY } from "../geometry/shape";
 import { END, LINE, arrow, colours, label } from "../geometry/marks";
 import { alongEdge, type Loop } from "./curve";
 import { PATCH_MARKED, type Level } from "../levels";
@@ -42,6 +46,9 @@ import { PATCH_MARKED, type Level } from "../levels";
 export interface DecorPart {
   d: string;
   class: string;
+  /** A line's width, in the mapped coordinates, where it is set by the
+   * level's edge length rather than by the stylesheet (a label's line). */
+  width?: number;
 }
 
 /** A colour's or a cut line's half disc: its radius, as a share of its
@@ -65,6 +72,9 @@ const ARC_AT = [0, 0.3, 0.618, 0.382, 0.382];
  * its class is. */
 const LABEL_COLOURS = 6;
 const LABEL_AT = [1 / 3, 0.2, 0.42];
+/** A label's line: its width, as a share of the level's edge length (or,
+ * without one, of the tile's mean edge). */
+const LABEL_LINE = 0.07;
 
 const fmt = (n: number): string => (Math.abs(n) < 1e-9 ? "0" : n.toFixed(4));
 const pt = ([x, y]: XY): string => `${fmt(x)} ${fmt(y)}`;
@@ -156,28 +166,45 @@ function halfDiscAlong([ux, uy]: XY, at: XY, r: number, map: (p: XY) => XY): str
   return `M${pt(p0)}A${fmt(mr)} ${fmt(mr)} 0 0 ${sweep} ${pt(p1)}Z`;
 }
 
-const UNITS = new WeakMap<Level, number | undefined>();
+/** What a level's marks are sized by (`decorParts`): `disc`, the edge
+ * length its half discs are, and `line`, the one its labels' lines are. */
+export interface MarkUnit {
+  disc?: number | undefined;
+  line?: number | undefined;
+}
 
-/** The edge length a level's half discs are sized by (`decorParts`): on an
- * aperiodic level marked from its patch, the middle of its tray tiles' edge
- * lengths, so a disc on an edge cut short is as big as its tile's others;
- * undefined, each disc sized by its own edge, on every other level. */
-export function markUnit(level: Level): number | undefined {
+const UNITS = new WeakMap<Level, MarkUnit | undefined>();
+
+/** The middle of `lengths`. */
+const median = (lengths: number[]): number | undefined =>
+  [...lengths].sort((a, b) => a - b)[Math.floor(lengths.length / 2)];
+
+/** What a level's marks are sized by (`decorParts`), on a level marked from
+ * its patch: its half discs by the middle of its tray tiles' edge lengths,
+ * so a disc on an edge cut short is as big as its tile's others; its lines
+ * by the middle of their sides' — corner to real corner, the cuts left out
+ * (the metatiles' edges are cut short all over) — so every line of the level
+ * is one width, and two tiles' meet as one. Nothing on every other level:
+ * each disc is sized by its own edge. */
+export function markUnit(level: Level): MarkUnit | undefined {
   if (UNITS.has(level)) return UNITS.get(level);
-  let unit: number | undefined;
+  let unit: MarkUnit | undefined;
   if (level.decor && PATCH_MARKED.includes(level.decor.of)) {
-    const lengths = level.tiles
-      .flatMap((t) =>
-        t.pieces.flatMap(({ verts }) =>
-          verts.map((v, i) => {
-            const [ax, ay] = level.ring.toXY(v);
-            const [bx, by] = level.ring.toXY(verts[(i + 1) % verts.length]!);
-            return Math.hypot(bx - ax, by - ay);
-          }),
-        ),
-      )
-      .sort((a, b) => a - b);
-    unit = lengths[Math.floor(lengths.length / 2)];
+    const { ring } = level;
+    const length = (a: Cyc, b: Cyc): number => {
+      const [[ax, ay], [bx, by]] = [ring.toXY(a), ring.toXY(b)];
+      return Math.hypot(bx - ax, by - ay);
+    };
+    const pieces = level.tiles.flatMap((t) => t.pieces);
+    const edges = pieces.flatMap(({ verts }) =>
+      verts.map((v, i) => length(v, verts[(i + 1) % verts.length]!)),
+    );
+    const sides = pieces.flatMap(({ verts }) => {
+      const real = realCorners(ring, verts);
+      const at = verts.filter((_, i) => real[i]);
+      return at.map((v, i) => length(v, at[(i + 1) % at.length]!));
+    });
+    unit = { disc: median(edges), line: median(sides) };
   }
   UNITS.set(level, unit);
   return unit;
@@ -185,21 +212,28 @@ export function markUnit(level: Level): number | undefined {
 
 /** The marks drawn on `loops` (a tile's, each with its marks), mapped by
  * `map`: half discs and a path of lines. Empty for an unmarked tile. With
- * `unit` — a level's own edge length, the same for every tile of it
- * (`markUnit`) — a half disc is sized by that, not by its edge, but for
+ * `sizes` — a level's own edge lengths, the same for every tile of it
+ * (`markUnit`) — a half disc is sized by `disc`, not by its edge, but for
  * staying on its edge: an edge cut short (a metatile's, where a corner of the
- * tile across lands) keeps a disc as big as its tile's others. A half disc
- * on a round edge sits on its arc. */
+ * tile across lands) keeps a disc as big as its tile's others; and a label's
+ * line is as wide as `line` says. A half disc on a round edge sits on its
+ * arc. */
 export function decorParts(
   loops: readonly Loop[],
   map: (p: XY) => XY = (p) => p,
-  unit?: number,
+  sizes?: MarkUnit,
 ): DecorPart[] {
+  const unit = sizes?.disc;
   const discs = new Map<string, string[]>();
   const add = (cls: string, d: string): void => {
     discs.set(cls, [...(discs.get(cls) ?? []), d]);
   };
   const lines: string[] = [];
+  // how far the map stretches a length: a label's line is as wide on a tray
+  // tile or an icon as on the board, for its size
+  const [o, x1] = [map([0, 0]), map([1, 0])];
+  const stretch = Math.hypot(x1[0] - o[0], x1[1] - o[1]);
+  const widths = new Map<string, number>();
   for (const { xy, marks, curve } of loops) {
     if (!marks) continue;
     const m = xy.length;
@@ -215,6 +249,7 @@ export function decorParts(
       return halfDiscAlong(dir, at, r, map);
     };
     const lined: number[] = [];
+    const labelled: { i: number; t: number; cls: number; at: XY; n: XY }[] = [];
     const crossings = new Map<number, { kind: number; at: XY }>();
     marks.forEach((mark, i) => {
       const a = xy[i]!;
@@ -231,7 +266,9 @@ export function decorParts(
       if (tag) {
         // a share back from its head: from b, or from a
         const f = tag.forward === null ? 0.5 : LABEL_AT[Math.floor(tag.cls / LABEL_COLOURS) % 3]!;
-        add(`decor label label-${tag.cls % LABEL_COLOURS}`, disc(i, tag.forward ? 1 - f : f, DOT));
+        const t = tag.forward ? 1 - f : f;
+        const { at, dir } = alongEdge(a, b, curve?.[i] ?? 0, t);
+        labelled.push({ i, t, cls: tag.cls, at, n: [-dir[1], dir[0]] });
         return;
       }
       const way = arrow(mark);
@@ -249,6 +286,78 @@ export function decorParts(
       const colour = pair && pair.own !== pair.other ? pair.other : null;
       if (colour !== null) add(`decor band paint-${colour}`, disc(i, 0.5, HALF));
     });
+    // labels: each class's marks on this tile joined, so that a tile's
+    // lines run on into its neighbours' where they meet as they should — a
+    // curve leaving each edge square on, through the point the half disc
+    // marked, so two tiles' lines meet there along one normal. Two marks of
+    // a class are one curve; more are paired as they come round the outline
+    // (neighbours' pairs never cross), and an odd three meet at a hub; a
+    // lone one stays a half disc, as a line never ends in a tile.
+    // a tile of several pieces (the Socolar–Taylor tile's nineteen, ten
+    // classes among them) keeps its half discs: lines across it would tangle
+    if (loops.length > 1)
+      for (const { i, t, cls } of labelled)
+        add(`decor label label-${cls % LABEL_COLOURS}`, disc(i, t, DOT));
+    else if (labelled.length) {
+      const edge =
+        sizes?.line ??
+        xy.reduce((sum, a, i) => sum + Math.hypot(...sub(xy[(i + 1) % m]!, a)), 0) / m;
+      type Mark = (typeof labelled)[number];
+      const gap = (p: Mark, q: Mark): number => Math.hypot(...sub(p.at, q.at));
+      // square on to each edge: each arm along its inward normal, a share
+      // of the gap — a curve between two marks near one corner stays small
+      const between = (p: Mark, q: Mark): string => {
+        const h = 0.45 * gap(p, q);
+        const c1: XY = [p.at[0] + p.n[0] * h, p.at[1] + p.n[1] * h];
+        const c2: XY = [q.at[0] + q.n[0] * h, q.at[1] + q.n[1] * h];
+        return `M${pt(map(p.at))}C${pt(map(c1))} ${pt(map(c2))} ${pt(map(q.at))}`;
+      };
+      const hub = (three: Mark[]): string => {
+        const c: XY = [
+          three.reduce((sum, l) => sum + l.at[0], 0) / 3,
+          three.reduce((sum, l) => sum + l.at[1], 0) / 3,
+        ];
+        return three
+          .map((l) => {
+            const h = 0.6 * Math.hypot(...sub(c, l.at));
+            const q: XY = [l.at[0] + l.n[0] * h, l.at[1] + l.n[1] * h];
+            return `M${pt(map(l.at))}Q${pt(map(q))} ${pt(map(c))}`;
+          })
+          .join("");
+      };
+      const byCls = new Map<number, Mark[]>();
+      for (const l of labelled) byCls.set(l.cls, [...(byCls.get(l.cls) ?? []), l]);
+      for (const [cls, list] of byCls) {
+        const colour = cls % LABEL_COLOURS;
+        if (list.length === 1) {
+          add(`decor label label-${colour}`, disc(list[0]!.i, list[0]!.t, DOT));
+          continue;
+        }
+        // in order round the outline, from whichever mark makes the pairs
+        // shortest in all (floats: a drawing, the first of a tie)
+        const k = list.length;
+        let best: { cost: number; d: string } | null = null;
+        for (let start = 0; start < k; start++) {
+          const run = [...list.slice(start), ...list.slice(0, start)];
+          let cost = 0;
+          let d = "";
+          let r = 0;
+          if (k % 2) {
+            cost += gap(run[0]!, run[1]!) + gap(run[1]!, run[2]!);
+            d += hub(run.slice(0, 3));
+            r = 3;
+          }
+          for (; r + 1 < k; r += 2) {
+            cost += gap(run[r]!, run[r + 1]!);
+            d += between(run[r]!, run[r + 1]!);
+          }
+          if (!best || cost < best.cost - 1e-9) best = { cost, d };
+        }
+        const cls_ = `decor label-line label-${colour}`;
+        add(cls_, best!.d);
+        widths.set(cls_, LABEL_LINE * edge * stretch);
+      }
+    }
     const mid = (i: number): XY => {
       const a = xy[i]!;
       const b = xy[(i + 1) % m]!;
@@ -345,7 +454,12 @@ export function decorParts(
   }
   const out: DecorPart[] = [...discs.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([cls, ds]) => ({ d: ds.join(""), class: cls }));
+    .map(([cls, ds]) => {
+      const width = widths.get(cls);
+      return width === undefined
+        ? { d: ds.join(""), class: cls }
+        : { d: ds.join(""), class: cls, width };
+    });
   if (lines.length) out.push({ d: lines.join(""), class: "decor line" });
   return out;
 }

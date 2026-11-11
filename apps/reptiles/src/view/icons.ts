@@ -6,7 +6,7 @@
 import { centroidOf, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
-import { decorParts, markUnit } from "./decor";
+import { decorParts, markUnit, type MarkUnit } from "./decor";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -82,12 +82,13 @@ function decorate(
   svg: SVGSVGElement,
   loops: ReturnType<typeof loopsOf>,
   map: (p: XY) => XY,
-  unit: number | undefined,
+  unit: MarkUnit | undefined,
 ): void {
   for (const part of decorParts(loops, map, unit)) {
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", part.d);
     path.setAttribute("class", part.class);
+    if (part.width !== undefined) path.setAttribute("style", `stroke-width: ${part.width}`);
     svg.appendChild(path);
   }
 }
