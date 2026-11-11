@@ -3037,6 +3037,208 @@
     "painting": 4
   },
   {
+    "key": "stackedbond.lines",
+    "label": "Stacked bond, lines",
+    "name": "Stacked bond · lines",
+    "group": "rules",
+    "decor": { "of": "stackedbond", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "stackedbond.2oneinthree",
+    "label": "Stacked bond, 2 colours, one in three",
+    "name": "Stacked bond · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "stackedbond",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 1
+  },
+  {
+    "key": "stackedbond.2oneinthree2",
+    "label": "Stacked bond, 2 colours, one in three II",
+    "name": "Stacked bond · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "stackedbond",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 2
+  },
+  {
+    "key": "stackedbond.2oneinthree3",
+    "label": "Stacked bond, 2 colours, one in three III",
+    "name": "Stacked bond · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "stackedbond",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 3
+  },
+  {
+    "key": "runningbond.lines",
+    "label": "Running bond, lines",
+    "name": "Running bond · lines",
+    "group": "rules",
+    "decor": { "of": "runningbond", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "runningbond.lines2",
+    "label": "Running bond, lines II",
+    "name": "Running bond · lines II",
+    "group": "rules",
+    "decor": { "of": "runningbond", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "runningbond.2oneinthree",
+    "label": "Running bond, 2 colours, one in three",
+    "name": "Running bond · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "runningbond",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "runningbond.2oneinthree2",
+    "label": "Running bond, 2 colours, one in three II",
+    "name": "Running bond · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "runningbond",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "runningbond.2oneinthree3",
+    "label": "Running bond, 2 colours, one in three III",
+    "name": "Running bond · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "runningbond",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "basketweave.lines",
+    "label": "Basket weave, lines",
+    "name": "Basket weave · lines",
+    "group": "rules",
+    "decor": { "of": "basketweave", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "basketweave.lines2",
+    "label": "Basket weave, lines II",
+    "name": "Basket weave · lines II",
+    "group": "rules",
+    "decor": { "of": "basketweave", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "basketweave3.2oneinthree",
+    "label": "Basket weave 3x3, 2 colours, one in three",
+    "name": "Basket weave 3x3 · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "basketweave3",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 0
+  },
+  {
+    "key": "basketweave3.3mixed",
+    "label": "Basket weave 3x3, 3 colours, mixed",
+    "name": "Basket weave 3x3 · 3 colours, mixed",
+    "group": "colourings",
+    "decor": { "of": "basketweave3", "colours": 3, "rules": false, "label": "3 colours, mixed" },
+    "painting": 1
+  },
+  {
+    "key": "basketweave3.3mixed2",
+    "label": "Basket weave 3x3, 3 colours, mixed II",
+    "name": "Basket weave 3x3 · 3 colours, mixed II",
+    "group": "colourings",
+    "decor": { "of": "basketweave3", "colours": 3, "rules": false, "label": "3 colours, mixed II" },
+    "painting": 2
+  },
+  {
+    "key": "herringbone.lines",
+    "label": "Herringbone, lines",
+    "name": "Herringbone · lines",
+    "group": "rules",
+    "decor": { "of": "herringbone", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "herringbone.branchinglines",
+    "label": "Herringbone, branching lines",
+    "name": "Herringbone · branching lines",
+    "group": "rules",
+    "decor": { "of": "herringbone", "colours": 1, "rules": true, "label": "branching lines" },
+    "painting": 1
+  },
+  {
+    "key": "herringbone.2oneinthree",
+    "label": "Herringbone, 2 colours, one in three",
+    "name": "Herringbone · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "herringbone",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "herringbone.2oneinthree2",
+    "label": "Herringbone, 2 colours, one in three II",
+    "name": "Herringbone · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "herringbone",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "herringbone.2oneinthree3",
+    "label": "Herringbone, 2 colours, one in three III",
+    "name": "Herringbone · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "herringbone",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 4
+  },
+  {
     "key": "penrose.rules",
     "label": "Penrose rhombi, matching rules",
     "name": "Penrose rhombi · matching rules",

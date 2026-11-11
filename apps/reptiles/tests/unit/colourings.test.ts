@@ -8,7 +8,7 @@ import {
 } from "../../src/colouringChoice";
 import { latticeOf, traySignature } from "../../src/colourings";
 import { measure } from "../../src/difficulty";
-import { cyclotomic, type Cyc } from "../../src/geometry/cyclotomic";
+import { cyclotomic, strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
 import {
   BLANK,
@@ -41,7 +41,11 @@ import {
   COLOURED as COLOURED_LATTICES,
   LAVES,
   LEVELS,
+  RECTANGLES,
   TWO_ISOHEDRAL_KEYED,
+  makeFirstBoard,
+  paintBase,
+  periodicContext,
   TWO_UNIFORM,
   UNIFORM,
   levelByKey,
@@ -156,7 +160,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones and the 2-isohedral ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones, the 2-isohedral ones and the congruent-rectangle bonds as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -419,6 +423,25 @@ describe("colourings", () => {
       "dodecarhombitrihexdual.2oneinthreebyshape",
       "dodecarhombitrihexdual.2oneinthreebyshape2",
       "dodecarhombitrihexdual.2oneinthree",
+      "stackedbond.lines",
+      "stackedbond.2oneinthree",
+      "stackedbond.2oneinthree2",
+      "stackedbond.2oneinthree3",
+      "runningbond.lines",
+      "runningbond.lines2",
+      "runningbond.2oneinthree",
+      "runningbond.2oneinthree2",
+      "runningbond.2oneinthree3",
+      "basketweave.lines",
+      "basketweave.lines2",
+      "basketweave3.2oneinthree",
+      "basketweave3.3mixed",
+      "basketweave3.3mixed2",
+      "herringbone.lines",
+      "herringbone.branchinglines",
+      "herringbone.2oneinthree",
+      "herringbone.2oneinthree2",
+      "herringbone.2oneinthree3",
       "penrose.rules",
       "kitedart.rules",
       "ammannbeenker.rules",
@@ -603,12 +626,18 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one and each 2-isohedral one", () => {
-    for (const [key] of [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED]) {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one, each 2-isohedral one and each bond", () => {
+    for (const [key] of [
+      ...UNIFORM,
+      ...TWO_UNIFORM,
+      ...LAVES,
+      ...TWO_ISOHEDRAL_KEYED,
+      ...RECTANGLES,
+    ]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
       expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
-      // every uniform and Laves tiling has some; a 2-uniform or 2-isohedral
+      // every uniform and Laves tiling and every bond has some; a 2-uniform or 2-isohedral
       // one may have none as hard as its plain board
       if (![...TWO_UNIFORM, ...TWO_ISOHEDRAL_KEYED].some(([two]) => two === key))
         expect(marked.length, key).toBeGreaterThan(0);
@@ -623,10 +652,10 @@ describe("colourings", () => {
   // classes takes from half a minute to six (hexrings, nineteen classes), and
   // on the 2-isohedral tilings of most classes from ten seconds to four:
   // those are left to `npm run colourings` (`SLOW_CHOICE`), and their listed paintings
-  // are checked only by building them (`periodicColouredLevels` throws on one
+  // are checked only by building them (`paintedLevel` throws on one
   // that no longer makes a level) and by the tests above.
   it.each(
-    [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED].filter(
+    [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED, ...RECTANGLES].filter(
       ([key]) => !SLOW_CHOICE.includes(key),
     ),
   )(
@@ -648,6 +677,42 @@ describe("colourings", () => {
       );
     },
     30_000,
+  );
+
+  it.each(RECTANGLES)(
+    "%s: painted on bricks cut into steps, one tile, every piece of a side meeting one piece across",
+    (key, box) => {
+      const plain = makeFirstBoard(key);
+      const base = paintBase(plain);
+      const { ring } = base;
+      // one tile, as the plain board's brick: the same real corners, cut
+      // alike all round (the stacked bond, edge to edge, not at all)
+      expect(base.tiles).toHaveLength(1);
+      expect(base.cells).toHaveLength(plain.cells.length);
+      const verts = base.cells.map((c) => c[0]!.verts.length);
+      expect(new Set(verts).size).toBe(1);
+      expect(verts[0]).toBe(key === "stackedbond" ? 4 : key === "basketweave3" ? 8 : 6);
+      const real = (cell: Piece[]): string =>
+        cell[0]!.verts
+          .filter((_, i) => realCorners(ring, cell[0]!.verts)[i])
+          .map((v) => ring.key(v))
+          .sort()
+          .join("|");
+      expect(base.cells.map(real).sort()).toEqual(plain.cells.map(real).sort());
+      // no corner of the wider patch lies part-way along a window brick's
+      // side: edge to edge, every piece of a side meeting one piece across,
+      // as a painting needs
+      const context = periodicContext(base, box);
+      const corners = new Map<string, Cyc>();
+      for (const cell of context)
+        for (const { verts } of cell) for (const v of verts) corners.set(ring.key(v), v);
+      for (const cell of base.cells)
+        for (const { verts } of cell)
+          verts.forEach((a, i) => {
+            const b = verts[(i + 1) % verts.length]!;
+            for (const p of corners.values()) expect(strictlyBetween(ring, a, b, p)).toBe(false);
+          });
+    },
   );
 
   it("holds a marked tile so that it fits no cell as the tray has it, where it can", () => {

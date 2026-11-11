@@ -3244,6 +3244,101 @@
     "presses": 9,
     "flips": 5
   },
+  "stackedbond.lines": {
+    "score": 0.105,
+    "presses": 0,
+    "flips": 0
+  },
+  "stackedbond.2oneinthree": {
+    "score": 0.322,
+    "presses": 2,
+    "flips": 0
+  },
+  "stackedbond.2oneinthree2": {
+    "score": 0.289,
+    "presses": 1,
+    "flips": 0
+  },
+  "stackedbond.2oneinthree3": {
+    "score": 0.289,
+    "presses": 1,
+    "flips": 0
+  },
+  "runningbond.lines": {
+    "score": 0.155,
+    "presses": 0,
+    "flips": 0
+  },
+  "runningbond.lines2": {
+    "score": 0.155,
+    "presses": 0,
+    "flips": 0
+  },
+  "runningbond.2oneinthree": {
+    "score": 0.351,
+    "presses": 2,
+    "flips": 0
+  },
+  "runningbond.2oneinthree2": {
+    "score": 0.351,
+    "presses": 2,
+    "flips": 0
+  },
+  "runningbond.2oneinthree3": {
+    "score": 0.328,
+    "presses": 1,
+    "flips": 0
+  },
+  "basketweave.lines": {
+    "score": 0.723,
+    "presses": 15,
+    "flips": 3
+  },
+  "basketweave.lines2": {
+    "score": 0.723,
+    "presses": 15,
+    "flips": 3
+  },
+  "basketweave3.2oneinthree": {
+    "score": 0.598,
+    "presses": 10,
+    "flips": 0
+  },
+  "basketweave3.3mixed": {
+    "score": 0.707,
+    "presses": 4,
+    "flips": 4
+  },
+  "basketweave3.3mixed2": {
+    "score": 0.707,
+    "presses": 4,
+    "flips": 4
+  },
+  "herringbone.lines": {
+    "score": 0.349,
+    "presses": 4,
+    "flips": 2
+  },
+  "herringbone.branchinglines": {
+    "score": 0.349,
+    "presses": 4,
+    "flips": 2
+  },
+  "herringbone.2oneinthree": {
+    "score": 0.563,
+    "presses": 6,
+    "flips": 2
+  },
+  "herringbone.2oneinthree2": {
+    "score": 0.531,
+    "presses": 5,
+    "flips": 2
+  },
+  "herringbone.2oneinthree3": {
+    "score": 0.499,
+    "presses": 6,
+    "flips": 0
+  },
   "penrose.rules": {
     "score": 0.84,
     "presses": 10,
