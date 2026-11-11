@@ -711,21 +711,35 @@ describe("puzzle", () => {
     const twins = LEVELS.filter((l) => l.colours.some((c) => c.includes("twin")));
     // and the aperiodic tilings of two quadrilaterals: Penrose's two rhombi,
     // his kite and dart, Ammann–Beenker's square and rhombus; and the isogonal
-    // tilings of one polygon in two or three sizes
+    // tilings of one polygon in two or three sizes — each with its lined
+    // boards, which keep the plain board's classes (a coloured one is in its
+    // paints)
     expect(twins.map((l) => l.key).sort()).toEqual([
       "ammannbeenker",
       "ammannbeenker.rules",
       "hexringsdual",
+      "hexringsdual.lines",
+      "hexringsdual.lines2",
       "hexrowsdual",
+      "hexrowsdual.lines",
+      "hexrowsdual.lines2",
       "kitedart",
       "kitedart.rules",
       "penrose",
       "penrose.rules",
       "pythagorean",
       "snubelongated2dual",
+      "snubelongated2dual.lines",
+      "snubelongated2dual.lines2",
       "snubelongateddual",
+      "snubelongateddual.lines",
+      "snubelongateddual.lines2",
       "squaretrihex2dual",
+      "squaretrihex2dual.lines",
+      "squaretrihex2dual.lines2",
       "squaretrihexdual",
+      "squaretrihexdual.lines",
+      "squaretrihexdual.lines2",
       "threescaletri",
     ]);
   });
