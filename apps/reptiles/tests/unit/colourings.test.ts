@@ -41,6 +41,7 @@ import {
   COLOURED as COLOURED_LATTICES,
   LAVES,
   LEVELS,
+  TWO_ISOHEDRAL_KEYED,
   TWO_UNIFORM,
   UNIFORM,
   levelByKey,
@@ -66,6 +67,14 @@ const SLOW_CHOICE = [
   "dissectedtrunchex",
   "hexrings",
   "dodecarhombitrihex",
+  "studdedtri2dual",
+  "tritrunctrihexdual",
+  "snubelongated2dual",
+  "snubelongateddual",
+  "dissectedtrunchex2dual",
+  "dissectedtrunchexdual",
+  "hexringsdual",
+  "dodecarhombitrihexdual",
 ];
 
 /** A unit square at (x, y) with `marks` on its edges: bottom, right, top,
@@ -147,7 +156,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones and the Laves ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels and the spirals rules read off their patch", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones and the 2-isohedral ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels and the spirals rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -327,6 +336,89 @@ describe("colourings", () => {
       "kisrhombille.lines2",
       "kisrhombille.2apart",
       "kisrhombille.3mixed",
+      "studdedtridual.dots",
+      "studdedtridual.dots2",
+      "studdedtridual.2byshape",
+      "studdedtridual.2byshape2",
+      "studdedtri2dual.lines",
+      "studdedtri2dual.lines2",
+      "studdedtri2dual.2colours",
+      "studdedtri2dual.2oneinthree",
+      "studdedtri2dual.3colours",
+      "elongated2dual.lines",
+      "elongated2dual.lines2",
+      "elongated2dual.2oneinthreebyshape",
+      "elongated2dual.2oneinthree",
+      "elongated2dual.3byshape",
+      "elongated3dual.lines",
+      "elongated3dual.lines2",
+      "elongated3dual.2oneinthreebyshape",
+      "elongated3dual.2oneinthreebyshape2",
+      "elongated3dual.2oneinthree",
+      "trirhombitrihexdual.lines",
+      "trirhombitrihexdual.lines2",
+      "trirhombitrihexdual.2oneinthree",
+      "trirhombitrihexdual.2oneinthree2",
+      "trirhombitrihexdual.3colours",
+      "tritrunctrihexdual.lines",
+      "tritrunctrihexdual.lines2",
+      "fannedhexdual.lines",
+      "fannedhexdual.lines2",
+      "hexbandsdual.lines",
+      "hexbandsdual.lines2",
+      "hexbandsdual.2oneinthree",
+      "hexbandsdual.2oneinthree2",
+      "hexbandsdual.2oneinthree3",
+      "snubelongated2dual.lines",
+      "snubelongated2dual.lines2",
+      "snubelongated2dual.2oneinthreebyshape",
+      "snubelongated2dual.2oneinthreebyshape2",
+      "snubelongated2dual.3byshape",
+      "snubelongateddual.lines",
+      "snubelongateddual.lines2",
+      "dissectedtrunchex2dual.lines",
+      "dissectedtrunchex2dual.lines2",
+      "dissectedtrunchex2dual.2colours",
+      "dissectedtrunchex2dual.2colours2",
+      "dissectedtrunchex2dual.3byshape",
+      "squarerows2dual.lines",
+      "squarerows2dual.lines2",
+      "squarerows2dual.2oneinthreebyshape",
+      "squarerows2dual.2oneinthree",
+      "squarerows2dual.3byshape",
+      "squarerows3dual.lines",
+      "squarerows3dual.lines2",
+      "squarerows3dual.2oneinthreebyshape",
+      "squarerows3dual.2oneinthreebyshape2",
+      "squarerows3dual.2oneinthree",
+      "dissectedtrunchexdual.dots",
+      "dissectedtrunchexdual.dots2",
+      "dissectedtrunchexdual.2colours",
+      "dissectedtrunchexdual.2oneinthree",
+      "dissectedtrunchexdual.3byshape",
+      "hexrowsdual.lines",
+      "hexrowsdual.lines2",
+      "hexrowsdual.2oneinthreebyshape",
+      "hexrowsdual.2oneinthree",
+      "hexrowsdual.3byshape",
+      "dodecasquaredual.lines",
+      "dodecasquaredual.lines2",
+      "hexringsdual.lines",
+      "hexringsdual.lines2",
+      "hexringsdual.2oneinthreebyshape",
+      "hexringsdual.2oneinthreebyshape2",
+      "hexringsdual.3byshape",
+      "squaretrihexdual.lines",
+      "squaretrihexdual.lines2",
+      "squaretrihexdual.2oneinthree",
+      "squaretrihex2dual.lines",
+      "squaretrihex2dual.lines2",
+      "squaretrihex2dual.2oneinthree",
+      "dodecarhombitrihexdual.lines",
+      "dodecarhombitrihexdual.lines2",
+      "dodecarhombitrihexdual.2oneinthreebyshape",
+      "dodecarhombitrihexdual.2oneinthreebyshape2",
+      "dodecarhombitrihexdual.2oneinthree",
       "penrose.rules",
       "kitedart.rules",
       "ammannbeenker.rules",
@@ -490,26 +582,33 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one and each Laves one", () => {
-    for (const [key] of [...UNIFORM, ...TWO_UNIFORM, ...LAVES]) {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one and each 2-isohedral one", () => {
+    for (const [key] of [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
       expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
-      // every uniform and Laves tiling has some; a 2-uniform one may have none
-      // as hard as its plain board
-      if (!TWO_UNIFORM.some(([two]) => two === key)) expect(marked.length, key).toBeGreaterThan(0);
+      // every uniform and Laves tiling has some; a 2-uniform or 2-isohedral
+      // one may have none as hard as its plain board
+      if (![...TWO_UNIFORM, ...TWO_ISOHEDRAL_KEYED].some(([two]) => two === key))
+        expect(marked.length, key).toBeGreaterThan(0);
     }
-    expect(
-      TWO_UNIFORM.filter(([key]) => COLOURED.some((l) => l.decor!.of === key)).length,
-    ).toBeGreaterThan(TWO_UNIFORM.length / 2);
+    for (const family of [TWO_UNIFORM, TWO_ISOHEDRAL_KEYED])
+      expect(
+        family.filter(([key]) => COLOURED.some((l) => l.decor!.of === key)).length,
+      ).toBeGreaterThan(family.length / 2);
   });
 
   // The full choice on the 2-uniform tilings of a dozen or more translation
-  // classes takes from half a minute to six (hexrings, nineteen classes):
+  // classes takes from half a minute to six (hexrings, nineteen classes), and
+  // on the 2-isohedral tilings of most classes from ten seconds to four:
   // those are left to `npm run colourings` (`SLOW_CHOICE`), and their listed paintings
   // are checked only by building them (`periodicColouredLevels` throws on one
   // that no longer makes a level) and by the tests above.
-  it.each([...UNIFORM, ...TWO_UNIFORM, ...LAVES].filter(([key]) => !SLOW_CHOICE.includes(key)))(
+  it.each(
+    [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED].filter(
+      ([key]) => !SLOW_CHOICE.includes(key),
+    ),
+  )(
     "%s: src/colourings.json is in step with the choice (npm run colourings)",
     (key, box) => {
       const plain = levelByKey(key)!;

@@ -2829,6 +2829,421 @@
     "presses": 17,
     "flips": 8
   },
+  "studdedtridual.dots": {
+    "score": 0.982,
+    "presses": 13,
+    "flips": 0
+  },
+  "studdedtridual.dots2": {
+    "score": 0.982,
+    "presses": 13,
+    "flips": 0
+  },
+  "studdedtridual.2byshape": {
+    "score": 1.177,
+    "presses": 11,
+    "flips": 5
+  },
+  "studdedtridual.2byshape2": {
+    "score": 1.177,
+    "presses": 11,
+    "flips": 5
+  },
+  "studdedtri2dual.lines": {
+    "score": 1.102,
+    "presses": 11,
+    "flips": 5
+  },
+  "studdedtri2dual.lines2": {
+    "score": 1.102,
+    "presses": 11,
+    "flips": 5
+  },
+  "studdedtri2dual.2colours": {
+    "score": 1.335,
+    "presses": 11,
+    "flips": 3
+  },
+  "studdedtri2dual.2oneinthree": {
+    "score": 1.22,
+    "presses": 9,
+    "flips": 3
+  },
+  "studdedtri2dual.3colours": {
+    "score": 1.981,
+    "presses": 17,
+    "flips": 3
+  },
+  "elongated2dual.lines": {
+    "score": 0.745,
+    "presses": 6,
+    "flips": 1
+  },
+  "elongated2dual.lines2": {
+    "score": 0.745,
+    "presses": 6,
+    "flips": 1
+  },
+  "elongated2dual.2oneinthreebyshape": {
+    "score": 0.853,
+    "presses": 6,
+    "flips": 0
+  },
+  "elongated2dual.2oneinthree": {
+    "score": 1.272,
+    "presses": 8,
+    "flips": 3
+  },
+  "elongated2dual.3byshape": {
+    "score": 0.853,
+    "presses": 6,
+    "flips": 0
+  },
+  "elongated3dual.lines": {
+    "score": 0.677,
+    "presses": 7,
+    "flips": 0
+  },
+  "elongated3dual.lines2": {
+    "score": 0.677,
+    "presses": 7,
+    "flips": 0
+  },
+  "elongated3dual.2oneinthreebyshape": {
+    "score": 0.827,
+    "presses": 7,
+    "flips": 0
+  },
+  "elongated3dual.2oneinthreebyshape2": {
+    "score": 0.827,
+    "presses": 7,
+    "flips": 0
+  },
+  "elongated3dual.2oneinthree": {
+    "score": 1.247,
+    "presses": 10,
+    "flips": 4
+  },
+  "trirhombitrihexdual.lines": {
+    "score": 1.166,
+    "presses": 15,
+    "flips": 0
+  },
+  "trirhombitrihexdual.lines2": {
+    "score": 1.166,
+    "presses": 15,
+    "flips": 0
+  },
+  "trirhombitrihexdual.2oneinthree": {
+    "score": 1.468,
+    "presses": 11,
+    "flips": 7
+  },
+  "trirhombitrihexdual.2oneinthree2": {
+    "score": 1.468,
+    "presses": 11,
+    "flips": 7
+  },
+  "trirhombitrihexdual.3colours": {
+    "score": 1.768,
+    "presses": 11,
+    "flips": 7
+  },
+  "tritrunctrihexdual.lines": {
+    "score": 0.98,
+    "presses": 10,
+    "flips": 7
+  },
+  "tritrunctrihexdual.lines2": {
+    "score": 0.98,
+    "presses": 10,
+    "flips": 7
+  },
+  "fannedhexdual.lines": {
+    "score": 1.632,
+    "presses": 21,
+    "flips": 0
+  },
+  "fannedhexdual.lines2": {
+    "score": 1.632,
+    "presses": 21,
+    "flips": 0
+  },
+  "hexbandsdual.lines": {
+    "score": 0.572,
+    "presses": 7,
+    "flips": 0
+  },
+  "hexbandsdual.lines2": {
+    "score": 0.572,
+    "presses": 7,
+    "flips": 0
+  },
+  "hexbandsdual.2oneinthree": {
+    "score": 1.157,
+    "presses": 10,
+    "flips": 6
+  },
+  "hexbandsdual.2oneinthree2": {
+    "score": 1.157,
+    "presses": 10,
+    "flips": 6
+  },
+  "hexbandsdual.2oneinthree3": {
+    "score": 1.121,
+    "presses": 9,
+    "flips": 6
+  },
+  "snubelongated2dual.lines": {
+    "score": 1.507,
+    "presses": 15,
+    "flips": 7
+  },
+  "snubelongated2dual.lines2": {
+    "score": 1.507,
+    "presses": 15,
+    "flips": 7
+  },
+  "snubelongated2dual.2oneinthreebyshape": {
+    "score": 1.545,
+    "presses": 15,
+    "flips": 4
+  },
+  "snubelongated2dual.2oneinthreebyshape2": {
+    "score": 1.481,
+    "presses": 14,
+    "flips": 4
+  },
+  "snubelongated2dual.3byshape": {
+    "score": 1.876,
+    "presses": 19,
+    "flips": 6
+  },
+  "snubelongateddual.lines": {
+    "score": 2.689,
+    "presses": 23,
+    "flips": 4
+  },
+  "snubelongateddual.lines2": {
+    "score": 2.689,
+    "presses": 23,
+    "flips": 4
+  },
+  "dissectedtrunchex2dual.lines": {
+    "score": 1.494,
+    "presses": 19,
+    "flips": 9
+  },
+  "dissectedtrunchex2dual.lines2": {
+    "score": 1.494,
+    "presses": 19,
+    "flips": 9
+  },
+  "dissectedtrunchex2dual.2colours": {
+    "score": 1.875,
+    "presses": 23,
+    "flips": 5
+  },
+  "dissectedtrunchex2dual.2colours2": {
+    "score": 1.875,
+    "presses": 23,
+    "flips": 5
+  },
+  "dissectedtrunchex2dual.3byshape": {
+    "score": 1.875,
+    "presses": 23,
+    "flips": 5
+  },
+  "squarerows2dual.lines": {
+    "score": 0.376,
+    "presses": 2,
+    "flips": 0
+  },
+  "squarerows2dual.lines2": {
+    "score": 0.376,
+    "presses": 2,
+    "flips": 0
+  },
+  "squarerows2dual.2oneinthreebyshape": {
+    "score": 0.486,
+    "presses": 1,
+    "flips": 0
+  },
+  "squarerows2dual.2oneinthree": {
+    "score": 0.948,
+    "presses": 9,
+    "flips": 2
+  },
+  "squarerows2dual.3byshape": {
+    "score": 0.486,
+    "presses": 1,
+    "flips": 0
+  },
+  "squarerows3dual.lines": {
+    "score": 0.408,
+    "presses": 3,
+    "flips": 0
+  },
+  "squarerows3dual.lines2": {
+    "score": 0.408,
+    "presses": 3,
+    "flips": 0
+  },
+  "squarerows3dual.2oneinthreebyshape": {
+    "score": 0.558,
+    "presses": 3,
+    "flips": 0
+  },
+  "squarerows3dual.2oneinthreebyshape2": {
+    "score": 0.491,
+    "presses": 1,
+    "flips": 0
+  },
+  "squarerows3dual.2oneinthree": {
+    "score": 0.885,
+    "presses": 5,
+    "flips": 4
+  },
+  "dissectedtrunchexdual.dots": {
+    "score": 1.597,
+    "presses": 18,
+    "flips": 10
+  },
+  "dissectedtrunchexdual.dots2": {
+    "score": 1.597,
+    "presses": 18,
+    "flips": 10
+  },
+  "dissectedtrunchexdual.2colours": {
+    "score": 1.826,
+    "presses": 19,
+    "flips": 6
+  },
+  "dissectedtrunchexdual.2oneinthree": {
+    "score": 1.826,
+    "presses": 19,
+    "flips": 6
+  },
+  "dissectedtrunchexdual.3byshape": {
+    "score": 1.826,
+    "presses": 19,
+    "flips": 6
+  },
+  "hexrowsdual.lines": {
+    "score": 0.623,
+    "presses": 5,
+    "flips": 3
+  },
+  "hexrowsdual.lines2": {
+    "score": 0.623,
+    "presses": 5,
+    "flips": 3
+  },
+  "hexrowsdual.2oneinthreebyshape": {
+    "score": 0.707,
+    "presses": 6,
+    "flips": 0
+  },
+  "hexrowsdual.2oneinthree": {
+    "score": 1.005,
+    "presses": 6,
+    "flips": 4
+  },
+  "hexrowsdual.3byshape": {
+    "score": 0.707,
+    "presses": 6,
+    "flips": 0
+  },
+  "dodecasquaredual.lines": {
+    "score": 1.895,
+    "presses": 19,
+    "flips": 0
+  },
+  "dodecasquaredual.lines2": {
+    "score": 1.895,
+    "presses": 19,
+    "flips": 0
+  },
+  "hexringsdual.lines": {
+    "score": 1.49,
+    "presses": 16,
+    "flips": 8
+  },
+  "hexringsdual.lines2": {
+    "score": 1.49,
+    "presses": 16,
+    "flips": 8
+  },
+  "hexringsdual.2oneinthreebyshape": {
+    "score": 2.211,
+    "presses": 23,
+    "flips": 13
+  },
+  "hexringsdual.2oneinthreebyshape2": {
+    "score": 2.211,
+    "presses": 23,
+    "flips": 13
+  },
+  "hexringsdual.3byshape": {
+    "score": 2.211,
+    "presses": 23,
+    "flips": 13
+  },
+  "squaretrihexdual.lines": {
+    "score": 1.333,
+    "presses": 15,
+    "flips": 5
+  },
+  "squaretrihexdual.lines2": {
+    "score": 1.333,
+    "presses": 15,
+    "flips": 5
+  },
+  "squaretrihexdual.2oneinthree": {
+    "score": 1.368,
+    "presses": 11,
+    "flips": 4
+  },
+  "squaretrihex2dual.lines": {
+    "score": 1.363,
+    "presses": 15,
+    "flips": 5
+  },
+  "squaretrihex2dual.lines2": {
+    "score": 1.363,
+    "presses": 15,
+    "flips": 5
+  },
+  "squaretrihex2dual.2oneinthree": {
+    "score": 1.732,
+    "presses": 15,
+    "flips": 7
+  },
+  "dodecarhombitrihexdual.lines": {
+    "score": 1.03,
+    "presses": 10,
+    "flips": 6
+  },
+  "dodecarhombitrihexdual.lines2": {
+    "score": 1.03,
+    "presses": 10,
+    "flips": 6
+  },
+  "dodecarhombitrihexdual.2oneinthreebyshape": {
+    "score": 1.088,
+    "presses": 9,
+    "flips": 5
+  },
+  "dodecarhombitrihexdual.2oneinthreebyshape2": {
+    "score": 1.088,
+    "presses": 9,
+    "flips": 5
+  },
+  "dodecarhombitrihexdual.2oneinthree": {
+    "score": 1.238,
+    "presses": 9,
+    "flips": 5
+  },
   "penrose.rules": {
     "score": 0.84,
     "presses": 10,

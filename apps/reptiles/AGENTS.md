@@ -152,6 +152,15 @@ some back off.
     rhombi, pentagons and triangles a line between two edges is a curve
     leaving each edge's middle square on. The Cairo has lined boards only:
     no colouring of its measures as hard as the plain board.
+  - *The twenty 2-isohedral tilings* (`?level=elongated2dual.lines`,
+    `?level=hexringsdual.3byshape`, `?level=studdedtridual.dots`) are lined
+    and coloured just as the 2-uniform ones are, one tray tile per colour and
+    shape, at most two lined boards and three coloured each, named as the
+    uniform ones are: "V[3⁶; 3³.4²]₁ · lines". Every one has lined boards
+    ([3⁶; 3⁴.6]₁'s dual dots only); V[3⁶; 3².4.12], V[3⁶; 3².6²],
+    V[3³.4²; 3².4.3.4]₂ and V[3.4.3.12; 3.12²] have no colouring as hard as
+    their plain board. Their lines between two edges are curves, as on the
+    Laves tiles.
   No marked level measures easier than its plain board: the choice drops
   any that would.
   A marked tile is held, where it can be, so that it fits none of the board's
@@ -275,7 +284,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 86 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones and the eight Laves tilings, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels and four of the five spirals) and 107 colourings of the uniform, 2-uniform and Laves tilings, Ammann–Beenker and Klaassen's spiral in two more, 581 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 126 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings and the twenty 2-isohedral ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels and four of the five spirals) and 150 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, Ammann–Beenker and Klaassen's spiral in two more, 664 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -386,7 +395,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (a quarter of an hour, nearly all the 2-uniform tilings of many classes; `-- <key>…` for only those), and each aperiodic level's and spiral's colouring into src/aperiodicColourings.json (half a minute)
+npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's and spiral's colouring into src/aperiodicColourings.json (half a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
@@ -611,7 +620,10 @@ quick way to see the win state.
   (`TWO_UNIFORM`) are painted just as the uniform ones are. The eight Laves tilings (`LAVES`) are painted
   just as these are, their wider patch a wider dual window (`lavesWindow`,
   in the same ring); one tile each, they are labelled as the regular boards
-  are. Trying every colouring is k to the power of the translation classes
+  are. The twenty 2-isohedral tilings (`TWO_ISOHEDRAL`, listed by their own
+  keys in `TWO_ISOHEDRAL_KEYED`) are painted as the Laves ones are, their
+  wider patch a wider dual window of the 2-uniform primal (`Level.dualOf`),
+  and labelled as the 2-uniform ones are. Trying every colouring is k to the power of the translation classes
   (a million and a half on the kisrhombille's twelve, ten billion on
   [3⁶; 3².4.12]'s twenty), so given each cell's plain kind `paintings` tries
   only the offsets `offsetsFor` cannot rule out: it sets them a class at a
@@ -621,13 +633,14 @@ quick way to see the win state.
   two cells of one kind (and colour) that read differently — for the lined
   board, which edges have a tile of its colour across, which no cut changes.
   It yields what trying every one would, in the same order. Even so the
-  search takes a quarter of an hour (six minutes of it [3.4².6; 3.4.6.4]'s
-  nineteen classes), so `npm run colourings`
+  search takes twenty minutes (six of them [3.4².6; 3.4.6.4]'s nineteen
+  classes, four its dual's), so `npm run colourings`
   (`scripts/find-colourings.mts`, choosing in `src/colouringChoice.ts`)
   writes each one's chosen `PaintingParams` to `src/colourings.json`, and
   the game builds only those (`paintingOf`); the tests choose again for all
   but the slowest (`SLOW_CHOICE`: the eight 2-uniform tilings that take half
-  a minute or more) and fail while the file is out of step. Labels on a
+  a minute or more, and the eight 2-isohedral ones that take ten seconds or
+  more — four minutes on V[3.4².6; 3.4.6.4]) and fail while the file is out of step. Labels on a
   board of several shapes say lines, how many colours, "one in three" and
   "by shape" (`trihex.2oneinthreebyshape`), not how many edges match. `arrowLevel` gives an aperiodic board arrows from its builder's Robinson
   triangles, which name their corners alike at every step: which leg each

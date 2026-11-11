@@ -471,6 +471,14 @@ test("a tiling's marked levels: on its own page in Tilings, and on its figure's 
   await expect(studded.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
   await studded.click();
   await expect(page).toHaveURL(/\?tiling=studdedtri$/);
+  // and a 2-isohedral tiling's: V[3⁶; 3⁴.6]₁'s
+  await page.goto("/?tilings");
+  const studdedDual = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^V\[3⁶; 3⁴\.6\]₁$/ }) });
+  await expect(studdedDual.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
+  await studdedDual.click();
+  await expect(page).toHaveURL(/\?tiling=studdedtridual$/);
   // a tiling with none opens straight away: no painting of [3⁶; 3².4.3.4]
   // measures as hard as its plain board
   await page.goto("/?tilings");
