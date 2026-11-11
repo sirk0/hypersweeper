@@ -651,7 +651,7 @@ export function parseNotation(written: string): number[][] {
  * squarest near two or three dozen tiles that keeps one outline and has both
  * kinds of vertex inside it, found by scanning sizes. studdedtri2 is turned
  * like the snub hexagonal, and its squarest such window is 47 tiles. */
-const TWO_UNIFORM: [string, number][] = [
+export const TWO_UNIFORM: [string, number][] = [
   ["studdedtri", 5.2],
   ["studdedtri2", 5.2],
   ["elongated2", 4],
@@ -1321,7 +1321,7 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   let setup = SETUPS.get(plain.key);
   if (!setup) {
     const regular = COLOURED.find(([key]) => key === plain.key);
-    const box = [...UNIFORM, ...LAVES].find(([key]) => key === plain.key)?.[1];
+    const box = [...UNIFORM, ...TWO_UNIFORM, ...LAVES].find(([key]) => key === plain.key)?.[1];
     if (regular) setup = { lattice: regular[1], context: [] };
     else if (box !== undefined) {
       const context = periodicContext(plain, box);
@@ -1332,8 +1332,8 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   return setup;
 }
 
-/** A uniform or Laves tiling's window, `box` edges square, and a patch of
- * the same tiling twice that size round it, moved onto the window's
+/** A uniform, 2-uniform or Laves tiling's window, `box` edges square, and a
+ * patch of the same tiling twice that size round it, moved onto the window's
  * coordinates: what lies past the window's rim, for its colourings (and, for
  * the snub hexagonal, whose window holds one hexagon, the only place its
  * lattice shows). A Laves board's wider patch is a wider dual window
@@ -1372,8 +1372,8 @@ export function periodicContext(plain: Level, box: number): Piece[][] {
 
 /** Which of a painted board's paintings to make levels of
  * (`npm run colourings`, scripts/find-colourings.mts): every one a regular
- * board's `paintedCandidates` keeps, and the chosen few of a uniform or
- * Laves board's — searching takes from a second to minutes, so the choice
+ * board's `paintedCandidates` keeps, and the chosen few of a uniform,
+ * 2-uniform or Laves board's — searching takes from a second to minutes, so the choice
  * is written down and only those are built. */
 const CHOSEN_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
 
@@ -1492,10 +1492,12 @@ const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
 
 /** The tilings painted, in the order their marked levels are listed: the
- * regular three, the other eight uniform ones and the eight Laves ones. */
+ * regular three, the other eight uniform ones, the twenty 2-uniform ones and
+ * the eight Laves ones. */
 export const PAINTED: string[] = [
   ...COLOURED.map(([key]) => key),
   ...UNIFORM.map(([key]) => key),
+  ...TWO_UNIFORM.map(([key]) => key),
   ...LAVES.map(([key]) => key),
 ];
 

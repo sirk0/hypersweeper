@@ -1,5 +1,5 @@
 // List each regular tiling's lined and coloured levels, and choose each
-// uniform and Laves tiling's (src/colouringChoice.ts), and write them to
+// uniform, 2-uniform and Laves tiling's (src/colouringChoice.ts), and write them to
 // src/colourings.json, which the game builds from — searching every painting
 // takes from a second to minutes, far too long for a page load.
 // `npm run colourings` after changing a painted tiling's window or the
@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { chooseColourings, regularColourings } from "../src/colouringChoice";
 import type { PaintingParams } from "../src/colourings";
-import { COLOURED, LAVES, UNIFORM, makeFirstBoard, type Level } from "../src/levels";
+import { COLOURED, LAVES, TWO_UNIFORM, UNIFORM, makeFirstBoard, type Level } from "../src/levels";
 
 // one painting to a line, as Prettier leaves it
 const json = (value: unknown): string => JSON.stringify(value).replace(/([:,])/g, "$1 ");
@@ -24,10 +24,12 @@ const tilings: [string, (plain: Level) => PaintingParams[]][] = [
     key,
     (plain) => regularColourings(plain, lattice),
   ]),
-  ...[...UNIFORM, ...LAVES].map(([key, box]): [string, (plain: Level) => PaintingParams[]] => [
-    key,
-    (plain) => chooseColourings(plain, box),
-  ]),
+  ...[...UNIFORM, ...TWO_UNIFORM, ...LAVES].map(
+    ([key, box]): [string, (plain: Level) => PaintingParams[]] => [
+      key,
+      (plain) => chooseColourings(plain, box),
+    ],
+  ),
 ];
 for (const [key, choose] of tilings) {
   const started = performance.now();

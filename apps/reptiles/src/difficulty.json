@@ -2224,6 +2224,456 @@
     "presses": 14,
     "flips": 0
   },
+  "studdedtri.lines": {
+    "score": 0.633,
+    "presses": 9,
+    "flips": 0
+  },
+  "studdedtri.dots": {
+    "score": 0.699,
+    "presses": 11,
+    "flips": 0
+  },
+  "studdedtri.2oneinthreebyshape": {
+    "score": 0.816,
+    "presses": 10,
+    "flips": 0
+  },
+  "studdedtri.2oneinthreebyshape2": {
+    "score": 0.783,
+    "presses": 9,
+    "flips": 0
+  },
+  "studdedtri.3byshape": {
+    "score": 1.173,
+    "presses": 13,
+    "flips": 4
+  },
+  "studdedtri2.lines": {
+    "score": 0.698,
+    "presses": 12,
+    "flips": 0
+  },
+  "studdedtri2.dots": {
+    "score": 0.724,
+    "presses": 13,
+    "flips": 0
+  },
+  "elongated2.lines": {
+    "score": 1.636,
+    "presses": 16,
+    "flips": 0
+  },
+  "elongated2.lines2": {
+    "score": 1.636,
+    "presses": 16,
+    "flips": 0
+  },
+  "elongated2.2oneinthreebyshape": {
+    "score": 1.699,
+    "presses": 15,
+    "flips": 0
+  },
+  "elongated2.2oneinthree": {
+    "score": 2.282,
+    "presses": 20,
+    "flips": 0
+  },
+  "elongated2.2oneinthree2": {
+    "score": 2.109,
+    "presses": 18,
+    "flips": 0
+  },
+  "elongated3.lines": {
+    "score": 1.311,
+    "presses": 18,
+    "flips": 0
+  },
+  "elongated3.lines2": {
+    "score": 1.199,
+    "presses": 16,
+    "flips": 0
+  },
+  "elongated3.2oneinthreebyshape": {
+    "score": 1.125,
+    "presses": 12,
+    "flips": 0
+  },
+  "elongated3.2oneinthree": {
+    "score": 1.722,
+    "presses": 20,
+    "flips": 0
+  },
+  "elongated3.2oneinthree2": {
+    "score": 1.387,
+    "presses": 14,
+    "flips": 0
+  },
+  "tritrunctrihex.lines": {
+    "score": 1.079,
+    "presses": 14,
+    "flips": 0
+  },
+  "tritrunctrihex.dots": {
+    "score": 1.401,
+    "presses": 22,
+    "flips": 0
+  },
+  "tritrunctrihex.2oneinthreebyshape": {
+    "score": 1.309,
+    "presses": 16,
+    "flips": 0
+  },
+  "tritrunctrihex.2oneinthreebyshape2": {
+    "score": 1.459,
+    "presses": 16,
+    "flips": 0
+  },
+  "tritrunctrihex.2oneinthreebyshape3": {
+    "score": 1.459,
+    "presses": 16,
+    "flips": 0
+  },
+  "fannedhex.lines": {
+    "score": 0.975,
+    "presses": 13,
+    "flips": 1
+  },
+  "fannedhex.lines2": {
+    "score": 0.882,
+    "presses": 12,
+    "flips": 0
+  },
+  "fannedhex.2oneinthree": {
+    "score": 1.233,
+    "presses": 13,
+    "flips": 0
+  },
+  "fannedhex.2oneinthree2": {
+    "score": 1.215,
+    "presses": 11,
+    "flips": 2
+  },
+  "fannedhex.2oneinthree3": {
+    "score": 0.876,
+    "presses": 6,
+    "flips": 0
+  },
+  "hexbands.lines": {
+    "score": 0.889,
+    "presses": 13,
+    "flips": 0
+  },
+  "hexbands.lines2": {
+    "score": 0.728,
+    "presses": 9,
+    "flips": 0
+  },
+  "hexbands.2oneinthree": {
+    "score": 1.269,
+    "presses": 15,
+    "flips": 0
+  },
+  "hexbands.2oneinthree2": {
+    "score": 1.189,
+    "presses": 13,
+    "flips": 0
+  },
+  "hexbands.3colours": {
+    "score": 1.963,
+    "presses": 19,
+    "flips": 10
+  },
+  "snubelongated2.dots": {
+    "score": 1.342,
+    "presses": 17,
+    "flips": 0
+  },
+  "snubelongated2.dots2": {
+    "score": 1.218,
+    "presses": 15,
+    "flips": 0
+  },
+  "snubelongated2.2oneinthree": {
+    "score": 2.508,
+    "presses": 31,
+    "flips": 0
+  },
+  "snubelongated2.2oneinthree2": {
+    "score": 1.889,
+    "presses": 21,
+    "flips": 0
+  },
+  "snubelongated2.2oneinthree3": {
+    "score": 1.765,
+    "presses": 19,
+    "flips": 0
+  },
+  "snubelongated.lines": {
+    "score": 3.802,
+    "presses": 29,
+    "flips": 0
+  },
+  "snubelongated.lines2": {
+    "score": 3.802,
+    "presses": 29,
+    "flips": 0
+  },
+  "snubelongated.2oneinthreebyshape": {
+    "score": 4.932,
+    "presses": 37,
+    "flips": 0
+  },
+  "snubelongated.2oneinthree": {
+    "score": 5.571,
+    "presses": 41,
+    "flips": 0
+  },
+  "snubelongated.3byshape": {
+    "score": 4.742,
+    "presses": 33,
+    "flips": 6
+  },
+  "dissectedtrunchex2.lines": {
+    "score": 1.187,
+    "presses": 15,
+    "flips": 0
+  },
+  "dissectedtrunchex2.dots": {
+    "score": 1.843,
+    "presses": 29,
+    "flips": 0
+  },
+  "dissectedtrunchex2.2oneinthreebyshape": {
+    "score": 1.487,
+    "presses": 15,
+    "flips": 0
+  },
+  "dissectedtrunchex2.2oneinthreebyshape2": {
+    "score": 1.394,
+    "presses": 13,
+    "flips": 0
+  },
+  "dissectedtrunchex2.2oneinthreebyshape3": {
+    "score": 1.3,
+    "presses": 11,
+    "flips": 0
+  },
+  "squarerows2.lines": {
+    "score": 1.047,
+    "presses": 10,
+    "flips": 0
+  },
+  "squarerows2.lines2": {
+    "score": 1.047,
+    "presses": 10,
+    "flips": 0
+  },
+  "squarerows2.2oneinthreebyshape": {
+    "score": 1.197,
+    "presses": 10,
+    "flips": 0
+  },
+  "squarerows2.2oneinthreebyshape2": {
+    "score": 0.633,
+    "presses": 4,
+    "flips": 0
+  },
+  "squarerows2.2oneinthree": {
+    "score": 1.662,
+    "presses": 14,
+    "flips": 0
+  },
+  "squarerows3.lines": {
+    "score": 0.84,
+    "presses": 10,
+    "flips": 0
+  },
+  "squarerows3.lines2": {
+    "score": 0.525,
+    "presses": 4,
+    "flips": 0
+  },
+  "squarerows3.2oneinthreebyshape": {
+    "score": 0.937,
+    "presses": 9,
+    "flips": 0
+  },
+  "squarerows3.2oneinthreebyshape2": {
+    "score": 0.651,
+    "presses": 5,
+    "flips": 0
+  },
+  "squarerows3.2oneinthree": {
+    "score": 1.56,
+    "presses": 18,
+    "flips": 0
+  },
+  "dissectedtrunchex.dots": {
+    "score": 1.88,
+    "presses": 21,
+    "flips": 0
+  },
+  "dissectedtrunchex.dots2": {
+    "score": 1.603,
+    "presses": 17,
+    "flips": 0
+  },
+  "dissectedtrunchex.2oneinthreebyshape": {
+    "score": 1.337,
+    "presses": 11,
+    "flips": 0
+  },
+  "dissectedtrunchex.2oneinthreebyshape2": {
+    "score": 1.903,
+    "presses": 17,
+    "flips": 0
+  },
+  "dissectedtrunchex.2oneinthreebyshape3": {
+    "score": 1.695,
+    "presses": 14,
+    "flips": 0
+  },
+  "hexrows.lines": {
+    "score": 1.283,
+    "presses": 13,
+    "flips": 0
+  },
+  "hexrows.lines2": {
+    "score": 0.811,
+    "presses": 7,
+    "flips": 0
+  },
+  "hexrows.2oneinthreebyshape": {
+    "score": 1.591,
+    "presses": 15,
+    "flips": 0
+  },
+  "hexrows.2oneinthree": {
+    "score": 1.426,
+    "presses": 11,
+    "flips": 0
+  },
+  "hexrows.3byshape": {
+    "score": 1.433,
+    "presses": 13,
+    "flips": 0
+  },
+  "dodecasquare.lines": {
+    "score": 1.376,
+    "presses": 21,
+    "flips": 0
+  },
+  "dodecasquare.lines2": {
+    "score": 1.294,
+    "presses": 19,
+    "flips": 0
+  },
+  "dodecasquare.2byshape": {
+    "score": 1.444,
+    "presses": 19,
+    "flips": 0
+  },
+  "dodecasquare.2oneinthreebyshape": {
+    "score": 1.444,
+    "presses": 19,
+    "flips": 0
+  },
+  "dodecasquare.2byshape2": {
+    "score": 1.196,
+    "presses": 13,
+    "flips": 0
+  },
+  "hexrings.dots": {
+    "score": 1.374,
+    "presses": 19,
+    "flips": 0
+  },
+  "hexrings.dots2": {
+    "score": 1.094,
+    "presses": 13,
+    "flips": 0
+  },
+  "hexrings.2oneinthreebyshape": {
+    "score": 1.244,
+    "presses": 13,
+    "flips": 0
+  },
+  "squaretrihex.lines": {
+    "score": 1.791,
+    "presses": 19,
+    "flips": 0
+  },
+  "squaretrihex.lines2": {
+    "score": 1.286,
+    "presses": 12,
+    "flips": 0
+  },
+  "squaretrihex.2oneinthreebyshape": {
+    "score": 2.086,
+    "presses": 21,
+    "flips": 0
+  },
+  "squaretrihex.2oneinthreebyshape2": {
+    "score": 1.436,
+    "presses": 12,
+    "flips": 0
+  },
+  "squaretrihex.2oneinthree": {
+    "score": 1.592,
+    "presses": 10,
+    "flips": 0
+  },
+  "squaretrihex2.lines": {
+    "score": 2.063,
+    "presses": 21,
+    "flips": 0
+  },
+  "squaretrihex2.lines2": {
+    "score": 1.355,
+    "presses": 12,
+    "flips": 0
+  },
+  "squaretrihex2.2oneinthreebyshape": {
+    "score": 1.505,
+    "presses": 12,
+    "flips": 0
+  },
+  "squaretrihex2.2oneinthreebyshape2": {
+    "score": 1.812,
+    "presses": 14,
+    "flips": 0
+  },
+  "squaretrihex2.2oneinthree": {
+    "score": 1.962,
+    "presses": 14,
+    "flips": 0
+  },
+  "dodecarhombitrihex.lines": {
+    "score": 1.22,
+    "presses": 11,
+    "flips": 0
+  },
+  "dodecarhombitrihex.lines2": {
+    "score": 0.884,
+    "presses": 5,
+    "flips": 0
+  },
+  "dodecarhombitrihex.2oneinthreebyshape": {
+    "score": 1.631,
+    "presses": 13,
+    "flips": 0
+  },
+  "dodecarhombitrihex.3byshape": {
+    "score": 1.631,
+    "presses": 13,
+    "flips": 0
+  },
+  "dodecarhombitrihex.3byshape2": {
+    "score": 1.631,
+    "presses": 13,
+    "flips": 0
+  },
   "tetrakis.lines": {
     "score": 0.662,
     "presses": 11,

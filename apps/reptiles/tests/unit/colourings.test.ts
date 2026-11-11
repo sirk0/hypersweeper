@@ -40,6 +40,7 @@ import {
   COLOURED as COLOURED_LATTICES,
   LAVES,
   LEVELS,
+  TWO_UNIFORM,
   UNIFORM,
   levelByKey,
   plainKinds,
@@ -52,7 +53,16 @@ import { loopsOf } from "../../src/view/curve";
 const Z4 = cyclotomic(4);
 const COLOURED = LEVELS.filter((l) => l.decor);
 /** The tilings whose full colouring choice is too slow for a unit test. */
-const SLOW_CHOICE = ["snubhex", "trunctrihex", "kisrhombille"];
+const SLOW_CHOICE = [
+  "studdedtri2",
+  "tritrunctrihex",
+  "snubelongated2",
+  "snubelongated",
+  "dissectedtrunchex2",
+  "dissectedtrunchex",
+  "hexrings",
+  "dodecarhombitrihex",
+];
 
 /** A unit square at (x, y) with `marks` on its edges: bottom, right, top,
  * left. */
@@ -133,7 +143,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones and the Laves ones as src/colourings.json lists; and gives Penrose's tilings their arrows", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones and the Laves ones as src/colourings.json lists; and gives Penrose's tilings their arrows", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -192,6 +202,96 @@ describe("colourings", () => {
       "trunctrihex.2oneinthreebyshape",
       "trunctrihex.2byshape",
       "trunctrihex.3byshape",
+      "studdedtri.lines",
+      "studdedtri.dots",
+      "studdedtri.2oneinthreebyshape",
+      "studdedtri.2oneinthreebyshape2",
+      "studdedtri.3byshape",
+      "studdedtri2.lines",
+      "studdedtri2.dots",
+      "elongated2.lines",
+      "elongated2.lines2",
+      "elongated2.2oneinthreebyshape",
+      "elongated2.2oneinthree",
+      "elongated2.2oneinthree2",
+      "elongated3.lines",
+      "elongated3.lines2",
+      "elongated3.2oneinthreebyshape",
+      "elongated3.2oneinthree",
+      "elongated3.2oneinthree2",
+      "tritrunctrihex.lines",
+      "tritrunctrihex.dots",
+      "tritrunctrihex.2oneinthreebyshape",
+      "tritrunctrihex.2oneinthreebyshape2",
+      "tritrunctrihex.2oneinthreebyshape3",
+      "fannedhex.lines",
+      "fannedhex.lines2",
+      "fannedhex.2oneinthree",
+      "fannedhex.2oneinthree2",
+      "fannedhex.2oneinthree3",
+      "hexbands.lines",
+      "hexbands.lines2",
+      "hexbands.2oneinthree",
+      "hexbands.2oneinthree2",
+      "hexbands.3colours",
+      "snubelongated2.dots",
+      "snubelongated2.dots2",
+      "snubelongated2.2oneinthree",
+      "snubelongated2.2oneinthree2",
+      "snubelongated2.2oneinthree3",
+      "snubelongated.lines",
+      "snubelongated.lines2",
+      "snubelongated.2oneinthreebyshape",
+      "snubelongated.2oneinthree",
+      "snubelongated.3byshape",
+      "dissectedtrunchex2.lines",
+      "dissectedtrunchex2.dots",
+      "dissectedtrunchex2.2oneinthreebyshape",
+      "dissectedtrunchex2.2oneinthreebyshape2",
+      "dissectedtrunchex2.2oneinthreebyshape3",
+      "squarerows2.lines",
+      "squarerows2.lines2",
+      "squarerows2.2oneinthreebyshape",
+      "squarerows2.2oneinthreebyshape2",
+      "squarerows2.2oneinthree",
+      "squarerows3.lines",
+      "squarerows3.lines2",
+      "squarerows3.2oneinthreebyshape",
+      "squarerows3.2oneinthreebyshape2",
+      "squarerows3.2oneinthree",
+      "dissectedtrunchex.dots",
+      "dissectedtrunchex.dots2",
+      "dissectedtrunchex.2oneinthreebyshape",
+      "dissectedtrunchex.2oneinthreebyshape2",
+      "dissectedtrunchex.2oneinthreebyshape3",
+      "hexrows.lines",
+      "hexrows.lines2",
+      "hexrows.2oneinthreebyshape",
+      "hexrows.2oneinthree",
+      "hexrows.3byshape",
+      "dodecasquare.lines",
+      "dodecasquare.lines2",
+      "dodecasquare.2byshape",
+      "dodecasquare.2oneinthreebyshape",
+      "dodecasquare.2byshape2",
+      "hexrings.dots",
+      "hexrings.dots2",
+      "hexrings.2oneinthreebyshape",
+      "squaretrihex.lines",
+      "squaretrihex.lines2",
+      "squaretrihex.2oneinthreebyshape",
+      "squaretrihex.2oneinthreebyshape2",
+      "squaretrihex.2oneinthree",
+      "squaretrihex2.lines",
+      "squaretrihex2.lines2",
+      "squaretrihex2.2oneinthreebyshape",
+      "squaretrihex2.2oneinthreebyshape2",
+      "squaretrihex2.2oneinthree",
+      "dodecarhombitrihex.lines",
+      "dodecarhombitrihex.lines2",
+      "dodecarhombitrihex.2oneinthreebyshape",
+      "dodecarhombitrihex.3byshape",
+      "dodecarhombitrihex.3byshape2",
       "tetrakis.lines",
       "tetrakis.lines2",
       "tetrakis.2apart",
@@ -325,21 +425,26 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling and each Laves one", () => {
-    for (const [key] of [...UNIFORM, ...LAVES]) {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one and each Laves one", () => {
+    for (const [key] of [...UNIFORM, ...TWO_UNIFORM, ...LAVES]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
       expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
-      expect(marked.length, key).toBeGreaterThan(0);
+      // every uniform and Laves tiling has some; a 2-uniform one may have none
+      // as hard as its plain board
+      if (!TWO_UNIFORM.some(([two]) => two === key)) expect(marked.length, key).toBeGreaterThan(0);
     }
+    expect(
+      TWO_UNIFORM.filter(([key]) => COLOURED.some((l) => l.decor!.of === key)).length,
+    ).toBeGreaterThan(TWO_UNIFORM.length / 2);
   });
 
-  // The full choice on the snub hexagonal (nine translation classes, sixty
-  // thousand colourings) and the truncated trihexagonal takes seconds each:
+  // The full choice on the 2-uniform tilings of a dozen or more translation
+  // classes takes from half a minute to six (hexrings, nineteen classes):
   // those are left to `npm run colourings` (`SLOW_CHOICE`), and their listed paintings
   // are checked only by building them (`periodicColouredLevels` throws on one
   // that no longer makes a level) and by the tests above.
-  it.each([...UNIFORM, ...LAVES].filter(([key]) => !SLOW_CHOICE.includes(key)))(
+  it.each([...UNIFORM, ...TWO_UNIFORM, ...LAVES].filter(([key]) => !SLOW_CHOICE.includes(key)))(
     "%s: src/colourings.json is in step with the choice (npm run colourings)",
     (key, box) => {
       const plain = levelByKey(key)!;

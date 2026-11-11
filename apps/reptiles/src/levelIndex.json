@@ -955,6 +955,956 @@
     "painting": 4
   },
   {
+    "key": "studdedtri.lines",
+    "label": "Studded triangular, lines",
+    "name": "[3⁶; 3⁴.6]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "studdedtri", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "studdedtri.dots",
+    "label": "Studded triangular, dots",
+    "name": "[3⁶; 3⁴.6]₁ · dots",
+    "group": "rules",
+    "decor": { "of": "studdedtri", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "studdedtri.2oneinthreebyshape",
+    "label": "Studded triangular, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3⁴.6]₁ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "studdedtri",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "studdedtri.2oneinthreebyshape2",
+    "label": "Studded triangular, 2 colours, one in three, by shape II",
+    "name": "[3⁶; 3⁴.6]₁ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "studdedtri",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "studdedtri.3byshape",
+    "label": "Studded triangular, 3 colours, by shape",
+    "name": "[3⁶; 3⁴.6]₁ · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "studdedtri", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "studdedtri2.lines",
+    "label": "Twisted studded triangular, lines",
+    "name": "[3⁶; 3⁴.6]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "studdedtri2", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "studdedtri2.dots",
+    "label": "Twisted studded triangular, dots",
+    "name": "[3⁶; 3⁴.6]₂ · dots",
+    "group": "rules",
+    "decor": { "of": "studdedtri2", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "elongated2.lines",
+    "label": "Half-elongated triangular, lines",
+    "name": "[3⁶; 3³.4²]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "elongated2", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "elongated2.lines2",
+    "label": "Half-elongated triangular, lines II",
+    "name": "[3⁶; 3³.4²]₁ · lines II",
+    "group": "rules",
+    "decor": { "of": "elongated2", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "elongated2.2oneinthreebyshape",
+    "label": "Half-elongated triangular, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3³.4²]₁ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "elongated2.2oneinthree",
+    "label": "Half-elongated triangular, 2 colours, one in three",
+    "name": "[3⁶; 3³.4²]₁ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "elongated2.2oneinthree2",
+    "label": "Half-elongated triangular, 2 colours, one in three II",
+    "name": "[3⁶; 3³.4²]₁ · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 4
+  },
+  {
+    "key": "elongated3.lines",
+    "label": "Third-elongated triangular, lines",
+    "name": "[3⁶; 3³.4²]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "elongated3", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "elongated3.lines2",
+    "label": "Third-elongated triangular, lines II",
+    "name": "[3⁶; 3³.4²]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "elongated3", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "elongated3.2oneinthreebyshape",
+    "label": "Third-elongated triangular, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3³.4²]₂ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated3",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "elongated3.2oneinthree",
+    "label": "Third-elongated triangular, 2 colours, one in three",
+    "name": "[3⁶; 3³.4²]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated3",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "elongated3.2oneinthree2",
+    "label": "Third-elongated triangular, 2 colours, one in three II",
+    "name": "[3⁶; 3³.4²]₂ · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated3",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 4
+  },
+  {
+    "key": "tritrunctrihex.lines",
+    "label": "Fanned truncated trihexagonal, lines",
+    "name": "[3⁶; 3².4.12] · lines",
+    "group": "rules",
+    "decor": { "of": "tritrunctrihex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "tritrunctrihex.dots",
+    "label": "Fanned truncated trihexagonal, dots",
+    "name": "[3⁶; 3².4.12] · dots",
+    "group": "rules",
+    "decor": { "of": "tritrunctrihex", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "tritrunctrihex.2oneinthreebyshape",
+    "label": "Fanned truncated trihexagonal, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3².4.12] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "tritrunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "tritrunctrihex.2oneinthreebyshape2",
+    "label": "Fanned truncated trihexagonal, 2 colours, one in three, by shape II",
+    "name": "[3⁶; 3².4.12] · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "tritrunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "tritrunctrihex.2oneinthreebyshape3",
+    "label": "Fanned truncated trihexagonal, 2 colours, one in three, by shape III",
+    "name": "[3⁶; 3².4.12] · 2 colours, one in three, by shape III",
+    "group": "colourings",
+    "decor": {
+      "of": "tritrunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "fannedhex.lines",
+    "label": "Fanned hexagonal, lines",
+    "name": "[3⁶; 3².6²] · lines",
+    "group": "rules",
+    "decor": { "of": "fannedhex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "fannedhex.lines2",
+    "label": "Fanned hexagonal, lines II",
+    "name": "[3⁶; 3².6²] · lines II",
+    "group": "rules",
+    "decor": { "of": "fannedhex", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "fannedhex.2oneinthree",
+    "label": "Fanned hexagonal, 2 colours, one in three",
+    "name": "[3⁶; 3².6²] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "fannedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "fannedhex.2oneinthree2",
+    "label": "Fanned hexagonal, 2 colours, one in three II",
+    "name": "[3⁶; 3².6²] · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "fannedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "fannedhex.2oneinthree3",
+    "label": "Fanned hexagonal, 2 colours, one in three III",
+    "name": "[3⁶; 3².6²] · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "fannedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "hexbands.lines",
+    "label": "Banded hexagonal, lines",
+    "name": "[3⁴.6; 3².6²] · lines",
+    "group": "rules",
+    "decor": { "of": "hexbands", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "hexbands.lines2",
+    "label": "Banded hexagonal, lines II",
+    "name": "[3⁴.6; 3².6²] · lines II",
+    "group": "rules",
+    "decor": { "of": "hexbands", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "hexbands.2oneinthree",
+    "label": "Banded hexagonal, 2 colours, one in three",
+    "name": "[3⁴.6; 3².6²] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "hexbands", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 2
+  },
+  {
+    "key": "hexbands.2oneinthree2",
+    "label": "Banded hexagonal, 2 colours, one in three II",
+    "name": "[3⁴.6; 3².6²] · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "hexbands",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "hexbands.3colours",
+    "label": "Banded hexagonal, 3 colours",
+    "name": "[3⁴.6; 3².6²] · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "hexbands", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "snubelongated2.dots",
+    "label": "Pinwheel snub square, dots",
+    "name": "[3³.4²; 3².4.3.4]₁ · dots",
+    "group": "rules",
+    "decor": { "of": "snubelongated2", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 0
+  },
+  {
+    "key": "snubelongated2.dots2",
+    "label": "Pinwheel snub square, dots II",
+    "name": "[3³.4²; 3².4.3.4]₁ · dots II",
+    "group": "rules",
+    "decor": { "of": "snubelongated2", "colours": 1, "rules": true, "label": "dots II" },
+    "painting": 1
+  },
+  {
+    "key": "snubelongated2.2oneinthree",
+    "label": "Pinwheel snub square, 2 colours, one in three",
+    "name": "[3³.4²; 3².4.3.4]₁ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "snubelongated2.2oneinthree2",
+    "label": "Pinwheel snub square, 2 colours, one in three II",
+    "name": "[3³.4²; 3².4.3.4]₁ · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "snubelongated2.2oneinthree3",
+    "label": "Pinwheel snub square, 2 colours, one in three III",
+    "name": "[3³.4²; 3².4.3.4]₁ · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "snubelongated.lines",
+    "label": "Zigzag snub square, lines",
+    "name": "[3³.4²; 3².4.3.4]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "snubelongated", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "snubelongated.lines2",
+    "label": "Zigzag snub square, lines II",
+    "name": "[3³.4²; 3².4.3.4]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "snubelongated", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "snubelongated.2oneinthreebyshape",
+    "label": "Zigzag snub square, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 3².4.3.4]₂ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "snubelongated.2oneinthree",
+    "label": "Zigzag snub square, 2 colours, one in three",
+    "name": "[3³.4²; 3².4.3.4]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "snubelongated.3byshape",
+    "label": "Zigzag snub square, 3 colours, by shape",
+    "name": "[3³.4²; 3².4.3.4]₂ · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
+    },
+    "painting": 4
+  },
+  {
+    "key": "dissectedtrunchex2.lines",
+    "label": "Turned dissected truncated hexagonal, lines",
+    "name": "[3³.4²; 3.4.6.4] · lines",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchex2", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "dissectedtrunchex2.dots",
+    "label": "Turned dissected truncated hexagonal, dots",
+    "name": "[3³.4²; 3.4.6.4] · dots",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchex2", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "dissectedtrunchex2.2oneinthreebyshape",
+    "label": "Turned dissected truncated hexagonal, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 3.4.6.4] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "dissectedtrunchex2.2oneinthreebyshape2",
+    "label": "Turned dissected truncated hexagonal, 2 colours, one in three, by shape II",
+    "name": "[3³.4²; 3.4.6.4] · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dissectedtrunchex2.2oneinthreebyshape3",
+    "label": "Turned dissected truncated hexagonal, 2 colours, one in three, by shape III",
+    "name": "[3³.4²; 3.4.6.4] · 2 colours, one in three, by shape III",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "squarerows2.lines",
+    "label": "Doubly elongated triangular, lines",
+    "name": "[3³.4²; 4⁴]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "squarerows2", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squarerows2.lines2",
+    "label": "Doubly elongated triangular, lines II",
+    "name": "[3³.4²; 4⁴]₁ · lines II",
+    "group": "rules",
+    "decor": { "of": "squarerows2", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squarerows2.2oneinthreebyshape",
+    "label": "Doubly elongated triangular, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 4⁴]₁ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squarerows2.2oneinthreebyshape2",
+    "label": "Doubly elongated triangular, 2 colours, one in three, by shape II",
+    "name": "[3³.4²; 4⁴]₁ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "squarerows2.2oneinthree",
+    "label": "Doubly elongated triangular, 2 colours, one in three",
+    "name": "[3³.4²; 4⁴]₁ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 4
+  },
+  {
+    "key": "squarerows3.lines",
+    "label": "Triply elongated triangular, lines",
+    "name": "[3³.4²; 4⁴]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "squarerows3", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squarerows3.lines2",
+    "label": "Triply elongated triangular, lines II",
+    "name": "[3³.4²; 4⁴]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "squarerows3", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squarerows3.2oneinthreebyshape",
+    "label": "Triply elongated triangular, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 4⁴]₂ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows3",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squarerows3.2oneinthreebyshape2",
+    "label": "Triply elongated triangular, 2 colours, one in three, by shape II",
+    "name": "[3³.4²; 4⁴]₂ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows3",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "squarerows3.2oneinthree",
+    "label": "Triply elongated triangular, 2 colours, one in three",
+    "name": "[3³.4²; 4⁴]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows3",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 4
+  },
+  {
+    "key": "dissectedtrunchex.dots",
+    "label": "Dissected truncated hexagonal, dots",
+    "name": "[3².4.3.4; 3.4.6.4] · dots",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchex", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 0
+  },
+  {
+    "key": "dissectedtrunchex.dots2",
+    "label": "Dissected truncated hexagonal, dots II",
+    "name": "[3².4.3.4; 3.4.6.4] · dots II",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchex", "colours": 1, "rules": true, "label": "dots II" },
+    "painting": 1
+  },
+  {
+    "key": "dissectedtrunchex.2oneinthreebyshape",
+    "label": "Dissected truncated hexagonal, 2 colours, one in three, by shape",
+    "name": "[3².4.3.4; 3.4.6.4] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "dissectedtrunchex.2oneinthreebyshape2",
+    "label": "Dissected truncated hexagonal, 2 colours, one in three, by shape II",
+    "name": "[3².4.3.4; 3.4.6.4] · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dissectedtrunchex.2oneinthreebyshape3",
+    "label": "Dissected truncated hexagonal, 2 colours, one in three, by shape III",
+    "name": "[3².4.3.4; 3.4.6.4] · 2 colours, one in three, by shape III",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "hexrows.lines",
+    "label": "Bow-tie hexagonal, lines",
+    "name": "[3².6²; 3.6.3.6] · lines",
+    "group": "rules",
+    "decor": { "of": "hexrows", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "hexrows.lines2",
+    "label": "Bow-tie hexagonal, lines II",
+    "name": "[3².6²; 3.6.3.6] · lines II",
+    "group": "rules",
+    "decor": { "of": "hexrows", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "hexrows.2oneinthreebyshape",
+    "label": "Bow-tie hexagonal, 2 colours, one in three, by shape",
+    "name": "[3².6²; 3.6.3.6] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "hexrows",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "hexrows.2oneinthree",
+    "label": "Bow-tie hexagonal, 2 colours, one in three",
+    "name": "[3².6²; 3.6.3.6] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "hexrows", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "hexrows.3byshape",
+    "label": "Bow-tie hexagonal, 3 colours, by shape",
+    "name": "[3².6²; 3.6.3.6] · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "hexrows", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "dodecasquare.lines",
+    "label": "Square dodecagonal, lines",
+    "name": "[3.4.3.12; 3.12²] · lines",
+    "group": "rules",
+    "decor": { "of": "dodecasquare", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "dodecasquare.lines2",
+    "label": "Square dodecagonal, lines II",
+    "name": "[3.4.3.12; 3.12²] · lines II",
+    "group": "rules",
+    "decor": { "of": "dodecasquare", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "dodecasquare.2byshape",
+    "label": "Square dodecagonal, 2 colours, by shape",
+    "name": "[3.4.3.12; 3.12²] · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "dodecasquare", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 2
+  },
+  {
+    "key": "dodecasquare.2oneinthreebyshape",
+    "label": "Square dodecagonal, 2 colours, one in three, by shape",
+    "name": "[3.4.3.12; 3.12²] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecasquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dodecasquare.2byshape2",
+    "label": "Square dodecagonal, 2 colours, by shape II",
+    "name": "[3.4.3.12; 3.12²] · 2 colours, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecasquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, by shape II"
+    },
+    "painting": 4
+  },
+  {
+    "key": "hexrings.dots",
+    "label": "Dissected truncated trihexagonal, dots",
+    "name": "[3.4².6; 3.4.6.4] · dots",
+    "group": "rules",
+    "decor": { "of": "hexrings", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 0
+  },
+  {
+    "key": "hexrings.dots2",
+    "label": "Dissected truncated trihexagonal, dots II",
+    "name": "[3.4².6; 3.4.6.4] · dots II",
+    "group": "rules",
+    "decor": { "of": "hexrings", "colours": 1, "rules": true, "label": "dots II" },
+    "painting": 1
+  },
+  {
+    "key": "hexrings.2oneinthreebyshape",
+    "label": "Dissected truncated trihexagonal, 2 colours, one in three, by shape",
+    "name": "[3.4².6; 3.4.6.4] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "hexrings",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squaretrihex.lines",
+    "label": "Elongated trihexagonal, lines",
+    "name": "[3.4².6; 3.6.3.6]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "squaretrihex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squaretrihex.lines2",
+    "label": "Elongated trihexagonal, lines II",
+    "name": "[3.4².6; 3.6.3.6]₁ · lines II",
+    "group": "rules",
+    "decor": { "of": "squaretrihex", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squaretrihex.2oneinthreebyshape",
+    "label": "Elongated trihexagonal, 2 colours, one in three, by shape",
+    "name": "[3.4².6; 3.6.3.6]₁ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squaretrihex.2oneinthreebyshape2",
+    "label": "Elongated trihexagonal, 2 colours, one in three, by shape II",
+    "name": "[3.4².6; 3.6.3.6]₁ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "squaretrihex.2oneinthree",
+    "label": "Elongated trihexagonal, 2 colours, one in three",
+    "name": "[3.4².6; 3.6.3.6]₁ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 4
+  },
+  {
+    "key": "squaretrihex2.lines",
+    "label": "Staggered elongated trihexagonal, lines",
+    "name": "[3.4².6; 3.6.3.6]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "squaretrihex2", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squaretrihex2.lines2",
+    "label": "Staggered elongated trihexagonal, lines II",
+    "name": "[3.4².6; 3.6.3.6]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "squaretrihex2", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squaretrihex2.2oneinthreebyshape",
+    "label": "Staggered elongated trihexagonal, 2 colours, one in three, by shape",
+    "name": "[3.4².6; 3.6.3.6]₂ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihex2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squaretrihex2.2oneinthreebyshape2",
+    "label": "Staggered elongated trihexagonal, 2 colours, one in three, by shape II",
+    "name": "[3.4².6; 3.6.3.6]₂ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihex2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "squaretrihex2.2oneinthree",
+    "label": "Staggered elongated trihexagonal, 2 colours, one in three",
+    "name": "[3.4².6; 3.6.3.6]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihex2",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 4
+  },
+  {
+    "key": "dodecarhombitrihex.lines",
+    "label": "Studded rhombitrihexagonal, lines",
+    "name": "[3.4.6.4; 4.6.12] · lines",
+    "group": "rules",
+    "decor": { "of": "dodecarhombitrihex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "dodecarhombitrihex.lines2",
+    "label": "Studded rhombitrihexagonal, lines II",
+    "name": "[3.4.6.4; 4.6.12] · lines II",
+    "group": "rules",
+    "decor": { "of": "dodecarhombitrihex", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "dodecarhombitrihex.2oneinthreebyshape",
+    "label": "Studded rhombitrihexagonal, 2 colours, one in three, by shape",
+    "name": "[3.4.6.4; 4.6.12] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecarhombitrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "dodecarhombitrihex.3byshape",
+    "label": "Studded rhombitrihexagonal, 3 colours, by shape",
+    "name": "[3.4.6.4; 4.6.12] · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecarhombitrihex",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dodecarhombitrihex.3byshape2",
+    "label": "Studded rhombitrihexagonal, 3 colours, by shape II",
+    "name": "[3.4.6.4; 4.6.12] · 3 colours, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecarhombitrihex",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape II"
+    },
+    "painting": 4
+  },
+  {
     "key": "tetrakis.lines",
     "label": "Tetrakis square, lines",
     "name": "V4.8² · lines",

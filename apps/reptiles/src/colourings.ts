@@ -412,12 +412,15 @@ export function* paintings(
   const placed = place(ring, cells, lattice, context);
   const { types } = placed;
   for (const k of counts) {
-    // every c with c[0] = 0 (a colouring and its colours shifted are one)
-    const offsets: number[][] = [];
-    for (let n = 0; n < k ** (types - 1); n++)
-      offsets.push([0, ...Array.from({ length: types - 1 }, (_, t) => Math.floor(n / k ** t) % k)]);
+    // every c with c[0] = 0 (a colouring and its colours shifted are one) —
+    // or, given `kinds`, only those `offsetsFor` cannot rule out
+    const every: number[][] = [];
+    if (!kinds)
+      for (let n = 0; n < k ** (types - 1); n++)
+        every.push([0, ...Array.from({ length: types - 1 }, (_, t) => Math.floor(n / k ** t) % k)]);
     for (let a = 0; a < k; a++) {
       for (let b = 0; b < k; b++) {
+        const offsets = kinds ? offsetsFor(placed, k, a, b, kinds) : every;
         for (const c of offsets) {
           const params: PaintingParams = { k, a, b, c, lines: false };
           const colour = colourOf(params);
@@ -441,6 +444,131 @@ export function* paintings(
   }
 }
 
+/**
+ * The offsets c (c[0] = 0) of the colouring (a, b) in `k` colours that
+ * `paint`, given `kinds`, might keep anything of — in the order `paintings`
+ * would try every one, c[1] changing fastest. Trying every one is k to the
+ * power of the classes, past ten billion on the 2-uniform tilings of twenty
+ * classes, so c is set a class at a time, outwards from class 0, and a
+ * branch is dropped as soon as it can keep nothing: each window cell is read
+ * once its class and every class across its edges is set, and `paint` drops
+ * the coloured board where two cells of one kind and colour read their marks
+ * differently (`split`), each third of a 3-colouring the same in its two
+ * colours, and the lined board where two cells of one kind do — which they
+ * do already where they differ in which edges have a tile of their own colour
+ * across, before any line is cut back (a cut turns a line into a half disc,
+ * never a blank edge into either). A branch goes on while any of them is
+ * still possible; what it reaches `paint` checks in full.
+ */
+function offsetsFor(
+  placed: Placed,
+  k: number,
+  a: number,
+  b: number,
+  kinds: readonly number[],
+): number[][] {
+  const { sites, across, types, atlas, sizes } = placed;
+  // the classes outwards from class 0, each after one it touches
+  const order = [0];
+  const rank = new Array<number>(types).fill(-1);
+  rank[0] = 0;
+  for (let n = 0; n < order.length; n++) {
+    const t = order[n]!;
+    for (let e = 0; e < sizes[t]!; e++) {
+      const there = atlas.get(`${t}:${e}`);
+      if (there && rank[there.type] === -1) {
+        rank[there.type] = order.length;
+        order.push(there.type);
+      }
+    }
+  }
+  if (order.length !== types) throw new Error("colourings: the classes do not join up");
+  // each cell, at the step that sets the last class it is read by
+  const ready: number[][] = order.map(() => []);
+  across.forEach((edges, cell) => {
+    const last = Math.max(rank[sites[cell]!.type]!, ...edges.map((x) => rank[x.type]!));
+    ready[last]!.push(cell);
+  });
+  const c = new Array<number>(types).fill(0);
+  const base = (t: number, i: number, j: number): number => mod(a * i + b * j + c[t]!, k);
+  // what each cell reads under each test: the colourings (in k colours, and
+  // each third of a 3-colouring) and the lined board's same-colour edges
+  const tests: ((cell: number) => [group: string, key: string])[] = [
+    ...[undefined, ...(k === 3 ? [0, 1, 2] : [])].map(
+      (alone) =>
+        (cell: number): [string, string] => {
+          const paint = (t: number, i: number, j: number): number => {
+            const v = base(t, i, j);
+            return alone === undefined ? v : v === alone ? 1 : 0;
+          };
+          const s = sites[cell]!;
+          const own = paint(s.type, s.i, s.j);
+          const marks = across[cell]!.map((x) => colourMark(own, paint(x.type, x.i, x.j)));
+          return [`${own}:${kinds[cell]}`, marksKey(marks)];
+        },
+    ),
+    (cell) => {
+      const s = sites[cell]!;
+      const own = base(s.type, s.i, s.j);
+      const same = across[cell]!.map((x) => (base(x.type, x.i, x.j) === own ? 1 : 0));
+      return [String(kinds[cell]), marksKey(same)];
+    },
+  ];
+  const read = tests.map(() => new Map<string, string>());
+  const alive = tests.map(() => true);
+  const found: number[][] = [];
+  // read the cells ready at step n; undo what it did, or null where nothing
+  // is left alive
+  const step = (n: number): (() => void) | null => {
+    const added: [number, string][] = [];
+    const killed: number[] = [];
+    tests.forEach((test, w) => {
+      if (!alive[w]) return;
+      for (const cell of ready[n]!) {
+        const [group, key] = test(cell);
+        const known = read[w]!.get(group);
+        if (known === undefined) {
+          read[w]!.set(group, key);
+          added.push([w, group]);
+        } else if (known !== key) {
+          alive[w] = false;
+          killed.push(w);
+          return;
+        }
+      }
+    });
+    const undo = (): void => {
+      for (const [w, group] of added) read[w]!.delete(group);
+      for (const w of killed) alive[w] = true;
+    };
+    if (alive.some(Boolean)) return undo;
+    undo();
+    return null;
+  };
+  const walk = (n: number): void => {
+    if (n === types) {
+      found.push([...c]);
+      return;
+    }
+    for (let v = 0; v < k; v++) {
+      c[order[n]!] = v;
+      const undo = step(n);
+      if (undo) {
+        walk(n + 1);
+        undo();
+      }
+    }
+    c[order[n]!] = 0;
+  };
+  const undo = step(0);
+  if (undo) walk(1);
+  // in the order every c is tried in: c[1] fastest, the last class slowest
+  return found.sort((p, q) => {
+    for (let t = types - 1; t > 0; t--) if (p[t] !== q[t]) return p[t]! - q[t]!;
+    return 0;
+  });
+}
+
 /** The one painting `params` names (as `paintings` made it). */
 export function paintingOf(
   ring: Ring,
@@ -462,13 +590,37 @@ export function paintingOf(
  * reaches: the shortest one, and the shortest not along it — in a plane
  * lattice those two are a basis. A candidate is the step from a largest
  * cell to a translated copy of it, kept if it carries every cell whose image
- * lands on the patch's vertices onto a cell. Exact but for ordering lengths
- * and reading the sign of a cross product, both floats of values already
- * known to differ or be non-zero.
+ * lands on the patch's vertices onto a cell, and every cell whose image lies
+ * well inside the patch — more than two cells' widths in from its bounding
+ * box — onto a cell too: a step that carries the squares of 2-uniform rows of
+ * squares and triangles onto squares takes a triangle to where no vertex is,
+ * which only the second test sees. Exact but for ordering lengths, reading
+ * the sign of a cross product, and that "well inside", whose float can only
+ * decide a cell at its margin — a false step fails on every cell inside it.
  */
 export function latticeOf(ring: Ring, cells: Piece[][]): Lattice {
   const polys = cells.map((c) => c[0]!.verts);
   const vertKeys = new Set(polys.flat().map((v) => ring.key(v)));
+  const xys = polys.map((p) => p.map((v) => ring.toXY(v)));
+  const flat = xys.flat();
+  const width = Math.max(
+    ...xys.map((p) =>
+      Math.max(...p.flatMap(([x, y]) => p.map(([u, w]) => Math.hypot(x - u, y - w)))),
+    ),
+  );
+  const margin = 2 * width;
+  const [x0, x1] = [
+    Math.min(...flat.map((p) => p[0])) + margin,
+    Math.max(...flat.map((p) => p[0])) - margin,
+  ];
+  const [y0, y1] = [
+    Math.min(...flat.map((p) => p[1])) + margin,
+    Math.max(...flat.map((p) => p[1])) - margin,
+  ];
+  const inside = (
+    p: readonly (readonly [number, number])[],
+    [dx, dy]: readonly [number, number],
+  ): boolean => p.every(([x, y]) => x + dx >= x0 && x + dx <= x1 && y + dy >= y0 && y + dy <= y1);
   const cellKeys = new Set(cells.map((c) => cellKey(ring, c)));
   const big = polys.reduce((a, c) => (c.length > a.length ? c : a), polys[0]!);
   const found: { t: Cyc; x: number; y: number; len: number }[] = [];
@@ -480,9 +632,10 @@ export function latticeOf(ring: Ring, cells: Piece[][]): Lattice {
       if (ring.eq(t, ring.zero) || tried.has(ring.key(t))) continue;
       if (!big.every((v, n) => ring.eq(poly[(s + n) % poly.length]!, ring.add(v, t)))) continue;
       tried.add(ring.key(t));
-      const carries = polys.every((p) => {
+      const step = ring.toXY(t);
+      const carries = polys.every((p, c) => {
         const moved = p.map((v) => ring.add(v, t));
-        if (!moved.every((v) => vertKeys.has(ring.key(v)))) return true;
+        if (!moved.every((v) => vertKeys.has(ring.key(v)))) return !inside(xys[c]!, step);
         return cellKeys.has(
           moved
             .map((v) => ring.key(v))
