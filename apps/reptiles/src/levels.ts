@@ -1044,16 +1044,18 @@ function socolarTaylorLevel(rings: number): Level {
   };
 }
 
-/** Every aperiodic level's whole patch — the one its window is cut from —
- * each tile in its prototile's own order, for the matching rules and
- * colourings read off it (src/patchMarks.ts): Ammann–Beenker's from each
+/** Every aperiodic or spiral level's whole patch — the one its window is
+ * cut from — each tile in its prototile's own order, for the matching rules
+ * and colourings read off it (src/patchMarks.ts): Ammann–Beenker's from each
  * tile's own first corner (`ammannBeenkerFrames`), the Spectre's fourteen
  * corners, its flat one kept, as its builder lays its outline, the hat's
  * family's as `hatFrames` lists them, the Socolar–Taylor tile's pieces as
- * `SOCOLAR_TAYLOR` lists them. Penrose's rhombi and his kites and darts are
- * cut nowhere part-way, so only their kinds matter: told apart by their
- * diagonals. */
-export function aperiodicFrames(key: string): FramedPatch {
+ * `SOCOLAR_TAYLOR` lists them, and a spiral's as `spiralFrames` finds them.
+ * Penrose's rhombi and his kites and darts are cut nowhere part-way, so only
+ * their kinds matter: told apart by their diagonals. */
+export function patchFrames(key: string): FramedPatch {
+  const spiral = SPIRALS.find(([mode]) => mode === key);
+  if (spiral) return spiralFrames(spiral[0], spiral[1]);
   const aperiodic = APERIODIC.find(([k]) => k === key);
   if (aperiodic) {
     const [, mode, depth] = aperiodic;
@@ -1102,6 +1104,34 @@ export function aperiodicFrames(key: string): FramedPatch {
       })),
     };
   throw new Error(`no aperiodic patch for ${key}`);
+}
+
+/** A spiral's whole patch — its builder grown `rings` out, untrimmed — each
+ * tile listed from the corner that carries it onto the patch's first tile by
+ * a turn: the builder lays every tile of a spiral as one tile turned and
+ * moved (the pentagonal spirals' two halves of a hexagon a half turn apart),
+ * and none mirrored. Each tile's edges are matched to the first tile's
+ * exactly, the builder's own first corner taken where it serves (the
+ * phyllotactic hexagon's 72° corner, Klaassen's heptagon's tip), so a tile
+ * with a turn of its own is still framed as its builder framed it. */
+function spiralFrames(mode: string, rings: number): FramedPatch {
+  const { ring, cells } = spiralPatch(mode, rings, null);
+  const edges = (c: readonly Cyc[]): Cyc[] => c.map((v, i) => ring.sub(c[(i + 1) % c.length]!, v));
+  const first = edges(cells[0]!);
+  const m = first.length;
+  return {
+    ring,
+    cells: cells.map((c) => {
+      const own = edges(c);
+      for (let s = 0; s < m; s++)
+        for (let k = 0; k < ring.n; k++) {
+          const z = ring.zeta(k);
+          if (first.every((e, i) => ring.eq(ring.mul(z, e), own[(i + s) % m]!)))
+            return { kind: 0, pieces: [[...c.slice(s), ...c.slice(0, s)]] };
+        }
+      throw new Error(`${mode}: a tile is not the first one turned`);
+    }),
+  };
 }
 
 // -- a tiling's boards ---------------------------------------------------------
@@ -1574,13 +1604,23 @@ function kiteDartRulesLevel(plain: Level): Level {
 
 // -- matching rules and colourings read off an aperiodic patch -----------------
 
-/** The aperiodic levels marked from their own patch (src/patchMarks.ts):
- * every one, but that Penrose's two keep his own arrows for their rules. */
+/** The levels marked from their own patch (src/patchMarks.ts): every
+ * aperiodic one and every spiral — a spiral is no more periodic than they
+ * are, its centre a point unlike any other. */
 export const PATCH_MARKED: string[] = [
   ...APERIODIC.map(([key]) => key),
   ...HAT_FAMILY.map(([key]) => key),
   "socolartaylor",
+  ...SPIRALS.map(([mode]) => mode),
 ];
+
+/** The patch-marked levels with no rule read off their patch: Penrose's two
+ * keep his own arrows for theirs, and Klaassen's heptagon's patch asks
+ * nothing — every edge meets every other, either way along it (one class
+ * with no way, `deriveRules`), so its rule would mark every edge alike. A
+ * seed and the tile's shape force that spiral; no rule of this shape adds
+ * to them. */
+export const NO_PATCH_RULES = new Set(["penrose", "kitedart", "klaassen"]);
 
 /** Each one's colouring, as `npm run colourings` chose it. */
 const APERIODIC_COLOURINGS = aperiodicColouringsData as Record<string, ChosenColouring>;
@@ -1604,7 +1644,7 @@ const PATCH_WINDOWS = new Map<string, PatchWindow>();
 export function patchWindow(plain: Level): PatchWindow {
   const hit = PATCH_WINDOWS.get(plain.key);
   if (hit) return hit;
-  const framed = aperiodicFrames(plain.key);
+  const framed = patchFrames(plain.key);
   const refined = refine(framed);
   const { window, shift } = locate(
     framed.ring,
@@ -1754,12 +1794,13 @@ export const PAINTED: string[] = [
 
 /** The marked levels made otherwise than from src/colourings.json, after
  * the paintings, each by its key: Penrose's tilings with his arrows, then
- * every aperiodic level's matching rules and colouring read off its patch. */
+ * every aperiodic level's and spiral's matching rules and colouring read off
+ * its patch. */
 const MARKED_BY_HAND: [key: string, of: string, make: (plain: Level) => Level][] = [
   ["penrose.rules", "penrose", penroseRulesLevel],
   ["kitedart.rules", "kitedart", kiteDartRulesLevel],
   ...PATCH_MARKED.flatMap((of): [string, string, (plain: Level) => Level][] => [
-    ...(of === "penrose" || of === "kitedart"
+    ...(NO_PATCH_RULES.has(of)
       ? []
       : [[`${of}.rules`, of, patchRulesLevel] as [string, string, (plain: Level) => Level]]),
     ...(playableColouring(of)
@@ -1850,7 +1891,7 @@ const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
  * Every tiling's first board, built — the plain ones section by section
  * (`SECTIONS`), then the marked ones: each painted board's paintings as
  * `src/colourings.json` lists them, Penrose's tilings with their arrows, and
- * every aperiodic level's rules and colouring read off its patch.
+ * every aperiodic level's and spiral's rules and colouring read off its patch.
  * Seconds of work: the game never does it, but reads the order, names and
  * marks it finds from `src/levelIndex.json` (`npm run levels`); the tests
  * build it to hold that file to it.

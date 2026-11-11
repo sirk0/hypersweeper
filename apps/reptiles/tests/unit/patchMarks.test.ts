@@ -6,8 +6,9 @@ import { piece, posed, regular } from "../../src/geometry/shape";
 import {
   LEVELS,
   MAX_COLOURED_TRAY,
+  NO_PATCH_RULES,
   PATCH_MARKED,
-  aperiodicFrames,
+  patchFrames,
   levelByKey,
   patchWindow,
 } from "../../src/levels";
@@ -139,7 +140,7 @@ describe("rules read off a patch", () => {
   it.each(PATCH_MARKED)(
     "%s: no edge of its patch is met part-way, and every meeting keeps the rule",
     (key) => {
-      const refined = refine(aperiodicFrames(key));
+      const refined = refine(patchFrames(key));
       expect(cutPartWay(refined)).toBe(false);
       const rules = deriveRules(refined);
       const slot = (at: { cell: number; piece: number; edge: number }) =>
@@ -155,18 +156,65 @@ describe("rules read off a patch", () => {
   );
 });
 
+describe("the spirals' rules", () => {
+  const SPIRALS = ["phyllotaxis", "klaassen", "pentaspiral5", "pentaspiral6", "pentaspiral7"];
+
+  it("frames every tile of a spiral's patch as its first, turned", () => {
+    for (const key of SPIRALS) {
+      const { ring, cells } = patchFrames(key);
+      const first = cells[0]!.pieces[0]!;
+      const edge = (c: Cyc[], i: number) => ring.sub(c[(i + 1) % c.length]!, c[i]!);
+      for (const { pieces } of cells) {
+        const [c] = pieces as [Cyc[]];
+        // the turn that carries the first edge onto this one carries them all
+        const k = [...Array(ring.n).keys()].find((k) =>
+          ring.eq(ring.mul(ring.zeta(k), edge(first, 0)), edge(c, 0)),
+        )!;
+        expect(k, key).toBeDefined();
+        for (let i = 0; i < c.length; i++)
+          expect(ring.eq(ring.mul(ring.zeta(k), edge(first, i)), edge(c, i)), key).toBe(true);
+      }
+    }
+  });
+
+  it("marks every spiral but Klaassen's, whose patch asks nothing", () => {
+    for (const key of SPIRALS) {
+      const rules = [...deriveRules(refine(patchFrames(key))).values()];
+      const trivial = rules.every((r) => r.cls === 0 && r.toEnd === null);
+      expect(trivial, key).toBe(NO_PATCH_RULES.has(key));
+      expect(
+        LEVELS.some((l) => l.key === `${key}.rules`),
+        key,
+      ).toBe(!trivial);
+    }
+    // the phyllotactic hexagon's: one class, every arrow pointing one way
+    // across the tile, so it is told from itself turned half round
+    const phyllo = deriveRules(refine(patchFrames("phyllotaxis")));
+    expect(new Set([...phyllo.values()].map((r) => r.cls))).toEqual(new Set([0]));
+    expect([...phyllo.values()].map((r) => r.toEnd)).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+    ]);
+  });
+});
+
 describe("colourings read off a patch", () => {
   it("lists an aperiodic colouring only where its tray is small enough to play", () => {
     for (const key of PATCH_MARKED) {
       const listed = LEVELS.filter((l) => l.decor?.of === key && !l.decor.rules);
       expect(listed.length, key).toBe(CHOSEN[key]!.tiles <= MAX_COLOURED_TRAY ? 1 : 0);
     }
-    // so far only Ammann–Beenker's, at five tray tiles
+    // so far Ammann–Beenker's, at five tray tiles, and Klaassen's spiral's,
+    // at four
     expect(
       LEVELS.filter((l) => l.decor && PATCH_MARKED.includes(l.decor.of) && !l.decor.rules).map(
         (l) => l.key,
       ),
-    ).toEqual(["ammannbeenker.3apart"]);
+    ).toEqual(["ammannbeenker.3apart", "klaassen.3apart"]);
   });
 
   it.each(PATCH_MARKED)(

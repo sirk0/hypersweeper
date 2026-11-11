@@ -2873,5 +2873,30 @@
     "score": 0.757,
     "presses": 7,
     "flips": 4
+  },
+  "phyllotaxis.rules": {
+    "score": 0.624,
+    "presses": 9,
+    "flips": 0
+  },
+  "klaassen.3apart": {
+    "score": 2.379,
+    "presses": 24,
+    "flips": 1
+  },
+  "pentaspiral5.rules": {
+    "score": 0.888,
+    "presses": 14,
+    "flips": 0
+  },
+  "pentaspiral6.rules": {
+    "score": 0.986,
+    "presses": 12,
+    "flips": 0
+  },
+  "pentaspiral7.rules": {
+    "score": 1.343,
+    "presses": 18,
+    "flips": 0
   }
 }

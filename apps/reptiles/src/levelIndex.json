@@ -2258,5 +2258,40 @@
     "name": "Socolar–Taylor tile · matching rules",
     "group": "rules",
     "decor": { "of": "socolartaylor", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "phyllotaxis.rules",
+    "label": "Phyllotactic spiral, matching rules",
+    "name": "Phyllotactic spiral · matching rules",
+    "group": "rules",
+    "decor": { "of": "phyllotaxis", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "klaassen.3apart",
+    "label": "Klaassen spiral, 3 colours, apart",
+    "name": "Klaassen spiral · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "klaassen", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "pentaspiral5.rules",
+    "label": "Pentagonal spiral (5-fold), matching rules",
+    "name": "Pentagonal spiral (5-fold) · matching rules",
+    "group": "rules",
+    "decor": { "of": "pentaspiral5", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "pentaspiral6.rules",
+    "label": "Pentagonal spiral (6-fold), matching rules",
+    "name": "Pentagonal spiral (6-fold) · matching rules",
+    "group": "rules",
+    "decor": { "of": "pentaspiral6", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "pentaspiral7.rules",
+    "label": "Pentagonal spiral (7-fold), matching rules",
+    "name": "Pentagonal spiral (7-fold) · matching rules",
+    "group": "rules",
+    "decor": { "of": "pentaspiral7", "colours": 1, "rules": true, "label": "matching rules" }
   }
 ]
