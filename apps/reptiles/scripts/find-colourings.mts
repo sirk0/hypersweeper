@@ -1,5 +1,5 @@
 // List each regular tiling's lined and coloured levels, and choose each
-// uniform, 2-uniform and Laves tiling's (src/colouringChoice.ts), and write them to
+// uniform, 2-uniform, Laves and 2-isohedral tiling's (src/colouringChoice.ts), and write them to
 // src/colourings.json, which the game builds from — searching every painting
 // takes from a second to minutes, far too long for a page load. Then choose
 // each aperiodic level's proper colouring (`chooseColouring` in
@@ -16,6 +16,7 @@ import {
   COLOURED,
   LAVES,
   PATCH_MARKED,
+  TWO_ISOHEDRAL_KEYED,
   TWO_UNIFORM,
   UNIFORM,
   makeFirstBoard,
@@ -37,7 +38,7 @@ const tilings: [string, (plain: Level) => PaintingParams[]][] = [
     key,
     (plain) => regularColourings(plain, lattice),
   ]),
-  ...[...UNIFORM, ...TWO_UNIFORM, ...LAVES].map(
+  ...[...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED].map(
     ([key, box]): [string, (plain: Level) => PaintingParams[]] => [
       key,
       (plain) => chooseColourings(plain, box),

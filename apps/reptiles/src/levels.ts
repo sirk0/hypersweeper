@@ -883,7 +883,7 @@ export const LAVES: [string, number][] = [
  * with one outline, found by scanning sizes and taken mid-range. The
  * dodecagons' duals have a corner twelve tiles meet at, so their windows are
  * coarse: V[3.4.3.12; 3.12²] is 20 tiles, its next square one 60. */
-const TWO_ISOHEDRAL: [string, number][] = [
+export const TWO_ISOHEDRAL: [string, number][] = [
   ["studdedtri", 6.7],
   ["studdedtri2", 6.65],
   ["elongated2", 5.9],
@@ -905,6 +905,13 @@ const TWO_ISOHEDRAL: [string, number][] = [
   ["squaretrihex2", 6.85],
   ["dodecarhombitrihex", 7.65],
 ];
+
+/** The 2-isohedral tilings by their own keys (`<primal>dual`), each with
+ * its window: what their colourings are listed and looked up by. */
+export const TWO_ISOHEDRAL_KEYED: [string, number][] = TWO_ISOHEDRAL.map(([primal, box]) => [
+  `${primal}dual`,
+  box,
+]);
 
 /** The pentagonal tilings, in Hypersweeper's order — one convex pentagon each,
  * its edges short reals of the ring (√2/2, 2cos 15°) — and each one's window
@@ -1544,7 +1551,9 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   let setup = SETUPS.get(plain.key);
   if (!setup) {
     const regular = COLOURED.find(([key]) => key === plain.key);
-    const box = [...UNIFORM, ...TWO_UNIFORM, ...LAVES].find(([key]) => key === plain.key)?.[1];
+    const box = [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED].find(
+      ([key]) => key === plain.key,
+    )?.[1];
     if (regular) setup = { lattice: regular[1], context: [] };
     else if (box !== undefined) {
       const context = periodicContext(plain, box);
@@ -1555,18 +1564,21 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   return setup;
 }
 
-/** A uniform, 2-uniform or Laves tiling's window, `box` edges square, and a
- * patch of the same tiling twice that size round it, moved onto the window's
- * coordinates: what lies past the window's rim, for its colourings (and, for
- * the snub hexagonal, whose window holds one hexagon, the only place its
- * lattice shows). A Laves board's wider patch is a wider dual window
- * (`lavesWindow`), in the same ring: the same scale, the same unit. */
+/** A uniform, 2-uniform, Laves or 2-isohedral tiling's window, `box` edges
+ * square, and a patch of the same tiling twice that size round it, moved onto
+ * the window's coordinates: what lies past the window's rim, for its
+ * colourings (and, for the snub hexagonal, whose window holds one hexagon, the
+ * only place its lattice shows). A Laves or 2-isohedral board's wider patch is
+ * a wider dual window (`lavesWindow`), in the same ring: the same scale, the
+ * same unit. */
 export function periodicContext(plain: Level, box: number): Piece[][] {
   const { ring } = plain;
   const wide =
     plain.group === "laves"
       ? lavesWindow(lavesPrimal(plain.key), 2 * box)
-      : templateWindow(plain.key, 2 * box);
+      : plain.group === "2-isohedral"
+        ? lavesWindow(plain.dualOf!, 2 * box)
+        : templateWindow(plain.key, 2 * box);
   if (wide.ring.n !== ring.n || wide.ring.unit !== ring.unit)
     throw new Error(`${plain.key}: the wider patch is in another ring`);
   const cells = wide.cells.map((c) => ccw(ring, c));
@@ -1596,7 +1608,7 @@ export function periodicContext(plain: Level, box: number): Piece[][] {
 /** Which of a painted board's paintings to make levels of
  * (`npm run colourings`, scripts/find-colourings.mts): every one a regular
  * board's `paintedCandidates` keeps, and the chosen few of a uniform,
- * 2-uniform or Laves board's — searching takes from a second to minutes, so the choice
+ * 2-uniform, Laves or 2-isohedral board's — searching takes from a second to minutes, so the choice
  * is written down and only those are built. */
 const CHOSEN_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
 
@@ -1877,13 +1889,14 @@ const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
 
 /** The tilings painted, in the order their marked levels are listed: the
- * regular three, the other eight uniform ones, the twenty 2-uniform ones and
- * the eight Laves ones. */
+ * regular three, the other eight uniform ones, the twenty 2-uniform ones, the
+ * eight Laves ones and the twenty 2-isohedral ones. */
 export const PAINTED: string[] = [
   ...COLOURED.map(([key]) => key),
   ...UNIFORM.map(([key]) => key),
   ...TWO_UNIFORM.map(([key]) => key),
   ...LAVES.map(([key]) => key),
+  ...TWO_ISOHEDRAL_KEYED.map(([key]) => key),
 ];
 
 /** The marked levels made otherwise than from src/colourings.json, after

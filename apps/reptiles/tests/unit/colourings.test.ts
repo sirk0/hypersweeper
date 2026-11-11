@@ -41,6 +41,7 @@ import {
   COLOURED as COLOURED_LATTICES,
   LAVES,
   LEVELS,
+  TWO_ISOHEDRAL_KEYED,
   TWO_UNIFORM,
   UNIFORM,
   levelByKey,
@@ -147,7 +148,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones and the Laves ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels and the spirals rules read off their patch", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones and the 2-isohedral ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels and the spirals rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -490,18 +491,20 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one and each Laves one", () => {
-    for (const [key] of [...UNIFORM, ...TWO_UNIFORM, ...LAVES]) {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one and each 2-isohedral one", () => {
+    for (const [key] of [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
       expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
-      // every uniform and Laves tiling has some; a 2-uniform one may have none
-      // as hard as its plain board
-      if (!TWO_UNIFORM.some(([two]) => two === key)) expect(marked.length, key).toBeGreaterThan(0);
+      // every uniform and Laves tiling has some; a 2-uniform or 2-isohedral
+      // one may have none as hard as its plain board
+      if (![...TWO_UNIFORM, ...TWO_ISOHEDRAL_KEYED].some(([two]) => two === key))
+        expect(marked.length, key).toBeGreaterThan(0);
     }
-    expect(
-      TWO_UNIFORM.filter(([key]) => COLOURED.some((l) => l.decor!.of === key)).length,
-    ).toBeGreaterThan(TWO_UNIFORM.length / 2);
+    for (const family of [TWO_UNIFORM, TWO_ISOHEDRAL_KEYED])
+      expect(
+        family.filter(([key]) => COLOURED.some((l) => l.decor!.of === key)).length,
+      ).toBeGreaterThan(family.length / 2);
   });
 
   // The full choice on the 2-uniform tilings of a dozen or more translation
@@ -509,7 +512,11 @@ describe("colourings", () => {
   // those are left to `npm run colourings` (`SLOW_CHOICE`), and their listed paintings
   // are checked only by building them (`periodicColouredLevels` throws on one
   // that no longer makes a level) and by the tests above.
-  it.each([...UNIFORM, ...TWO_UNIFORM, ...LAVES].filter(([key]) => !SLOW_CHOICE.includes(key)))(
+  it.each(
+    [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED].filter(
+      ([key]) => !SLOW_CHOICE.includes(key),
+    ),
+  )(
     "%s: src/colourings.json is in step with the choice (npm run colourings)",
     (key, box) => {
       const plain = levelByKey(key)!;
