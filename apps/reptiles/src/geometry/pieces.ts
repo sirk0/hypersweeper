@@ -553,3 +553,46 @@ export function piecePatch(key: string, inflations: number): { ring: Ring; cells
   }
   return { ring, cells };
 }
+
+/**
+ * `piecePatch`'s cells, in the same order, each the tile's pieces carried by
+ * the pose that lays it and listed as the tile lists them: piece j, corner i
+ * of every cell is the tile's piece j, corner i, so edge j of a piece is the
+ * same edge in every copy (clockwise where the copy is mirrored). What its matching rules are
+ * read off (`FramedPatch`).
+ */
+export function piecePatchFrames(
+  key: string,
+  inflations: number,
+): { ring: Ring; cells: Cyc[][][] } {
+  const def = PIECE_TILES[key];
+  if (!def) throw new Error(`no tile of several pieces ${key}`);
+  if (inflations < 1) throw new Error("inflations must be >= 1");
+  const { ring, factor } = def;
+  const real = ring.eq(factor, ring.conj(factor));
+  if (inflations > 1 && !real) throw new Error(`${key}: a turning growth is grown once only`);
+  const poses = def.children.map((c) =>
+    poseOf(
+      def,
+      c.map((p) => ccw(ring, p)),
+    ),
+  );
+  const place =
+    ({ rot, flip, t }: { rot: number; flip: boolean; t: Cyc }, scale: Cyc) =>
+    (v: Cyc): Cyc =>
+      ring.add(ring.mul(ring.zeta(rot), flip ? ring.conj(v) : v), ring.mul(scale, t));
+  // each child: the tile, posed as `posed` poses it, its pieces not reordered
+  let cells = poses.map((pose) => def.tile.map((p) => p.map(place(pose, ring.one))));
+  // grown n times: each child's pose, its move scaled by factorⁿ⁻¹, applied
+  // to the patch grown n − 1 times
+  let scale = ring.one;
+  for (let round = 2; round <= inflations; round++) {
+    scale = ring.mul(scale, factor);
+    const last = cells;
+    cells = poses.flatMap((pose) => {
+      const at = place(pose, scale);
+      return last.map((c) => c.map((p) => p.map(at)));
+    });
+  }
+  return { ring, cells };
+}

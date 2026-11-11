@@ -2,7 +2,7 @@
 // uniform, 2-uniform, Laves and 2-isohedral tiling's (src/colouringChoice.ts), and write them to
 // src/colourings.json, which the game builds from — searching every painting
 // takes from a second to minutes, far too long for a page load. Then choose
-// each aperiodic level's proper colouring (`chooseColouring` in
+// each aperiodic level's, spiral's and rep-tile's proper colouring (`chooseColouring` in
 // src/patchMarks.ts) and write it to src/aperiodicColourings.json.
 // `npm run colourings` after changing a painted tiling's window or the
 // colourings, then `npm run levels` and `npm run difficulty`; the unit tests

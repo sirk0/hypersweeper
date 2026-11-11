@@ -3140,5 +3140,152 @@
     "name": "Pentagonal spiral (7-fold) · matching rules",
     "group": "rules",
     "decor": { "of": "pentaspiral7", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "sphinx.rules",
+    "label": "Sphinx, matching rules",
+    "name": "Sphinx · matching rules",
+    "group": "rules",
+    "decor": { "of": "sphinx", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "chair.rules",
+    "label": "Chair, matching rules",
+    "name": "Chair · matching rules",
+    "group": "rules",
+    "decor": { "of": "chair", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "ltetromino.rules",
+    "label": "L-tetromino, matching rules",
+    "name": "L-tetromino · matching rules",
+    "group": "rules",
+    "decor": { "of": "ltetromino", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "trapezoid.rules",
+    "label": "Trapezoid, matching rules",
+    "name": "Trapezoid · matching rules",
+    "group": "rules",
+    "decor": { "of": "trapezoid", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "trapezoid.3apart",
+    "label": "Trapezoid, 3 colours, apart",
+    "name": "Trapezoid · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "trapezoid", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "righttrapezoid.rules",
+    "label": "Right trapezoid, matching rules",
+    "name": "Right trapezoid · matching rules",
+    "group": "rules",
+    "decor": { "of": "righttrapezoid", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "halftrapezoid.rules",
+    "label": "Half trapezoid, matching rules",
+    "name": "Half trapezoid · matching rules",
+    "group": "rules",
+    "decor": { "of": "halftrapezoid", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "stretchedchair.rules",
+    "label": "Stretched chair, matching rules",
+    "name": "Stretched chair · matching rules",
+    "group": "rules",
+    "decor": { "of": "stretchedchair", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "rhombicl.rules",
+    "label": "Rhombic L, matching rules",
+    "name": "Rhombic L · matching rules",
+    "group": "rules",
+    "decor": { "of": "rhombicl", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "rightisosceles.rules",
+    "label": "Isosceles right triangle, matching rules",
+    "name": "Isosceles right triangle · matching rules",
+    "group": "rules",
+    "decor": { "of": "rightisosceles", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "rightisosceles.3apart",
+    "label": "Isosceles right triangle, 3 colours, apart",
+    "name": "Isosceles right triangle · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "rightisosceles", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "drafter.rules",
+    "label": "30-60-90 triangle, matching rules",
+    "name": "30-60-90 triangle · matching rules",
+    "group": "rules",
+    "decor": { "of": "drafter", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "drafter.3apart",
+    "label": "30-60-90 triangle, 3 colours, apart",
+    "name": "30-60-90 triangle · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "drafter", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "ttetromino.rules",
+    "label": "T-tetromino, matching rules",
+    "name": "T-tetromino · matching rules",
+    "group": "rules",
+    "decor": { "of": "ttetromino", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "fish.rules",
+    "label": "Right-angled fish, matching rules",
+    "name": "Right-angled fish · matching rules",
+    "group": "rules",
+    "decor": { "of": "fish", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "fish.3apart",
+    "label": "Right-angled fish, 3 colours, apart",
+    "name": "Right-angled fish · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "fish", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "fish60.rules",
+    "label": "60° fish, matching rules",
+    "name": "60° fish · matching rules",
+    "group": "rules",
+    "decor": { "of": "fish60", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "kissingsquares.rules",
+    "label": "Kissing squares, matching rules",
+    "name": "Kissing squares · matching rules",
+    "group": "rules",
+    "decor": { "of": "kissingsquares", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "kissingsquares.3apart",
+    "label": "Kissing squares, 3 colours, apart",
+    "name": "Kissing squares · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "kissingsquares", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "kissingtriangles.3apart",
+    "label": "Kissing triangles, 3 colours, apart",
+    "name": "Kissing triangles · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "kissingtriangles", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "kissingchain.rules",
+    "label": "Kissing square chain, matching rules",
+    "name": "Kissing square chain · matching rules",
+    "group": "rules",
+    "decor": { "of": "kissingchain", "colours": 1, "rules": true, "label": "matching rules" }
   }
 ]

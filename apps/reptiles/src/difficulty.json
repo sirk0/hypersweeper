@@ -3318,5 +3318,110 @@
     "score": 1.343,
     "presses": 18,
     "flips": 0
+  },
+  "sphinx.rules": {
+    "score": 0.789,
+    "presses": 6,
+    "flips": 4
+  },
+  "chair.rules": {
+    "score": 0.455,
+    "presses": 6,
+    "flips": 0
+  },
+  "ltetromino.rules": {
+    "score": 0.33,
+    "presses": 4,
+    "flips": 0
+  },
+  "trapezoid.rules": {
+    "score": 0.692,
+    "presses": 8,
+    "flips": 0
+  },
+  "trapezoid.3apart": {
+    "score": 1.142,
+    "presses": 8,
+    "flips": 0
+  },
+  "righttrapezoid.rules": {
+    "score": 0.642,
+    "presses": 5,
+    "flips": 4
+  },
+  "halftrapezoid.rules": {
+    "score": 0.9,
+    "presses": 5,
+    "flips": 7
+  },
+  "stretchedchair.rules": {
+    "score": 0.642,
+    "presses": 5,
+    "flips": 4
+  },
+  "rhombicl.rules": {
+    "score": 1.019,
+    "presses": 9,
+    "flips": 4
+  },
+  "rightisosceles.rules": {
+    "score": 0.41,
+    "presses": 8,
+    "flips": 0
+  },
+  "rightisosceles.3apart": {
+    "score": 1.11,
+    "presses": 13,
+    "flips": 3
+  },
+  "drafter.rules": {
+    "score": 0.84,
+    "presses": 9,
+    "flips": 8
+  },
+  "drafter.3apart": {
+    "score": 1.175,
+    "presses": 13,
+    "flips": 0
+  },
+  "ttetromino.rules": {
+    "score": 0.517,
+    "presses": 7,
+    "flips": 0
+  },
+  "fish.rules": {
+    "score": 0.665,
+    "presses": 3,
+    "flips": 2
+  },
+  "fish.3apart": {
+    "score": 1.115,
+    "presses": 3,
+    "flips": 2
+  },
+  "fish60.rules": {
+    "score": 2.162,
+    "presses": 11,
+    "flips": 0
+  },
+  "kissingsquares.rules": {
+    "score": 0.205,
+    "presses": 2,
+    "flips": 0
+  },
+  "kissingsquares.3apart": {
+    "score": 0.655,
+    "presses": 2,
+    "flips": 0
+  },
+  "kissingtriangles.3apart": {
+    "score": 1.093,
+    "presses": 8,
+    "flips": 1
+  },
+  "kissingchain.rules": {
+    "score": 0.205,
+    "presses": 2,
+    "flips": 0
   }
 }
