@@ -22,7 +22,10 @@
 // every regular-polygon tiling, 2 or 3 for the bonds), built at that scale in a
 // ring whose `unit` draws it back at true size. The T-vertices name points as
 // any vertex does, so the walk runs through them; a cell keeps only its real
-// corners, so a brick is the four-cornered rectangle the tray holds.
+// corners, so a brick is the four-cornered rectangle the tray holds. For
+// marks (a bond's lines and colourings) a cell is also given with every side
+// cut into steps of that fraction (`steps`): every brick cut alike, and every
+// piece of a side meeting exactly one piece of the brick across.
 //
 // The pentagonal tilings' edges are not whole fractions of the unit at all:
 // √2/2, (3√3 − 1)/2, 2cos 15°. Each is still a real number of the ring, and a
@@ -84,6 +87,14 @@ function lengthsOf(ring: Ring, n: number): { value: number; cyc: Cyc }[] {
 export interface Window {
   ring: Ring;
   cells: Cyc[][];
+  /** The same cells, in the same order, with every side cut into steps of
+   * the ring's unit — where the tiling has a T-vertex (a bond's brick
+   * corner part-way along its neighbour's side), so that the pieces of
+   * sides meet one for one, edge to edge; else `cells` itself. Every brick
+   * is cut alike, the cut asking nothing of where it goes — only marks do.
+   * Worked out when asked for: only a bond's sides are whole steps (a
+   * pentagonal tiling's are not). */
+  steps: () => Cyc[][];
   /** How far the tiling was turned from Hypersweeper's drawing to put its
    * edges on the ring's directions, in radians: 0, unless it has no edge
    * along an axis at all (the snub hexagonal, drawn with its lattice square
@@ -299,5 +310,28 @@ export function templateWindow(
   const placed = kept.filter((g) => g.ids.every((id) => exact.has(id)));
   // a cell's corners: the real ones, not the T-vertices its sides run through
   const cells = placed.map((g) => g.ids.filter((_, i) => g.real[i]).map((id) => exact.get(id)!));
-  return { ring, cells, turned: alpha, centre, toFrame };
+  const cut = t.cells.some(({ real }) => real.includes(false));
+  const steps = (): Cyc[][] =>
+    cut
+      ? cells.map((cell) =>
+          cell.flatMap((a, i) => stepsAlong(ring, n!, a, cell[(i + 1) % cell.length]!)),
+        )
+      : cells;
+  return { ring, cells, steps, turned: alpha, centre, toFrame };
+}
+
+/** The side from `a` to `b` (exclusive of `b`) as the points it passes in
+ * unit steps of the ring — `a`, `a + ζᵏ`, … — checked to land on `b`
+ * exactly: a side a whole number of the ring's units long, in one of its `n`
+ * directions. */
+function stepsAlong(ring: Ring, n: number, a: Cyc, b: Cyc): Cyc[] {
+  const [ax, ay] = ring.toXY(a);
+  const [bx, by] = ring.toXY(b);
+  const length = Math.round(Math.hypot(bx - ax, by - ay) * ring.unit);
+  const step = ring.zeta(Math.round((Math.atan2(by - ay, bx - ax) * n) / (2 * Math.PI)));
+  const out = [a];
+  for (let s = 1; s < length; s++) out.push(ring.add(out[s - 1]!, step));
+  if (length < 1 || !ring.eq(ring.add(out[length - 1]!, step), b))
+    throw new Error("templateWindow: a side is no whole number of unit steps");
+  return out;
 }

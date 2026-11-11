@@ -491,6 +491,22 @@ test("a tiling's marked levels: on its own page in Tilings, and on its figure's 
   await expect(studdedDual.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
   await studdedDual.click();
   await expect(page).toHaveURL(/\?tiling=studdedtridual$/);
+  // and a congruent-rectangle bond's: the running bond's, its bricks cut at
+  // their middles for the lines to run across
+  await page.goto("/?tilings");
+  const running = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^Running bond$/ }) });
+  await expect(running.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
+  await running.click();
+  await expect(page).toHaveURL(/\?tiling=runningbond$/);
+  await expect(page.locator("#tiling-list .family h2")).toHaveText([
+    "Plain tiles",
+    "Matching rules",
+    "Colourings",
+  ]);
+  await page.locator('#tiling-list [data-group="rules"] .card').first().click();
+  await expect(page).toHaveURL(/\?level=runningbond\.lines$/);
   // a tiling with none opens straight away: no painting of [3⁶; 3².4.3.4]
   // measures as hard as its plain board
   await page.goto("/?tilings");

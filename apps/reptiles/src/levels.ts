@@ -950,7 +950,7 @@ const ISOGONAL: [string, number][] = [
  * bricks, 0.86 square, its next 5 by 9 at 45. The basket weaves are whole
  * squares of blocks, 4 by 4: the 3×3's smaller windows are a lopsided
  * pinwheel of 20 bricks, so it takes 48. */
-const RECTANGLES: [string, number][] = [
+export const RECTANGLES: [string, number][] = [
   ["stackedbond", 3.5],
   ["runningbond", 4.5],
   ["basketweave", 4],
@@ -1554,6 +1554,38 @@ function keyed(plain: Level, made: readonly Level[]): Level[] {
   });
 }
 
+/** The board a painting of `plain` is laid on: `plain` itself, but for a
+ * congruent-rectangle bond with T-vertices, whose bricks are cut there into
+ * steps of the ring's unit (`Window.steps`: a half brick, a third in the 3×3
+ * basket weave) — every brick alike, so it is still one tile, and each piece
+ * of a side meets one piece across, edge to edge, as a painting needs. The
+ * stacked bond, edge to edge already, is not cut. */
+const PAINT_BASES = new Map<string, Level>();
+
+export function paintBase(plain: Level): Level {
+  if (plain.group !== "rectangle") return plain;
+  let base = PAINT_BASES.get(plain.key);
+  if (!base) {
+    const box = RECTANGLES.find(([key]) => key === plain.key)?.[1];
+    if (box === undefined) throw new Error(`${plain.key} is not a bond`);
+    const { ring, steps } = windowCut(plain.key, box);
+    const cut = makeLevel(
+      plain.key,
+      plain.label,
+      ring,
+      whole(steps()),
+      "rectangle",
+      plain.configs,
+      plain.name,
+    );
+    if (cut.tiles.length !== plain.tiles.length || cut.cells.length !== plain.cells.length)
+      throw new Error(`${plain.key}: its cut bricks are not one tile each`);
+    PAINT_BASES.set(plain.key, cut);
+    base = cut;
+  }
+  return base;
+}
+
 /** Where a painted tiling's paintings are laid: the lattice it repeats by,
  * and a wider patch past its window's rim (none for a regular board, whose
  * window shows every neighbour) — worked out once per tiling, when its
@@ -1564,7 +1596,7 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   let setup = SETUPS.get(plain.key);
   if (!setup) {
     const regular = COLOURED.find(([key]) => key === plain.key);
-    const box = [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED].find(
+    const box = [...UNIFORM, ...TWO_UNIFORM, ...LAVES, ...TWO_ISOHEDRAL_KEYED, ...RECTANGLES].find(
       ([key]) => key === plain.key,
     )?.[1];
     if (regular) setup = { lattice: regular[1], context: [] };
@@ -1577,13 +1609,14 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   return setup;
 }
 
-/** A uniform, 2-uniform, Laves or 2-isohedral tiling's window, `box` edges
+/** A uniform, 2-uniform, Laves, 2-isohedral or bond tiling's window, `box` edges
  * square, and a patch of the same tiling twice that size round it, moved onto
  * the window's coordinates: what lies past the window's rim, for its
  * colourings (and, for the snub hexagonal, whose window holds one hexagon, the
  * only place its lattice shows). A Laves or 2-isohedral board's wider patch is
  * a wider dual window (`lavesWindow`), in the same ring: the same scale, the
- * same unit. */
+ * same unit. A bond's is cut into steps, as its painted board is
+ * (`paintBase`). */
 export function periodicContext(plain: Level, box: number): Piece[][] {
   const { ring } = plain;
   const wide =
@@ -1592,9 +1625,12 @@ export function periodicContext(plain: Level, box: number): Piece[][] {
       : plain.group === "2-isohedral"
         ? lavesWindow(plain.dualOf!, 2 * box)
         : templateWindow(plain.key, 2 * box);
+  // a bond's bricks cut into steps, as its painted board's are (`paintBase`)
+  const wideCells: Cyc[][] =
+    plain.group === "rectangle" && "steps" in wide ? (wide.steps as () => Cyc[][])() : wide.cells;
   if (wide.ring.n !== ring.n || wide.ring.unit !== ring.unit)
     throw new Error(`${plain.key}: the wider patch is in another ring`);
-  const cells = wide.cells.map((c) => ccw(ring, c));
+  const cells = wideCells.map((c) => ccw(ring, c));
   const keys = (cs: Cyc[][]): Set<string> =>
     new Set(
       cs.map((c) =>
@@ -1621,13 +1657,14 @@ export function periodicContext(plain: Level, box: number): Piece[][] {
 /** Which of a painted board's paintings to make levels of
  * (`npm run colourings`, scripts/find-colourings.mts): every one a regular
  * board's `paintedCandidates` keeps, and the chosen few of a uniform,
- * 2-uniform, Laves or 2-isohedral board's — searching takes from a second to minutes, so the choice
+ * 2-uniform, Laves, 2-isohedral or bond board's — searching takes from a second to minutes, so the choice
  * is written down and only those are built. */
 const CHOSEN_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
 
 /** The `i`-th painting `src/colourings.json` lists for `plain`, as a level,
  * unkeyed — `keyed` (or the level index) names it. */
-function paintedLevel(plain: Level, i: number): Level {
+function paintedLevel(of: Level, i: number): Level {
+  const plain = paintBase(of);
   const params = CHOSEN_PAINTINGS[plain.key]?.[i];
   if (!params) throw new Error(`${plain.key}: no painting ${i} in src/colourings.json`);
   const { lattice, context } = paintingSetup(plain);
@@ -1928,13 +1965,15 @@ const byEase = (a: Level, b: Level): number =>
 
 /** The tilings painted, in the order their marked levels are listed: the
  * regular three, the other eight uniform ones, the twenty 2-uniform ones, the
- * eight Laves ones and the twenty 2-isohedral ones. */
+ * eight Laves ones, the twenty 2-isohedral ones and the five
+ * congruent-rectangle bonds. */
 export const PAINTED: string[] = [
   ...COLOURED.map(([key]) => key),
   ...UNIFORM.map(([key]) => key),
   ...TWO_UNIFORM.map(([key]) => key),
   ...LAVES.map(([key]) => key),
   ...TWO_ISOHEDRAL_KEYED.map(([key]) => key),
+  ...RECTANGLES.map(([key]) => key),
 ];
 
 /** The marked levels made otherwise than from src/colourings.json, after

@@ -179,6 +179,20 @@ some back off.
     V[3³.4²; 3².4.3.4]₂ and V[3.4.3.12; 3.12²] have no colouring as hard as
     their plain board. Their lines between two edges are curves, as on the
     Laves tiles.
+  - *The five congruent-rectangle bonds* (`?level=runningbond.lines`,
+    `?level=herringbone.branchinglines`, `?level=basketweave3.3mixed`) are
+    lined and coloured just as the Laves tilings are, one brick each, named
+    as the plain bonds are: "Running bond · lines". A bond is not edge to
+    edge — a brick's corner lands part-way along its neighbour's long side —
+    so its painted board's bricks are cut there: every side of every brick
+    into steps of a half brick (a third in the 3×3 basket weave; `paintBase`,
+    `Window.steps`), so each piece of a side meets one piece across and
+    carries a mark of its own. Every brick is cut alike, even where nothing
+    lands (the 3×3 basket weave's middle brick, the sides a basket weave's
+    brick shares with its block's other), so the cut asks nothing of where a
+    brick goes — only the marks do. The stacked bond, edge to edge, is not
+    cut. Each has lined and coloured boards but the basket weave (lined
+    only) and the 3×3 basket weave (coloured only).
   No marked level measures easier than its plain board: the choice drops
   any that would.
   A marked tile is held, where it can be, so that it fits none of the board's
@@ -302,7 +316,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 141 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings and the twenty 2-isohedral ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 156 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, 685 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 148 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones and four of the five bonds, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 168 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings and four of the bonds, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, 704 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -492,7 +506,9 @@ quick way to see the win state.
   whole number of the smallest fraction of the unit that makes them all whole,
   the board built at that scale in a ring whose `unit` draws it at true size,
   and each cell keeps only its real corners (the template's `real` flags), so
-  a brick is a plain rectangle. The pentagonal tilings' edges are no whole
+  a brick is a plain rectangle — and `steps` the same cells with every side
+  cut into steps of that fraction (only asked for a bond's painted board:
+  `paintBase` in `levels.ts`). The pentagonal tilings' edges are no whole
   fraction of the unit (√2/2, (3√3 − 1)/2, 2cos 15°): every edge length is
   read as a short real of the ring — a whole number plus a multiple of one
   ζʲ + ζ⁻ʲ, whole numbers first — times its direction; the walk's closure check
@@ -609,7 +625,8 @@ quick way to see the win state.
   tile is cut as it is in the tiling). Each cell's class and lattice point are
   solved for in floats and checked exactly; which class lies across each edge
   of each class is read off the window's inner edges (`atlasOf`), so a rim
-  tile's marks are its marks in the tiling. `colouredLevels` in `levels.ts`
+  tile's marks are its marks in the tiling (it needs every edge to meet one
+  edge across: a bond's bricks are cut first, `paintBase`). `paintedCandidates` in `levels.ts`
   builds each with `makeLevel` (its `marks` and `paints`: a kind takes the
   first colour among its cells), keeps those that mark all of a colour's
   tiles alike — the colourings that look alike everywhere; one tile per
@@ -641,7 +658,10 @@ quick way to see the win state.
   are. The twenty 2-isohedral tilings (`TWO_ISOHEDRAL`, listed by their own
   keys in `TWO_ISOHEDRAL_KEYED`) are painted as the Laves ones are, their
   wider patch a wider dual window of the 2-uniform primal (`Level.dualOf`),
-  and labelled as the 2-uniform ones are. Trying every colouring is k to the power of the translation classes
+  and labelled as the 2-uniform ones are. The five congruent-rectangle bonds
+  (`RECTANGLES`) are painted as the uniform ones are, on their bricks cut
+  into steps (`paintBase`; its wider patch, `periodicContext`, cut alike),
+  and labelled as the Laves ones are. Trying every colouring is k to the power of the translation classes
   (a million and a half on the kisrhombille's twelve, ten billion on
   [3⁶; 3².4.12]'s twenty), so given each cell's plain kind `paintings` tries
   only the offsets `offsetsFor` cannot rule out: it sets them a class at a
