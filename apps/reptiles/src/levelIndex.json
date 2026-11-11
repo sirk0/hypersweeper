@@ -1252,5 +1252,61 @@
     "name": "Penrose kites & darts · matching rules",
     "group": "rules",
     "decor": { "of": "kitedart", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "ammannbeenker.rules",
+    "label": "Ammann–Beenker, matching rules",
+    "name": "Ammann–Beenker · matching rules",
+    "group": "rules",
+    "decor": { "of": "ammannbeenker", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "ammannbeenker.3apart",
+    "label": "Ammann–Beenker, 3 colours, apart",
+    "name": "Ammann–Beenker · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "ammannbeenker", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "tile11.rules",
+    "label": "Tile(1,1), matching rules",
+    "name": "Tile(1,1) · matching rules",
+    "group": "rules",
+    "decor": { "of": "tile11", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "spectre.rules",
+    "label": "The Spectre, matching rules",
+    "name": "The Spectre · matching rules",
+    "group": "rules",
+    "decor": { "of": "spectre", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "hat.rules",
+    "label": "The hat, matching rules",
+    "name": "The hat · matching rules",
+    "group": "rules",
+    "decor": { "of": "hat", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "turtle.rules",
+    "label": "The turtle, matching rules",
+    "name": "The turtle · matching rules",
+    "group": "rules",
+    "decor": { "of": "turtle", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "hatmetatiles.rules",
+    "label": "Hat metatiles, matching rules",
+    "name": "Hat metatiles · matching rules",
+    "group": "rules",
+    "decor": { "of": "hatmetatiles", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "socolartaylor.rules",
+    "label": "Socolar–Taylor tile, matching rules",
+    "name": "Socolar–Taylor tile · matching rules",
+    "group": "rules",
+    "decor": { "of": "socolartaylor", "colours": 1, "rules": true, "label": "matching rules" }
   }
 ]

@@ -399,6 +399,16 @@ test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows
     await expect(page.locator("svg.board .tray-layer .decor.arc:not(.double)")).toHaveCount(2);
   }
 
+  // an aperiodic tiling's rule read off its patch: Ammann–Beenker's arrows,
+  // a half disc on every edge of its rhombus and its square — and its
+  // colouring, no two tiles of a colour touching: more tray tiles than shapes
+  await page.goto("/?level=ammannbeenker.rules");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.label")).toHaveCount(2);
+  await page.goto("/?level=ammannbeenker.3apart");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(5);
+  await expect(page.locator("svg.board .tray-layer .decor.band")).not.toHaveCount(0);
+
   // no setting for lines any more
   await page.goto("/?settings");
   await expect(page.locator('[data-action="toggle-lines"]')).toHaveCount(0);

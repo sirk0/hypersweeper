@@ -88,6 +88,37 @@ export function edgePath(a: XY, b: XY, bulge: Bulge): string {
   return `M${pt(a)}${edgeTo(a, b, bulge)}`;
 }
 
+/** The point a share `t` along the edge a → b as drawn — on its arc, if it
+ * is round — and the unit direction the edge runs there. The arc is the same
+ * from either end, so `t` from one end is 1 − `t` from the other: two tiles'
+ * marks on their shared edge land on one point. */
+export function alongEdge(a: XY, b: XY, bulge: Bulge, t: number): { at: XY; dir: XY } {
+  const unit = (x: number, y: number): XY => {
+    const len = Math.hypot(x, y);
+    return [x / len, y / len];
+  };
+  if (!bulge)
+    return {
+      at: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
+      dir: unit(b[0] - a[0], b[1] - a[1]),
+    };
+  const [c1, c2] = controls(a, b, bulge);
+  const u = 1 - t;
+  const w = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t] as const;
+  // the derivative: 3[(1 − t)²(c1 − a) + 2(1 − t)t(c2 − c1) + t²(b − c2)]
+  const d = [u * u, 2 * u * t, t * t] as const;
+  return {
+    at: [
+      w[0] * a[0] + w[1] * c1[0] + w[2] * c2[0] + w[3] * b[0],
+      w[0] * a[1] + w[1] * c1[1] + w[2] * c2[1] + w[3] * b[1],
+    ],
+    dir: unit(
+      d[0] * (c1[0] - a[0]) + d[1] * (c2[0] - c1[0]) + d[2] * (b[0] - c2[0]),
+      d[0] * (c1[1] - a[1]) + d[1] * (c2[1] - c1[1]) + d[2] * (b[1] - c2[1]),
+    ),
+  };
+}
+
 /** `xy` and points along its round edges' arcs: what bounds the drawn tile,
  * as its corners alone bound a straight one. */
 export function reachPoints(xy: XY[], curve?: readonly Bulge[]): XY[] {

@@ -122,6 +122,26 @@ export function centredWindow(ring: Ring, cells: Cyc[][], keep: number, centre?:
     .slice(0, keep);
 }
 
+/** The whole patch `hatPatch` cuts its windows from, each tile in its
+ * prototile's own order — a hat's or a turtle's fourteen corners in `HAT14`
+ * order, its long side's midpoint kept (counter-clockwise or not as it is
+ * mirrored), a metatile's in its shape's — and which prototile it is (the
+ * hat; H, T, P or F): what a matching rule on its edges is read off
+ * (src/patchMarks.ts). */
+export function hatFrames(tile: HatTile, depth: number): { kinds: number[]; cells: Cyc[][] } {
+  const metas = hatMetatiles(depth);
+  if (tile === "metatiles")
+    return {
+      kinds: metas.map((m) => "HTPF".indexOf(m.kind)),
+      cells: metas.map((m) => m.corners.map(hexCyc)),
+    };
+  const corners = metas.flatMap((m) => m.hats).map((h) => h.corners);
+  return {
+    kinds: corners.map(() => 0),
+    cells: tile === "hat" ? corners.map((c) => c.map(hexCyc)) : deform(corners, SQRT3, Z12.one),
+  };
+}
+
 /** Which tile of the family a level is made of. */
 export type HatTile = "hat" | "turtle" | "metatiles";
 

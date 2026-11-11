@@ -1517,6 +1517,10 @@ interface AbCell {
   kind: number; // 0 a rhombus, 1 a square
   index: number;
   verts: Z8Point[];
+  /** Which of `verts` is the tile's own first corner: a rhombus's acute
+   * corner A (0), a square's diagonal start P — the corner its two
+   * half-squares' directed diagonal P → Q leaves from. */
+  start: number;
 }
 
 /** The patch's rhombi and squares, vertex ids counterclockwise. Half-squares
@@ -1533,7 +1537,7 @@ function abCells(levels: number): AbCell[] {
     const mirrored = at[1];
     if (kind === "R") {
       const ids = AB_RHOMB.map((p) => abPlace(at, p));
-      cells.push({ kind: 0, index: cells.length, verts: ccw(ids, mirrored) });
+      cells.push({ kind: 0, index: cells.length, verts: ccw(ids, mirrored), start: 0 });
       continue;
     }
     const [o, p, q] = AB_HALF.map((v) => abPlace(at, v)) as [Z8Point, Z8Point, Z8Point];
@@ -1545,7 +1549,12 @@ function abCells(levels: number): AbCell[] {
     }
     waiting.delete(key);
     const [first, firstMirrored] = partner;
-    cells.push({ kind: 1, index: cells.length, verts: ccw([first, p, o, q], firstMirrored) });
+    cells.push({
+      kind: 1,
+      index: cells.length,
+      verts: ccw([first, p, o, q], firstMirrored),
+      start: firstMirrored ? 3 : 1,
+    });
   }
   return cells;
 }
@@ -1581,6 +1590,20 @@ export function ammannBeenkerExact(
   variant = 0,
 ): ExactTiles {
   return { order: 8, cells: ammannBeenkerKept(levels, keep, variant).map((c) => [...c.verts]) };
+}
+
+/** For each tile `ammannBeenkerExact(levels, keep, variant)` lists, in its
+ * order: its kind (0 a rhombus, 1 a square) and which of its corners is the
+ * tile's own first one (`start`: a rhombus's acute corner, a square's
+ * diagonal start P). Listed from there, counter-clockwise, every rhombus and
+ * every square reads the same way round its substitution's frame — what a
+ * matching rule on its edges is stated on. */
+export function ammannBeenkerFrames(
+  levels: number,
+  keep: number | null = null,
+  variant = 0,
+): { kind: number; start: number }[] {
+  return ammannBeenkerKept(levels, keep, variant).map(({ kind, start }) => ({ kind, start }));
 }
 
 /** The tiles the Ammann–Beenker board keeps, in its cell order. */
