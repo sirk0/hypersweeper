@@ -20,7 +20,7 @@ import { LINE, arrowMark, colourMark, labelMark } from "./geometry/marks";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow, type XY } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
-import { piecePatch } from "./geometry/pieces";
+import { piecePatch, piecePatchFrames } from "./geometry/pieces";
 import { repTilePatch } from "./geometry/repTile";
 import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
@@ -1153,8 +1153,21 @@ function socolarTaylorLevel(rings: number): Level {
  * family's as `hatFrames` lists them, the Socolar–Taylor tile's pieces as
  * `SOCOLAR_TAYLOR` lists them, and a spiral's as `spiralFrames` finds them.
  * Penrose's rhombi and his kites and darts are cut nowhere part-way, so only
- * their kinds matter: told apart by their diagonals. */
+ * their kinds matter: told apart by their diagonals. A rep-tile has no patch
+ * past its board — the board is the whole big copy — so its patch is the
+ * board itself, each tile in the tile's own order as its substitution lays it
+ * (`repTilePatch`, `piecePatchFrames`). */
 export function patchFrames(key: string): FramedPatch {
+  const rep = REPTILES.find(([mode]) => mode === key);
+  if (rep) {
+    const { ring, cells } = repTilePatch(rep[0], rep[1]);
+    return { ring, cells: cells.map((c) => ({ kind: 0, pieces: [c] })) };
+  }
+  const pieced = PIECE_REPTILES.find(([k]) => k === key);
+  if (pieced) {
+    const { ring, cells } = piecePatchFrames(key, pieced[2]);
+    return { ring, cells: cells.map((pieces) => ({ kind: 0, pieces })) };
+  }
   const spiral = SPIRALS.find(([mode]) => mode === key);
   if (spiral) return spiralFrames(spiral[0], spiral[1]);
   const aperiodic = APERIODIC.find(([k]) => k === key);
@@ -1712,12 +1725,15 @@ function kiteDartRulesLevel(plain: Level): Level {
 
 /** The levels marked from their own patch (src/patchMarks.ts): every
  * aperiodic one and every spiral — a spiral is no more periodic than they
- * are, its centre a point unlike any other. */
+ * are, its centre a point unlike any other — and every rep-tile, read off its
+ * board, the whole of its patch. */
 export const PATCH_MARKED: string[] = [
   ...APERIODIC.map(([key]) => key),
   ...HAT_FAMILY.map(([key]) => key),
   "socolartaylor",
   ...SPIRALS.map(([mode]) => mode),
+  ...REPTILES.map(([mode]) => mode),
+  ...PIECE_REPTILES.map(([key]) => key),
 ];
 
 /** The patch-marked levels with no rule read off their patch: Penrose's two
@@ -1725,8 +1741,16 @@ export const PATCH_MARKED: string[] = [
  * nothing — every edge meets every other, either way along it (one class
  * with no way, `deriveRules`), so its rule would mark every edge alike. A
  * seed and the tile's shape force that spiral; no rule of this shape adds
- * to them. */
-export const NO_PATCH_RULES = new Set(["penrose", "kitedart", "klaassen"]);
+ * to them. The P-pentomino's board asks nothing either: its ten edge slots
+ * all meet, either way along. The kissing triangles' board has a rule, but
+ * its level measures easier than the plain board, and no marked level may. */
+export const NO_PATCH_RULES = new Set([
+  "penrose",
+  "kitedart",
+  "klaassen",
+  "ppentomino",
+  "kissingtriangles",
+]);
 
 /** Each one's colouring, as `npm run colourings` chose it. */
 const APERIODIC_COLOURINGS = aperiodicColouringsData as Record<string, ChosenColouring>;
@@ -1758,7 +1782,21 @@ export function patchWindow(plain: Level): PatchWindow {
     plain.cells.map((c) => c.map((p) => p.verts)),
   );
   const { cells, around } = windowCells(refined, window, shift);
-  const made = { ring: framed.ring, refined, window, cells, around, edges: adjacency(refined) };
+  const edges = adjacency(refined);
+  // an edge with nothing across it — a rep-tile's rim, its board the whole
+  // patch — faces a cell of its own past the patch, touching only that tile,
+  // whose colour the choice is free to pick (as it picks the cells round an
+  // aperiodic window)
+  let past = refined.cells.length;
+  for (const [c, cell] of cells.entries())
+    for (const p of cell.pieces)
+      p.across.forEach((a, e) => {
+        if (a >= 0) return;
+        p.across[e] = past;
+        around.push(past);
+        edges.push([window[c]!, past++]);
+      });
+  const made = { ring: framed.ring, refined, window, cells, around, edges };
   PATCH_WINDOWS.set(plain.key, made);
   return made;
 }

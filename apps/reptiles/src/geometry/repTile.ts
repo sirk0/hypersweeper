@@ -34,6 +34,10 @@ export function corners(ring: Ring, verts: Cyc[]): Cyc[] {
   });
 }
 
+/** The patch's cells as `substitutionPlacements` lays them: each one's real
+ * corners in the tile's own outline order, so edge j of every cell is the
+ * same edge of the tile — counter-clockwise, or clockwise where the copy is
+ * mirrored. What a rep-tile's matching rules are read off (`FramedPatch`). */
 export function repTilePatch(mode: string, levels: number): RepTilePatch {
   const tile = SUBSTITUTIONS[mode];
   if (!tile) throw new Error(`no substitution tile ${mode}`);

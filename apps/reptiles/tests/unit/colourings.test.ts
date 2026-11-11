@@ -156,7 +156,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones and the 2-isohedral ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels and the spirals rules read off their patch", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones and the 2-isohedral ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -434,6 +434,27 @@ describe("colourings", () => {
       "pentaspiral5.rules",
       "pentaspiral6.rules",
       "pentaspiral7.rules",
+      "sphinx.rules",
+      "chair.rules",
+      "ltetromino.rules",
+      "trapezoid.rules",
+      "trapezoid.3apart",
+      "righttrapezoid.rules",
+      "halftrapezoid.rules",
+      "stretchedchair.rules",
+      "rhombicl.rules",
+      "rightisosceles.rules",
+      "rightisosceles.3apart",
+      "drafter.rules",
+      "drafter.3apart",
+      "ttetromino.rules",
+      "fish.rules",
+      "fish.3apart",
+      "fish60.rules",
+      "kissingsquares.rules",
+      "kissingsquares.3apart",
+      "kissingtriangles.3apart",
+      "kissingchain.rules",
     ]);
     for (const level of COLOURED) {
       // matching rules and colourings: two groups

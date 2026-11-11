@@ -91,6 +91,16 @@ some back off.
     one with a way. Klaassen's heptagon's patch asks nothing — every edge
     meets every other either way along it — so it has no rule
     (`NO_PATCH_RULES`): its seed and its shape force the spiral.
+    **The rep-tiles** (`?level=sphinx.rules`, `?level=fish.rules`), the
+    twelve and the five of several pieces, are read off a patch too, but
+    the patch is the board itself: a rep-tile's board is the whole big
+    copy, with nothing past its rim (and the right-angled fish cannot be
+    grown again). Each tile is framed as its substitution lays it
+    (`repTilePatch`, `piecePatchFrames`), so the rule is the finest every
+    shared edge of the board keeps, from one class with a way (the chair)
+    to six (the right-angled fish). The P-pentomino's board asks nothing,
+    and the kissing triangles' rule measures easier than its plain board, so
+    neither has a rule level (`NO_PATCH_RULES`).
   - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
     colouring repeats more coarsely than the tiling — squares as a
     checkerboard, or in rows of three colours, or hexagons a third of them
@@ -121,6 +131,14 @@ some back off.
     Ammann–Beenker's and Klaassen's (`?level=klaassen.3apart`, its
     heptagon's marks no longer symmetric, so it brings a flip control) are
     listed, and one that a window colours with fewer will be by itself.
+    The rep-tiles are coloured the same way, off their own board: an edge
+    of the rim has nothing across it, so it faces a neighbour of its own
+    past the board (`patchWindow`), which touches only that tile, and the
+    search picks its colour as freely as it picks the tiles round an
+    aperiodic window. Six come in at four tray tiles and are listed
+    (`?level=trapezoid.3apart`, the right isosceles triangle, the drafter,
+    the right-angled fish, the kissing squares and triangles); the rest take
+    6 to 13.
   - *The other eight uniform tilings* (`?level=trihex.lines`,
     `?level=trihex.3byshape`, `?level=trunctrihex.lines`) are lined and
     coloured the same way, one tray tile per colour *and shape*: a colouring
@@ -284,7 +302,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 126 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings and the twenty 2-isohedral ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels and four of the five spirals) and 150 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, Ammann–Beenker and Klaassen's spiral in two more, 664 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 141 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings and the twenty 2-isohedral ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 156 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, 685 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -395,7 +413,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's and spiral's colouring into src/aperiodicColourings.json (half a minute)
+npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's, spiral's and rep-tile's colouring into src/aperiodicColourings.json (a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
@@ -654,20 +672,24 @@ quick way to see the win state.
   rules every shared edge of the 705-tile patch keeps, the one that forbids a
   kite in a dart's notch.
 - `src/patchMarks.ts` — **marks read off an aperiodic patch**, for every
-  aperiodic level and every spiral (`PATCH_MARKED` in `levels.ts`).
+  aperiodic level, every spiral and every rep-tile (`PATCH_MARKED` in
+  `levels.ts`; a rep-tile's patch is its own board).
   `patchFrames` lists the level's whole patch with each tile in its
   prototile's own order (Ammann–Beenker's from each tile's own first corner,
   `ammannBeenkerFrames` in @tiling/geometry; the Spectre's fourteen corners;
   `hatFrames`; the Socolar–Taylor tile's pieces as `SOCOLAR_TAYLOR` lists
   them; a spiral's from the corner that turns it onto the patch's first
-  tile, `spiralFrames`, its builder's own first corner where that serves),
+  tile, `spiralFrames`, its builder's own first corner where that serves;
+  a rep-tile's as its substitution lays it, `repTilePatch` and
+  `piecePatchFrames`),
   so edge j of every copy is one slot. `refine` cuts every edge where
   a corner of the tile across lands on it, every copy of a slot alike,
   round and round until nothing more is cut; `deriveRules` is a union–find
   with parity over the slots that meet (`meetings`), a class with an odd
   cycle wayless; `locate` finds the level's cells in the patch and
   `windowCells` reads them off it, counter-clockwise, with each edge's slot
-  and the cell across; `chooseColouring` (the script's) is a seeded search,
+  and the cell across (`patchWindow` gives an edge with nothing across —
+  a rep-tile's rim — a cell of its own past the patch); `chooseColouring` (the script's) is a seeded search,
   DSATUR then Kempe-chain swaps from many starts, for the proper colouring
   of the window and the cells round it with the fewest tray tiles, every
   colour used inside the window.

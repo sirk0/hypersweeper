@@ -254,19 +254,92 @@ describe("the spirals' rules", () => {
   });
 });
 
+describe("the rep-tiles' rules", () => {
+  const REP_TILES = LEVELS.filter((l) => l.group === "reptile").map((l) => l.key);
+
+  it("reads every rep-tile off its own board", () => {
+    expect(REP_TILES).toHaveLength(17);
+    for (const key of REP_TILES) expect(PATCH_MARKED, key).toContain(key);
+  });
+
+  it.each(REP_TILES)(
+    "%s: its patch is its board, every cell the first one turned or mirrored, edge for edge",
+    (key) => {
+      const { ring, cells } = patchFrames(key);
+      const level = levelByKey(key)!;
+      // the board's cells, by their corners, and the patch's
+      const corners = (pieces: readonly Cyc[][]) =>
+        pieces
+          .flatMap((p) => p.map((v) => ring.key(v)))
+          .sort()
+          .join("|");
+      expect(new Set(cells.map((c) => corners(c.pieces)))).toEqual(
+        new Set(level.cells.map((c) => corners(c.map((p) => p.verts)))),
+      );
+      const edges = (c: Cyc[]) => c.map((v, i) => ring.sub(c[(i + 1) % c.length]!, v));
+      const first = cells[0]!.pieces.map(edges);
+      for (const { pieces } of cells) {
+        const own = pieces.map(edges);
+        // one turn, and a mirror or not, carries every edge of the first
+        // onto this cell's edge of the same place
+        const fits = [false, true].some((conj) =>
+          [...Array(ring.n).keys()].some((k) =>
+            first.every((p, j) =>
+              p.every((e, i) =>
+                ring.eq(ring.mul(ring.zeta(k), conj ? ring.conj(e) : e), own[j]![i]!),
+              ),
+            ),
+          ),
+        );
+        expect(fits, key).toBe(true);
+      }
+    },
+  );
+
+  it("marks every rep-tile but the P-pentomino, whose board asks nothing, and the kissing triangles", () => {
+    for (const key of REP_TILES) {
+      const rules = [...deriveRules(refine(patchFrames(key))).values()];
+      const trivial = rules.every((r) => r.cls === 0 && r.toEnd === null);
+      expect(trivial, key).toBe(key === "ppentomino");
+      expect(
+        LEVELS.some((l) => l.key === `${key}.rules`),
+        key,
+      ).toBe(!NO_PATCH_RULES.has(key));
+    }
+  });
+
+  it("gives each rim edge a neighbour of its own past the board, for its colouring", () => {
+    const { refined, cells, around, edges } = patchWindow(levelByKey("sphinx")!);
+    const past = around.filter((c) => c >= refined.cells.length);
+    expect(past.length).toBe(around.length);
+    for (const cell of cells)
+      for (const p of cell.pieces) for (const a of p.across) expect(a).toBeGreaterThanOrEqual(0);
+    for (const c of past) expect(edges.filter(([a, b]) => a === c || b === c)).toHaveLength(1);
+  });
+});
+
 describe("colourings read off a patch", () => {
   it("lists an aperiodic colouring only where its tray is small enough to play", () => {
     for (const key of PATCH_MARKED) {
       const listed = LEVELS.filter((l) => l.decor?.of === key && !l.decor.rules);
       expect(listed.length, key).toBe(CHOSEN[key]!.tiles <= MAX_COLOURED_TRAY ? 1 : 0);
     }
-    // so far Ammann–Beenker's, at five tray tiles, and Klaassen's spiral's,
-    // at four
+    // so far Ammann–Beenker's, at five tray tiles, Klaassen's spiral's, and
+    // six rep-tiles', at four each
     expect(
       LEVELS.filter((l) => l.decor && PATCH_MARKED.includes(l.decor.of) && !l.decor.rules).map(
         (l) => l.key,
       ),
-    ).toEqual(["ammannbeenker.3apart", "klaassen.3apart"]);
+    ).toEqual([
+      "ammannbeenker.3apart",
+      "klaassen.3apart",
+      "trapezoid.3apart",
+      "rightisosceles.3apart",
+      "drafter.3apart",
+      "fish.3apart",
+      "kissingsquares.3apart",
+      "kissingtriangles.3apart",
+    ]);
   });
 
   it.each(PATCH_MARKED)(

@@ -416,6 +416,18 @@ test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows
   await page.goto("/?level=ammannbeenker.3apart");
   await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(5);
   await expect(page.locator("svg.board .tray-layer .decor.band")).not.toHaveCount(0);
+  // a rep-tile's, read off its own board: the sphinx's two classes as
+  // lines; a tile of several pieces, the right-angled fish, keeps half discs;
+  // and the trapezoid's colouring, its rim edges facing colours past the board
+  await page.goto("/?level=sphinx.rules");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(1);
+  await expect(page.locator("svg.board .tray-layer .decor.label-line")).toHaveCount(2);
+  await page.goto("/?level=fish.rules");
+  await expect(page.locator("svg.board .tray-layer .decor.label-line")).toHaveCount(0);
+  await expect(page.locator("svg.board .tray-layer .decor.label")).not.toHaveCount(0);
+  await page.goto("/?level=trapezoid.3apart");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(4);
+  await expect(page.locator("svg.board .tray-layer .decor.band")).not.toHaveCount(0);
 
   // no setting for lines any more
   await page.goto("/?settings");

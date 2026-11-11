@@ -786,8 +786,10 @@ describe("puzzle", () => {
     expect(p.orientations(0).some((rot) => p.snap(0, centre, 0.2, rot, true))).toBe(true);
   });
 
-  // (not a rep-tile: its board is the shape of its tile)
-  const windows = BOARD_LEVELS.filter((l) => l.group !== "reptile").map((l) => l.key);
+  // (not a rep-tile, nor one marked: its board is the shape of its tile)
+  const windows = BOARD_LEVELS.filter(
+    (l) => levelByKey(l.decor?.of ?? l.key)!.group !== "reptile",
+  ).map((l) => l.key);
   it.each(windows)("%s is about as wide as it is tall", (key) => {
     const { ring, region } = levelByKey(key)!;
     const xy = region.flat().map((v) => ring.toXY(v));
