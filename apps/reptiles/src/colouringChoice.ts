@@ -1,4 +1,4 @@
-// Which of a uniform or Laves tiling's colourings become levels: searching every one
+// Which of a uniform, 2-uniform or Laves tiling's colourings become levels: searching every one
 // takes seconds (thousands of paintings on a board of six translation
 // classes), so `npm run colourings` (scripts/find-colourings.mts) chooses
 // here and writes the choice to src/colourings.json, which the game builds
@@ -15,12 +15,12 @@ import {
   type PaintedCandidate,
 } from "./levels";
 
-/** How many lined levels a uniform or Laves tiling keeps, and how many coloured. */
+/** How many lined levels a uniform, 2-uniform or Laves tiling keeps, and how many coloured. */
 export const RULES_CAP = 2;
 export const COLOURS_CAP = 3;
 
 /**
- * The paintings of the uniform or Laves board `plain` (its window `box` edges square)
+ * The paintings of the uniform, 2-uniform or Laves board `plain` (its window `box` edges square)
  * worth a level — none measuring easier than `plain` itself — at most
  * `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
  * tray tiles first, then the hardest as measured — but a lined board with a

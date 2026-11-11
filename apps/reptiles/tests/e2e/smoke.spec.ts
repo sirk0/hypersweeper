@@ -455,13 +455,22 @@ test("a tiling's marked levels: on its own page in Tilings, and on its figure's 
   await expect(tetrakis.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
   await tetrakis.click();
   await expect(page).toHaveURL(/\?tiling=tetrakis$/);
-  // a tiling with none opens straight away
+  // and a 2-uniform tiling's: [3⁶; 3⁴.6]₁'s
+  await page.goto("/?tilings");
+  const studded = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^\[3⁶; 3⁴\.6\]₁$/ }) });
+  await expect(studded.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
+  await studded.click();
+  await expect(page).toHaveURL(/\?tiling=studdedtri$/);
+  // a tiling with none opens straight away: no painting of [3⁶; 3².4.3.4]
+  // measures as hard as its plain board
   await page.goto("/?tilings");
   await page
     .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^\[3⁶; 3⁴\.6\]₁$/ }) })
+    .filter({ has: page.locator(".card-name", { hasText: /^\[3⁶; 3²\.4\.3\.4\]$/ }) })
     .click();
-  await expect(page).toHaveURL(/\?level=studdedtri$/);
+  await expect(page).toHaveURL(/\?level=trirhombitrihex$/);
   // the triangle's page: its plain tilings by difficulty, then the marked ones
   await page.goto("/?figure=triangles");
   await expect(page.locator('#figure-list [data-group="rules"] .card').first()).toBeVisible();
