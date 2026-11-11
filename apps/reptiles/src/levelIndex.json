@@ -2193,6 +2193,850 @@
     "painting": 3
   },
   {
+    "key": "studdedtridual.dots",
+    "label": "Studded triangular dual, dots",
+    "name": "V[3⁶; 3⁴.6]₁ · dots",
+    "group": "rules",
+    "decor": { "of": "studdedtridual", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 0
+  },
+  {
+    "key": "studdedtridual.dots2",
+    "label": "Studded triangular dual, dots II",
+    "name": "V[3⁶; 3⁴.6]₁ · dots II",
+    "group": "rules",
+    "decor": { "of": "studdedtridual", "colours": 1, "rules": true, "label": "dots II" },
+    "painting": 1
+  },
+  {
+    "key": "studdedtridual.2byshape",
+    "label": "Studded triangular dual, 2 colours, by shape",
+    "name": "V[3⁶; 3⁴.6]₁ · 2 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "studdedtridual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "studdedtridual.2byshape2",
+    "label": "Studded triangular dual, 2 colours, by shape II",
+    "name": "V[3⁶; 3⁴.6]₁ · 2 colours, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "studdedtridual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "studdedtri2dual.lines",
+    "label": "Twisted studded triangular dual, lines",
+    "name": "V[3⁶; 3⁴.6]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "studdedtri2dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "studdedtri2dual.lines2",
+    "label": "Twisted studded triangular dual, lines II",
+    "name": "V[3⁶; 3⁴.6]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "studdedtri2dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "studdedtri2dual.2colours",
+    "label": "Twisted studded triangular dual, 2 colours",
+    "name": "V[3⁶; 3⁴.6]₂ · 2 colours",
+    "group": "colourings",
+    "decor": { "of": "studdedtri2dual", "colours": 2, "rules": false, "label": "2 colours" },
+    "painting": 2
+  },
+  {
+    "key": "studdedtri2dual.2oneinthree",
+    "label": "Twisted studded triangular dual, 2 colours, one in three",
+    "name": "V[3⁶; 3⁴.6]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "studdedtri2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "studdedtri2dual.3colours",
+    "label": "Twisted studded triangular dual, 3 colours",
+    "name": "V[3⁶; 3⁴.6]₂ · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "studdedtri2dual", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "elongated2dual.lines",
+    "label": "Half-elongated triangular dual, lines",
+    "name": "V[3⁶; 3³.4²]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "elongated2dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "elongated2dual.lines2",
+    "label": "Half-elongated triangular dual, lines II",
+    "name": "V[3⁶; 3³.4²]₁ · lines II",
+    "group": "rules",
+    "decor": { "of": "elongated2dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "elongated2dual.2oneinthreebyshape",
+    "label": "Half-elongated triangular dual, 2 colours, one in three, by shape",
+    "name": "V[3⁶; 3³.4²]₁ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "elongated2dual.2oneinthree",
+    "label": "Half-elongated triangular dual, 2 colours, one in three",
+    "name": "V[3⁶; 3³.4²]₁ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "elongated2dual.3byshape",
+    "label": "Half-elongated triangular dual, 3 colours, by shape",
+    "name": "V[3⁶; 3³.4²]₁ · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated2dual",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
+    },
+    "painting": 4
+  },
+  {
+    "key": "elongated3dual.lines",
+    "label": "Third-elongated triangular dual, lines",
+    "name": "V[3⁶; 3³.4²]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "elongated3dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "elongated3dual.lines2",
+    "label": "Third-elongated triangular dual, lines II",
+    "name": "V[3⁶; 3³.4²]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "elongated3dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "elongated3dual.2oneinthreebyshape",
+    "label": "Third-elongated triangular dual, 2 colours, one in three, by shape",
+    "name": "V[3⁶; 3³.4²]₂ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "elongated3dual.2oneinthreebyshape2",
+    "label": "Third-elongated triangular dual, 2 colours, one in three, by shape II",
+    "name": "V[3⁶; 3³.4²]₂ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "elongated3dual.2oneinthree",
+    "label": "Third-elongated triangular dual, 2 colours, one in three",
+    "name": "V[3⁶; 3³.4²]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "elongated3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 4
+  },
+  {
+    "key": "trirhombitrihexdual.lines",
+    "label": "Fanned rhombitrihexagonal dual, lines",
+    "name": "V[3⁶; 3².4.3.4] · lines",
+    "group": "rules",
+    "decor": { "of": "trirhombitrihexdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "trirhombitrihexdual.lines2",
+    "label": "Fanned rhombitrihexagonal dual, lines II",
+    "name": "V[3⁶; 3².4.3.4] · lines II",
+    "group": "rules",
+    "decor": { "of": "trirhombitrihexdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "trirhombitrihexdual.2oneinthree",
+    "label": "Fanned rhombitrihexagonal dual, 2 colours, one in three",
+    "name": "V[3⁶; 3².4.3.4] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "trirhombitrihexdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "trirhombitrihexdual.2oneinthree2",
+    "label": "Fanned rhombitrihexagonal dual, 2 colours, one in three II",
+    "name": "V[3⁶; 3².4.3.4] · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "trirhombitrihexdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "trirhombitrihexdual.3colours",
+    "label": "Fanned rhombitrihexagonal dual, 3 colours",
+    "name": "V[3⁶; 3².4.3.4] · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "trirhombitrihexdual", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "tritrunctrihexdual.lines",
+    "label": "Fanned truncated trihexagonal dual, lines",
+    "name": "V[3⁶; 3².4.12] · lines",
+    "group": "rules",
+    "decor": { "of": "tritrunctrihexdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "tritrunctrihexdual.lines2",
+    "label": "Fanned truncated trihexagonal dual, lines II",
+    "name": "V[3⁶; 3².4.12] · lines II",
+    "group": "rules",
+    "decor": { "of": "tritrunctrihexdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "fannedhexdual.lines",
+    "label": "Fanned hexagonal dual, lines",
+    "name": "V[3⁶; 3².6²] · lines",
+    "group": "rules",
+    "decor": { "of": "fannedhexdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "fannedhexdual.lines2",
+    "label": "Fanned hexagonal dual, lines II",
+    "name": "V[3⁶; 3².6²] · lines II",
+    "group": "rules",
+    "decor": { "of": "fannedhexdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "hexbandsdual.lines",
+    "label": "Banded hexagonal dual, lines",
+    "name": "V[3⁴.6; 3².6²] · lines",
+    "group": "rules",
+    "decor": { "of": "hexbandsdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "hexbandsdual.lines2",
+    "label": "Banded hexagonal dual, lines II",
+    "name": "V[3⁴.6; 3².6²] · lines II",
+    "group": "rules",
+    "decor": { "of": "hexbandsdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "hexbandsdual.2oneinthree",
+    "label": "Banded hexagonal dual, 2 colours, one in three",
+    "name": "V[3⁴.6; 3².6²] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "hexbandsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "hexbandsdual.2oneinthree2",
+    "label": "Banded hexagonal dual, 2 colours, one in three II",
+    "name": "V[3⁴.6; 3².6²] · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "hexbandsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "hexbandsdual.2oneinthree3",
+    "label": "Banded hexagonal dual, 2 colours, one in three III",
+    "name": "V[3⁴.6; 3².6²] · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "hexbandsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "snubelongated2dual.lines",
+    "label": "Pinwheel snub square dual, lines",
+    "name": "V[3³.4²; 3².4.3.4]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "snubelongated2dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "snubelongated2dual.lines2",
+    "label": "Pinwheel snub square dual, lines II",
+    "name": "V[3³.4²; 3².4.3.4]₁ · lines II",
+    "group": "rules",
+    "decor": { "of": "snubelongated2dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "snubelongated2dual.2oneinthreebyshape",
+    "label": "Pinwheel snub square dual, 2 colours, one in three, by shape",
+    "name": "V[3³.4²; 3².4.3.4]₁ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "snubelongated2dual.2oneinthreebyshape2",
+    "label": "Pinwheel snub square dual, 2 colours, one in three, by shape II",
+    "name": "V[3³.4²; 3².4.3.4]₁ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "snubelongated2dual.3byshape",
+    "label": "Pinwheel snub square dual, 3 colours, by shape",
+    "name": "V[3³.4²; 3².4.3.4]₁ · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated2dual",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
+    },
+    "painting": 4
+  },
+  {
+    "key": "snubelongateddual.lines",
+    "label": "Zigzag snub square dual, lines",
+    "name": "V[3³.4²; 3².4.3.4]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "snubelongateddual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "snubelongateddual.lines2",
+    "label": "Zigzag snub square dual, lines II",
+    "name": "V[3³.4²; 3².4.3.4]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "snubelongateddual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "dissectedtrunchex2dual.lines",
+    "label": "Turned dissected truncated hexagonal dual, lines",
+    "name": "V[3³.4²; 3.4.6.4] · lines",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchex2dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "dissectedtrunchex2dual.lines2",
+    "label": "Turned dissected truncated hexagonal dual, lines II",
+    "name": "V[3³.4²; 3.4.6.4] · lines II",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchex2dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "dissectedtrunchex2dual.2colours",
+    "label": "Turned dissected truncated hexagonal dual, 2 colours",
+    "name": "V[3³.4²; 3.4.6.4] · 2 colours",
+    "group": "colourings",
+    "decor": { "of": "dissectedtrunchex2dual", "colours": 2, "rules": false, "label": "2 colours" },
+    "painting": 2
+  },
+  {
+    "key": "dissectedtrunchex2dual.2colours2",
+    "label": "Turned dissected truncated hexagonal dual, 2 colours II",
+    "name": "V[3³.4²; 3.4.6.4] · 2 colours II",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dissectedtrunchex2dual.3byshape",
+    "label": "Turned dissected truncated hexagonal dual, 3 colours, by shape",
+    "name": "V[3³.4²; 3.4.6.4] · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchex2dual",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
+    },
+    "painting": 4
+  },
+  {
+    "key": "squarerows2dual.lines",
+    "label": "Doubly elongated triangular dual, lines",
+    "name": "V[3³.4²; 4⁴]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "squarerows2dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squarerows2dual.lines2",
+    "label": "Doubly elongated triangular dual, lines II",
+    "name": "V[3³.4²; 4⁴]₁ · lines II",
+    "group": "rules",
+    "decor": { "of": "squarerows2dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squarerows2dual.2oneinthreebyshape",
+    "label": "Doubly elongated triangular dual, 2 colours, one in three, by shape",
+    "name": "V[3³.4²; 4⁴]₁ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squarerows2dual.2oneinthree",
+    "label": "Doubly elongated triangular dual, 2 colours, one in three",
+    "name": "V[3³.4²; 4⁴]₁ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "squarerows2dual.3byshape",
+    "label": "Doubly elongated triangular dual, 3 colours, by shape",
+    "name": "V[3³.4²; 4⁴]₁ · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows2dual",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
+    },
+    "painting": 4
+  },
+  {
+    "key": "squarerows3dual.lines",
+    "label": "Triply elongated triangular dual, lines",
+    "name": "V[3³.4²; 4⁴]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "squarerows3dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squarerows3dual.lines2",
+    "label": "Triply elongated triangular dual, lines II",
+    "name": "V[3³.4²; 4⁴]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "squarerows3dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squarerows3dual.2oneinthreebyshape",
+    "label": "Triply elongated triangular dual, 2 colours, one in three, by shape",
+    "name": "V[3³.4²; 4⁴]₂ · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squarerows3dual.2oneinthreebyshape2",
+    "label": "Triply elongated triangular dual, 2 colours, one in three, by shape II",
+    "name": "V[3³.4²; 4⁴]₂ · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "squarerows3dual.2oneinthree",
+    "label": "Triply elongated triangular dual, 2 colours, one in three",
+    "name": "V[3³.4²; 4⁴]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squarerows3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 4
+  },
+  {
+    "key": "dissectedtrunchexdual.dots",
+    "label": "Dissected truncated hexagonal dual, dots",
+    "name": "V[3².4.3.4; 3.4.6.4] · dots",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchexdual", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 0
+  },
+  {
+    "key": "dissectedtrunchexdual.dots2",
+    "label": "Dissected truncated hexagonal dual, dots II",
+    "name": "V[3².4.3.4; 3.4.6.4] · dots II",
+    "group": "rules",
+    "decor": { "of": "dissectedtrunchexdual", "colours": 1, "rules": true, "label": "dots II" },
+    "painting": 1
+  },
+  {
+    "key": "dissectedtrunchexdual.2colours",
+    "label": "Dissected truncated hexagonal dual, 2 colours",
+    "name": "V[3².4.3.4; 3.4.6.4] · 2 colours",
+    "group": "colourings",
+    "decor": { "of": "dissectedtrunchexdual", "colours": 2, "rules": false, "label": "2 colours" },
+    "painting": 2
+  },
+  {
+    "key": "dissectedtrunchexdual.2oneinthree",
+    "label": "Dissected truncated hexagonal dual, 2 colours, one in three",
+    "name": "V[3².4.3.4; 3.4.6.4] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchexdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dissectedtrunchexdual.3byshape",
+    "label": "Dissected truncated hexagonal dual, 3 colours, by shape",
+    "name": "V[3².4.3.4; 3.4.6.4] · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dissectedtrunchexdual",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
+    },
+    "painting": 4
+  },
+  {
+    "key": "hexrowsdual.lines",
+    "label": "Bow-tie hexagonal dual, lines",
+    "name": "V[3².6²; 3.6.3.6] · lines",
+    "group": "rules",
+    "decor": { "of": "hexrowsdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "hexrowsdual.lines2",
+    "label": "Bow-tie hexagonal dual, lines II",
+    "name": "V[3².6²; 3.6.3.6] · lines II",
+    "group": "rules",
+    "decor": { "of": "hexrowsdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "hexrowsdual.2oneinthreebyshape",
+    "label": "Bow-tie hexagonal dual, 2 colours, one in three, by shape",
+    "name": "V[3².6²; 3.6.3.6] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "hexrowsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "hexrowsdual.2oneinthree",
+    "label": "Bow-tie hexagonal dual, 2 colours, one in three",
+    "name": "V[3².6²; 3.6.3.6] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "hexrowsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "hexrowsdual.3byshape",
+    "label": "Bow-tie hexagonal dual, 3 colours, by shape",
+    "name": "V[3².6²; 3.6.3.6] · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "hexrowsdual", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "dodecasquaredual.lines",
+    "label": "Square dodecagonal dual, lines",
+    "name": "V[3.4.3.12; 3.12²] · lines",
+    "group": "rules",
+    "decor": { "of": "dodecasquaredual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "dodecasquaredual.lines2",
+    "label": "Square dodecagonal dual, lines II",
+    "name": "V[3.4.3.12; 3.12²] · lines II",
+    "group": "rules",
+    "decor": { "of": "dodecasquaredual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "hexringsdual.lines",
+    "label": "Dissected truncated trihexagonal dual, lines",
+    "name": "V[3.4².6; 3.4.6.4] · lines",
+    "group": "rules",
+    "decor": { "of": "hexringsdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "hexringsdual.lines2",
+    "label": "Dissected truncated trihexagonal dual, lines II",
+    "name": "V[3.4².6; 3.4.6.4] · lines II",
+    "group": "rules",
+    "decor": { "of": "hexringsdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "hexringsdual.2oneinthreebyshape",
+    "label": "Dissected truncated trihexagonal dual, 2 colours, one in three, by shape",
+    "name": "V[3.4².6; 3.4.6.4] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "hexringsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "hexringsdual.2oneinthreebyshape2",
+    "label": "Dissected truncated trihexagonal dual, 2 colours, one in three, by shape II",
+    "name": "V[3.4².6; 3.4.6.4] · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "hexringsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "hexringsdual.3byshape",
+    "label": "Dissected truncated trihexagonal dual, 3 colours, by shape",
+    "name": "V[3.4².6; 3.4.6.4] · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "hexringsdual", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "squaretrihexdual.lines",
+    "label": "Elongated trihexagonal dual, lines",
+    "name": "V[3.4².6; 3.6.3.6]₁ · lines",
+    "group": "rules",
+    "decor": { "of": "squaretrihexdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squaretrihexdual.lines2",
+    "label": "Elongated trihexagonal dual, lines II",
+    "name": "V[3.4².6; 3.6.3.6]₁ · lines II",
+    "group": "rules",
+    "decor": { "of": "squaretrihexdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squaretrihexdual.2oneinthree",
+    "label": "Elongated trihexagonal dual, 2 colours, one in three",
+    "name": "V[3.4².6; 3.6.3.6]₁ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihexdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "squaretrihex2dual.lines",
+    "label": "Staggered elongated trihexagonal dual, lines",
+    "name": "V[3.4².6; 3.6.3.6]₂ · lines",
+    "group": "rules",
+    "decor": { "of": "squaretrihex2dual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "squaretrihex2dual.lines2",
+    "label": "Staggered elongated trihexagonal dual, lines II",
+    "name": "V[3.4².6; 3.6.3.6]₂ · lines II",
+    "group": "rules",
+    "decor": { "of": "squaretrihex2dual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "squaretrihex2dual.2oneinthree",
+    "label": "Staggered elongated trihexagonal dual, 2 colours, one in three",
+    "name": "V[3.4².6; 3.6.3.6]₂ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "squaretrihex2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "dodecarhombitrihexdual.lines",
+    "label": "Studded rhombitrihexagonal dual, lines",
+    "name": "V[3.4.6.4; 4.6.12] · lines",
+    "group": "rules",
+    "decor": { "of": "dodecarhombitrihexdual", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "dodecarhombitrihexdual.lines2",
+    "label": "Studded rhombitrihexagonal dual, lines II",
+    "name": "V[3.4.6.4; 4.6.12] · lines II",
+    "group": "rules",
+    "decor": { "of": "dodecarhombitrihexdual", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "dodecarhombitrihexdual.2oneinthreebyshape",
+    "label": "Studded rhombitrihexagonal dual, 2 colours, one in three, by shape",
+    "name": "V[3.4.6.4; 4.6.12] · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecarhombitrihexdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "dodecarhombitrihexdual.2oneinthreebyshape2",
+    "label": "Studded rhombitrihexagonal dual, 2 colours, one in three, by shape II",
+    "name": "V[3.4.6.4; 4.6.12] · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecarhombitrihexdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dodecarhombitrihexdual.2oneinthree",
+    "label": "Studded rhombitrihexagonal dual, 2 colours, one in three",
+    "name": "V[3.4.6.4; 4.6.12] · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecarhombitrihexdual",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 4
+  },
+  {
     "key": "penrose.rules",
     "label": "Penrose rhombi, matching rules",
     "name": "Penrose rhombi · matching rules",
