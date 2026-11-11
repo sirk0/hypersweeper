@@ -56,16 +56,68 @@ describe("labels", () => {
     expect(colours(labelMark(0, true))).toBeNull();
   });
 
-  it("draws a label as a half disc in its class's colour, nearer its head", () => {
-    const sq = (marks: number[]) =>
-      posed(regular(Z4, 4), { rot: 0, flip: false, t: Z4.zero }).map((p) =>
-        piece(p.verts, undefined, marks),
-      );
+  const sq = (marks: number[], t: Cyc = Z4.zero) =>
+    posed(regular(Z4, 4), { rot: 0, flip: false, t }).map((p) => piece(p.verts, undefined, marks));
+
+  it("draws a lone label as a half disc in its class's colour, nearer its head", () => {
     const ahead = decorParts(loopsOf(Z4, sq([labelMark(1, true), 0, 0, 0])));
     const behind = decorParts(loopsOf(Z4, sq([labelMark(1, false), 0, 0, 0])));
     expect(ahead.map((p) => p.class)).toEqual(["decor label label-1"]);
     // the same class the other way: the same disc, at the edge's other end
     expect(ahead[0]!.d).not.toBe(behind[0]!.d);
+  });
+
+  // the points a part's paths start and end at, and the way each leaves
+  const ends = (d: string): { at: string; dir: [number, number] }[] =>
+    d
+      .split("M")
+      .filter(Boolean)
+      .flatMap((seg) => {
+        const n = seg.match(/-?[\d.]+/g)!.map(Number);
+        const [x0, y0] = [n[0]!, n[1]!];
+        const [x1, y1] = [n[n.length - 2]!, n[n.length - 1]!];
+        const [cx, cy] = [n[2]!, n[3]!];
+        const [dx, dy] = [n[n.length - 4]!, n[n.length - 3]!];
+        const key = (x: number, y: number) => `${x.toFixed(3)},${y.toFixed(3)}`;
+        // a spoke ends at its hub, inside: only its start is on an edge
+        const hub = /Q/.test(seg);
+        return [
+          { at: key(x0, y0), dir: [cx - x0, cy - y0] as [number, number] },
+          ...(hub ? [] : [{ at: key(x1, y1), dir: [dx - x1, dy - y1] as [number, number] }]),
+        ];
+      });
+
+  it("joins a class's labels on a tile by a line, running on into the tile across", () => {
+    // two squares side by side; the left one's right edge (1) and top (2)
+    // carry class 1, the right one's left edge (3), its partner, and bottom
+    const left = decorParts(loopsOf(Z4, sq([0, labelMark(1, true), labelMark(1, false), 0])));
+    const right = decorParts(
+      loopsOf(Z4, sq([labelMark(1, true), 0, 0, partner(labelMark(1, true))], [1, 0])),
+    );
+    for (const parts of [left, right]) {
+      expect(parts.map((p) => p.class)).toEqual(["decor label-line label-1"]);
+      expect(parts[0]!.width).toBeGreaterThan(0);
+    }
+    // they meet at one point on the shared edge, x = 1, each square on to it
+    // from its own side: one line across
+    const [a, b] = [ends(left[0]!.d), ends(right[0]!.d)];
+    const shared = a.find((e) => e.at.startsWith("1.000,"))!;
+    const across = b.find((e) => e.at === shared.at)!;
+    expect(across).toBeDefined();
+    expect(Math.abs(shared.dir[1])).toBeLessThan(1e-3);
+    expect(Math.abs(across.dir[1])).toBeLessThan(1e-3);
+    expect(Math.sign(shared.dir[0])).toBe(-Math.sign(across.dir[0]));
+  });
+
+  it("meets three labels of a class at a hub, and pairs four", () => {
+    const three = decorParts(
+      loopsOf(Z4, sq([labelMark(2, null), labelMark(2, null), labelMark(2, null), 0])),
+    );
+    expect(three.map((p) => p.class)).toEqual(["decor label-line label-2"]);
+    expect(three[0]!.d.match(/M/g)).toHaveLength(3);
+    expect(three[0]!.d.match(/Q/g)).toHaveLength(3);
+    const four = decorParts(loopsOf(Z4, sq([1, 1, 1, 1].map(() => labelMark(0, null)))));
+    expect(four[0]!.d.match(/C/g)).toHaveLength(2);
   });
 });
 

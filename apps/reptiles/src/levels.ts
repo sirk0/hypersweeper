@@ -55,6 +55,7 @@ import {
   curveOnto,
   piece,
   posed,
+  realCorners,
   restFlat,
   selfTurns,
   sides,
@@ -290,34 +291,127 @@ function makeLevel(
   // as ever, and a marked one that fits every cell whichever way it rests —
   // a checkerboard's — does too.)
   if (marks) {
-    for (const kind of kinds) {
-      const mine = sits.filter((s) => s.kind === kind);
-      const first = mine[0]!;
-      if (first.cell.length !== 1) continue;
-      const fitsAsHeld = (shape: Shape, rots: number[]): boolean => {
-        const period = selfTurns(shape).find((k) => k > 0) ?? ring.n;
-        return rots.some((r) => r % period === 0);
-      };
-      if (!fitsAsHeld(kind.shape, kind.ks)) continue;
+    const fitsAsHeld = (shape: Shape, rots: number[]): boolean => {
+      const period = selfTurns(shape).find((k) => k > 0) ?? ring.n;
+      return rots.some((r) => r % period === 0);
+    };
+    // `kind`'s first cell rested from its corner q on: its first longest
+    // side from there that the whole tile lies above
+    const restAt = (kind: Kind, q: number): Shape => {
+      const first = sits.find((s) => s.kind === kind)!;
       const verts = first.cell[0]!;
       const own = marks[first.i]![0]!;
-      const m = verts.length;
-      for (let q = 1; q < m; q++) {
-        const shape = restFlat(
-          ring,
-          [[...verts.slice(q), ...verts.slice(0, q)]],
-          [[...own.slice(q), ...own.slice(0, q)]],
-        );
-        const mirrored = { ring, pieces: posed(shape, { rot: 0, flip: true, t: ring.zero }) };
-        const rots = mine.map((s) => turnsOnto(s.flip ? mirrored : shape, s.cell, marks[s.i])[0]);
-        if (rots.some((r) => r === undefined)) continue;
-        if (fitsAsHeld(shape, rots as number[])) continue;
-        kind.shape = shape;
-        kind.mirrored = mirrored;
-        kind.ks = rots as number[];
-        mine.forEach((s, n) => (s.rot = rots[n]!));
+      return restFlat(
+        ring,
+        [[...verts.slice(q), ...verts.slice(0, q)]],
+        [[...own.slice(q), ...own.slice(0, q)]],
+      );
+    };
+    // how each of `kind`'s cells sits for its tray tile `shape`, each flipped
+    // or not as it was: null if one does not
+    const rotsFor = (kind: Kind, shape: Shape, mirrored: Shape): number[] | null => {
+      const rots = sits
+        .filter((s) => s.kind === kind)
+        .map((s) => turnsOnto(s.flip ? mirrored : shape, s.cell, marks[s.i])[0]);
+      return rots.some((r) => r === undefined) ? null : (rots as number[]);
+    };
+    const settle = (kind: Kind, shape: Shape, mirrored: Shape, rots: number[]): void => {
+      kind.shape = shape;
+      kind.mirrored = mirrored;
+      kind.ks = rots;
+      sits.filter((s) => s.kind === kind).forEach((s, n) => (s.rot = rots[n]!));
+    };
+    const mirrorOf = (shape: Shape): Shape => ({
+      ring,
+      pieces: posed(shape, { rot: 0, flip: true, t: ring.zero }),
+    });
+    for (const kind of kinds) {
+      const first = sits.find((s) => s.kind === kind)!;
+      if (first.cell.length !== 1) continue;
+      if (!fitsAsHeld(kind.shape, kind.ks)) continue;
+      for (let q = 1; q < first.cell[0]!.length; q++) {
+        const shape = restAt(kind, q);
+        const mirrored = mirrorOf(shape);
+        const rots = rotsFor(kind, shape, mirrored);
+        if (!rots || fitsAsHeld(shape, rots)) continue;
+        settle(kind, shape, mirrored, rots);
         break;
       }
+    }
+    // …but tiles of one outline, marked differently, all rest the same way
+    // round — the one that leaves fewest of them fitting as held, then the
+    // one most of them rest at already: a tray of one shape at two angles
+    // reads as two shapes (Klaassen's heptagons, the rhombille's rhombi). A
+    // tile and its mirror image are one outline, and rest as mirror images
+    // side by side do (the kisrhombille's triangles). An outline is a tile's
+    // real corners, moved to their centre: N·v − Σ
+    const outlineAt = (shape: Shape, k = 0, flip = false): string => {
+      const pts = shape.pieces.flatMap(({ verts }) => {
+        const real = realCorners(ring, verts);
+        return verts
+          .filter((_, i) => real[i])
+          .map((v) => ring.mul(ring.zeta(k), flip ? ring.conj(v) : v));
+      });
+      const sum = pts.reduce((a, v) => ring.add(a, v), ring.zero);
+      return pts
+        .map((v) => ring.key(ring.sub(v.map((x) => x * pts.length) as Cyc, sum)))
+        .sort()
+        .join("|");
+    };
+    // how a tray tile is held, the same for a tile and its mirror image in
+    // the upright (x ↦ −x: conjugate, then turn half round) — but for an
+    // outline that is its own mirror image, whose mirror image is only
+    // itself turned: that must be held as the rest are
+    const heldAt = (shape: Shape): string => {
+      const own = outlineAt(shape);
+      const symmetric = [...Array(ring.n).keys()].some((k) => outlineAt(shape, k, true) === own);
+      if (symmetric) return own;
+      const mirror = outlineAt(shape, ring.n / 2, true);
+      return own < mirror ? own : mirror;
+    };
+    const outlines = new Map<string, Kind[]>();
+    for (const kind of kinds) {
+      if (kind.shape.pieces.length !== 1) continue;
+      let canon = "";
+      for (const flip of [false, true])
+        for (let k = 0; k < ring.n; k++) {
+          const key = outlineAt(kind.shape, k, flip);
+          if (!canon || key < canon) canon = key;
+        }
+      outlines.set(canon, [...(outlines.get(canon) ?? []), kind]);
+    }
+    for (const group of outlines.values()) {
+      const held = group.map((kind) => heldAt(kind.shape));
+      if (new Set(held).size < 2) continue;
+      // every way each kind can rest, by the outline it rests at
+      const ways = group.map((kind) => {
+        const byOutline = new Map<string, Shape>();
+        const m = sits.find((s) => s.kind === kind)!.cell[0]!.length;
+        for (let q = 0; q < m; q++) {
+          const shape = restAt(kind, q);
+          const at = heldAt(shape);
+          if (!byOutline.has(at)) byOutline.set(at, shape);
+        }
+        return byOutline;
+      });
+      let best: { fit: number; already: number; plan: [Shape, Shape, number[]][] } | null = null;
+      for (const at of ways[0]!.keys()) {
+        if (!ways.every((w) => w.has(at))) continue;
+        const plan: [Shape, Shape, number[]][] = [];
+        for (const [n, kind] of group.entries()) {
+          const shape = ways[n]!.get(at)!;
+          const mirrored = mirrorOf(shape);
+          const rots = rotsFor(kind, shape, mirrored);
+          if (!rots) break;
+          plan.push([shape, mirrored, rots]);
+        }
+        if (plan.length < group.length) continue;
+        const fit = plan.filter(([shape, , rots]) => fitsAsHeld(shape, rots)).length;
+        const already = held.filter((h) => h === at).length;
+        if (!best || fit < best.fit || (fit === best.fit && already > best.already))
+          best = { fit, already, plan };
+      }
+      if (best) group.forEach((kind, n) => settle(kind, ...best.plan[n]!));
     }
   }
   const area = (s: Shape): number =>

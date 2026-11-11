@@ -4,7 +4,7 @@
 import type { Cyc } from "./geometry/cyclotomic";
 import { Frontier } from "./geometry/frontier";
 import {
-  allVerts,
+  realCorners,
   posed,
   selfTurns,
   signedArea,
@@ -63,9 +63,17 @@ export class Puzzle {
     return this.frontier.corners;
   }
 
-  /** Which corners of a placement meet what is already down, or the rim. */
+  /** Which corners of a placement meet what is already down, or the rim:
+   * its real corners only, not a point part-way along a side (a marked
+   * tile's cut). */
   touching(pieces: readonly Piece[]): Cyc[] {
-    return this.frontier.touching(allVerts(pieces));
+    const { ring } = this.level;
+    return this.frontier.touching(
+      pieces.flatMap(({ verts }) => {
+        const real = realCorners(ring, verts);
+        return verts.filter((_, i) => real[i]);
+      }),
+    );
   }
 
   /** How much of the region is covered, 0 to 1. Not a tile count: the

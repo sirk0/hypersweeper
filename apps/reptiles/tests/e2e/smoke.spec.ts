@@ -400,11 +400,19 @@ test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows
   }
 
   // an aperiodic tiling's rule read off its patch: Ammann–Beenker's arrows,
-  // a half disc on every edge of its rhombus and its square — and its
-  // colouring, no two tiles of a colour touching: more tray tiles than shapes
+  // a point on every edge of its rhombus and its square, joined by a line —
+  // and its colouring, no two tiles of a colour touching: more tray tiles
+  // than shapes
   await page.goto("/?level=ammannbeenker.rules");
   await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(2);
-  await expect(page.locator("svg.board .tray-layer .decor.label")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.label-line")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.label")).toHaveCount(0);
+  // a spiral's: the pentagons' lines, and a half disc for the class with one
+  // point on the tile
+  await page.goto("/?level=pentaspiral7.rules");
+  await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(1);
+  await expect(page.locator("svg.board .tray-layer .decor.label-line")).toHaveCount(2);
+  await expect(page.locator("svg.board .tray-layer .decor.label")).toHaveCount(1);
   await page.goto("/?level=ammannbeenker.3apart");
   await expect(page.locator("svg.board .tile.in-tray")).toHaveCount(5);
   await expect(page.locator("svg.board .tray-layer .decor.band")).not.toHaveCount(0);

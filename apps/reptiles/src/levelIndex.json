@@ -1963,16 +1963,11 @@
     "painting": 2
   },
   {
-    "key": "rhombille.2oneinthree3",
-    "label": "Rhombille, 2 colours, one in three III",
-    "name": "V3.6.3.6 · 2 colours, one in three III",
+    "key": "rhombille.3striped",
+    "label": "Rhombille, 3 colours, striped",
+    "name": "V3.6.3.6 · 3 colours, striped",
     "group": "colourings",
-    "decor": {
-      "of": "rhombille",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three III"
-    },
+    "decor": { "of": "rhombille", "colours": 3, "rules": false, "label": "3 colours, striped" },
     "painting": 3
   },
   {
@@ -2101,6 +2096,14 @@
     "group": "rules",
     "decor": { "of": "floret", "colours": 1, "rules": true, "label": "lines II" },
     "painting": 1
+  },
+  {
+    "key": "floret.3paired",
+    "label": "Floret pentagonal, 3 colours, paired",
+    "name": "V3⁴.6 · 3 colours, paired",
+    "group": "colourings",
+    "decor": { "of": "floret", "colours": 3, "rules": false, "label": "3 colours, paired" },
+    "painting": 2
   },
   {
     "key": "deltoidal.lines",

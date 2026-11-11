@@ -188,4 +188,40 @@ describe("frontier", () => {
     // round, the bottom bulges into the square: the corner would cut it
     expect(Frontier.ofRegion(Z4, [square2], [[IN, 0, 0, 0]]).fits([piece(triangle)])).toBe(false);
   });
+
+  it("sticks a tile by its real corners, never by a point part-way along a side", () => {
+    // an L: a reflex corner at (2, 2), where a 2 × 2 square's right side,
+    // cut at its middle (a marked tile's cut), could lie half along the rim
+    const region = walk(Z4, [
+      [0, 4],
+      [1, 2],
+      [2, 2],
+      [1, 2],
+      [2, 2],
+      [3, 4],
+    ]);
+    const cut: Shape = {
+      ring: Z4,
+      pieces: [
+        piece([
+          [0, 0],
+          [2, 0],
+          [2, 1],
+          [2, 2],
+          [0, 2],
+        ]),
+      ],
+    };
+    const f = Frontier.ofRegion(Z4, [region]);
+    // where its corner nearest the origin lands
+    const lowest = (s: Piece[]): string => {
+      const [x, y] = allVerts(s).reduce((a, v) => (v[0]! + v[1]! < a[0]! + a[1]! ? v : a));
+      return `${x},${y}`;
+    };
+    // only where a corner of the square meets a corner of the rim: never
+    // its cut on the reflex corner, the square at (0, 1)–(2, 3)
+    const spots = f.placements(cut, [1, 2], 10, false, [0]).map(lowest).sort();
+    expect(spots).not.toContain("0,1");
+    expect(spots).toEqual(["0,0", "0,2", "2,0"]);
+  });
 });
