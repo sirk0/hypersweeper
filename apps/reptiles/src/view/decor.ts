@@ -24,14 +24,20 @@
 //   there — as the 3⁶ lines go round a triangle's corner — dark for one kind
 //   and blue for the other. A tile's arcs run on into its neighbours' only
 //   where their arrows agree.
+// - A label — a matching rule read off an aperiodic tiling's own patch
+//   (src/patchMarks.ts): a half disc in its class's colour, a third of the
+//   way back from its head (a second six classes a fifth), or on the
+//   middle of its edge where it has no way. Two tiles meeting as they should
+//   make one disc; the wrong class or the wrong way, two halves apart.
 //
 // Each part is a path's `d` and class, in the coordinates `map` gives; the
 // caller makes the elements. Nothing here is hit-tested: the classes carry
 // `pointer-events: none`.
 
 import { centroid, type XY } from "../geometry/shape";
-import { END, LINE, arrow, colours } from "../geometry/marks";
-import type { Loop } from "./curve";
+import { END, LINE, arrow, colours, label } from "../geometry/marks";
+import { alongEdge, type Loop } from "./curve";
+import { PATCH_MARKED, type Level } from "../levels";
 
 export interface DecorPart {
   d: string;
@@ -53,6 +59,12 @@ const DOT = 0.11;
 // kites' and darts': round a kite's tip and tail, a dart's tip and notch —
 // 0.382 of an edge, the golden ratio's, as Conway's arcs are drawn.
 const ARC_AT = [0, 0.3, 0.618, 0.382, 0.382];
+
+/** How many colours labels come in, and where a label's half disc sits: a
+ * share of its edge back from its head, by how many times round the colours
+ * its class is. */
+const LABEL_COLOURS = 6;
+const LABEL_AT = [1 / 3, 0.2, 0.42];
 
 const fmt = (n: number): string => (Math.abs(n) < 1e-9 ? "0" : n.toFixed(4));
 const pt = ([x, y]: XY): string => `${fmt(x)} ${fmt(y)}`;
@@ -128,7 +140,12 @@ export function meet(xy: readonly XY[], i: number, j: number): XY | "parallel" |
  * coordinates. */
 function halfDisc(a: XY, b: XY, at: XY, r: number, map: (p: XY) => XY): string {
   const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  const [ux, uy] = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+  return halfDiscAlong([(b[0] - a[0]) / len, (b[1] - a[1]) / len], at, r, map);
+}
+
+/** A half disc of radius `r` centred at `at` on an edge running the unit
+ * direction `dir` there, on its left. */
+function halfDiscAlong([ux, uy]: XY, at: XY, r: number, map: (p: XY) => XY): string {
   const p0 = map([at[0] - ux * r, at[1] - uy * r]);
   const p1 = map([at[0] + ux * r, at[1] + uy * r]);
   const inside = map([at[0] - uy * r, at[1] + ux * r]);
@@ -139,30 +156,82 @@ function halfDisc(a: XY, b: XY, at: XY, r: number, map: (p: XY) => XY): string {
   return `M${pt(p0)}A${fmt(mr)} ${fmt(mr)} 0 0 ${sweep} ${pt(p1)}Z`;
 }
 
+const UNITS = new WeakMap<Level, number | undefined>();
+
+/** The edge length a level's half discs are sized by (`decorParts`): on an
+ * aperiodic level marked from its patch, the middle of its tray tiles' edge
+ * lengths, so a disc on an edge cut short is as big as its tile's others;
+ * undefined, each disc sized by its own edge, on every other level. */
+export function markUnit(level: Level): number | undefined {
+  if (UNITS.has(level)) return UNITS.get(level);
+  let unit: number | undefined;
+  if (level.decor && PATCH_MARKED.includes(level.decor.of)) {
+    const lengths = level.tiles
+      .flatMap((t) =>
+        t.pieces.flatMap(({ verts }) =>
+          verts.map((v, i) => {
+            const [ax, ay] = level.ring.toXY(v);
+            const [bx, by] = level.ring.toXY(verts[(i + 1) % verts.length]!);
+            return Math.hypot(bx - ax, by - ay);
+          }),
+        ),
+      )
+      .sort((a, b) => a - b);
+    unit = lengths[Math.floor(lengths.length / 2)];
+  }
+  UNITS.set(level, unit);
+  return unit;
+}
+
 /** The marks drawn on `loops` (a tile's, each with its marks), mapped by
- * `map`: half discs and a path of lines. Empty for an unmarked tile. */
-export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p): DecorPart[] {
+ * `map`: half discs and a path of lines. Empty for an unmarked tile. With
+ * `unit` — a level's own edge length, the same for every tile of it
+ * (`markUnit`) — a half disc is sized by that, not by its edge, but for
+ * staying on its edge: an edge cut short (a metatile's, where a corner of the
+ * tile across lands) keeps a disc as big as its tile's others. A half disc
+ * on a round edge sits on its arc. */
+export function decorParts(
+  loops: readonly Loop[],
+  map: (p: XY) => XY = (p) => p,
+  unit?: number,
+): DecorPart[] {
   const discs = new Map<string, string[]>();
   const add = (cls: string, d: string): void => {
     discs.set(cls, [...(discs.get(cls) ?? []), d]);
   };
   const lines: string[] = [];
-  for (const { xy, marks } of loops) {
+  for (const { xy, marks, curve } of loops) {
     if (!marks) continue;
     const m = xy.length;
+    // a half disc a share `t` along edge i, as drawn, at most `room` of the
+    // edge from its nearer end: its radius `share` of its edge, or of `unit`
+    const disc = (i: number, t: number, share: number): string => {
+      const a = xy[i]!;
+      const b = xy[(i + 1) % m]!;
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const room = 0.9 * Math.min(t, 1 - t) * len;
+      const r = unit === undefined ? share * len : Math.min(share * unit, room);
+      const { at, dir } = alongEdge(a, b, curve?.[i] ?? 0, t);
+      return halfDiscAlong(dir, at, r, map);
+    };
     const lined: number[] = [];
     const crossings = new Map<number, { kind: number; at: XY }>();
     marks.forEach((mark, i) => {
       const a = xy[i]!;
       const b = xy[(i + 1) % m]!;
-      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      const mid: XY = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       if (mark === LINE) {
         lined.push(i);
         return;
       }
       if (mark === END) {
-        add("decor dot", halfDisc(a, b, mid, HALF * len, map));
+        add("decor dot", disc(i, 0.5, HALF));
+        return;
+      }
+      const tag = label(mark);
+      if (tag) {
+        // a share back from its head: from b, or from a
+        const f = tag.forward === null ? 0.5 : LABEL_AT[Math.floor(tag.cls / LABEL_COLOURS) % 3]!;
+        add(`decor label label-${tag.cls % LABEL_COLOURS}`, disc(i, tag.forward ? 1 - f : f, DOT));
         return;
       }
       const way = arrow(mark);
@@ -178,7 +247,7 @@ export function decorParts(loops: readonly Loop[], map: (p: XY) => XY = (p) => p
       }
       const pair = colours(mark);
       const colour = pair && pair.own !== pair.other ? pair.other : null;
-      if (colour !== null) add(`decor band paint-${colour}`, halfDisc(a, b, mid, HALF * len, map));
+      if (colour !== null) add(`decor band paint-${colour}`, disc(i, 0.5, HALF));
     });
     const mid = (i: number): XY => {
       const a = xy[i]!;

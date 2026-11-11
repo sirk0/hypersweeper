@@ -2833,5 +2833,45 @@
     "score": 1.177,
     "presses": 18,
     "flips": 0
+  },
+  "ammannbeenker.rules": {
+    "score": 0.918,
+    "presses": 11,
+    "flips": 0
+  },
+  "ammannbeenker.3apart": {
+    "score": 1.552,
+    "presses": 12,
+    "flips": 3
+  },
+  "tile11.rules": {
+    "score": 0.9,
+    "presses": 14,
+    "flips": 0
+  },
+  "spectre.rules": {
+    "score": 0.9,
+    "presses": 14,
+    "flips": 0
+  },
+  "hat.rules": {
+    "score": 0.514,
+    "presses": 9,
+    "flips": 1
+  },
+  "turtle.rules": {
+    "score": 0.54,
+    "presses": 7,
+    "flips": 4
+  },
+  "hatmetatiles.rules": {
+    "score": 0.91,
+    "presses": 7,
+    "flips": 0
+  },
+  "socolartaylor.rules": {
+    "score": 0.757,
+    "presses": 7,
+    "flips": 4
   }
 }

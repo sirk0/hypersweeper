@@ -29,6 +29,12 @@
 //   kind and point the same way. `forward`: it points the way the tile's
 //   outline runs along the edge (counter-clockwise); its partner points the
 //   other way round the other tile, and a mirror turns it round too.
+// - a label, `labelMark(cls, forward)`: a matching rule read off an
+//   aperiodic tiling's own patch (src/patchMarks.ts) — each of a tile's
+//   edges one of a few classes, most pointing one way along the edge as an
+//   arrow does (its partner the same class pointing the other way round the
+//   other tile, a mirror turning it round), the rest without a way (`null`:
+//   its own partner).
 //
 // Like a round edge's bulge (`Bulge` in shape.ts), a mark is a label on an
 // exact straight edge, and an edge carrying one is never cut part-way.
@@ -45,6 +51,9 @@ export const MAX_COLOURS = 4;
 const PAIRS = 16;
 const SHARED = 64;
 const ARROWS = 128;
+const LABELS = 256;
+/** The most classes a label runs to. */
+export const MAX_LABELS = 64;
 
 /** The mark of an edge of a tile of colour `own` with a tile of colour
  * `other` across it. */
@@ -83,13 +92,38 @@ export function arrowMark(kind: number, forward: boolean): number {
 
 /** An arrow's kind and way; null for any other mark. */
 export function arrow(mark: number): { kind: number; forward: boolean } | null {
-  if (mark < ARROWS) return null;
+  if (mark < ARROWS || mark >= LABELS) return null;
   const m = mark - ARROWS;
   return { kind: Math.floor(m / 2), forward: m % 2 === 1 };
 }
 
+/** A label of class `cls` on an edge, pointing the way the tile's outline
+ * runs there if `forward`, the other way if not, or no way at all (`null`). */
+export function labelMark(cls: number, forward: boolean | null): number {
+  if (!Number.isInteger(cls) || cls < 0 || cls >= MAX_LABELS)
+    throw new Error(`labelMark: a label's class runs 0 to ${MAX_LABELS - 1}`);
+  return LABELS + cls * 3 + (forward === null ? 2 : forward ? 1 : 0);
+}
+
+/** A label's class and way (`null` for none); null for any other mark. */
+export function label(mark: number): { cls: number; forward: boolean | null } | null {
+  if (mark < LABELS) return null;
+  const m = mark - LABELS;
+  const way = m % 3;
+  return { cls: Math.floor(m / 3), forward: way === 2 ? null : way === 1 };
+}
+
+/** A label turned round: its partner, and how a mirror sees it. */
+function turnedLabel(mark: number): number | null {
+  const l = label(mark);
+  if (!l) return null;
+  return l.forward === null ? mark : labelMark(l.cls, !l.forward);
+}
+
 /** The mark the tile across an edge must have there. */
 export function partner(mark: number): number {
+  const turned = turnedLabel(mark);
+  if (turned !== null) return turned;
   const way = arrow(mark);
   if (way) return arrowMark(way.kind, !way.forward);
   if (mark < PAIRS || mark >= SHARED) return mark;
@@ -104,9 +138,11 @@ export function colours(mark: number): { own: number; other: number } | null {
   return { own: Math.floor(m / MAX_COLOURS), other: m % MAX_COLOURS };
 }
 
-/** A mark seen in a mirror: an arrow points the other way round the tile
+/** A mark seen in a mirror: an arrow or a label points the other way round the tile
  * (the outline runs backwards along it); any other mark has no handedness. */
 export function mirrored(mark: number): number {
+  const turned = turnedLabel(mark);
+  if (turned !== null) return turned;
   const way = arrow(mark);
   return way ? arrowMark(way.kind, !way.forward) : mark;
 }

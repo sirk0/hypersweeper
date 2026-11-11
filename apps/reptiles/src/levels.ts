@@ -9,8 +9,14 @@
 
 import catalog from "@tiling/data/catalog.json";
 import boardsData from "./boards.json";
-import { ARCH_TILINGS, archTemplate, kiteDartLegs, penroseLegs } from "@tiling/geometry";
-import { LINE, arrowMark } from "./geometry/marks";
+import {
+  ARCH_TILINGS,
+  ammannBeenkerFrames,
+  archTemplate,
+  kiteDartLegs,
+  penroseLegs,
+} from "@tiling/geometry";
+import { LINE, arrowMark, colourMark, labelMark } from "./geometry/marks";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow, type XY } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
@@ -18,8 +24,20 @@ import { piecePatch } from "./geometry/pieces";
 import { repTilePatch } from "./geometry/repTile";
 import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
-import { socolarTaylorPatch } from "./geometry/socolarTaylor";
-import { hatPatch, type HatTile } from "./geometry/hat";
+import { SOCOLAR_TAYLOR_PATCH, socolarTaylorPatch, stCell } from "./geometry/socolarTaylor";
+import { hatFrames, hatPatch, type HatTile } from "./geometry/hat";
+import {
+  adjacency,
+  deriveRules,
+  locate,
+  refine,
+  windowCells,
+  type ChosenColouring,
+  type FramedPatch,
+  type RefinedPatch,
+  type WindowCell,
+} from "./patchMarks";
+import aperiodicColouringsData from "./aperiodicColourings.json";
 import { ccw, outline } from "./geometry/outline";
 import colouringsData from "./colourings.json";
 import levelIndexData from "./levelIndex.json";
@@ -200,7 +218,10 @@ const whole = (cells: Cyc[][]): Cyc[][][] => cells.map((c) => [c]);
  * `round`, for a tile with round edges (the Spectre), is how the first edge of
  * each kind's tray tile bulges — the first half of the side it rests on —
  * the rest alternating, out and in, round the tile; every cell takes its
- * kind's curve, and the region's rim the curve of the cell along it.
+ * kind's curve, and the region's rim the curve of the cell along it. Or it
+ * is each cell's curves, piece by piece, as the cells run: a marked Spectre's
+ * kinds rest on whichever sides their marks ask, so its curves are its plain
+ * board's, edge for edge, and each kind's tray tile takes its first cell's.
  *
  * `marks`, for a coloured or lined level (src/colourings.ts), are each cell's
  * edge marks, piece by piece, edge by edge as its vertices run (see
@@ -218,7 +239,7 @@ function makeLevel(
   group: GroupKey,
   configs: number[][],
   name = notation(configs[0]!),
-  round?: Bulge,
+  round?: Bulge | Bulge[][][],
   marks?: number[][][],
   paints?: number[],
 ): Level {
@@ -313,7 +334,25 @@ function makeLevel(
   });
   const region = outline(ring, cells.flat());
   let regionCurves: Bulge[][] | undefined;
-  if (round) {
+  if (Array.isArray(round)) {
+    // each kind's tray tile, curved as its first cell is (the cell it was
+    // read off, so held as it is: never flipped)
+    for (const kind of kinds) {
+      const first = sits.find((s) => s.kind === kind)!;
+      const own = {
+        ring,
+        pieces: first.cell.map((verts, q) => piece(verts, round[first.i]![q])),
+      };
+      const held = posed(kind.shape, { rot: first.rot, flip: false, t: ring.zero });
+      const curved = curveOnto(
+        own,
+        held.map((p) => p.verts),
+      );
+      kind.shape.pieces.forEach((p, q) => {
+        p.curve = curved[q]!.curve!;
+      });
+    }
+  } else if (round) {
     for (const { shape } of kinds) {
       for (const p of shape.pieces) {
         if (p.verts.length % 2) throw new Error(`${key}: round edges alternate, in pairs`);
@@ -1005,6 +1044,66 @@ function socolarTaylorLevel(rings: number): Level {
   };
 }
 
+/** Every aperiodic level's whole patch — the one its window is cut from —
+ * each tile in its prototile's own order, for the matching rules and
+ * colourings read off it (src/patchMarks.ts): Ammann–Beenker's from each
+ * tile's own first corner (`ammannBeenkerFrames`), the Spectre's fourteen
+ * corners, its flat one kept, as its builder lays its outline, the hat's
+ * family's as `hatFrames` lists them, the Socolar–Taylor tile's pieces as
+ * `SOCOLAR_TAYLOR` lists them. Penrose's rhombi and his kites and darts are
+ * cut nowhere part-way, so only their kinds matter: told apart by their
+ * diagonals. */
+export function aperiodicFrames(key: string): FramedPatch {
+  const aperiodic = APERIODIC.find(([k]) => k === key);
+  if (aperiodic) {
+    const [, mode, depth] = aperiodic;
+    const spectre = mode === "spectre";
+    const { ring, cells } = aperiodicPatch(mode, depth, null, spectre);
+    if (mode === "ammannbeenker") {
+      const frames = ammannBeenkerFrames(depth, null);
+      return {
+        ring,
+        cells: cells.map((c, i) => {
+          const { kind, start } = frames[i]!;
+          return { kind, pieces: [[...c.slice(start), ...c.slice(0, start)]] };
+        }),
+      };
+    }
+    if (spectre) return { ring, cells: cells.map((c) => ({ kind: 0, pieces: [c] })) };
+    const diagonals = (c: Cyc[]): string => {
+      const d = (a: Cyc, b: Cyc): string => {
+        const v = ring.sub(b, a);
+        return ring.key(ring.mul(v, ring.conj(v)));
+      };
+      return [d(c[0]!, c[2]!), d(c[1]!, c[3]!)].sort().join("|");
+    };
+    const kinds = new Map<string, number>();
+    return {
+      ring,
+      cells: cells.map((c) => {
+        const k = diagonals(c);
+        if (!kinds.has(k)) kinds.set(k, kinds.size);
+        return { kind: kinds.get(k)!, pieces: [c] };
+      }),
+    };
+  }
+  const hat = HAT_FAMILY.find(([k]) => k === key);
+  if (hat) {
+    const { kinds, cells } = hatFrames(hat[1], hat[2]);
+    return { ring: Z12, cells: cells.map((c, i) => ({ kind: kinds[i]!, pieces: [c] })) };
+  }
+  if (key === "socolartaylor")
+    return {
+      ring: Z12,
+      // `posed` lists a mirrored tile's pieces backwards: listed again
+      cells: SOCOLAR_TAYLOR_PATCH.map((tile) => ({
+        kind: 0,
+        pieces: stCell(tile).map((p) => (tile[3] ? [...p].reverse() : p)),
+      })),
+    };
+  throw new Error(`no aperiodic patch for ${key}`);
+}
+
 // -- a tiling's boards ---------------------------------------------------------
 // A level's first board is the window this game shipped with. A tiling cut
 // from in more than one place has more: the same square moved about a
@@ -1473,6 +1572,158 @@ function kiteDartRulesLevel(plain: Level): Level {
   });
 }
 
+// -- matching rules and colourings read off an aperiodic patch -----------------
+
+/** The aperiodic levels marked from their own patch (src/patchMarks.ts):
+ * every one, but that Penrose's two keep his own arrows for their rules. */
+export const PATCH_MARKED: string[] = [
+  ...APERIODIC.map(([key]) => key),
+  ...HAT_FAMILY.map(([key]) => key),
+  "socolartaylor",
+];
+
+/** Each one's colouring, as `npm run colourings` chose it. */
+const APERIODIC_COLOURINGS = aperiodicColouringsData as Record<string, ChosenColouring>;
+
+/** An aperiodic level's window read off its tiling's whole patch: the patch
+ * cut where any edge needs cutting (`refine`), where the level's cells lie in
+ * it, and the cells round them. Remembered: a level's rules and colouring
+ * read the same one. */
+export interface PatchWindow {
+  ring: Ring;
+  refined: RefinedPatch;
+  window: number[];
+  cells: WindowCell[];
+  around: number[];
+  /** Each pair of patch cells that share an edge. */
+  edges: [number, number][];
+}
+
+const PATCH_WINDOWS = new Map<string, PatchWindow>();
+
+export function patchWindow(plain: Level): PatchWindow {
+  const hit = PATCH_WINDOWS.get(plain.key);
+  if (hit) return hit;
+  const framed = aperiodicFrames(plain.key);
+  const refined = refine(framed);
+  const { window, shift } = locate(
+    framed.ring,
+    refined.cells.map((c) => c.pieces.map((p) => p.verts)),
+    plain.cells.map((c) => c.map((p) => p.verts)),
+  );
+  const { cells, around } = windowCells(refined, window, shift);
+  const made = { ring: framed.ring, refined, window, cells, around, edges: adjacency(refined) };
+  PATCH_WINDOWS.set(plain.key, made);
+  return made;
+}
+
+/** A round level's cells' curves, read off its plain board edge for edge —
+ * undefined for a straight one. */
+function curvesOf(plain: Level, cells: readonly WindowCell[]): Bulge[][][] | undefined {
+  if (!plain.regionCurves) return undefined;
+  const { ring } = plain;
+  const bulges = new Map<string, Bulge>();
+  for (const cell of plain.cells)
+    for (const { verts, curve } of cell)
+      verts.forEach((a, i) =>
+        bulges.set(`${ring.key(a)}>${ring.key(verts[(i + 1) % verts.length]!)}`, curve![i]!),
+      );
+  return cells.map((cell) =>
+    cell.pieces.map(({ verts }) =>
+      verts.map((a, i) => {
+        const b = verts[(i + 1) % verts.length]!;
+        const bulge = bulges.get(`${ring.key(a)}>${ring.key(b)}`);
+        if (bulge === undefined) throw new Error(`${plain.key}: a marked edge is no plain one`);
+        return bulge;
+      }),
+    ),
+  );
+}
+
+/** An aperiodic level marked: `plain`'s board again, cut where its marks
+ * need, each edge marked as `markOf` says. */
+function patchMarkedLevel(
+  plain: Level,
+  suffix: string,
+  label: string,
+  rules: boolean,
+  colours: number,
+  markOf: (cell: number, piece: WindowCell["pieces"][number], edge: number) => number,
+  paints?: number[],
+): Level {
+  const { ring, cells } = patchWindow(plain);
+  const marks = cells.map((cell, c) =>
+    cell.pieces.map((p) => p.slots.map((_, e) => markOf(c, p, e))),
+  );
+  const level = makeLevel(
+    `${plain.key}.${suffix}`,
+    `${plain.label}, ${label}`,
+    ring,
+    cells.map((cell) => cell.pieces.map((p) => p.verts)),
+    rules ? "rules" : "colourings",
+    [],
+    `${plain.name} · ${label}`,
+    curvesOf(plain, cells),
+    marks,
+    paints,
+  );
+  return { ...level, decor: { of: plain.key, colours, rules, label } };
+}
+
+/** An aperiodic level's matching rules, read off its tiling's patch
+ * (`deriveRules`): each edge a label of its slot's class, pointing to the
+ * end of it the class says, or no way. */
+function patchRulesLevel(plain: Level): Level {
+  const rules = deriveRules(patchWindow(plain).refined);
+  return patchMarkedLevel(plain, "rules", "matching rules", true, 1, (_, piece, e) => {
+    const { cls, toEnd } = rules.get(piece.slots[e]!)!;
+    // forward: the slot runs the way the tile's outline does along the edge
+    return labelMark(cls, toEnd === null ? null : toEnd === piece.forward[e]);
+  });
+}
+
+/** What an aperiodic level's colouring is called: in how many colours, no
+ * two tiles of one colour touching. */
+const apartLabel = (colours: number): string => `${colours} colours, apart`;
+
+/** The most tray tiles an aperiodic colouring may take and still be a
+ * level: past five, a tray of tiles that differ only in which colours ring
+ * them is a search, not a puzzle. Only Ammann–Beenker's is under it (five
+ * tiles); the rest take 12 to 26. Every choice is still made and written
+ * down (`npm run colourings`), and a window that colours with fewer is
+ * listed by itself. */
+export const MAX_COLOURED_TRAY = 5;
+
+/** Whether `of`'s colouring is few enough tray tiles to play. */
+export const playableColouring = (of: string): boolean =>
+  (APERIODIC_COLOURINGS[of]?.tiles ?? Infinity) <= MAX_COLOURED_TRAY;
+
+/** An aperiodic level's colouring: `src/aperiodicColourings.json`'s proper
+ * colouring of its window and the cells round it, each edge the colour pair
+ * of the tile and the one across (`colourMark`). */
+function patchColouredLevel(plain: Level): Level {
+  const chosen = APERIODIC_COLOURINGS[plain.key];
+  if (!chosen) throw new Error(`${plain.key}: no colouring in src/aperiodicColourings.json`);
+  const { window, around } = patchWindow(plain);
+  const colour = new Map<number, number>();
+  window.forEach((c, i) => colour.set(c, chosen.cells[i]!));
+  around.forEach((c, i) => colour.set(c, chosen.around[i]!));
+  return patchMarkedLevel(
+    plain,
+    `${chosen.colours}apart`,
+    apartLabel(chosen.colours),
+    false,
+    chosen.colours,
+    (c, piece, e) => {
+      const across = piece.across[e]!;
+      const other = across === window[c] ? chosen.cells[c]! : colour.get(across);
+      if (other === undefined) throw new Error(`${plain.key}: an edge with nothing across it`);
+      return colourMark(chosen.cells[c]!, other);
+    },
+    chosen.cells,
+  );
+}
+
 /** The eight uniform tilings past the regular three, and each one's window:
  * the squarest near two or three dozen tiles that keeps one outline (`box`,
  * in edges, measured by scanning sizes). */
@@ -1501,10 +1752,26 @@ export const PAINTED: string[] = [
   ...LAVES.map(([key]) => key),
 ];
 
-/** The aperiodic boards with arrows on their edges, after the paintings. */
-const ARROWS: [plain: string, rules: (plain: Level) => Level][] = [
-  ["penrose", penroseRulesLevel],
-  ["kitedart", kiteDartRulesLevel],
+/** The marked levels made otherwise than from src/colourings.json, after
+ * the paintings, each by its key: Penrose's tilings with his arrows, then
+ * every aperiodic level's matching rules and colouring read off its patch. */
+const MARKED_BY_HAND: [key: string, of: string, make: (plain: Level) => Level][] = [
+  ["penrose.rules", "penrose", penroseRulesLevel],
+  ["kitedart.rules", "kitedart", kiteDartRulesLevel],
+  ...PATCH_MARKED.flatMap((of): [string, string, (plain: Level) => Level][] => [
+    ...(of === "penrose" || of === "kitedart"
+      ? []
+      : [[`${of}.rules`, of, patchRulesLevel] as [string, string, (plain: Level) => Level]]),
+    ...(playableColouring(of)
+      ? [
+          [`${of}.${APERIODIC_COLOURINGS[of]!.colours}apart`, of, patchColouredLevel] as [
+            string,
+            string,
+            (plain: Level) => Level,
+          ],
+        ]
+      : []),
+  ]),
 ];
 
 /** The first boards, a section at a time in the order the catalog lists
@@ -1582,7 +1849,8 @@ const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
 /**
  * Every tiling's first board, built — the plain ones section by section
  * (`SECTIONS`), then the marked ones: each painted board's paintings as
- * `src/colourings.json` lists them, and Penrose's tilings with their arrows.
+ * `src/colourings.json` lists them, Penrose's tilings with their arrows, and
+ * every aperiodic level's rules and colouring read off its patch.
  * Seconds of work: the game never does it, but reads the order, names and
  * marks it finds from `src/levelIndex.json` (`npm run levels`); the tests
  * build it to hold that file to it.
@@ -1602,7 +1870,11 @@ export function buildFirstBoards(): Level[] {
         (CHOSEN_PAINTINGS[key] ?? []).map((_, i) => paintedLevel(of, i)),
       );
     }),
-    ...ARROWS.map(([key, rules]) => rules(find(key))),
+    ...MARKED_BY_HAND.map(([key, of, make]) => {
+      const level = make(find(of));
+      if (level.key !== key) throw new Error(`${key} was made as ${level.key}`);
+      return level;
+    }),
   ];
 }
 
@@ -1621,7 +1893,7 @@ export interface IndexEntry {
 /** The index of `levels` (`buildFirstBoards`'), as `src/levelIndex.json`
  * keeps it. */
 export function indexOf(levels: readonly Level[]): IndexEntry[] {
-  const arrows = new Set(ARROWS.map(([key]) => `${key}.rules`));
+  const arrows = new Set(MARKED_BY_HAND.map(([key]) => key));
   const count = new Map<string, number>();
   return levels.map(({ key, label, name, group, decor }) => {
     if (!decor) return { key, label, name, group };
@@ -1648,9 +1920,9 @@ function buildEntry(entry: IndexEntry): Level {
   const of = entry.decor && levelByKey(entry.decor.of);
   if (!of) throw new Error(`no way to build ${entry.key}`);
   if (entry.painting !== undefined) return paintedLevel(of, entry.painting);
-  const arrows = ARROWS.find(([key]) => `${key}.rules` === entry.key);
-  if (!arrows) throw new Error(`no way to build ${entry.key}`);
-  return arrows[1](of);
+  const byHand = MARKED_BY_HAND.find(([key]) => key === entry.key);
+  if (!byHand) throw new Error(`no way to build ${entry.key}`);
+  return byHand[2](of);
 }
 
 /** The fields a level stub answers without building the level. */

@@ -30,7 +30,7 @@ import {
   type Loop,
 } from "./curve";
 import type { Puzzle } from "../puzzle";
-import { decorParts } from "./decor";
+import { decorParts, markUnit } from "./decor";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -49,8 +49,14 @@ const points = (pts: XY[]): string => pts.map(([x, y]) => `${x},${y}`).join(" ")
 
 /** A coloured or lined tile's bands and lines (view/decor.ts), drawn over it
  * in `parent`; nothing for a plain tile. */
-function decor(loops: readonly Loop[], parent: Element, map?: (p: XY) => XY): void {
-  for (const part of decorParts(loops, map)) el("path", { d: part.d, class: part.class }, parent);
+function decor(
+  loops: readonly Loop[],
+  parent: Element,
+  map: ((p: XY) => XY) | undefined,
+  unit: number | undefined,
+): void {
+  for (const part of decorParts(loops, map, unit))
+    el("path", { d: part.d, class: part.class }, parent);
 }
 
 /** The gap round the board, in tile edges, at zoom 1. */
@@ -565,7 +571,7 @@ export class SvgBoard {
         },
         this.still,
       );
-      decor(loops, this.still);
+      decor(loops, this.still, undefined, markUnit(this.puzzle.level));
     }
     for (const e of this.puzzle.openEdges) {
       el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
@@ -586,7 +592,7 @@ export class SvgBoard {
         },
         this.shelf,
       );
-      decor(outline, this.shelf, at);
+      decor(outline, this.shelf, at, markUnit(this.puzzle.level));
       // The pile's count: how many more the board was cut with. Past zero it
       // shows how many extra are down — allowed, but it costs a star.
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
@@ -730,7 +736,7 @@ export class SvgBoard {
       },
       this.moving,
     );
-    decor(outline, this.moving, to);
+    decor(outline, this.moving, to, markUnit(this.puzzle.level));
     for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
     if (fitsAt) {
       const [cx, cy] = fitsAt;
