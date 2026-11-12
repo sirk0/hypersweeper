@@ -395,7 +395,7 @@ same way, its marks narrowing what fits; `chooseColourings` ranks
 candidates by the turning alone (`turningScore`), the traps too slow for
 thousands. Measuring a board's traps takes up to seconds (the hat's; the
 Socolar–Taylor tile's two and a half minutes), so `npm run difficulty`
-measures every board, one process per core, ten minutes or so, and writes
+measures every board, one process per core — half an hour on four — and writes
 `src/difficulty.json`, which the game reads. `tests/unit/difficulty.test.ts`
 measures every board's turning again and checks its stored score against it,
 and the traps of a sample (`TRAPS_CHECKED`); it fails while the file is out
@@ -520,7 +520,7 @@ npm run boards       # find every tiling's boards past its first into src/boards
 npm run marked-boards # lay every matching rule and colouring on every board into src/markedBoards.json (half a minute)
 npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's, spiral's and rep-tile's colouring into src/aperiodicColourings.json (a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
-npm run difficulty   # re-measure every board into src/difficulty.json (ten minutes or so, a process per core)
+npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core)
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
 

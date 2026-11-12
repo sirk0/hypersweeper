@@ -1918,12 +1918,7 @@ export const PATCH_MARKED: string[] = [
  * seed and the tile's shape force that spiral; no rule of this shape adds
  * to them. The P-pentomino's board asks nothing either: its ten edge slots
  * all meet, either way along. */
-export const NO_PATCH_RULES = new Set([
-  "penrose",
-  "kitedart",
-  "klaassen",
-  "ppentomino",
-]);
+export const NO_PATCH_RULES = new Set(["penrose", "kitedart", "klaassen", "ppentomino"]);
 
 /** Each one's colouring, as `npm run colourings` chose it. */
 const APERIODIC_COLOURINGS = aperiodicColouringsData as Record<string, ChosenColouring>;

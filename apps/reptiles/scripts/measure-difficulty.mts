@@ -3,8 +3,8 @@
 // up to seconds (the hat's), far too long for a page load. `npm run
 // difficulty` after changing a level or the measure; the unit tests fail
 // while the file is out of step. The boards are shared out between one
-// process per core (SHARD=i/n runs one share and prints it): ten minutes or
-// so on four.
+// process per core (SHARD=i/n runs one share and prints it): half an hour
+// on four.
 import { spawn } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
