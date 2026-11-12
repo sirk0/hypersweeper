@@ -30,6 +30,14 @@ export interface Placed {
   pieces: Piece[];
 }
 
+/** A way a tile fits: which kind, held how, and where it lands. */
+export interface Fit {
+  kind: number;
+  rot: number;
+  flip: boolean;
+  spot: Piece[];
+}
+
 export class Puzzle {
   private placed = new Map<number, Placed>();
   private frontier: Frontier;
@@ -215,15 +223,23 @@ export class Puzzle {
     }
   }
 
-  /** Every placement that lands with a corner on frontier corner `at`. */
-  private spotsAt(at: XY): { kind: number; rot: number; flip: boolean; spot: Piece[] }[] {
-    const out: { kind: number; rot: number; flip: boolean; spot: Piece[] }[] = [];
+  /** The frontier as it stands: what is still uncovered. Immutable — a
+   * `cover` of it is a new one — so a caller can try a tile on it without
+   * touching the puzzle (`traps` in difficulty.ts). */
+  get uncovered(): Frontier {
+    return this.frontier;
+  }
+
+  /** Every placement that lands with a corner on frontier corner `at` — of
+   * `on`, the puzzle's own frontier unless given. */
+  fitsAt(at: XY, on: Frontier = this.frontier): Fit[] {
+    const out: Fit[] = [];
     const flips = this.canFlip() ? [false, true] : [false];
     // biggest first: one big tile settles more than several small ones
     for (let kind = this.level.tiles.length - 1; kind >= 0; kind--) {
       for (const flip of flips) {
         for (const rot of this.orientations(kind)) {
-          const spots = this.frontier.placements(
+          const spots = on.placements(
             this.shapeAt(kind, rot, flip),
             at,
             1e-6,
@@ -279,9 +295,9 @@ export class Puzzle {
     if (this.won) return true;
     if (left.budget-- <= 0) return false;
     const { ring } = this.level;
-    let best: { kind: number; rot: number; flip: boolean; spot: Piece[] }[] | null = null;
+    let best: Fit[] | null = null;
     for (const corner of this.openCorners.values()) {
-      const here = this.spotsAt(ring.toXY(corner));
+      const here = this.fitsAt(ring.toXY(corner));
       if (!best || here.length < best.length) best = here;
       if (best.length <= 1) break;
     }

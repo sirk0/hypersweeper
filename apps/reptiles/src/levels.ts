@@ -1917,14 +1917,12 @@ export const PATCH_MARKED: string[] = [
  * with no way, `deriveRules`), so its rule would mark every edge alike. A
  * seed and the tile's shape force that spiral; no rule of this shape adds
  * to them. The P-pentomino's board asks nothing either: its ten edge slots
- * all meet, either way along. The kissing triangles' board has a rule, but
- * its level measures easier than the plain board, and no marked level may. */
+ * all meet, either way along. */
 export const NO_PATCH_RULES = new Set([
   "penrose",
   "kitedart",
   "klaassen",
   "ppentomino",
-  "kissingtriangles",
 ]);
 
 /** Each one's colouring, as `npm run colourings` chose it. */
@@ -2326,8 +2324,7 @@ const variantsOf = (key: string): Variant[] =>
 
 /** The boards past the first each marked level is laid on too, by its
  * plain tiling's board numbers (`npm run boards`, scripts/find-boards.mts):
- * every board its marks make the same tray on, measuring no easier than that
- * board plain. */
+ * every board its marks make the same tray on. */
 const MARKED_BOARDS = markedBoardsData.boards as Record<string, number[]>;
 
 /** How many boards the tiling `key` has, or the tiling it marks has. */

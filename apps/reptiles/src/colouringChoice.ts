@@ -5,7 +5,7 @@
 // from. The tests choose again and fail while the file is out of step.
 
 import { latticeOf, paintings, type Lattice, type PaintingParams } from "./colourings";
-import { measure } from "./difficulty";
+import { turningScore } from "./difficulty";
 import { LINE } from "./geometry/marks";
 import {
   paintBase,
@@ -22,9 +22,9 @@ export const COLOURS_CAP = 3;
 
 /**
  * The paintings of the uniform, 2-uniform, Laves, 2-isohedral, bond, pentagonal or isogonal board `plain` (its window `box` edges square)
- * worth a level — none measuring easier than `plain` itself — at most
- * `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
- * tray tiles first, then the hardest as measured — but a lined board with a
+ * worth a level, at most `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
+ * tray tiles first, then the most turning as measured (`turningScore`: the
+ * dead ends are too slow to measure on every candidate) — but a lined board with a
  * line still on it (not all cut back to half discs) before any without; among the coloured, the
  * best balanced one (every shape in every colour) and the best by shape (a
  * shape skipping a colour) both, where there are both. Lined first, then
@@ -37,12 +37,8 @@ export function chooseColourings(of: Level, box: number): PaintingParams[] {
   const context = periodicContext(plain, box);
   const lattice = latticeOf(plain.ring, context);
   const all = paintings(plain.ring, plain.cells, lattice, [2, 3], context, plainKinds(plain));
-  // never one that measures easier than the plain board: the marks only
-  // ever ask more of the player
-  const floor = measure(of).score - 1e-9;
   const ranked = paintedCandidates(plain, all)
-    .map((c) => ({ ...c, score: measure(c.level).score }))
-    .filter((c) => c.score >= floor)
+    .map((c) => ({ ...c, score: turningScore(c.level) }))
     .sort((a, b) => a.level.tiles.length - b.level.tiles.length || b.score - a.score);
   // a lined board with a line left on it before one cut back to nothing but
   // half discs

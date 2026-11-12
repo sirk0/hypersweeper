@@ -7,7 +7,6 @@ import {
   regularColourings,
 } from "../../src/colouringChoice";
 import { latticeOf, traySignature } from "../../src/colourings";
-import { measure } from "../../src/difficulty";
 import { cyclotomic, strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
 import {
@@ -818,13 +817,6 @@ describe("colourings", () => {
     expect(p.snap(tile.kind, c, 0.2, 0)).not.toBeNull();
     expect(p.snap(1 - tile.kind, c, 0.2, 0)).toBeNull();
     expect(first).toBeDefined();
-  });
-
-  it.each(COLOURED.map((l) => l.key))("%s is no easier than its plain board", (key) => {
-    const level = levelByKey(key)!;
-    expect(measure(level).score).toBeGreaterThanOrEqual(
-      measure(levelByKey(level.decor!.of)!).score - 1e-9,
-    );
   });
 
   it("leaves a colouring of one tile to the lined boards, and colours every regular board in two tiles", () => {
