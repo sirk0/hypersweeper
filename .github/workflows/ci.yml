@@ -331,12 +331,13 @@ jobs:
     # files it imports), formatting, unit tests, a production build, and the
     # packaged bundle the desktop shell stages — built with VITE_PACKAGED=1 and
     # checked to reference nothing remote. Runs on every change. Rep-tiles'
-    # unit tests alone take two and a half to four and a half minutes on a
-    # runner (they build and solve every level), so five was too tight.
+    # unit tests alone take seven to nine minutes on a runner (they build and
+    # measure every level — every marking on every board, 1639 — and choose
+    # the colourings again), so ten was too tight.
     name: game-checks (${{ matrix.game }})
     needs: games
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
