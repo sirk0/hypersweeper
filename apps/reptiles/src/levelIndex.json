@@ -3295,6 +3295,283 @@
     "painting": 1
   },
   {
+    "key": "offsetsquare.branchinglines",
+    "label": "Offset square, branching lines",
+    "name": "Offset square · branching lines",
+    "group": "rules",
+    "decor": { "of": "offsetsquare", "colours": 1, "rules": true, "label": "branching lines" },
+    "painting": 0
+  },
+  {
+    "key": "offsetsquare.lines",
+    "label": "Offset square, lines",
+    "name": "Offset square · lines",
+    "group": "rules",
+    "decor": { "of": "offsetsquare", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 1
+  },
+  {
+    "key": "offsetsquare.2oneinthree",
+    "label": "Offset square, 2 colours, one in three",
+    "name": "Offset square · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "offsetsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "offsetsquare.2oneinthree2",
+    "label": "Offset square, 2 colours, one in three II",
+    "name": "Offset square · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "offsetsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "offsetsquare.2oneinthree3",
+    "label": "Offset square, 2 colours, one in three III",
+    "name": "Offset square · 2 colours, one in three III",
+    "group": "colourings",
+    "decor": {
+      "of": "offsetsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
+    "painting": 4
+  },
+  {
+    "key": "staggeredtri.branchinglines",
+    "label": "Staggered triangular, branching lines",
+    "name": "Staggered triangular · branching lines",
+    "group": "rules",
+    "decor": { "of": "staggeredtri", "colours": 1, "rules": true, "label": "branching lines" },
+    "painting": 0
+  },
+  {
+    "key": "staggeredtri.branchinglines2",
+    "label": "Staggered triangular, branching lines II",
+    "name": "Staggered triangular · branching lines II",
+    "group": "rules",
+    "decor": { "of": "staggeredtri", "colours": 1, "rules": true, "label": "branching lines II" },
+    "painting": 1
+  },
+  {
+    "key": "staggeredtri.2oneinthree",
+    "label": "Staggered triangular, 2 colours, one in three",
+    "name": "Staggered triangular · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "staggeredtri",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "staggeredtri.2apart",
+    "label": "Staggered triangular, 2 colours, apart",
+    "name": "Staggered triangular · 2 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "staggeredtri", "colours": 2, "rules": false, "label": "2 colours, apart" },
+    "painting": 3
+  },
+  {
+    "key": "staggeredtri.3apart",
+    "label": "Staggered triangular, 3 colours, apart",
+    "name": "Staggered triangular · 3 colours, apart",
+    "group": "colourings",
+    "decor": { "of": "staggeredtri", "colours": 3, "rules": false, "label": "3 colours, apart" },
+    "painting": 4
+  },
+  {
+    "key": "pythagorean.lines",
+    "label": "Pythagorean, lines",
+    "name": "Pythagorean · lines",
+    "group": "rules",
+    "decor": { "of": "pythagorean", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "pythagorean.lines2",
+    "label": "Pythagorean, lines II",
+    "name": "Pythagorean · lines II",
+    "group": "rules",
+    "decor": { "of": "pythagorean", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "pythagorean.2oneinthree",
+    "label": "Pythagorean, 2 colours, one in three",
+    "name": "Pythagorean · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "pythagorean",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "pythagorean.2oneinthree2",
+    "label": "Pythagorean, 2 colours, one in three II",
+    "name": "Pythagorean · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "pythagorean",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "pythagorean.3colours",
+    "label": "Pythagorean, 3 colours",
+    "name": "Pythagorean · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "pythagorean", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "rotatedhex.lines",
+    "label": "Rotated hexagonal, lines",
+    "name": "Rotated hexagonal · lines",
+    "group": "rules",
+    "decor": { "of": "rotatedhex", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "rotatedhex.lines2",
+    "label": "Rotated hexagonal, lines II",
+    "name": "Rotated hexagonal · lines II",
+    "group": "rules",
+    "decor": { "of": "rotatedhex", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "rotatedhex.2oneinthreebyshape",
+    "label": "Rotated hexagonal, 2 colours, one in three, by shape",
+    "name": "Rotated hexagonal · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "rotatedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "rotatedhex.2oneinthree",
+    "label": "Rotated hexagonal, 2 colours, one in three",
+    "name": "Rotated hexagonal · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "rotatedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "rotatedhex.3byshape",
+    "label": "Rotated hexagonal, 3 colours, by shape",
+    "name": "Rotated hexagonal · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "rotatedhex", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "rotatedtri.lines",
+    "label": "Rotated triangular, lines",
+    "name": "Rotated triangular · lines",
+    "group": "rules",
+    "decor": { "of": "rotatedtri", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "rotatedtri.lines2",
+    "label": "Rotated triangular, lines II",
+    "name": "Rotated triangular · lines II",
+    "group": "rules",
+    "decor": { "of": "rotatedtri", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "rotatedtri.2oneinthreebyshape",
+    "label": "Rotated triangular, 2 colours, one in three, by shape",
+    "name": "Rotated triangular · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "rotatedtri",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "rotatedtri.3byshape",
+    "label": "Rotated triangular, 3 colours, by shape",
+    "name": "Rotated triangular · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "rotatedtri", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "threescaletri.lines",
+    "label": "Three-scale triangular, lines",
+    "name": "Three-scale triangular · lines",
+    "group": "rules",
+    "decor": { "of": "threescaletri", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "threescaletri.lines2",
+    "label": "Three-scale triangular, lines II",
+    "name": "Three-scale triangular · lines II",
+    "group": "rules",
+    "decor": { "of": "threescaletri", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "threescaletri.3colours",
+    "label": "Three-scale triangular, 3 colours",
+    "name": "Three-scale triangular · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "threescaletri", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 2
+  },
+  {
+    "key": "threescaletri.3colours2",
+    "label": "Three-scale triangular, 3 colours II",
+    "name": "Three-scale triangular · 3 colours II",
+    "group": "colourings",
+    "decor": { "of": "threescaletri", "colours": 3, "rules": false, "label": "3 colours II" },
+    "painting": 3
+  },
+  {
+    "key": "threescaletri.3colours3",
+    "label": "Three-scale triangular, 3 colours III",
+    "name": "Three-scale triangular · 3 colours III",
+    "group": "colourings",
+    "decor": { "of": "threescaletri", "colours": 3, "rules": false, "label": "3 colours III" },
+    "painting": 4
+  },
+  {
     "key": "penrose.rules",
     "label": "Penrose rhombi, matching rules",
     "name": "Penrose rhombi · matching rules",

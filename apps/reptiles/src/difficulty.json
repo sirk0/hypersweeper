@@ -3374,6 +3374,151 @@
     "presses": 17,
     "flips": 4
   },
+  "offsetsquare.branchinglines": {
+    "score": 0.158,
+    "presses": 1,
+    "flips": 0
+  },
+  "offsetsquare.lines": {
+    "score": 0.158,
+    "presses": 1,
+    "flips": 0
+  },
+  "offsetsquare.2oneinthree": {
+    "score": 0.482,
+    "presses": 5,
+    "flips": 0
+  },
+  "offsetsquare.2oneinthree2": {
+    "score": 0.482,
+    "presses": 5,
+    "flips": 0
+  },
+  "offsetsquare.2oneinthree3": {
+    "score": 0.395,
+    "presses": 3,
+    "flips": 0
+  },
+  "staggeredtri.branchinglines": {
+    "score": 0.525,
+    "presses": 10,
+    "flips": 0
+  },
+  "staggeredtri.branchinglines2": {
+    "score": 0.525,
+    "presses": 10,
+    "flips": 0
+  },
+  "staggeredtri.2oneinthree": {
+    "score": 0.859,
+    "presses": 12,
+    "flips": 4
+  },
+  "staggeredtri.2apart": {
+    "score": 0.465,
+    "presses": 4,
+    "flips": 0
+  },
+  "staggeredtri.3apart": {
+    "score": 0.714,
+    "presses": 6,
+    "flips": 1
+  },
+  "pythagorean.lines": {
+    "score": 0.303,
+    "presses": 1,
+    "flips": 0
+  },
+  "pythagorean.lines2": {
+    "score": 0.303,
+    "presses": 1,
+    "flips": 0
+  },
+  "pythagorean.2oneinthree": {
+    "score": 0.698,
+    "presses": 3,
+    "flips": 0
+  },
+  "pythagorean.2oneinthree2": {
+    "score": 0.698,
+    "presses": 3,
+    "flips": 0
+  },
+  "pythagorean.3colours": {
+    "score": 0.903,
+    "presses": 1,
+    "flips": 0
+  },
+  "rotatedhex.lines": {
+    "score": 0.542,
+    "presses": 6,
+    "flips": 0
+  },
+  "rotatedhex.lines2": {
+    "score": 0.542,
+    "presses": 6,
+    "flips": 0
+  },
+  "rotatedhex.2oneinthreebyshape": {
+    "score": 0.534,
+    "presses": 2,
+    "flips": 0
+  },
+  "rotatedhex.2oneinthree": {
+    "score": 0.842,
+    "presses": 6,
+    "flips": 0
+  },
+  "rotatedhex.3byshape": {
+    "score": 0.534,
+    "presses": 2,
+    "flips": 0
+  },
+  "rotatedtri.lines": {
+    "score": 0.466,
+    "presses": 4,
+    "flips": 0
+  },
+  "rotatedtri.lines2": {
+    "score": 0.466,
+    "presses": 4,
+    "flips": 0
+  },
+  "rotatedtri.2oneinthreebyshape": {
+    "score": 0.526,
+    "presses": 2,
+    "flips": 0
+  },
+  "rotatedtri.3byshape": {
+    "score": 0.526,
+    "presses": 2,
+    "flips": 0
+  },
+  "threescaletri.lines": {
+    "score": 0.654,
+    "presses": 5,
+    "flips": 0
+  },
+  "threescaletri.lines2": {
+    "score": 0.654,
+    "presses": 5,
+    "flips": 0
+  },
+  "threescaletri.3colours": {
+    "score": 1.554,
+    "presses": 5,
+    "flips": 0
+  },
+  "threescaletri.3colours2": {
+    "score": 1.554,
+    "presses": 5,
+    "flips": 0
+  },
+  "threescaletri.3colours3": {
+    "score": 1.554,
+    "presses": 5,
+    "flips": 0
+  },
   "penrose.rules": {
     "score": 0.84,
     "presses": 10,

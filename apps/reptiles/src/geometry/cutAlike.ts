@@ -1,14 +1,16 @@
-// Cutting every tile of a one-tile tiling alike, so that its sides meet one
-// for one. A tiling that is not edge to edge — a pentagonal tiling's corner
+// Cutting every tile of a tiling alike, kind by kind, so that its sides meet
+// one for one. A tiling that is not edge to edge — a pentagonal tiling's corner
 // lands part-way along its neighbour's side — cannot carry a mark per side:
 // the side runs past two tiles. Cut it at that corner, and the side becomes
 // two pieces, each meeting one piece across. But a mark belongs to the tile,
 // not the place, so every copy of the tile must be cut at the same points
 // of its own outline, wherever it lies, or the tray would hold two tiles.
 //
-// So the cuts are gathered on one copy, the prototile: wherever any copy has
-// a corner of another tile strictly inside one of its pieces of side, that
-// point is carried back onto the prototile (with every turn and mirror that
+// So the cuts are gathered on one copy of each kind of tile, its prototile
+// (one for a pentagonal tiling, two or three sizes of regular polygon for an
+// isogonal one): wherever any copy has a corner of another tile strictly
+// inside one of its pieces of side, that point is carried back onto its
+// prototile (with every turn and mirror that
 // carries the prototile onto itself, so each way a copy can lie gives the
 // same cut), and every copy is cut again — round and round until no corner
 // lies inside any piece of side. Exact: a copy's pose is a turn ζᵏ, a mirror
@@ -72,40 +74,53 @@ function cutProto(ring: Ring, proto: readonly Cyc[], cuts: Map<string, Cyc>): Cy
 }
 
 /**
- * How to cut any copy of the one tile of `cells` (each a polygon, real
- * corners only, all one shape up to a turn and a mirror) so that, cut so,
- * the patch meets piece of side to piece of side: the prototile cut, and a
- * function giving any copy's corners with its cuts (counter-clockwise).
- * Throws if a cell is not the prototile, or if the cuts do not settle within
- * `rounds` — a tiling whose cuts would run on for ever.
+ * How to cut any copy of the tiles of `cells` (each a polygon, real corners
+ * only, each the same shape, up to a turn and a mirror, as one of a few
+ * prototiles) so that, cut so, the patch meets piece of side to piece of
+ * side: each prototile cut, and a function giving any copy's corners with
+ * its cuts (counter-clockwise). A tiling of several kinds — an isogonal
+ * tiling's two or three regular polygons — has every copy of a kind cut
+ * alike, each kind on its own prototile. Throws if a cell is no prototile's
+ * shape, or if the cuts do not settle within `rounds` — a tiling whose cuts
+ * would run on for ever.
  */
 export function cutAlike(
   ring: Ring,
   cells: readonly Cyc[][],
   rounds = 12,
-): { proto: Cyc[]; cut: (cell: readonly Cyc[]) => Cyc[] } {
-  const proto = ccw(ring, [...cells[0]!]);
-  const symmetries = poseOnto(ring, proto, proto);
-  const poseOf = (cell: readonly Cyc[]): Pose => {
-    const pose = poseOnto(ring, proto, ccw(ring, [...cell]))[0];
-    if (!pose) throw new Error("cutAlike: a cell is not the prototile");
-    return pose;
+): { protos: Cyc[][]; cut: (cell: readonly Cyc[]) => Cyc[] } {
+  // the prototiles, one per shape, in the order they first appear
+  const protos: Cyc[][] = [];
+  const kindOf = (cell: readonly Cyc[]): { kind: number; pose: Pose } | undefined => {
+    const c = ccw(ring, [...cell]);
+    for (let kind = 0; kind < protos.length; kind++) {
+      const pose = poseOnto(ring, protos[kind]!, c)[0];
+      if (pose) return { kind, pose };
+    }
+    return undefined;
   };
-  const poses = cells.map(poseOf);
-  const cuts = new Map<string, Cyc>();
+  const placed = cells.map((cell) => {
+    const found = kindOf(cell);
+    if (found) return found;
+    protos.push(ccw(ring, [...cell]));
+    return kindOf(cell)!;
+  });
+  const symmetries = protos.map((proto) => poseOnto(ring, proto, proto));
+  const cuts = protos.map(() => new Map<string, Cyc>());
   const cutCell = (pose: Pose, cutAt: Cyc[]): Cyc[] =>
     ccw(
       ring,
       cutAt.map((v) => apply(ring, pose, v)),
     );
   for (let round = 0; ; round++) {
-    const shaped = cutProto(ring, proto, cuts);
-    const cut = cells.map((_, i) => cutCell(poses[i]!, shaped));
+    const shaped = protos.map((proto, kind) => cutProto(ring, proto, cuts[kind]!));
+    const cut = placed.map(({ kind, pose }) => cutCell(pose, shaped[kind]!));
     const corners = new Map<string, { p: Cyc; xy: [number, number] }>();
     for (const c of cut) for (const p of c) corners.set(ring.key(p), { p, xy: ring.toXY(p) });
     const all = [...corners.values()];
     let added = 0;
     cut.forEach((c, i) => {
+      const { kind, pose } = placed[i]!;
       c.forEach((a, j) => {
         const b = c[(j + 1) % c.length]!;
         const [ax, ay] = ring.toXY(a);
@@ -121,12 +136,12 @@ export function cutAlike(
           )
             continue;
           if (!strictlyBetween(ring, a, b, p)) continue;
-          const back = unapply(ring, poses[i]!, p);
-          for (const s of symmetries) {
+          const back = unapply(ring, pose, p);
+          for (const s of symmetries[kind]!) {
             const q = apply(ring, s, back);
             const k = ring.key(q);
-            if (!cuts.has(k)) {
-              cuts.set(k, q);
+            if (!cuts[kind]!.has(k)) {
+              cuts[kind]!.set(k, q);
               added++;
             }
           }
@@ -136,8 +151,12 @@ export function cutAlike(
     if (added === 0) {
       const settled = shaped;
       return {
-        proto: settled,
-        cut: (cell) => cutCell(poseOf(cell), settled),
+        protos: settled,
+        cut: (cell) => {
+          const found = kindOf(cell);
+          if (!found) throw new Error("cutAlike: a cell is no prototile's shape");
+          return cutCell(found.pose, settled[found.kind]!);
+        },
       };
     }
     if (round + 1 >= rounds)

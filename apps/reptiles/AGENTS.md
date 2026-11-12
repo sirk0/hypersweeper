@@ -206,6 +206,22 @@ some back off.
     has a lined board and a coloured one (type 13 two lined), from 0.5 to
     1.9 measured; the lines between a side's two pieces close into a loop
     with the tile across.
+  - *The six isogonal tilings* (`?level=offsetsquare.lines`,
+    `?level=pythagorean.2oneinthree`, `?level=rotatedtri.3byshape`) are
+    lined and coloured just as the 2-uniform ones are, one tray tile per
+    colour and shape, named as the plain tilings are: "Pythagorean · lines".
+    None is edge to edge — at every vertex one tile's side runs straight
+    through — so each kind is cut where that happens, as the pentagons are
+    (`cutAlike`, which cuts every copy of a kind alike, each kind on its own
+    prototile): every side of the offset square's square and the
+    staggered triangular's triangle once, the Pythagorean's big square but
+    not its small one, the rotated hexagonal's hexagon but not its
+    triangle, the rotated triangular's triangle but not its hexagon, and the
+    three-scale triangular's middle triangle once a side and its large one
+    twice. Each has two lined
+    boards and two or three coloured, 29 in all, from 0.16 (the offset
+    square's lines) to 1.55 (the three-scale triangular in three colours)
+    measured.
   No marked level measures easier than its plain board: the choice drops
   any that would.
   A marked tile is held, where it can be, so that it fits none of the board's
@@ -329,7 +345,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 152 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds and the three pentagonal tilings, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 171 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds and the three pentagonal tilings, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, 711 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 164 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 188 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, 740 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -639,8 +655,8 @@ quick way to see the win state.
   solved for in floats and checked exactly; which class lies across each edge
   of each class is read off the window's inner edges (`atlasOf`), so a rim
   tile's marks are its marks in the tiling (it needs every edge to meet one
-  edge across: a bond's bricks and a pentagonal tiling's pentagons are cut
-  first, `paintBase`). `paintedCandidates` in `levels.ts`
+  edge across: a bond's bricks and a pentagonal or isogonal tiling's tiles
+  are cut first, `paintBase`). `paintedCandidates` in `levels.ts`
   builds each with `makeLevel` (its `marks` and `paints`: a kind takes the
   first colour among its cells), keeps those that mark all of a colour's
   tiles alike — the colourings that look alike everywhere; one tile per
@@ -677,7 +693,9 @@ quick way to see the win state.
   into steps (`paintBase`; its wider patch, `periodicContext`, cut alike),
   and labelled as the Laves ones are; the three pentagonal tilings
   (`PENTAGONAL`) the same way, on their pentagons cut alike (`cutAlike`,
-  read off the wider patch, which is cut the same way). Trying every colouring is k to the power of the translation classes
+  read off the wider patch, which is cut the same way), and the six
+  isogonal tilings (`ISOGONAL`) on their polygons cut alike kind by kind,
+  labelled as the 2-uniform ones are. Trying every colouring is k to the power of the translation classes
   (a million and a half on the kisrhombille's twelve, ten billion on
   [3⁶; 3².4.12]'s twenty), so given each cell's plain kind `paintings` tries
   only the offsets `offsetsFor` cannot rule out: it sets them a class at a
@@ -736,11 +754,12 @@ quick way to see the win state.
   cell). The tests (`tests/unit/patchMarks.test.ts`) check no patch edge is
   met part-way, every meeting keeps its rule, and each colouring is proper
   and needs its colours.
-- `src/geometry/cutAlike.ts` — `cutAlike`: a one-tile tiling that is not
-  edge to edge, cut so its sides meet piece for piece, every copy cut alike
-  (the cuts gathered on one copy through each copy's exact pose and the
-  tile's own symmetries, round until they settle; it throws if they do
-  not). How a pentagonal tiling's painted board is cut (`paintBase`).
+- `src/geometry/cutAlike.ts` — `cutAlike`: a tiling that is not edge to
+  edge, cut so its sides meet piece for piece, every copy of a kind cut
+  alike (the cuts gathered on one prototile a kind through each copy's
+  exact pose and the kind's own symmetries, round until they settle; it
+  throws if they do not). How a pentagonal or isogonal tiling's painted
+  board is cut (`paintBase`).
 - `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
   boards congruent to a given one (turned, mirrored or moved, tile for tile),
   how the board search tells a new board from one it has.

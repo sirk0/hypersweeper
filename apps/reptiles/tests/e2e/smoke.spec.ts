@@ -523,6 +523,22 @@ test("a tiling's marked levels: on its own page in Tilings, and on its figure's 
   ]);
   await page.locator('#tiling-list [data-group="colourings"] .card').first().click();
   await expect(page).toHaveURL(/\?level=pentagon13\.2striped$/);
+  // and an isogonal tiling's: the Pythagorean's two squares, the big one cut
+  // where a small one's corner meets its side
+  await page.goto("/?tilings");
+  const pythagorean = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^Pythagorean$/ }) });
+  await expect(pythagorean.locator(".card-marked")).toHaveText(/^\+5 marked$/);
+  await pythagorean.click();
+  await expect(page).toHaveURL(/\?tiling=pythagorean$/);
+  await expect(page.locator("#tiling-list .family h2")).toHaveText([
+    "Plain tiles",
+    "Matching rules",
+    "Colourings",
+  ]);
+  await page.locator('#tiling-list [data-group="rules"] .card').first().click();
+  await expect(page).toHaveURL(/\?level=pythagorean\.lines$/);
   // a tiling with none opens straight away: no painting of [3⁶; 3².4.3.4]
   // measures as hard as its plain board
   await page.goto("/?tilings");

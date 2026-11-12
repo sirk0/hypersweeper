@@ -934,7 +934,7 @@ export const PENTAGONAL: [string, number][] = [
  * hexagonal leaves a lone tile at a corner of every window under 85 tiles,
  * dropped (`windowLevel`); the three-scale triangular's windows either side
  * of 30 tiles are two or three pieces. */
-const ISOGONAL: [string, number][] = [
+export const ISOGONAL: [string, number][] = [
   ["offsetsquare", 5],
   ["staggeredtri", 4.8],
   ["pythagorean", 4],
@@ -1498,6 +1498,10 @@ export function paintedCandidates(plain: Level, all: Iterable<Painting>): Painte
       byColour.set(c, (byColour.get(c) ?? new Set()).add(kindOf(cell)));
     });
     if ([...byColour.values()].some((ks) => ks.size !== 1)) continue;
+    // a colouring of one tile per shape reads as a lined board: each shape
+    // its own colour (the three-scale triangular's three sizes), the colours
+    // say no more than the shapes do but which piece of side meets which
+    if (!painting.lines && level.tiles.length === plain.tiles.length) continue;
     // a tray of one tile per shape, each one mark all round, asks nothing:
     // the shapes decide the marks (one mark on every edge; 3.6.3.6's
     // triangles one colour, its hexagons another)
@@ -1558,25 +1562,26 @@ function keyed(plain: Level, made: readonly Level[]): Level[] {
 /** The board a painting of `plain` is laid on: `plain` itself, but for a
  * congruent-rectangle bond with T-vertices, whose bricks are cut there into
  * steps of the ring's unit (`Window.steps`: a half brick, a third in the 3×3
- * basket weave), and for a pentagonal tiling, whose pentagons are each cut
- * at every point any copy's side is met part-way (`pentagonCut`) — every
- * tile alike, so it is still one tile, and each piece of a side meets one
- * piece across, edge to edge, as a painting needs. The stacked bond, edge to
- * edge already, is not cut. */
+ * basket weave), and for a pentagonal or isogonal tiling, whose tiles are
+ * each cut at every point any copy of its kind has its side met part-way
+ * (`alikeCut`) — every tile of a kind alike, so there are as many tiles as
+ * before, and each piece of a side meets one piece across, edge to edge, as
+ * a painting needs. The stacked bond, edge to edge already, is not cut. */
 const PAINT_BASES = new Map<string, Level>();
 
 export function paintBase(plain: Level): Level {
-  if (plain.group !== "rectangle" && plain.group !== "pentagonal") return plain;
+  if (plain.group !== "rectangle" && plain.group !== "pentagonal" && plain.group !== "isogonal")
+    return plain;
   let base = PAINT_BASES.get(plain.key);
   if (!base) {
     let cells: Cyc[][];
-    if (plain.group === "pentagonal") {
-      const cut = pentagonCut(plain.key);
-      cells = plain.cells.map((cell) => cut(cell[0]!.verts));
-    } else {
+    if (plain.group === "rectangle") {
       const box = RECTANGLES.find(([key]) => key === plain.key)?.[1];
       if (box === undefined) throw new Error(`${plain.key} is not a bond`);
       cells = windowCut(plain.key, box).steps();
+    } else {
+      const cut = alikeCut(plain.key);
+      cells = plain.cells.map((cell) => cut(cell[0]!.verts));
     }
     const cut = makeLevel(
       plain.key,
@@ -1588,29 +1593,30 @@ export function paintBase(plain: Level): Level {
       plain.name,
     );
     if (cut.tiles.length !== plain.tiles.length || cut.cells.length !== plain.cells.length)
-      throw new Error(`${plain.key}: its cut tiles are not one tile each`);
+      throw new Error(`${plain.key}: its cut tiles are not one tile a kind`);
     PAINT_BASES.set(plain.key, cut);
     base = cut;
   }
   return base;
 }
 
-/** How to cut a pentagonal tiling's pentagon so that, every copy cut alike,
- * the tiling meets piece of side to piece of side (`cutAlike`): at each point
- * where some copy has another's corner part-way along a side, carried onto
- * every copy, until no corner lies part-way along any piece — two cuts on
- * type 10's pentagon, one on types 13 and 15. Read off a patch twice the
- * window's size, so the window's rim tiles are cut as the tiling's are. */
-const PENTAGON_CUTS = new Map<string, (cell: readonly Cyc[]) => Cyc[]>();
+/** How to cut a pentagonal or isogonal tiling's tiles so that, every copy of
+ * a kind cut alike, the tiling meets piece of side to piece of side
+ * (`cutAlike`): at each point where some copy has another's corner part-way
+ * along a side, carried onto every copy of its kind, until no corner lies
+ * part-way along any piece — two cuts on type 10's pentagon, one on types 13
+ * and 15. Read off a patch twice the window's size, so the window's rim tiles
+ * are cut as the tiling's are. */
+const ALIKE_CUTS = new Map<string, (cell: readonly Cyc[]) => Cyc[]>();
 
-function pentagonCut(key: string): (cell: readonly Cyc[]) => Cyc[] {
-  let cut = PENTAGON_CUTS.get(key);
+function alikeCut(key: string): (cell: readonly Cyc[]) => Cyc[] {
+  let cut = ALIKE_CUTS.get(key);
   if (!cut) {
-    const box = PENTAGONAL.find(([k]) => k === key)?.[1];
-    if (box === undefined) throw new Error(`${key} is not a pentagonal tiling`);
-    const wide = templateWindow(key, 2 * box);
+    const box = [...PENTAGONAL, ...ISOGONAL].find(([k]) => k === key)?.[1];
+    if (box === undefined) throw new Error(`${key} is not a pentagonal or isogonal tiling`);
+    const wide = templateWindow(key, 2 * box, { dropStrays: true });
     cut = cutAlike(wide.ring, wide.cells).cut;
-    PENTAGON_CUTS.set(key, cut);
+    ALIKE_CUTS.set(key, cut);
   }
   return cut;
 }
@@ -1632,6 +1638,7 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
       ...TWO_ISOHEDRAL_KEYED,
       ...RECTANGLES,
       ...PENTAGONAL,
+      ...ISOGONAL,
     ].find(([key]) => key === plain.key)?.[1];
     if (regular) setup = { lattice: regular[1], context: [] };
     else if (box !== undefined) {
@@ -1643,14 +1650,14 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   return setup;
 }
 
-/** A uniform, 2-uniform, Laves, 2-isohedral, bond or pentagonal tiling's window, `box` edges
+/** A uniform, 2-uniform, Laves, 2-isohedral, bond, pentagonal or isogonal tiling's window, `box` edges
  * square, and a patch of the same tiling twice that size round it, moved onto
  * the window's coordinates: what lies past the window's rim, for its
  * colourings (and, for the snub hexagonal, whose window holds one hexagon, the
  * only place its lattice shows). A Laves or 2-isohedral board's wider patch is
  * a wider dual window (`lavesWindow`), in the same ring: the same scale, the
- * same unit. A bond's is cut into steps, and a pentagonal tiling's pentagons
- * cut alike, as its painted board's are (`paintBase`). */
+ * same unit. A bond's is cut into steps, and a pentagonal or isogonal
+ * tiling's tiles cut alike, as its painted board's are (`paintBase`). */
 export function periodicContext(plain: Level, box: number): Piece[][] {
   const { ring } = plain;
   const wide =
@@ -1658,14 +1665,15 @@ export function periodicContext(plain: Level, box: number): Piece[][] {
       ? lavesWindow(lavesPrimal(plain.key), 2 * box)
       : plain.group === "2-isohedral"
         ? lavesWindow(plain.dualOf!, 2 * box)
-        : templateWindow(plain.key, 2 * box);
-  // a bond's bricks cut into steps, and a pentagonal tiling's pentagons cut
-  // alike, as its painted board's are (`paintBase`)
+        : // (an isogonal patch, as its window, can leave a lone tile at a corner)
+          templateWindow(plain.key, 2 * box, { dropStrays: plain.group === "isogonal" });
+  // a bond's bricks cut into steps, and a pentagonal or isogonal tiling's
+  // tiles cut alike, as its painted board's are (`paintBase`)
   const wideCells: Cyc[][] =
     plain.group === "rectangle" && "steps" in wide
       ? (wide.steps as () => Cyc[][])()
-      : plain.group === "pentagonal"
-        ? wide.cells.map(pentagonCut(plain.key))
+      : plain.group === "pentagonal" || plain.group === "isogonal"
+        ? wide.cells.map(alikeCut(plain.key))
         : wide.cells;
   if (wide.ring.n !== ring.n || wide.ring.unit !== ring.unit)
     throw new Error(`${plain.key}: the wider patch is in another ring`);
@@ -1696,7 +1704,7 @@ export function periodicContext(plain: Level, box: number): Piece[][] {
 /** Which of a painted board's paintings to make levels of
  * (`npm run colourings`, scripts/find-colourings.mts): every one a regular
  * board's `paintedCandidates` keeps, and the chosen few of a uniform,
- * 2-uniform, Laves, 2-isohedral, bond or pentagonal board's — searching takes from a second to minutes, so the choice
+ * 2-uniform, Laves, 2-isohedral, bond, pentagonal or isogonal board's — searching takes from a second to minutes, so the choice
  * is written down and only those are built. */
 const CHOSEN_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
 
@@ -2005,7 +2013,8 @@ const byEase = (a: Level, b: Level): number =>
 /** The tilings painted, in the order their marked levels are listed: the
  * regular three, the other eight uniform ones, the twenty 2-uniform ones, the
  * eight Laves ones, the twenty 2-isohedral ones, the five
- * congruent-rectangle bonds and the three pentagonal tilings. */
+ * congruent-rectangle bonds, the three pentagonal tilings and the six
+ * isogonal ones. */
 export const PAINTED: string[] = [
   ...COLOURED.map(([key]) => key),
   ...UNIFORM.map(([key]) => key),
@@ -2014,6 +2023,7 @@ export const PAINTED: string[] = [
   ...TWO_ISOHEDRAL_KEYED.map(([key]) => key),
   ...RECTANGLES.map(([key]) => key),
   ...PENTAGONAL.map(([key]) => key),
+  ...ISOGONAL.map(([key]) => key),
 ];
 
 /** The marked levels made otherwise than from src/colourings.json, after
