@@ -1498,6 +1498,10 @@ export function paintedCandidates(plain: Level, all: Iterable<Painting>): Painte
       byColour.set(c, (byColour.get(c) ?? new Set()).add(kindOf(cell)));
     });
     if ([...byColour.values()].some((ks) => ks.size !== 1)) continue;
+    // a colouring of one tile per shape reads as a lined board: each shape
+    // its own colour (the three-scale triangular's three sizes), the colours
+    // say no more than the shapes do but which piece of side meets which
+    if (!painting.lines && level.tiles.length === plain.tiles.length) continue;
     // a tray of one tile per shape, each one mark all round, asks nothing:
     // the shapes decide the marks (one mark on every edge; 3.6.3.6's
     // triangles one colour, its hexagons another)

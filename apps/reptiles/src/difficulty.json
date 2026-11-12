@@ -3504,17 +3504,17 @@
     "presses": 5,
     "flips": 0
   },
-  "threescaletri.3byshape": {
-    "score": 0.572,
-    "presses": 3,
-    "flips": 0
-  },
   "threescaletri.3colours": {
     "score": 1.554,
     "presses": 5,
     "flips": 0
   },
   "threescaletri.3colours2": {
+    "score": 1.554,
+    "presses": 5,
+    "flips": 0
+  },
+  "threescaletri.3colours3": {
     "score": 1.554,
     "presses": 5,
     "flips": 0

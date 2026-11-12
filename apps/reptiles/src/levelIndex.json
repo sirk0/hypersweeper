@@ -3548,25 +3548,12 @@
     "painting": 1
   },
   {
-    "key": "threescaletri.3byshape",
-    "label": "Three-scale triangular, 3 colours, by shape",
-    "name": "Three-scale triangular · 3 colours, by shape",
-    "group": "colourings",
-    "decor": {
-      "of": "threescaletri",
-      "colours": 3,
-      "rules": false,
-      "label": "3 colours, by shape"
-    },
-    "painting": 2
-  },
-  {
     "key": "threescaletri.3colours",
     "label": "Three-scale triangular, 3 colours",
     "name": "Three-scale triangular · 3 colours",
     "group": "colourings",
     "decor": { "of": "threescaletri", "colours": 3, "rules": false, "label": "3 colours" },
-    "painting": 3
+    "painting": 2
   },
   {
     "key": "threescaletri.3colours2",
@@ -3574,6 +3561,14 @@
     "name": "Three-scale triangular · 3 colours II",
     "group": "colourings",
     "decor": { "of": "threescaletri", "colours": 3, "rules": false, "label": "3 colours II" },
+    "painting": 3
+  },
+  {
+    "key": "threescaletri.3colours3",
+    "label": "Three-scale triangular, 3 colours III",
+    "name": "Three-scale triangular · 3 colours III",
+    "group": "colourings",
+    "decor": { "of": "threescaletri", "colours": 3, "rules": false, "label": "3 colours III" },
     "painting": 4
   },
   {
