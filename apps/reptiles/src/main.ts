@@ -2,13 +2,14 @@ import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
 import { attachDrag, type DragControl } from "./input/drag";
 import { figureSetByKey, figureSets, type FigureSet } from "./figures";
-import { BOARDS, LEVELS, boardKeys, levelByKey, type Level } from "./levels";
+import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
-import { renderCatalog, renderTiling } from "./view/catalog";
+import { renderCatalog } from "./view/catalog";
 import { renderFigure, renderFigures } from "./view/figures";
 import { renderHome } from "./view/home";
 import { fillGlyphs } from "./view/icons";
+import { dropQueued, renderPicker } from "./view/picker";
 import { renderSettings } from "./view/settings";
 import { SvgBoard } from "./view/svgBoard";
 
@@ -21,23 +22,30 @@ const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
 const boardButton = byId<HTMLButtonElement>("board");
 
-/** The most stars earned on any board of the tiling `base` is the first
- * board of: what the catalog and Figures show for it. */
-const tilingStars = (base: string): number => Math.max(...boardKeys(base).map(starsFor));
+/** Every level of the tiling `plain` is the first board of — each of its
+ * boards plain, then marked each way it is (`markedOf`) — and the stars
+ * earned on them: what the catalog and Figures show for it. */
+function tallyOf(plain: Level): { levels: number; stars: number } {
+  const keys = [plain, ...markedOf(plain.key)].flatMap((l) => boardKeys(l.key));
+  return { levels: keys.length, stars: keys.reduce((sum, k) => sum + starsFor(k), 0) };
+}
 
 fillGlyphs(document);
 
 // -- screens ------------------------------------------------------------------
 // Seven: home (no query), Tilings — the catalog — (?tilings; old links say
-// ?catalog), one tiling's plain and marked levels (?tiling=<key>), Figures
-// (?figures), one figure set's tilings (?figure=<key>), the settings
-// (?settings) and a level (?level=<key>). Each move between them is a history entry, so the
-// browser's Back goes back.
+// ?catalog), one tiling's boards and tiles to pick a level from
+// (?tiling=<key>), Figures (?figures), one figure set's (?figure=<key>), the
+// settings (?settings) and a level (?level=<key>). Each move between them is a
+// history entry, so the browser's Back goes back; a tiling's or figure set's
+// page keeps its pick in its URL (`&pick=<level>`), so Back from a level
+// comes back to the same one.
 
 const SCREENS = ["home", "catalog", "tiling", "figures", "figure", "settings", "game"] as const;
 type Screen = (typeof SCREENS)[number];
 
 function show(screen: Screen): void {
+  dropQueued();
   for (const s of SCREENS) byId(s).hidden = s !== screen;
   if (screen !== "game") won.hidden = true;
 }
@@ -65,33 +73,53 @@ function goCatalog(push = true): void {
   renderCatalog(
     byId("catalog-list"),
     LEVELS.filter((l) => !l.decor),
-    tilingStars,
+    tallyOf,
     (level) => open(level),
     (level) => goTiling(level),
   );
   show("catalog");
 }
 
-/** A tiling with marked levels: its plain tiles, matching rules and
- * colourings. */
-function goTiling(level: Level, push = true): void {
+/** Keep a page's pick in its URL, in place: Back from a level comes back to
+ * it. */
+const keepPick =
+  (page: string) =>
+  (key: string): void =>
+    history.replaceState(null, "", `?${page}&pick=${key}`);
+
+/** A tiling's page: its boards and its tiles — plain, matching rules,
+ * colourings — to pick a level from (view/picker.ts). */
+function goTiling(level: Level, push = true, pick: string | null = null): void {
   if (push) history.pushState(null, "", `?tiling=${level.key}`);
-  byId("tiling-title").textContent = level.name;
-  renderTiling(byId("tiling-list"), level, tilingStars, (l) => open(l));
   show("tiling");
+  byId("tiling-title").textContent = level.name;
+  renderPicker(byId("tiling-list"), {
+    tilings: [level],
+    stars: starsFor,
+    play: (l) => open(l),
+    initial: pick,
+    remember: keepPick(`tiling=${level.key}`),
+  });
 }
 
 function goFigures(push = true): void {
   if (push) history.pushState(null, "", "?figures");
-  renderFigures(byId("figures-list"), figureSets(), tilingStars, (set) => goFigure(set));
+  renderFigures(byId("figures-list"), figureSets(), tallyOf, (set) => goFigure(set));
   show("figures");
 }
 
-function goFigure(set: FigureSet, push = true): void {
+function goFigure(set: FigureSet, push = true, pick: string | null = null): void {
   if (push) history.pushState(null, "", `?figure=${set.key}`);
-  byId("figure-title").textContent = set.name;
-  renderFigure(byId("figure-list"), set, tilingStars, (level) => open(level));
   show("figure");
+  byId("figure-title").textContent = set.name;
+  renderFigure(
+    byId("figure-list"),
+    set,
+    starsFor,
+    (level) => open(level),
+    pick,
+    keepPick(`figure=${set.key}`),
+  );
 }
 
 /** Per band, how many boards — every board of every tiling is a level of its
@@ -119,11 +147,11 @@ function route(): void {
   else if (query.has("tilings") || query.has("catalog")) goCatalog(false);
   else if (query.has("tiling")) {
     const tiling = levelByKey(query.get("tiling") ?? "");
-    if (tiling && !tiling.decor) goTiling(tiling, false);
+    if (tiling && !tiling.decor && tiling.board === 1) goTiling(tiling, false, query.get("pick"));
     else goCatalog(false);
   } else if (query.has("figure")) {
     const set = figureSetByKey(query.get("figure") ?? "");
-    if (set) goFigure(set, false);
+    if (set) goFigure(set, false, query.get("pick"));
     else goFigures(false);
   } else if (query.has("figures")) goFigures(false);
   else if (query.has("settings")) goSettings(false);
@@ -162,19 +190,11 @@ function tick(s: Session): void {
   clock.classList.toggle("over", t > s.puzzle.level.seconds);
 }
 
-/** After a board, the tiling's next board; after its last, the next
- * tiling's first. */
-function nextLevel(s: Session): Level | undefined {
-  const i = BOARDS.findIndex((b) => b.key === s.puzzle.level.key);
-  const ref = BOARDS[i + 1];
-  return ref && levelByKey(ref.key);
-}
-
-/** The tiling's next board after `level`, round to its first after its
- * last. */
+/** The next board `level`'s tiles are laid on — its tiling's next board,
+ * plain or marked as it is — round to the first after the last. */
 function nextBoard(level: Level): Level | undefined {
   const keys = boardKeys(level.base);
-  return levelByKey(keys[level.board % keys.length]!);
+  return levelByKey(keys[(keys.indexOf(level.key) + 1) % keys.length]!);
 }
 
 function changed(): void {
@@ -217,7 +237,6 @@ function changed(): void {
       return li;
     }),
   );
-  next.hidden = !nextLevel(s);
   if (stars > starsFor(puzzle.level.key)) recordStars(puzzle.level.key, stars);
 }
 
@@ -242,7 +261,7 @@ function open(level: Level, push = true): void {
   const boardOf = byId("board-of");
   boardOf.hidden = level.boards < 2;
   boardOf.textContent = `board ${level.board}/${level.boards}`;
-  boardButton.hidden = level.boards < 2;
+  boardButton.hidden = boardKeys(level.base).length < 2;
   boardButton.title = `The next board of this tiling (this is ${level.board} of ${level.boards})`;
   changed();
 }
@@ -274,9 +293,9 @@ byId("exit").addEventListener("click", dismiss);
 won.addEventListener("click", (ev) => {
   if (ev.target === won) dismiss();
 });
+// Next level: another of the same difficulty, dealt at random — as the die is.
 next.addEventListener("click", () => {
-  const level = session && nextLevel(session);
-  if (level) open(level);
+  if (session) playBand(bandOf(session.puzzle.level.key));
 });
 for (const button of document.querySelectorAll("[data-go-home]"))
   button.addEventListener("click", () => goHome());

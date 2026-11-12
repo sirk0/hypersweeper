@@ -42,6 +42,7 @@ import { ccw, outline } from "./geometry/outline";
 import { cutAlike } from "./geometry/cutAlike";
 import colouringsData from "./colourings.json";
 import levelIndexData from "./levelIndex.json";
+import markedBoardsData from "./markedBoards.json";
 import {
   latticeOf,
   paintingOf,
@@ -745,20 +746,6 @@ export const GROUPS = [
  * `decor`) what it marks them with — listed with the tiling it marks, not as
  * a family of its own (`markedOf`). */
 export type GroupKey = (typeof GROUPS)[number]["key"] | "rules" | "colourings";
-
-/** The two kinds of marked level, in the order a tiling's page lists them. */
-export const MARKED_GROUPS = [
-  {
-    key: "rules",
-    name: "Matching rules",
-    hint: "Lines or arrows on the tiles that must meet across every edge",
-  },
-  {
-    key: "colourings",
-    name: "Colourings",
-    hint: "Coloured tiles — each edge must match the one it meets",
-  },
-] as const;
 
 const NOTATIONS = catalog.tilingNotations as Record<string, string>;
 
@@ -1569,18 +1556,18 @@ function keyed(plain: Level, made: readonly Level[]): Level[] {
  * a painting needs. The stacked bond, edge to edge already, is not cut. */
 const PAINT_BASES = new Map<string, Level>();
 
-export function paintBase(plain: Level): Level {
+export function paintBase(plain: Level, at?: Variant): Level {
   if (plain.group !== "rectangle" && plain.group !== "pentagonal" && plain.group !== "isogonal")
     return plain;
   let base = PAINT_BASES.get(plain.key);
   if (!base) {
     let cells: Cyc[][];
     if (plain.group === "rectangle") {
-      const box = RECTANGLES.find(([key]) => key === plain.key)?.[1];
+      const box = RECTANGLES.find(([key]) => key === plain.base)?.[1];
       if (box === undefined) throw new Error(`${plain.key} is not a bond`);
-      cells = windowCut(plain.key, box).steps();
+      cells = windowCut(plain.base, box, at).steps();
     } else {
-      const cut = alikeCut(plain.key);
+      const cut = alikeCut(plain.base);
       cells = plain.cells.map((cell) => cut(cell[0]!.verts));
     }
     const cut = makeLevel(
@@ -1658,15 +1645,20 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
  * a wider dual window (`lavesWindow`), in the same ring: the same scale, the
  * same unit. A bond's is cut into steps, and a pentagonal or isogonal
  * tiling's tiles cut alike, as its painted board's are (`paintBase`). */
-export function periodicContext(plain: Level, box: number): Piece[][] {
+export function periodicContext(
+  plain: Level,
+  box: number,
+  scale = 2,
+  dropStrays = plain.group === "isogonal",
+): Piece[][] {
   const { ring } = plain;
   const wide =
     plain.group === "laves"
-      ? lavesWindow(lavesPrimal(plain.key), 2 * box)
+      ? lavesWindow(lavesPrimal(plain.key), scale * box)
       : plain.group === "2-isohedral"
-        ? lavesWindow(plain.dualOf!, 2 * box)
+        ? lavesWindow(plain.dualOf!, scale * box)
         : // (an isogonal patch, as its window, can leave a lone tile at a corner)
-          templateWindow(plain.key, 2 * box, { dropStrays: plain.group === "isogonal" });
+          templateWindow(plain.key, scale * box, { dropStrays });
   // a bond's bricks cut into steps, and a pentagonal or isogonal tiling's
   // tiles cut alike, as its painted board's are (`paintBase`)
   const wideCells: Cyc[][] =
@@ -1721,6 +1713,105 @@ function paintedLevel(of: Level, i: number): Level {
   return kept.level;
 }
 
+/** Where the tiling's boxes are listed: a painted tiling's first board's
+ * window, in edges. */
+function paintedBox(key: string): number | undefined {
+  return [
+    ...UNIFORM,
+    ...TWO_UNIFORM,
+    ...LAVES,
+    ...TWO_ISOHEDRAL_KEYED,
+    ...RECTANGLES,
+    ...PENTAGONAL,
+    ...ISOGONAL,
+  ].find(([k]) => k === key)?.[1];
+}
+
+/** A patch of a painted tiling three times its first board's window, in
+ * that board's coordinates: room for a copy of any of its other boards
+ * (moved up to a domain off the middle, grown by up to one and a half
+ * edges), as a painting of the first board is carried onto them. */
+const WIDE_PATCHES = new Map<string, Piece[][]>();
+
+function widePatch(plain: Level): Piece[][] {
+  let wide = WIDE_PATCHES.get(plain.key);
+  if (!wide) {
+    const box = paintedBox(plain.key);
+    if (box === undefined) throw new Error(`${plain.key} has one board`);
+    // (a patch, not a board: a tile cut off at a corner is left out)
+    wide = periodicContext(plain, box, 3, true);
+    WIDE_PATCHES.set(plain.key, wide);
+  }
+  return wide;
+}
+
+/** The translation that carries every one of `cells` onto a cell of
+ * `patch` — exactly: a translate of the board, tile for tile, in the patch's
+ * coordinates. */
+function shiftInto(ring: Ring, cells: readonly Piece[][], patch: readonly Piece[][]): Cyc {
+  const keyOf = (verts: readonly Cyc[]): string =>
+    verts
+      .map((v) => ring.key(v))
+      .sort()
+      .join("|");
+  const keys = new Set(patch.map((c) => keyOf(c[0]!.verts)));
+  const first = cells[0]![0]!.verts;
+  for (const cell of patch) {
+    const verts = cell[0]!.verts;
+    if (verts.length !== first.length) continue;
+    for (const v of verts) {
+      const t = ring.sub(v, first[0]!);
+      if (cells.every((c) => keys.has(keyOf(c[0]!.verts.map((u) => ring.add(u, t)))))) return t;
+    }
+  }
+  throw new Error("a board of a painted tiling lies in no patch of it");
+}
+
+/**
+ * The `i`-th painting of `first`'s tiling (as `src/colourings.json` lists
+ * it for its first board) laid on `board`, another board of that tiling, cut
+ * at `at`: the board carried onto the first's coordinates (`shiftInto`, a
+ * patch three times its size), and painted with the first board's own
+ * translation classes and lattice origin (`paintingOf`'s `bases`), so it is
+ * the same colouring of the tiling, wherever the board was cut. Unkeyed, as
+ * `paintedLevel` is; whether it makes the first board's tray is the caller's
+ * to check.
+ */
+function paintedBoard(first: Level, board: Level, at: Variant, i: number): Level {
+  const plain = paintBase(first);
+  const params = CHOSEN_PAINTINGS[plain.key]?.[i];
+  if (!params) throw new Error(`${plain.key}: no painting ${i} in src/colourings.json`);
+  const here = paintBase(board, at);
+  const { ring } = plain;
+  if (here.ring.n !== ring.n || here.ring.unit !== ring.unit)
+    throw new Error(`${board.key}: in another ring than ${first.key}`);
+  const { lattice, context } = paintingSetup(plain);
+  const t = shiftInto(ring, here.cells, widePatch(plain));
+  const moved = here.cells.map((cell) =>
+    cell.map((p) => ({ verts: p.verts.map((v) => ring.add(v, t)) })),
+  );
+  const keyOf = (cell: Piece[]): string =>
+    cell[0]!.verts
+      .map((v) => ring.key(v))
+      .sort()
+      .join("|");
+  const own = new Set(plain.cells.map(keyOf));
+  const bases = [...plain.cells, ...context.filter((c) => !own.has(keyOf(c)))];
+  const painting = paintingOf(ring, moved, lattice, params, [], bases);
+  return makeLevel(
+    here.key,
+    here.label,
+    ring,
+    here.cells.map((cell) => cell.map((p) => p.verts)),
+    painting.lines ? "rules" : "colourings",
+    here.configs,
+    here.name,
+    undefined,
+    painting.marks,
+    painting.lines ? undefined : painting.paints,
+  );
+}
+
 /** An aperiodic board with arrows on its edges (geometry/marks.ts:
  * `arrowMark`): `plain`'s window again, each edge of builder cell n's edge i
  * (vertex i to i + 1, as the builder lists it) carrying the arrow
@@ -1729,8 +1820,8 @@ function arrowLevel(
   plain: Level,
   arrowsOf: (n: number, i: number) => { kind: number; atStart: boolean },
 ): Level {
-  const [, mode, depth, keep] = APERIODIC.find(([key]) => key === plain.key)!;
-  const { ring, cells } = aperiodicPatch(mode, depth, keep);
+  const [, mode, depth, keep] = APERIODIC.find(([key]) => key === plain.base)!;
+  const { ring, cells } = aperiodicPatch(mode, depth, keep, false, plain.aperiodic?.variant ?? 0);
   // each edge, by its two ends: its arrow's kind and the end it points to
   const arrows = new Map<string, { kind: number; head: string }>();
   const edgeKey = (p: Cyc, q: Cyc): string => [ring.key(p), ring.key(q)].sort().join("|");
@@ -1774,8 +1865,8 @@ function arrowLevel(
  * that shape every shared edge of the builder's 430-rhombus patch keeps; the
  * tests check every shared edge of the board keeps it. */
 function penroseRulesLevel(plain: Level): Level {
-  const [, , depth, keep] = APERIODIC.find(([key]) => key === plain.key)!;
-  const legs = penroseLegs(depth, keep, 0);
+  const [, , depth, keep] = APERIODIC.find(([key]) => key === plain.base)!;
+  const legs = penroseLegs(depth, keep, plain.aperiodic?.variant ?? 0);
   return arrowLevel(plain, (n, i) => {
     const { color, leg, fromApex } = legs[n]![i]!;
     const toward = leg === 0 && color === 0;
@@ -1794,8 +1885,8 @@ function penroseRulesLevel(plain: Level): Level {
  * edge lengths keep anyway), so the arcs drawn across them come in two
  * colours. */
 function kiteDartRulesLevel(plain: Level): Level {
-  const [, , depth, keep] = APERIODIC.find(([key]) => key === plain.key)!;
-  const legs = kiteDartLegs(depth, keep, 0);
+  const [, , depth, keep] = APERIODIC.find(([key]) => key === plain.base)!;
+  const legs = kiteDartLegs(depth, keep, plain.aperiodic?.variant ?? 0);
   return arrowLevel(plain, (n, i) => {
     const { color, leg, fromSide } = legs[n]![i]!;
     return {
@@ -1858,7 +1949,7 @@ const PATCH_WINDOWS = new Map<string, PatchWindow>();
 export function patchWindow(plain: Level): PatchWindow {
   const hit = PATCH_WINDOWS.get(plain.key);
   if (hit) return hit;
-  const framed = patchFrames(plain.key);
+  const framed = patchFrames(plain.base);
   const refined = refine(framed);
   const { window, shift } = locate(
     framed.ring,
@@ -2233,6 +2324,16 @@ function lazyLevel(stub: Stub, make: () => Level): Level {
 const variantsOf = (key: string): Variant[] =>
   BOARD_SOURCES.has(key) ? (BOARD_VARIANTS[key] ?? []) : [];
 
+/** The boards past the first each marked level is laid on too, by its
+ * plain tiling's board numbers (`npm run boards`, scripts/find-boards.mts):
+ * every board its marks make the same tray on, measuring no easier than that
+ * board plain. */
+const MARKED_BOARDS = markedBoardsData.boards as Record<string, number[]>;
+
+/** How many boards the tiling `key` has, or the tiling it marks has. */
+const tilingBoards = (key: string, decor?: { of: string }): number =>
+  1 + variantsOf(decor?.of ?? key).length;
+
 /** Every tiling's first board, in the order the catalog lists them — the
  * levels themselves, for everything that lists tilings rather than boards —
  * each built only when it is first looked into (`lazyLevel`), from what
@@ -2244,7 +2345,7 @@ export const LEVELS: Level[] = (levelIndexData as IndexEntry[]).map((entry) => {
     ...(decor ? { decor } : {}),
     base: entry.key,
     board: 1,
-    boards: 1 + variantsOf(entry.key).length,
+    boards: tilingBoards(entry.key, decor),
   };
   return lazyLevel(stub, () => buildEntry(entry));
 });
@@ -2263,25 +2364,93 @@ export interface BoardRef {
   board: number;
 }
 
-/** Every board of every tiling: each tiling's in turn, first board first. */
-export const BOARDS: BoardRef[] = LEVELS.flatMap((level) => [
-  { key: level.key, base: level.key, board: 1 },
-  ...variantsOf(level.key).map((_, i) => ({
-    key: `${level.key}-${i + 2}`,
+/** The numbers of the boards `level` is laid on: every board of its tiling
+ * for a plain level, those `markedBoards.json` lists for a marked one. */
+function boardNumbers(level: Pick<Level, "key" | "boards" | "decor">): number[] {
+  if (!level.decor) return Array.from({ length: level.boards }, (_, i) => i + 1);
+  return [1, ...(MARKED_BOARDS[level.key] ?? [])];
+}
+
+/** Every board of every tiling: each tiling's in turn, first board first —
+ * a marked level's numbered as the plain board it marks (`squares.lines-3`
+ * is `squares-3` lined). */
+export const BOARDS: BoardRef[] = LEVELS.flatMap((level) =>
+  boardNumbers(level).map((n) => ({
+    key: n === 1 ? level.key : `${level.key}-${n}`,
     base: level.key,
-    board: i + 2,
+    board: n,
   })),
-]);
+);
 
 const BOARD_BY_KEY = new Map(BOARDS.map((b) => [b.key, b]));
 const FIRST_BY_KEY = new Map(LEVELS.map((l) => [l.key, l]));
+const ENTRY_BY_KEY = new Map((levelIndexData as IndexEntry[]).map((e) => [e.key, e]));
 const BUILT = new Map<string, Level>();
 
-/** The keys of every board of the tiling `base` is the first board of. */
+/** The keys of every board of the level `base` is the first board of. */
 export function boardKeys(base: string): string[] {
   const first = FIRST_BY_KEY.get(base);
   if (!first) return [];
-  return Array.from({ length: first.boards }, (_, i) => (i === 0 ? base : `${base}-${i + 1}`));
+  return boardNumbers(first).map((n) => (n === 1 ? base : `${base}-${n}`));
+}
+
+/** Whether two levels' trays hold the same tiles, marks and all: each tile of
+ * one the other's turned, or turned over where `a` may be — whichever side
+ * each was laid to rest on. */
+export function sameTray(a: Level, b: Level): boolean {
+  if (a.tiles.length !== b.tiles.length || a.mirror !== b.mirror) return false;
+  const left = new Set(b.tiles.keys());
+  return a.tiles.every((t) => {
+    const flipped: Shape = { ...t, pieces: posed(t, { rot: 0, flip: true, t: t.ring.zero }) };
+    for (const i of left) {
+      const other = b.tiles[i]!.pieces;
+      if (
+        turnsOntoPieces(t, other).length > 0 ||
+        (a.mirror && turnsOntoPieces(flipped, other).length > 0)
+      ) {
+        left.delete(i);
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+/**
+ * The marked level `key` (a first board's: `squares.lines`) laid on board
+ * `n` of the tiling it marks — its painting carried onto that board
+ * (`paintedBoard`), or its rule or colouring read off that board's patch —
+ * keyed `<key>-<n>` and named as the first is. Built whether or not
+ * `markedBoards.json` lists it: the board search asks of every board.
+ */
+export function markedOn(key: string, n: number): Level {
+  const entry = ENTRY_BY_KEY.get(key);
+  const first = FIRST_BY_KEY.get(key);
+  if (!entry?.decor || !first) throw new Error(`${key} is not a marked level`);
+  if (n === 1) return first;
+  const { of } = entry.decor;
+  const plain = levelByKey(of)!;
+  const board = levelByKey(`${of}-${n}`);
+  const at = variantsOf(of)[n - 2];
+  if (!board || at === undefined) throw new Error(`${of} has no board ${n}`);
+  let made: Level;
+  if (entry.painting !== undefined) made = paintedBoard(plain, board, at, entry.painting);
+  else {
+    const byHand = MARKED_BY_HAND.find(([k]) => k === key);
+    if (!byHand) throw new Error(`no way to build ${key}`);
+    made = byHand[2](board);
+  }
+  return {
+    ...made,
+    key: `${key}-${n}`,
+    base: key,
+    board: n,
+    boards: first.boards,
+    label: first.label,
+    name: first.name,
+    group: first.group,
+    decor: entry.decor,
+  };
 }
 
 /** A vertex configuration as tilings are named: the polygons round a vertex,
@@ -2311,9 +2480,12 @@ export function levelByKey(key: string): Level | undefined {
   let level = BUILT.get(key);
   if (!level) {
     const base = FIRST_BY_KEY.get(ref.base)!;
-    const at = variantsOf(ref.base)[ref.board - 2]!;
-    const made = BOARD_SOURCES.get(ref.base)!.make(at);
-    level = { ...made, key, base: ref.base, board: ref.board, boards: base.boards };
+    if (base.decor) level = markedOn(ref.base, ref.board);
+    else {
+      const at = variantsOf(ref.base)[ref.board - 2]!;
+      const made = BOARD_SOURCES.get(ref.base)!.make(at);
+      level = { ...made, key, base: ref.base, board: ref.board, boards: base.boards };
+    }
     BUILT.set(key, level);
   }
   return level;

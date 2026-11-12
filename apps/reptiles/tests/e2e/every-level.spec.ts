@@ -17,6 +17,18 @@ const INDEX = JSON.parse(
 ) as Entry[];
 const PLAIN = INDEX.filter((e) => !e.decor);
 const markedOf = (key: string): Entry[] => INDEX.filter((e) => e.decor?.of === key);
+// …and every marked level on the boards past the first it is laid on
+// (src/markedBoards.json): its painting carried onto another board, or its
+// rule read off another window of its patch
+const MARKED_BOARDS = (
+  JSON.parse(readFileSync(new URL("../../src/markedBoards.json", import.meta.url), "utf8")) as {
+    boards: Record<string, number[]>;
+  }
+).boards;
+const EVERY: { key: string }[] = [
+  ...INDEX,
+  ...Object.entries(MARKED_BOARDS).flatMap(([key, ns]) => ns.map((n) => ({ key: `${key}-${n}` }))),
+];
 
 /** Every error the page reports, as it happens. */
 function watchErrors(page: Page): string[] {
@@ -50,13 +62,13 @@ test("tapping a tiling with marked levels opens its page: V4.6.12", async ({ pag
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^V4\.6\.12$/ }) })
     .click();
-  await expect(page).toHaveURL(/\?tiling=kisrhombille$/);
+  await expect(page).toHaveURL(/\?tiling=kisrhombille&pick=/);
   await expect(page.locator("#tiling")).toBeVisible();
-  await expect(page.locator('#tiling-list [data-group="rules"] .card').first()).toBeVisible();
+  await expect(page.locator('#tiling-list [data-marking^="kisrhombille."]').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 
-for (const [n, run] of runs(INDEX, 25).entries()) {
+for (const [n, run] of runs(EVERY, 25).entries()) {
   test(`every level opens with no error (${n + 1}: ${run[0]!.key} to ${run.at(-1)!.key})`, async ({
     page,
   }) => {
@@ -81,12 +93,11 @@ test("every tiling with marked levels opens its page, every marked level on it",
     if (marked.length === 0) continue;
     await go(page, `?tiling=${key}`);
     await expect(page.locator("#tiling"), key).toBeVisible();
-    await expect(
-      page.locator(
-        '#tiling-list [data-group="rules"] .card, #tiling-list [data-group="colourings"] .card',
-      ),
-      key,
-    ).toHaveCount(marked.length);
+    await expect(page.locator("#tiling-list .marking-card"), key).toHaveCount(1 + marked.length);
+    // every tray drawn (each marked level built), with no error
+    await expect(page.locator("#tiling-list .marking-card .tray-icon"), key).toHaveCount(
+      1 + marked.length,
+    );
     expect(errors, key).toEqual([]);
   }
 });

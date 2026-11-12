@@ -137,6 +137,47 @@ export function figureIcon(level: Level): SVGSVGElement {
   return svg;
 }
 
+/** Every tray tile of `level` in a grid of as near square as fits them —
+ * three tiles in a row of three, four as two by two, six as three by two —
+ * each in the middle of its cell, all at one scale (their true sizes), with
+ * their marks: what a marking's card shows, big, in place of the board. */
+export function trayIcon(level: Level): SVGSVGElement {
+  const { ring } = level;
+  const shapes = level.tiles.map((t) => loopsOf(ring, t.pieces));
+  // each tile's box, y flipped as drawn
+  const boxes = shapes.map((loops) => {
+    const xy = loopsReach(loops);
+    const xs = xy.map(([x]) => x);
+    const ys = xy.map(([, y]) => -y);
+    return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+  });
+  const n = shapes.length;
+  const cols = Math.ceil(Math.sqrt(n));
+  const rows = Math.ceil(n / cols);
+  const cell = Math.max(...boxes.flatMap((b) => [b.x1 - b.x0, b.y1 - b.y0])) * 1.18;
+  const size = Math.max(cols, rows) * cell;
+  const svg = svgIn("tray-icon", [(cols * cell - size) / 2, (rows * cell - size) / 2, size, size]);
+  shapes.forEach((loops, kind) => {
+    const b = boxes[kind]!;
+    // the last row's tiles centred under the rest
+    const row = Math.floor(kind / cols);
+    const inRow = row === rows - 1 ? n - row * cols : cols;
+    const col = kind % cols;
+    const cx = (col + 0.5 + (cols - inRow) / 2) * cell;
+    const cy = (row + 0.5) * cell;
+    const dx = cx - (b.x0 + b.x1) / 2;
+    const dy = cy - (b.y0 + b.y1) / 2;
+    const map = ([x, y]: XY): XY => [x + dx, -y + dy];
+    const poly = document.createElementNS(NS, "path");
+    poly.setAttribute("d", loopsPath(loops, map));
+    poly.setAttribute("class", `tile ${level.colours[kind]}`);
+    poly.setAttribute("stroke-width", String(cell * 0.03));
+    svg.appendChild(poly);
+    decorate(svg, loops, map, markUnit(level));
+  });
+  return svg;
+}
+
 /** The difficulty ladder: three bars rising left to right, `filled` of them
  * solid — Hypersweeper's own icon. All three are always drawn: one bar alone
  * says nothing about which rung of what. */

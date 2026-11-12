@@ -16,6 +16,7 @@
     "levels": "vite-node scripts/index-levels.mts",
     "difficulty": "vite-node scripts/measure-difficulty.mts",
     "boards": "vite-node scripts/find-boards.mts",
+    "marked-boards": "vite-node scripts/find-marked-boards.mts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icons": "vite-node scripts/make-icons.mts",

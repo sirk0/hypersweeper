@@ -32,11 +32,11 @@ some back off.
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
   A lifted tile dropped anywhere else it cannot land goes back where it was.
 - **Matching rules and colourings** — listed with the tiling they mark,
-  not as families of their own: a tiling that has them says how many on its
-  Tilings card ("+5 marked") and opens its own page (`?tiling=<key>`: Plain
-  tiles, then Matching rules, then Colourings), and a figure set's page lists
-  them after its plain tilings (`markedOf` in `levels.ts`; their `group`,
-  `rules` or `colourings`, is in `MARKED_GROUPS`, not `GROUPS`). Each tile carries a **mark** on each edge, and a tile lands only
+  not as families of their own (`markedOf` in `levels.ts`; their `group` is
+  `rules` or `colourings`, not one of `GROUPS`), and laid on **every board**
+  of it that they make the same tray on (Boards, below): a level is a board
+  by a marking — plain, a matching rule or a colouring — so a tiling's page
+  picks the two apart (Screens, below). Each tile carries a **mark** on each edge, and a tile lands only
   where its marks meet their partners (the rim takes any), so a pattern no one
   tile can check is checked edge by edge. Every mark is drawn so that two
   tiles meeting as they should make one shape across their edge
@@ -237,7 +237,8 @@ some back off.
   with no more tiles than that, two; and within the level's time limit
   (`seconds`, five a tile), three. The clock starts with the first tile down.
   The best per level is kept in `localStorage` and shown in Tilings and
-  Figures.
+  Figures — on a tiling's card and a figure set's, as stars earned of stars
+  to earn over all its levels; on a tiling's page, per board and marking.
 - **Zoom.** Two fingers pinch the board in, up to four times fitted, about
   their midpoint (a second finger landing mid-drag puts that tile back first;
   one on a control still turns or flips it); one finger on bare board pans it
@@ -257,18 +258,32 @@ some back off.
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
 `public/fonts`). Home (no query): Easy, Medium and Hard each deal a random
 level of that difficulty; Tilings opens the catalog (`?tilings`; old
-`?catalog` links still work): each family a row of level cards scrolling
-sideways — board outline, tiles, name, difficulty as Hypersweeper's three bars,
-stars; Figures (`?figures`) lists the levels by the tiles in their tray, a
+`?catalog` links still work): each family a row of tiling cards scrolling
+sideways — first board's outline, tiles, name, difficulty as Hypersweeper's
+three bars, how many levels it is (every board by every marking) and the
+stars earned of them; a tiling of one level (the P-pentomino) opens it, any
+other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
+top, as their outlines in a grid, one dealt at random; under them its
+markings in one row scrolling sideways — Plain first and picked, then its
+matching rules, then its colourings — each card the tray's tiles drawn big
+in a grid that fits them all (`trayIcon`), never the board's outline, which
+is up top, with the level's difficulty and stars on the picked board; then
+Play, pinned to the foot of the screen, naming the level. A board the picked
+marking is not laid on is dimmed, as is a marking not laid on the picked
+board; picking one picks what goes with it (a board it is laid on, or the
+plain tiles). The page keeps its pick in its URL (`&pick=<level>`), so Back
+from a level comes back to it. Figures (`?figures`) lists the levels by the tiles in their tray, a
 row each: one figure by its sides — triangles, quadrilaterals, pentagons,
 hexagons, 7+-gons — then one figure of several pieces, regular pairs, irregular pairs (at least one figure
 irregular), and packs of three or more. A row puts the regular figure first,
 then the rest closest to regular first; one lone figure at two sizes is one
 figure, named for its shape (V4.8² and the isosceles right rep-tile are the
 isosceles right triangle). Each card shows the set's tiles side by side at
-their true sizes — and a set (`?figure=<key>`, keyed by its first
-level) lists the tilings whose tray is exactly that set, easiest first, under
-Easy, Medium and Hard. The gear in home's top-left
+their true sizes — and a set's page (`?figure=<key>`, keyed by its first
+level) is a tiling's page for every tiling whose tray is exactly that set:
+their boards side by side, each tiling's name and difficulty over its own,
+easiest first, one dealt at random, then the picked tiling's markings and
+Play. The gear in home's top-left
 corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
 version and checks for updates (the shared check in `@tiling/platform`; left
 out of a packaged build). Levels are picked in
@@ -279,17 +294,20 @@ and a die that deals another board of the same difficulty as this one — then
 the level's name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest
 of the screen, the tray on a strip along the bottom (portrait) or the right
-(landscape). The win card has Play again and Next level (the tiling's next
-board, then the next tiling's first), and an ✕ in its
+(landscape). The win card has Play again and Next level (another level of
+the same difficulty, dealt at random as the die deals), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
 outside it). Each move
 is a history entry, so the browser's Back works.
 
 **Boards.** A tiling cut in more than one place has more than one board, each
 a level of its own (`?level=<key>-<n>`, its own stars and difficulty band;
-the first is `<key>`, the board it shipped with). Tilings and Figures list a
-tiling once — its first board's outline, how many boards it has, the best
-stars on any — and Easy/Medium/Hard and the die deal from every board.
+the first is `<key>`, the board it shipped with) — and each of its markings
+on each board too (`?level=<marking>-<n>`: `trihex.lines-2` is `trihex-2`
+lined; the next-board control steps through the boards a marking is laid
+on). Tilings and Figures list a tiling once — its first board's outline, how
+many levels it is, the stars earned of them — and Easy/Medium/Hard and the
+die deal from every board, plain and marked.
 `npm run boards` (`scripts/find-boards.mts`) finds them and writes where each
 is cut to `src/boards.json`: a periodic tiling's square moved across one
 domain of it on a 32 × 32 grid of steps, its edge shrunk by up to half a
@@ -327,6 +345,33 @@ board to the search's promises, so a changed window that leaves
 `npm run difficulty`. After changing a level's window, name or tiles, or
 `npm run colourings`, re-run `npm run levels` too.
 
+**A marking on every board.** A marked level is listed (and searched for:
+`npm run colourings`) on its tiling's first board, and laid on the rest by
+`markedOn` in `levels.ts`. A painting of a periodic tiling is written down as
+numbers on the first board's own translation classes and lattice origin, so
+it is not laid on another board by those numbers alone: the board is carried
+onto the first's coordinates — the translation that lays it tile for tile on
+a patch three times the first board's size (`shiftInto`, `widePatch`), exact
+— and painted with the first board's cells placed first (`paintingOf`'s
+`bases`), so its classes are the first board's and it is the same colouring
+of the tiling (`paintedBoard`; a bond's, pentagonal or isogonal board's tiles
+cut first as the first board's are, `paintBase`). A rule read off an
+aperiodic patch reads another board off the same patch (`patchWindow`, keyed
+by the board), and Penrose's arrows come from his builder's legs for that
+board's `variant`. A colouring of an aperiodic window is chosen with the
+cells round that window, so it is not carried across; Ammann–Beenker's other
+windows colour with six to nine tray tiles at best, past `MAX_COLOURED_TRAY`,
+so its colouring stays on its first board. `npm run marked-boards`
+(`scripts/find-marked-boards.mts`, a minute and a half) lays every marking on
+every board and writes to `src/markedBoards.json` those where it makes the
+very same tray as on its first board (`sameTray`: each tile the other's
+turned, marks and all, on whichever side it rests — a window can show a
+colouring's tiles in more ways or fewer: 94 of a thousand do) and measures no
+easier than that board plain (14 do): 899 boards past the first, 1639 levels
+in all. Run it after `npm run boards`, `colourings` or `levels`, then
+`npm run difficulty`; `tests/unit/difficulty.test.ts` builds every listed one
+and holds it to both, and `tests/unit/boards.test.ts` to its numbering.
+
 **Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
 player lays the board the level was cut from, always taking a tile it can
 snap down now that needs the fewest rotate/flip presses from how the tray is
@@ -345,7 +390,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 164 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 188 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, 740 boards in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 164 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 188 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1639 levels in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -408,10 +453,10 @@ dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
-Figures and a figure set's tilings, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
+a tiling's page — a board, its tiles, Play — Figures and a figure set's page, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
-its ✕) and every level and tiling page opening with no error
+its ✕) and every level — every marking on every board — and tiling page opening with no error
 (`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -456,6 +501,7 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
+npm run marked-boards # lay every matching rule and colouring on every board into src/markedBoards.json (a minute and a half)
 npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's, spiral's and rep-tile's colouring into src/aperiodicColourings.json (a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json
@@ -881,10 +927,12 @@ quick way to see the win state.
   level it alone tiles (V3.6.3.6), else as a rhombus, kite or dart, else by
   its sides.
 - `src/view/home.ts`, `src/view/catalog.ts`, `src/view/figures.ts`,
-  `src/view/settings.ts` — the first screen, Tilings (the catalog), Figures
-  and one figure set's tilings, and the settings; `src/view/icons.ts` the pictures
-  they share (board outline, tray tile, the three bars, a star row) and the
-  header's glyphs. The catalog shows only what a player starts with: the
+  `src/view/picker.ts`, `src/view/settings.ts` — the first screen, Tilings
+  (the catalog), Figures, a tiling's or figure set's page (a board, then its
+  tiles, then Play: its pictures drawn one a frame after the page is up, each
+  building its level), and the settings; `src/view/icons.ts` the pictures
+  they share (board outline, tray tile, a tray's tiles in a grid, the three
+  bars, a star row) and the header's glyphs. The catalog shows only what a player starts with: the
   board's outline, the tray's tiles, the vertex configuration as the name
   (`notation`: 4⁴, 3.4.6.4), and the best stars — never a picture of the
   tiling, which would give the puzzle away. The descriptive label is only a
