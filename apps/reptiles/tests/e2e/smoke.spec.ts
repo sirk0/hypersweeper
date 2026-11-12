@@ -507,6 +507,22 @@ test("a tiling's marked levels: on its own page in Tilings, and on its figure's 
   ]);
   await page.locator('#tiling-list [data-group="rules"] .card').first().click();
   await expect(page).toHaveURL(/\?level=runningbond\.lines$/);
+  // and a pentagonal tiling's: type 13's, its pentagons cut where a
+  // neighbour's corner meets a side, for the lines to run across
+  await page.goto("/?tilings");
+  const rice = page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^Type 13 \(Rice, 1977\)$/ }) });
+  await expect(rice.locator(".card-marked")).toHaveText(/^\+3 marked$/);
+  await rice.click();
+  await expect(page).toHaveURL(/\?tiling=pentagon13$/);
+  await expect(page.locator("#tiling-list .family h2")).toHaveText([
+    "Plain tiles",
+    "Matching rules",
+    "Colourings",
+  ]);
+  await page.locator('#tiling-list [data-group="colourings"] .card').first().click();
+  await expect(page).toHaveURL(/\?level=pentagon13\.2striped$/);
   // a tiling with none opens straight away: no painting of [3⁶; 3².4.3.4]
   // measures as hard as its plain board
   await page.goto("/?tilings");
