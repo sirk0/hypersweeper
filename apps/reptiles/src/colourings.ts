@@ -190,13 +190,23 @@ const cellKey = (ring: Ring, cell: Piece[]): string =>
  * each edge off the board's own inner edges, and off `context`'s, a bigger
  * patch of the same tiling in the same coordinates (where the board is too
  * small to show every tile's neighbours: the snub hexagonal's one hexagon). */
-function place(ring: Ring, cells: Piece[][], lattice: Lattice, context: Piece[][] = []): Placed {
-  const own = new Set(cells.map((c) => cellKey(ring, c)));
-  // the board's cells first, so each class's base is one of them
-  const all = [...cells, ...context.filter((c) => !own.has(cellKey(ring, c)))];
-  const sites = sitesOf(ring, all, lattice);
-  const atlas = atlasOf(ring, all, sites);
-  const types = Math.max(...sites.map((s) => s.type)) + 1;
+function place(
+  ring: Ring,
+  cells: Piece[][],
+  lattice: Lattice,
+  context: Piece[][] = [],
+  bases: Piece[][] = [],
+): Placed {
+  const own = new Set([...bases, ...cells].map((c) => cellKey(ring, c)));
+  // the board's cells first, so each class's base is one of them — or,
+  // given `bases` (another board of the tiling, in the same coordinates),
+  // those first, so the classes and the lattice's origin are that board's
+  // and a painting it was written down for paints this one alike
+  const all = [...bases, ...cells, ...context.filter((c) => !own.has(cellKey(ring, c)))];
+  const allSites = sitesOf(ring, all, lattice);
+  const sites = allSites.slice(bases.length, bases.length + cells.length);
+  const atlas = atlasOf(ring, all, allSites);
+  const types = Math.max(...allSites.map((s) => s.type)) + 1;
   const across = cells.map((cell, c) => {
     const s = sites[c]!;
     const m = cell[0]!.verts.length;
@@ -207,7 +217,7 @@ function place(ring: Ring, cells: Piece[][], lattice: Lattice, context: Piece[][
     });
   });
   const sizes: number[] = [];
-  all.forEach((cell, c) => (sizes[sites[c]!.type] ??= cell[0]!.verts.length));
+  all.forEach((cell, c) => (sizes[allSites[c]!.type] ??= cell[0]!.verts.length));
   return { cells, sites, across, types, atlas, sizes };
 }
 
@@ -576,8 +586,9 @@ export function paintingOf(
   lattice: Lattice,
   params: PaintingParams,
   context: Piece[][] = [],
+  bases: Piece[][] = [],
 ): Painting {
-  const placed = place(ring, cells, lattice, context);
+  const placed = place(ring, cells, lattice, context, bases);
   const count = params.lines ? 1 : params.alone !== undefined ? 2 : params.k;
   const made = paint(placed, colourOf(params), count, params, params.lines);
   const painting = made.find((p) => p.lines === params.lines);

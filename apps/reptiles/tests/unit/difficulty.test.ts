@@ -1,17 +1,29 @@
 import { describe, expect, it } from "vitest";
 import measured from "../../src/difficulty.json";
 import { band, bandOf, measure } from "../../src/difficulty";
-import { BOARDS, LEVELS, levelByKey } from "../../src/levels";
+import { BOARDS, LEVELS, levelByKey, sameTray } from "../../src/levels";
+
+const scores = measured as Record<string, { score: number }>;
 
 describe("difficulty", () => {
   it.each(BOARDS.map((b) => b.key))(
     "%s: src/difficulty.json is in step with the measure",
     (key) => {
-      const stored = (measured as Record<string, { score: number }>)[key];
+      const stored = scores[key];
       expect(stored, "run npm run difficulty").toBeDefined();
       // rounded as scripts/measure-difficulty.mts writes it: a score on a
       // half-thousandth (0.3025) is a float-noise miss for toBeCloseTo
-      expect(Number(measure(levelByKey(key)!).score.toFixed(3))).toBe(stored!.score);
+      const level = levelByKey(key)!;
+      expect(Number(measure(level).score.toFixed(3))).toBe(stored!.score);
+      // a marked level on a board past the first (src/markedBoards.json):
+      // the same tray as on its first board, and no easier than the board
+      // plain — what scripts/find-marked-boards.mts kept it for
+      if (level.decor && level.board > 1) {
+        expect(sameTray(levelByKey(level.base)!, level), "run npm run marked-boards").toBe(true);
+        expect(stored!.score).toBeGreaterThanOrEqual(
+          scores[`${level.decor.of}-${level.board}`]!.score,
+        );
+      }
     },
   );
 

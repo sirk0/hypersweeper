@@ -2,14 +2,17 @@
 // set — one figure by its sides (triangles, quadrilaterals, pentagons,
 // hexagons, 7+-gons), one figure of several pieces, regular pairs, irregular pairs (one irregular figure is
 // enough), then packs of three or more — a row each,
-// scrolling sideways as the catalog's families do; picking a set lists its
-// tilings, easiest first, under their difficulty.
+// scrolling sideways as the catalog's families do; picking a set opens its
+// page, where a board of any of its tilings and that tiling's tiles are
+// picked (view/picker.ts), the boards grouped under their tilings, easiest
+// first.
 
-import { BARS, bandOf, scoreOf, type Band } from "../difficulty";
+import { scoreOf } from "../difficulty";
 import { BUCKETS, type Bucket, type FigureSet } from "../figures";
 import type { Level } from "../levels";
-import { levelCard, renderMarked } from "./catalog";
-import { barsIcon, figureIcon } from "./icons";
+import type { Tally } from "./catalog";
+import { figureIcon } from "./icons";
+import { renderPicker } from "./picker";
 
 const ROWS: Record<Bucket, { name: string; hint: string }> = {
   triangles: { name: "Triangles", hint: "One three-sided tile throughout" },
@@ -23,18 +26,12 @@ const ROWS: Record<Bucket, { name: string; hint: string }> = {
   packs: { name: "Packs of 3+", hint: "Three shapes or more" },
 };
 
-const BANDS: { band: Band; name: string }[] = [
-  { band: "easy", name: "Easy" },
-  { band: "medium", name: "Medium" },
-  { band: "hard", name: "Hard" },
-];
-
 const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 export function renderFigures(
   host: HTMLElement,
   sets: FigureSet[],
-  stars: (key: string) => number,
+  tally: Tally,
   pick: (set: FigureSet) => void,
 ): void {
   host.replaceChildren();
@@ -51,7 +48,7 @@ export function renderFigures(
     hint.textContent = about;
     const row = document.createElement("div");
     row.className = "family-row";
-    for (const set of members) row.appendChild(figureCard(set, stars, pick));
+    for (const set of members) row.appendChild(figureCard(set, tally, pick));
     section.append(heading, hint, row);
     host.appendChild(section);
   }
@@ -59,7 +56,7 @@ export function renderFigures(
 
 function figureCard(
   set: FigureSet,
-  stars: (key: string) => number,
+  tally: Tally,
   pick: (set: FigureSet) => void,
 ): HTMLButtonElement {
   const button = document.createElement("button");
@@ -75,23 +72,28 @@ function figureCard(
   const count = document.createElement("span");
   count.className = "figure-count";
   count.textContent = plural(set.levels.length, "tiling");
-  const earned = set.levels.reduce((sum, l) => sum + stars(l.key), 0);
-  const tally = document.createElement("span");
-  tally.className = "figure-stars";
-  tally.textContent = `★ ${earned}/${set.levels.length * 3}`;
-  meta.append(count, tally);
+  const { levels, stars } = set.levels
+    .map(tally)
+    .reduce((a, b) => ({ levels: a.levels + b.levels, stars: a.stars + b.stars }));
+  const tallied = document.createElement("span");
+  tallied.className = "figure-stars";
+  tallied.textContent = `★ ${stars}/${levels * 3}`;
+  tallied.title = plural(levels, "level");
+  meta.append(count, tallied);
   button.append(figureIcon(set.levels[0]!), name, meta);
   button.addEventListener("click", () => pick(set));
   return button;
 }
 
-/** One set's tilings, easiest first, under Easy, Medium and Hard — then
- * their matching rules and colourings. */
+/** One set's page: its figures, then its tilings' boards, grouped under
+ * each tiling, easiest first, and the picked tiling's tiles (view/picker.ts). */
 export function renderFigure(
   host: HTMLElement,
   set: FigureSet,
   stars: (key: string) => number,
-  pick: (level: Level) => void,
+  play: (level: Level) => void,
+  initial: string | null,
+  remember: (key: string) => void,
 ): void {
   host.replaceChildren();
   const head = document.createElement("div");
@@ -102,23 +104,15 @@ export function renderFigure(
     set.figures.length === 1 ? "this tile" : `these ${set.figures.length} tiles`
   }`;
   head.append(figureIcon(set.levels[0]!), about);
-  host.appendChild(head);
-  const levels = [...set.levels].sort((a, b) => scoreOf(a.key) - scoreOf(b.key));
-  for (const { band, name } of BANDS) {
-    const members = levels.filter((l) => bandOf(l.key) === band);
-    if (members.length === 0) continue;
-    const section = document.createElement("section");
-    section.className = "family band-group";
-    section.dataset["band"] = band;
-    const heading = document.createElement("h2");
-    heading.className = "band-heading";
-    heading.append(barsIcon(BARS[band]), name);
-    const grid = document.createElement("div");
-    grid.className = "figure-grid";
-    for (const level of members) grid.appendChild(levelCard(level, stars(level.key), pick));
-    section.append(heading, grid);
-    host.appendChild(section);
-  }
-  // then the same tilings with marked tiles: matching rules, colourings
-  renderMarked(host, set.levels, stars, pick);
+  const body = document.createElement("div");
+  host.classList.add("picker");
+  host.append(head, body);
+  renderPicker(body, {
+    tilings: [...set.levels].sort((a, b) => scoreOf(a.key) - scoreOf(b.key)),
+    stars,
+    play,
+    initial,
+    remember,
+    hint: "Every board of every tiling with these tiles",
+  });
 }

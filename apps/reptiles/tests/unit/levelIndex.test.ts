@@ -29,7 +29,8 @@ describe("the level index", () => {
     const level = LEVELS.find((l) => l.key === "kisrhombille.3mixed")!;
     expect(level.name).toBe("V4.6.12 · 3 colours, mixed");
     expect(level.decor?.of).toBe("kisrhombille");
-    expect(level.boards).toBe(1);
+    // a marking is laid on its tiling's boards: numbered as the tiling's
+    expect(level.boards).toBe(6);
     // looking into it builds it, once: the same tiles each time
     expect(level.tiles).toBe(level.tiles);
     expect({ ...level }.cells).toBe(level.cells);

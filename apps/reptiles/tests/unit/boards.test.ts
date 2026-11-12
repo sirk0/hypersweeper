@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import data from "../../src/boards.json";
+import markedData from "../../src/markedBoards.json";
 import { congruenceKey } from "../../src/geometry/congruent";
 import { solidity } from "../../src/geometry/outline";
 import { posed, turnsOnto } from "../../src/geometry/shape";
@@ -11,7 +12,8 @@ import { BOARD_SOURCES, BOARDS, LEVELS, boardKeys, levelByKey, type Level } from
 // window that leaves boards.json behind fails here.
 
 const listed = data.boards as Record<string, unknown[]>;
-const many = LEVELS.filter((l) => l.boards > 1).map((l) => l.key);
+const markedListed = markedData.boards as Record<string, number[]>;
+const many = LEVELS.filter((l) => !l.decor && l.boards > 1).map((l) => l.key);
 const boardsOf = (base: string): Level[] => boardKeys(base).map((k) => levelByKey(k)!);
 
 describe("boards", () => {
@@ -22,13 +24,32 @@ describe("boards", () => {
 
   it("lists each tiling's boards in turn, first board first, numbered from 1", () => {
     expect(BOARDS.map((b) => b.key)).toEqual(LEVELS.flatMap((l) => boardKeys(l.key)));
-    for (const level of LEVELS) {
+    for (const level of LEVELS.filter((l) => !l.decor)) {
       boardsOf(level.key).forEach((board, i) => {
         expect(board.key).toBe(i === 0 ? level.key : `${level.key}-${i + 1}`);
         expect([board.base, board.board, board.boards]).toEqual([level.key, i + 1, level.boards]);
       });
     }
     expect(levelByKey("squares-2")).toBeUndefined();
+  });
+
+  it("numbers a marked level's boards as the plain boards they mark, first board first", () => {
+    for (const key of Object.keys(markedListed))
+      expect(LEVELS.find((l) => l.key === key)?.decor, key).toBeDefined();
+    for (const level of LEVELS.filter((l) => l.decor)) {
+      const plain = levelByKey(level.decor!.of)!;
+      expect(level.boards, level.key).toBe(plain.boards);
+      const numbers = BOARDS.filter((b) => b.base === level.key).map((b) => b.board);
+      expect(numbers[0]).toBe(1);
+      expect(numbers).toEqual([...numbers].sort((a, b) => a - b));
+      expect(new Set(numbers).size).toBe(numbers.length);
+      expect(Math.max(...numbers)).toBeLessThanOrEqual(plain.boards);
+      expect(boardKeys(level.key)).toEqual(
+        numbers.map((n) => (n === 1 ? level.key : `${level.key}-${n}`)),
+      );
+    }
+    // every board past the first is marked some way somewhere
+    expect(BOARDS.filter((b) => b.board > 1 && b.base.includes(".")).length).toBeGreaterThan(800);
   });
 
   it("builds a board past the first once, when it is asked for", () => {

@@ -50,7 +50,9 @@ test("a pick from home deals a level, and Tilings lists every family", async ({ 
   expect(errors).toEqual([]);
 });
 
-test("Figures lists the tile sets, and a set its tilings by difficulty", async ({ page }) => {
+test("Figures lists the tile sets, and a set its tilings' boards to pick from", async ({
+  page,
+}) => {
   const errors = watchErrors(page);
   await page.goto("/");
   await page.locator(".figures-pick").click();
@@ -70,18 +72,33 @@ test("Figures lists the tile sets, and a set its tilings by difficulty", async (
     "Triangle",
   );
   await page.locator('#figures-list [data-figure="squares"]').click();
-  await expect(page).toHaveURL(/\?figure=squares$/);
+  await expect(page).toHaveURL(/\?figure=squares&pick=/);
   await expect(page.locator("#figure-title")).toHaveText("Square");
-  await expect(page.locator("#figure-list .band-heading").first()).toContainText("Easy");
-  const card = page
-    .locator("#figure-list .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^4⁴$/ }) });
-  await expect(card.locator(".bars")).toHaveAttribute("aria-label", "easy");
-  await card.click();
+  // every board of both its tilings, under each tiling, easiest first
+  await expect(page.locator("#figure-list .pick-tiling")).toHaveText(["4⁴", "Offset square"]);
+  await expect(page.locator('#figure-list [data-board^="offsetsquare"]').first()).toBeVisible();
+  // 4⁴'s one board, plain: Play opens it
+  await page.locator('#figure-list [data-board="squares"]').click();
+  await expect(page.locator('#figure-list [data-board="squares"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator('#figure-list [data-marking="squares"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator("#figure-list .play .bars")).toHaveAttribute("aria-label", "easy");
+  await page.locator("#figure-list .play").click();
   await expect(page.locator("#game")).toBeVisible();
   await expect(page).toHaveURL(/\?level=squares$/);
+  // Back comes back to the same pick
   await page.goBack();
   await expect(page.locator("#figure")).toBeVisible();
+  await expect(page).toHaveURL(/\?figure=squares&pick=squares$/);
+  await expect(page.locator('#figure-list [data-board="squares"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   expect(errors).toEqual([]);
 });
 
@@ -169,13 +186,22 @@ test("a tiling's boards: the board button steps through them, round to the first
   await expect(page.locator("#board-of")).toHaveText(`board ${boards}/${boards}`);
   await page.locator("#board").click();
   await expect(page).toHaveURL(/level=rhombitrihex$/);
-  // Tilings lists the tiling once, with how many boards it has
+  // a marked level's boards are its tiling's, marked as it is
+  await page.goto("/?level=trihex.lines");
+  await expect(page.locator("#board-of")).toHaveText(/^board 1\/\d+$/);
+  await page.locator("#board").click();
+  await expect(page).toHaveURL(/level=trihex\.lines-2$/);
+  await expect(page.locator("#board-of")).toHaveText(/^board 2\/\d+$/);
+  await expect(page.locator("#level")).toHaveText("3.6.3.6 · lines");
+  // Tilings lists the tiling once, with how many levels it is: every board
+  // plain and marked
   await page.goto("/?tilings");
   const card = page
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^3\.4\.6\.4$/ }) });
   await expect(card).toHaveCount(1);
-  await expect(card.locator(".card-boards")).toHaveText(`${boards} boards`);
+  const levels = Number((await card.locator(".card-levels").textContent())!.split(" ")[0]);
+  expect(levels).toBeGreaterThan(boards);
   expect(errors).toEqual([]);
 });
 
@@ -435,122 +461,91 @@ test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows
   expect(errors).toEqual([]);
 });
 
-test("a tiling's marked levels: on its own page in Tilings, and on its figure's page", async ({
-  page,
-}) => {
+test("a tiling's page: its boards on top, its tiles under them, then Play", async ({ page }) => {
   const errors = watchErrors(page);
-  // Tilings has no section of its own for them: the hexagons' card opens a
-  // page of plain tiles, matching rules and colourings
+  // Tilings has no section of its own for matching rules and colourings:
+  // the hexagons' card opens a page of the tiling's boards and its tiles
   await page.goto("/?tilings");
   await expect(page.locator("#catalog .family h2", { hasText: "Colourings" })).toHaveCount(0);
   const hexagons = page
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^6³$/ }) });
-  await expect(hexagons.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
+  await expect(hexagons.locator(".card-levels")).toHaveText(/^\d+ levels$/);
   await hexagons.click();
-  await expect(page).toHaveURL(/\?tiling=hexagons$/);
+  await expect(page).toHaveURL(/\?tiling=hexagons&pick=hexagons$/);
   await expect(page.locator("#tiling .hud-title")).toHaveText("6³");
-  await expect(page.locator("#tiling-list .family h2")).toHaveText([
-    "Plain tiles",
-    "Matching rules",
-    "Colourings",
-  ]);
-  await page.locator('#tiling-list [data-group="colourings"] .card').first().click();
-  await expect(page).toHaveURL(/\?level=hexagons\./);
+  await expect(page.locator("#tiling-list .family h2")).toHaveText(["Boards", "Tiles"]);
+  // one board; plain tiles first and picked, then its rules and colourings,
+  // each card its tray drawn big — no outline
+  await expect(page.locator("#tiling-list .board-card")).toHaveCount(1);
+  const markings = page.locator("#tiling-list .marking-card");
+  await expect(markings.first()).toHaveAttribute("data-marking", "hexagons");
+  await expect(markings.first()).toHaveAttribute("aria-pressed", "true");
+  await expect(markings.first().locator(".marking-kind")).toHaveText("Plain");
+  await expect(markings.locator(".level-outline")).toHaveCount(0);
+  await expect(markings.first().locator(".tray-icon")).toBeVisible();
+  await page.locator('#tiling-list [data-marking="hexagons.3apart"]').click();
+  await expect(page.locator('#tiling-list [data-marking="hexagons.3apart"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator("#tiling-list .play-what")).toHaveText("3 colours, apart");
+  await page.locator("#tiling-list .play").click();
+  await expect(page).toHaveURL(/\?level=hexagons\.3apart$/);
   await page.goBack();
   await expect(page.locator("#tiling")).toBeVisible();
-  // so does a uniform tiling's: 3.6.3.6's
-  await page.goto("/?tilings");
-  const trihex = page
-    .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^3\.6\.3\.6$/ }) });
-  await expect(trihex.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
-  await trihex.click();
-  await expect(page).toHaveURL(/\?tiling=trihex$/);
-  // and a Laves tiling's: V4.8²'s
-  await page.goto("/?tilings");
-  const tetrakis = page
-    .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^V4\.8²$/ }) });
-  await expect(tetrakis.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
-  await tetrakis.click();
-  await expect(page).toHaveURL(/\?tiling=tetrakis$/);
-  // and a 2-uniform tiling's: [3⁶; 3⁴.6]₁'s
-  await page.goto("/?tilings");
-  const studded = page
-    .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^\[3⁶; 3⁴\.6\]₁$/ }) });
-  await expect(studded.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
-  await studded.click();
-  await expect(page).toHaveURL(/\?tiling=studdedtri$/);
-  // and a 2-isohedral tiling's: V[3⁶; 3⁴.6]₁'s
-  await page.goto("/?tilings");
-  const studdedDual = page
-    .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^V\[3⁶; 3⁴\.6\]₁$/ }) });
-  await expect(studdedDual.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
-  await studdedDual.click();
-  await expect(page).toHaveURL(/\?tiling=studdedtridual$/);
-  // and a congruent-rectangle bond's: the running bond's, its bricks cut at
-  // their middles for the lines to run across
-  await page.goto("/?tilings");
-  const running = page
-    .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^Running bond$/ }) });
-  await expect(running.locator(".card-marked")).toHaveText(/^\+\d+ marked$/);
-  await running.click();
-  await expect(page).toHaveURL(/\?tiling=runningbond$/);
-  await expect(page.locator("#tiling-list .family h2")).toHaveText([
-    "Plain tiles",
-    "Matching rules",
-    "Colourings",
-  ]);
-  await page.locator('#tiling-list [data-group="rules"] .card').first().click();
-  await expect(page).toHaveURL(/\?level=runningbond\.lines$/);
-  // and a pentagonal tiling's: type 13's, its pentagons cut where a
-  // neighbour's corner meets a side, for the lines to run across
-  await page.goto("/?tilings");
-  const rice = page
-    .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^Type 13 \(Rice, 1977\)$/ }) });
-  await expect(rice.locator(".card-marked")).toHaveText(/^\+3 marked$/);
-  await rice.click();
-  await expect(page).toHaveURL(/\?tiling=pentagon13$/);
-  await expect(page.locator("#tiling-list .family h2")).toHaveText([
-    "Plain tiles",
-    "Matching rules",
-    "Colourings",
-  ]);
-  await page.locator('#tiling-list [data-group="colourings"] .card').first().click();
-  await expect(page).toHaveURL(/\?level=pentagon13\.2striped$/);
-  // and an isogonal tiling's: the Pythagorean's two squares, the big one cut
-  // where a small one's corner meets its side
-  await page.goto("/?tilings");
-  const pythagorean = page
-    .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^Pythagorean$/ }) });
-  await expect(pythagorean.locator(".card-marked")).toHaveText(/^\+5 marked$/);
-  await pythagorean.click();
-  await expect(page).toHaveURL(/\?tiling=pythagorean$/);
-  await expect(page.locator("#tiling-list .family h2")).toHaveText([
-    "Plain tiles",
-    "Matching rules",
-    "Colourings",
-  ]);
-  await page.locator('#tiling-list [data-group="rules"] .card').first().click();
-  await expect(page).toHaveURL(/\?level=pythagorean\.lines$/);
-  // a tiling with none opens straight away: no painting of [3⁶; 3².4.3.4]
-  // measures as hard as its plain board
+  await expect(page.locator('#tiling-list [data-marking="hexagons.3apart"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // a board by a marking: the running bond's second board, lined
   await page.goto("/?tilings");
   await page
     .locator("#catalog .card")
-    .filter({ has: page.locator(".card-name", { hasText: /^\[3⁶; 3²\.4\.3\.4\]$/ }) })
+    .filter({ has: page.locator(".card-name", { hasText: /^Running bond$/ }) })
     .click();
-  await expect(page).toHaveURL(/\?level=trirhombitrihex$/);
-  // the triangle's page: its plain tilings by difficulty, then the marked ones
+  await expect(page).toHaveURL(/\?tiling=runningbond&pick=runningbond(-\d)?$/);
+  await expect(page.locator("#tiling-list .board-card")).toHaveCount(3);
+  await page.locator('#tiling-list [data-board="runningbond-2"]').click();
+  await page.locator('#tiling-list [data-marking="runningbond.lines"]').click();
+  await expect(page.locator("#tiling-list .play-what")).toHaveText("board 2 · lines");
+  await page.locator("#tiling-list .play").click();
+  await expect(page).toHaveURL(/\?level=runningbond\.lines-2$/);
+  await expect(page.locator("#board-of")).toHaveText("board 2/3");
+
+  // a marking not laid on the picked board is greyed out, and picking it
+  // picks a board it is: Ammann–Beenker's colouring is on its first only
+  await page.goto("/?tiling=ammannbeenker&pick=ammannbeenker-2");
+  const coloured = page.locator('#tiling-list [data-marking="ammannbeenker.3apart"]');
+  await expect(coloured).toHaveClass(/\boff\b/);
+  await coloured.click();
+  await expect(coloured).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('#tiling-list [data-board="ammannbeenker"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator('#tiling-list [data-board="ammannbeenker-2"]')).toHaveClass(/\boff\b/);
+  // …and a board it is not laid on picks the plain tiles with it
+  await page.locator('#tiling-list [data-board="ammannbeenker-2"]').click();
+  await expect(page.locator('#tiling-list [data-marking="ammannbeenker"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // a tiling of one level opens it straight away: the P-pentomino, one board
+  // and no marks a level can have
+  await page.goto("/?tilings");
+  await page
+    .locator("#catalog .card")
+    .filter({ has: page.locator(".card-name", { hasText: /^P-pentomino$/ }) })
+    .click();
+  await expect(page).toHaveURL(/\?level=ppentomino$/);
+  // the triangle's page: every board of its tilings, then the tiles of the
+  // tiling picked
   await page.goto("/?figure=triangles");
-  await expect(page.locator('#figure-list [data-group="rules"] .card').first()).toBeVisible();
-  await expect(page.locator('#figure-list [data-group="colourings"] .card').first()).toBeVisible();
+  await expect(page.locator("#figure-list .pick-tiling").first()).toBeVisible();
+  await expect(page.locator("#figure-list .marking-card").first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 

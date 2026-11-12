@@ -1028,10 +1028,10 @@ button:disabled {
   align-items: center;
 }
 
-/* How many boards a tiling has, where it has more than one; how many marked
-   levels (matching rules, colourings) it has, where any. */
-.card-boards,
-.card-marked {
+/* How many levels a tiling is — every board by every way its tiles are
+   marked — where more than one, and the stars earned of them. */
+.card-levels,
+.card-stars {
   color: var(--muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -1095,6 +1095,197 @@ button:disabled {
   flex-wrap: wrap;
   gap: 10px;
   padding: 2px 16px 10px;
+}
+
+/* -- picking a level: a tiling's or a figure set's page (view/picker.ts) ---- */
+
+/* The boards, as their outlines: one tiling's in a grid that fills the
+   width; several tilings' side by side, wrapping, each its name over its
+   boards — a tiling of one board takes one card's room, not a row. */
+.tiling-one,
+.tiling-groups {
+  padding: 2px 16px 8px;
+}
+
+.tiling-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+}
+
+.tiling-groups .board-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tiling-groups .board-card {
+  width: 78px;
+}
+
+.tiling-group {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A page to pick on: Play at the foot of the screen, under however little
+   there is to pick from, and pinned there over however much. */
+.picker {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.picker > .picker {
+  flex: 1 0 auto;
+}
+
+.picker > .pick-play {
+  margin-top: auto;
+}
+
+.board-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 4px 4px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.outline-slot {
+  display: block;
+  width: 100%;
+  max-width: 72px;
+  aspect-ratio: 1;
+}
+
+.outline-slot .level-outline {
+  width: 100%;
+  height: 100%;
+}
+
+.board-n {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.board-card .stars .star {
+  font-size: 0.7rem;
+}
+
+/* The pick: an accent ring and the selected wash. */
+.board-card[aria-pressed="true"],
+.marking-card[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--selected);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* A board the picked tiles are not laid on, or tiles not laid on the picked
+   board: still a tap away — picking one picks what goes with it. */
+.board-card.off,
+.marking-card.off {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+/* A figure set's tilings, each over its own boards. */
+.pick-tiling {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.pick-tiling .bars {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/* The tiling's tiles: plain, matching rules, colourings — one row, each
+   card its tray drawn big. */
+.marking-card {
+  width: 148px;
+}
+
+.tray-slot {
+  display: block;
+  width: 116px;
+  height: 116px;
+}
+
+.tray-slot .tray-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.marking-kind {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.marking-card .card-name {
+  min-height: 2.5em;
+  font-size: 0.9rem;
+}
+
+/* Play, pinned under the list: what the pick is, and how hard. */
+.pick-play {
+  position: sticky;
+  bottom: 0;
+  margin-top: 6px;
+  padding: 10px 16px 12px;
+  background: var(--page);
+  border-top: 1px solid var(--border);
+}
+
+.pick-play .play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  min-height: 48px;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.pick-play .bars {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.pick-play .bar {
+  stroke: currentColor;
+}
+
+.pick-play .bar.on {
+  fill: currentColor;
+}
+
+.play-what {
+  font-weight: 400;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* -- settings --------------------------------------------------------------- */
