@@ -1,5 +1,5 @@
 // List each regular tiling's lined and coloured levels, and choose each
-// uniform, 2-uniform, Laves and 2-isohedral tiling's, bond's and pentagonal tiling's (src/colouringChoice.ts), and write them to
+// uniform, 2-uniform, Laves and 2-isohedral tiling's, bond's, pentagonal and isogonal tiling's (src/colouringChoice.ts), and write them to
 // src/colourings.json, which the game builds from — searching every painting
 // takes from a second to minutes, far too long for a page load. Then choose
 // each aperiodic level's, spiral's and rep-tile's proper colouring (`chooseColouring` in
@@ -14,6 +14,7 @@ import { chooseColourings, regularColourings } from "../src/colouringChoice";
 import type { PaintingParams } from "../src/colourings";
 import {
   COLOURED,
+  ISOGONAL,
   LAVES,
   PATCH_MARKED,
   PENTAGONAL,
@@ -47,6 +48,7 @@ const tilings: [string, (plain: Level) => PaintingParams[]][] = [
     ...TWO_ISOHEDRAL_KEYED,
     ...RECTANGLES,
     ...PENTAGONAL,
+    ...ISOGONAL,
   ].map(([key, box]): [string, (plain: Level) => PaintingParams[]] => [
     key,
     (plain) => chooseColourings(plain, box),

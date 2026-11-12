@@ -728,6 +728,8 @@ describe("puzzle", () => {
       "penrose",
       "penrose.rules",
       "pythagorean",
+      "pythagorean.lines",
+      "pythagorean.lines2",
       "snubelongated2dual",
       "snubelongated2dual.lines",
       "snubelongated2dual.lines2",
@@ -741,6 +743,8 @@ describe("puzzle", () => {
       "squaretrihexdual.lines",
       "squaretrihexdual.lines2",
       "threescaletri",
+      "threescaletri.lines",
+      "threescaletri.lines2",
     ]);
   });
 

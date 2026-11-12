@@ -685,5 +685,46 @@
   "pentagon15": [
     { "k": 3, "a": 1, "b": 0, "c": [0, 1, 0, 0, 0, 2, 2, 2, 2, 1, 0, 0], "lines": true },
     { "k": 3, "a": 0, "b": 0, "c": [0, 1, 2, 0, 2, 1, 0, 0, 1, 2, 2, 1], "lines": false }
+  ],
+  "offsetsquare": [
+    { "k": 2, "a": 0, "b": 1, "c": [0], "lines": true },
+    { "k": 2, "a": 1, "b": 0, "c": [0], "lines": true },
+    { "k": 3, "a": 1, "b": 0, "c": [0], "lines": false, "alone": 0 },
+    { "k": 3, "a": 1, "b": 2, "c": [0], "lines": false, "alone": 0 },
+    { "k": 3, "a": 0, "b": 1, "c": [0], "lines": false, "alone": 0 }
+  ],
+  "staggeredtri": [
+    { "k": 2, "a": 0, "b": 1, "c": [0, 0], "lines": true },
+    { "k": 2, "a": 1, "b": 0, "c": [0, 0], "lines": true },
+    { "k": 3, "a": 0, "b": 1, "c": [0, 2], "lines": false, "alone": 0 },
+    { "k": 2, "a": 0, "b": 0, "c": [0, 1], "lines": false },
+    { "k": 3, "a": 0, "b": 1, "c": [0, 2], "lines": false }
+  ],
+  "pythagorean": [
+    { "k": 2, "a": 0, "b": 1, "c": [0, 0], "lines": true },
+    { "k": 2, "a": 1, "b": 0, "c": [0, 0], "lines": true },
+    { "k": 3, "a": 0, "b": 1, "c": [0, 2], "lines": false, "alone": 0 },
+    { "k": 3, "a": 1, "b": 0, "c": [0, 2], "lines": false, "alone": 0 },
+    { "k": 3, "a": 0, "b": 1, "c": [0, 0], "lines": false }
+  ],
+  "rotatedhex": [
+    { "k": 2, "a": 0, "b": 1, "c": [0, 0, 1], "lines": true },
+    { "k": 2, "a": 0, "b": 1, "c": [0, 1, 1], "lines": true },
+    { "k": 3, "a": 0, "b": 0, "c": [0, 2, 1], "lines": false, "alone": 0 },
+    { "k": 3, "a": 1, "b": 2, "c": [0, 1, 0], "lines": false, "alone": 0 },
+    { "k": 3, "a": 0, "b": 0, "c": [0, 2, 1], "lines": false }
+  ],
+  "rotatedtri": [
+    { "k": 2, "a": 0, "b": 1, "c": [0, 0, 0], "lines": true },
+    { "k": 2, "a": 0, "b": 1, "c": [0, 0, 1], "lines": true },
+    { "k": 3, "a": 0, "b": 0, "c": [0, 2, 1], "lines": false, "alone": 0 },
+    { "k": 3, "a": 0, "b": 0, "c": [0, 2, 1], "lines": false }
+  ],
+  "threescaletri": [
+    { "k": 2, "a": 0, "b": 1, "c": [0, 0, 0], "lines": true },
+    { "k": 2, "a": 0, "b": 1, "c": [0, 1, 0], "lines": true },
+    { "k": 3, "a": 0, "b": 0, "c": [0, 2, 1], "lines": false },
+    { "k": 3, "a": 0, "b": 1, "c": [0, 0, 0], "lines": false },
+    { "k": 3, "a": 0, "b": 1, "c": [0, 1, 0], "lines": false }
   ]
 }

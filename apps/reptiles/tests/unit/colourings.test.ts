@@ -39,6 +39,7 @@ import {
 } from "../../src/geometry/shape";
 import {
   COLOURED as COLOURED_LATTICES,
+  ISOGONAL,
   LAVES,
   LEVELS,
   PENTAGONAL,
@@ -162,7 +163,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones, the 2-isohedral ones, the congruent-rectangle bonds and the pentagonal tilings as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones, the 2-isohedral ones, the congruent-rectangle bonds, the pentagonal tilings and the isogonal ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -451,6 +452,35 @@ describe("colourings", () => {
       "pentagon13.2striped",
       "pentagon15.linkedpairs",
       "pentagon15.3mixed",
+      "offsetsquare.branchinglines",
+      "offsetsquare.lines",
+      "offsetsquare.2oneinthree",
+      "offsetsquare.2oneinthree2",
+      "offsetsquare.2oneinthree3",
+      "staggeredtri.branchinglines",
+      "staggeredtri.branchinglines2",
+      "staggeredtri.2oneinthree",
+      "staggeredtri.2apart",
+      "staggeredtri.3apart",
+      "pythagorean.lines",
+      "pythagorean.lines2",
+      "pythagorean.2oneinthree",
+      "pythagorean.2oneinthree2",
+      "pythagorean.3colours",
+      "rotatedhex.lines",
+      "rotatedhex.lines2",
+      "rotatedhex.2oneinthreebyshape",
+      "rotatedhex.2oneinthree",
+      "rotatedhex.3byshape",
+      "rotatedtri.lines",
+      "rotatedtri.lines2",
+      "rotatedtri.2oneinthreebyshape",
+      "rotatedtri.3byshape",
+      "threescaletri.lines",
+      "threescaletri.lines2",
+      "threescaletri.3byshape",
+      "threescaletri.3colours",
+      "threescaletri.3colours2",
       "penrose.rules",
       "kitedart.rules",
       "ammannbeenker.rules",
@@ -635,7 +665,7 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one, each 2-isohedral one, each bond and each pentagonal tiling", () => {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one, each 2-isohedral one, each bond and each pentagonal and isogonal tiling", () => {
     for (const [key] of [
       ...UNIFORM,
       ...TWO_UNIFORM,
@@ -643,13 +673,14 @@ describe("colourings", () => {
       ...TWO_ISOHEDRAL_KEYED,
       ...RECTANGLES,
       ...PENTAGONAL,
+      ...ISOGONAL,
     ]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
       expect(marked.filter((l) => !l.decor!.rules).length, key).toBeLessThanOrEqual(COLOURS_CAP);
-      // every uniform, Laves and pentagonal tiling and every bond has some; a
-      // 2-uniform or 2-isohedral
-      // one may have none as hard as its plain board
+      // every uniform, Laves, pentagonal and isogonal tiling and every bond
+      // has some; a 2-uniform or 2-isohedral one may have none as hard as its
+      // plain board
       if (![...TWO_UNIFORM, ...TWO_ISOHEDRAL_KEYED].some(([two]) => two === key))
         expect(marked.length, key).toBeGreaterThan(0);
     }
@@ -674,6 +705,7 @@ describe("colourings", () => {
       ...TWO_ISOHEDRAL_KEYED,
       ...RECTANGLES,
       ...PENTAGONAL,
+      ...ISOGONAL,
     ].filter(([key]) => !SLOW_CHOICE.includes(key)),
   )(
     "%s: src/colourings.json is in step with the choice (npm run colourings)",
@@ -696,34 +728,44 @@ describe("colourings", () => {
     30_000,
   );
 
-  it.each([...RECTANGLES, ...PENTAGONAL])(
-    "%s: painted on tiles cut alike, one tile, every piece of a side meeting one piece across",
+  it.each([...RECTANGLES, ...PENTAGONAL, ...ISOGONAL])(
+    "%s: painted on tiles cut alike, a kind each, every piece of a side meeting one piece across",
     (key, box) => {
       const plain = makeFirstBoard(key);
       const base = paintBase(plain);
       const { ring } = base;
-      // one tile, as the plain board's: the same real corners, cut alike all
-      // round — a brick into steps (the stacked bond, edge to edge, not at
-      // all), a pentagon where some copy's side is met part-way (twice on
-      // type 10's, once on the others')
-      expect(base.tiles).toHaveLength(1);
+      // as many tiles as the plain board's, the same real corners, each
+      // kind cut alike all round — a brick into steps (the stacked bond, edge
+      // to edge, not at all), a pentagon where some copy's side is met
+      // part-way (twice on type 10's, once on the others'), an isogonal
+      // tiling's polygons where a corner lands on them (the Pythagorean's
+      // small square, the rotated hexagonal's triangle, nowhere)
+      expect(base.tiles).toHaveLength(plain.tiles.length);
       expect(base.cells).toHaveLength(plain.cells.length);
-      const verts = base.cells.map((c) => c[0]!.verts.length);
-      expect(new Set(verts).size).toBe(1);
-      expect(verts[0]).toBe(
+      const corners = (piece: { verts: readonly unknown[] }): number => piece.verts.length;
+      expect(base.tiles.map((t) => corners(t.pieces[0]!)).sort((a, b) => a - b)).toEqual(
         (
           {
-            stackedbond: 4,
-            runningbond: 6,
-            basketweave: 6,
-            basketweave3: 8,
-            herringbone: 6,
-            pentagon10: 7,
-            pentagon13: 6,
-            pentagon15: 6,
-          } as Record<string, number>
+            stackedbond: [4],
+            runningbond: [6],
+            basketweave: [6],
+            basketweave3: [8],
+            herringbone: [6],
+            pentagon10: [7],
+            pentagon13: [6],
+            pentagon15: [6],
+            offsetsquare: [8],
+            staggeredtri: [6],
+            pythagorean: [4, 8],
+            rotatedhex: [3, 12],
+            rotatedtri: [6, 6],
+            threescaletri: [3, 6, 9],
+          } as Record<string, number[]>
         )[key],
       );
+      // every cell is its kind's tile, cut as it is
+      const kinds = new Set(base.tiles.map((t) => corners(t.pieces[0]!)));
+      for (const cell of base.cells) expect(kinds.has(corners(cell[0]!))).toBe(true);
       const real = (cell: Piece[]): string =>
         cell[0]!.verts
           .filter((_, i) => realCorners(ring, cell[0]!.verts)[i])
@@ -731,18 +773,18 @@ describe("colourings", () => {
           .sort()
           .join("|");
       expect(base.cells.map(real).sort()).toEqual(plain.cells.map(real).sort());
-      // no corner of the wider patch lies part-way along a window brick's
+      // no corner of the wider patch lies part-way along a window tile's
       // side: edge to edge, every piece of a side meeting one piece across,
       // as a painting needs
       const context = periodicContext(base, box);
-      const corners = new Map<string, Cyc>();
+      const points = new Map<string, Cyc>();
       for (const cell of context)
-        for (const { verts } of cell) for (const v of verts) corners.set(ring.key(v), v);
+        for (const { verts } of cell) for (const v of verts) points.set(ring.key(v), v);
       for (const cell of base.cells)
         for (const { verts } of cell)
           verts.forEach((a, i) => {
             const b = verts[(i + 1) % verts.length]!;
-            for (const p of corners.values()) expect(strictlyBetween(ring, a, b, p)).toBe(false);
+            for (const p of points.values()) expect(strictlyBetween(ring, a, b, p)).toBe(false);
           });
     },
   );
