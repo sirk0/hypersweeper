@@ -95,9 +95,13 @@ describe("puzzle", () => {
 
   // (but the Socolar–Taylor tile's: nineteen pieces tried at every one of its
   // board's five hundred corners, step after step, take a quarter of a
-  // minute — the board's own tiles filling it exactly, above, show it can be
-  // finished)
-  const searchable = BOARD_LEVELS.filter((l) => !l.socolarTaylor).map((l) => l.key);
+  // minute — and a marking's boards past its first, 899 of them, two or
+  // three seconds each on a 2-isohedral board in three colours: the search
+  // is the same on them as on the first board, and the board's own tiles
+  // filling it exactly, above, show each can be finished)
+  const searchable = BOARD_LEVELS.filter((l) => !l.socolarTaylor && !(l.decor && l.board > 1)).map(
+    (l) => l.key,
+  );
   it.each(searchable)("%s can be finished by search from empty", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     expect(p.solve()).toBe(true);
