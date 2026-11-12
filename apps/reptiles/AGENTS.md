@@ -98,9 +98,8 @@ some back off.
     grown again). Each tile is framed as its substitution lays it
     (`repTilePatch`, `piecePatchFrames`), so the rule is the finest every
     shared edge of the board keeps, from one class with a way (the chair)
-    to six (the right-angled fish). The P-pentomino's board asks nothing,
-    and the kissing triangles' rule measures easier than its plain board, so
-    neither has a rule level (`NO_PATCH_RULES`).
+    to six (the right-angled fish). The P-pentomino's board asks nothing, so
+    it has no rule level (`NO_PATCH_RULES`).
   - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
     colouring repeats more coarsely than the tiling — squares as a
     checkerboard, or in rows of three colours, or hexagons a third of them
@@ -158,8 +157,7 @@ some back off.
     and coloured just as the uniform ones are, one tray tile per colour and
     shape, at most two lined boards and three coloured each, named as the
     uniform ones are: "[3⁶; 3³.4²]₁ · lines". [3⁶; 3⁴.6]₂ has lined boards
-    only, and [3⁶; 3².4.3.4] none: no painting of it measures as hard as its
-    plain board. Most have a dozen or more translation classes, too many to
+    only, and [3⁶; 3².4.3.4] none: it has no balanced painting at all. Most have a dozen or more translation classes, too many to
     try every colouring (k to the power of the classes, past ten billion on
     [3⁶; 3².4.12]), so `paintings` sets the colouring a class at a time and
     drops a branch the moment it can keep nothing (`offsetsFor`, below).
@@ -169,15 +167,15 @@ some back off.
     boards are, one tile each: "V3.12² · linked pairs". On their kites,
     rhombi, pentagons and triangles a line between two edges is a curve
     leaving each edge's middle square on. The Cairo has lined boards only:
-    no colouring of its measures as hard as the plain board.
+    `paintedCandidates` keeps none of its colourings.
   - *The twenty 2-isohedral tilings* (`?level=elongated2dual.lines`,
     `?level=hexringsdual.3byshape`, `?level=studdedtridual.dots`) are lined
     and coloured just as the 2-uniform ones are, one tray tile per colour and
     shape, at most two lined boards and three coloured each, named as the
     uniform ones are: "V[3⁶; 3³.4²]₁ · lines". Every one has lined boards
     ([3⁶; 3⁴.6]₁'s dual dots only); V[3⁶; 3².4.12], V[3⁶; 3².6²],
-    V[3³.4²; 3².4.3.4]₂ and V[3.4.3.12; 3.12²] have no colouring as hard as
-    their plain board. Their lines between two edges are curves, as on the
+    V[3³.4²; 3².4.3.4]₂ and V[3.4.3.12; 3.12²] have no colouring that
+    `paintedCandidates` keeps. Their lines between two edges are curves, as on the
     Laves tiles.
   - *The five congruent-rectangle bonds* (`?level=runningbond.lines`,
     `?level=herringbone.branchinglines`, `?level=basketweave3.3mixed`) are
@@ -222,12 +220,12 @@ some back off.
     boards and two or three coloured, 29 in all, from 0.16 (the offset
     square's lines) to 1.55 (the three-scale triangular in three colours)
     measured.
-  No marked level measures easier than its plain board: the choice drops
-  any that would.
+  A marked level is measured as any other (Difficulty, below), with no
+  floor at its plain board's score: marks can make a board easier as well as
+  harder.
   A marked tile is held, where it can be, so that it fits none of the board's
   cells as the tray has it — the tray does not hand over the turn — so the
-  marks ask for turning a plain board never needs, and every marked level
-  measures at least as hard as its plain one (a test holds that). But tray
+  marks ask for turning a plain board never needs. But tray
   tiles of one outline, marked differently, all rest the same way round —
   the one that leaves fewest of them fitting as held — so a tray of one
   shape never shows it at two angles (Klaassen's heptagons, the rhombille's
@@ -362,35 +360,53 @@ board's `variant`. A colouring of an aperiodic window is chosen with the
 cells round that window, so it is not carried across; Ammann–Beenker's other
 windows colour with six to nine tray tiles at best, past `MAX_COLOURED_TRAY`,
 so its colouring stays on its first board. `npm run marked-boards`
-(`scripts/find-marked-boards.mts`, a minute and a half) lays every marking on
+(`scripts/find-marked-boards.mts`, half a minute) lays every marking on
 every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
-colouring's tiles in more ways or fewer: 94 of a thousand do) and measures no
-easier than that board plain (14 do): 899 boards past the first, 1639 levels
-in all. Run it after `npm run boards`, `colourings` or `levels`, then
-`npm run difficulty`; `tests/unit/difficulty.test.ts` builds every listed one
-and holds it to both, and `tests/unit/boards.test.ts` to its numbering.
+colouring's tiles in more ways or fewer: 94 of a thousand do): 913 boards
+past the first, 1654 levels in all. Run it after `npm run boards`,
+`colourings` or `levels`, then `npm run difficulty`;
+`tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
+and `tests/unit/boards.test.ts` to its numbering.
 
-**Difficulty** is measured, not assigned (`src/difficulty.ts`): a simulated
-player lays the board the level was cut from, always taking a tile it can
-snap down now that needs the fewest rotate/flip presses from how the tray is
-held (turning whichever way round is shorter), so it groups tiles by
-orientation as a person would. The score is its
-presses per tile, each weighted √(90°/step) — a 15° press counts 2.4, a 90°
-one 1 — plus flips, plus 0.15 per extra tile kind and tiles/200. Bands split
-at 0.45 and 1.0 (`MEDIUM`, `HARD`), set so that every flag-transitive level,
-4.8² and 3³.4² are easy and the Cairo pentagonal and V4.6.12 hard; the tests
-pin those anchors. Measuring all levels takes a second, so `npm run
-difficulty` writes `src/difficulty.json` and the game reads that; a test
-fails while it is out of step.
+**Difficulty** is measured, not assigned (`src/difficulty.ts`), by a
+simulated player laying the board the level was cut from, and it counts two
+things. **Turning:** the player always takes a tile it can snap down now that
+needs the fewest rotate/flip presses from how the tray is held (turning
+whichever way round is shorter), so it groups tiles by orientation as a person
+would; its presses per tile, each weighted √(90°/step) — a 15° press counts
+2.4, a 90° one 1 — plus flips. **Traps:** a person lays tiles where they fit
+the edge, and on a square board every tile that fits is right; on the
+Spectre's nearly two in three are not. So as the player lays the board, every
+open corner is looked at once, as it first opens, with every tile, every way,
+that fits there (`Puzzle.fitsAt`), and each fit not the board's own is *seen*
+(a corner it opens takes nothing at all), *fine* (the board's own tiles laid
+round it leave a hole that fills, within 40 tiles: six triangles where a
+hexagon was) or *hidden* — wrong, and looking as right as any
+(`measureTraps`). The score is the turning, plus 1.25 (`TRAPS`) times the
+share of fits that are wrong (seen or hidden), plus 0.15 per extra tile kind
+and tiles/200. Bands split at 0.85 and 1.45 (`MEDIUM`, `HARD`), set so that
+every flag-transitive level, 4.8² and 3³.4² are easy and the Cairo pentagonal,
+V4.6.12, the Spectre and the hat hard, and so that by their medians the
+periodic tilings measure easier than the spirals and the spirals than the
+aperiodic ones; the tests pin all of that. A marked level is measured the
+same way, its marks narrowing what fits; `chooseColourings` ranks
+candidates by the turning alone (`turningScore`), the traps too slow for
+thousands. Measuring a board's traps takes up to seconds (the hat's; the
+Socolar–Taylor tile's two and a half minutes), so `npm run difficulty`
+measures every board, one process per core — half an hour on four — and writes
+`src/difficulty.json`, which the game reads. `tests/unit/difficulty.test.ts`
+measures every board's turning again and checks its stored score against it,
+and the traps of a sample (`TRAPS_CHECKED`); it fails while the file is out
+of step.
 
 The ladder it is built for is every flat board Hypersweeper has: squares,
 triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 164 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and fifteen of the seventeen rep-tiles) and 188 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1639 levels in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 188 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1654 levels in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -501,10 +517,10 @@ npm run format       # Prettier (the root .prettierrc.json), in place; CI runs f
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
-npm run marked-boards # lay every matching rule and colouring on every board into src/markedBoards.json (a minute and a half)
+npm run marked-boards # lay every matching rule and colouring on every board into src/markedBoards.json (half a minute)
 npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's, spiral's and rep-tile's colouring into src/aperiodicColourings.json (a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
-npm run difficulty   # re-measure every board into src/difficulty.json
+npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core)
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
 

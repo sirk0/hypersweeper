@@ -296,7 +296,7 @@ describe("the rep-tiles' rules", () => {
     },
   );
 
-  it("marks every rep-tile but the P-pentomino, whose board asks nothing, and the kissing triangles", () => {
+  it("marks every rep-tile but the P-pentomino, whose board asks nothing", () => {
     for (const key of REP_TILES) {
       const rules = [...deriveRules(refine(patchFrames(key))).values()];
       const trivial = rules.every((r) => r.cls === 0 && r.toEnd === null);

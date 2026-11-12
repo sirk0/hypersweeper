@@ -7,7 +7,6 @@ import {
   regularColourings,
 } from "../../src/colouringChoice";
 import { latticeOf, traySignature } from "../../src/colourings";
-import { measure } from "../../src/difficulty";
 import { cyclotomic, strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
 import {
@@ -318,7 +317,7 @@ describe("colourings", () => {
       "rhombille.lines",
       "rhombille.2oneinthree",
       "rhombille.2oneinthree2",
-      "rhombille.3striped",
+      "rhombille.2oneinthree3",
       "triakis.lines",
       "triakis.linkedpairs",
       "triakis.2oneinthree",
@@ -398,8 +397,8 @@ describe("colourings", () => {
       "squarerows3dual.2oneinthreebyshape",
       "squarerows3dual.2oneinthreebyshape2",
       "squarerows3dual.2oneinthree",
-      "dissectedtrunchexdual.dots",
-      "dissectedtrunchexdual.dots2",
+      "dissectedtrunchexdual.lines",
+      "dissectedtrunchexdual.lines2",
       "dissectedtrunchexdual.2colours",
       "dissectedtrunchexdual.2oneinthree",
       "dissectedtrunchexdual.3byshape",
@@ -515,6 +514,7 @@ describe("colourings", () => {
       "fish60.rules",
       "kissingsquares.rules",
       "kissingsquares.3apart",
+      "kissingtriangles.rules",
       "kissingtriangles.3apart",
       "kissingchain.rules",
     ]);
@@ -818,13 +818,6 @@ describe("colourings", () => {
     expect(p.snap(tile.kind, c, 0.2, 0)).not.toBeNull();
     expect(p.snap(1 - tile.kind, c, 0.2, 0)).toBeNull();
     expect(first).toBeDefined();
-  });
-
-  it.each(COLOURED.map((l) => l.key))("%s is no easier than its plain board", (key) => {
-    const level = levelByKey(key)!;
-    expect(measure(level).score).toBeGreaterThanOrEqual(
-      measure(levelByKey(level.decor!.of)!).score - 1e-9,
-    );
   });
 
   it("leaves a colouring of one tile to the lined boards, and colours every regular board in two tiles", () => {

@@ -7,9 +7,9 @@ import { BARS, type Band } from "../difficulty";
 import { barsIcon } from "./icons";
 
 const BANDS: { band: Band; label: string; hint: string }[] = [
-  { band: "easy", label: "Easy", hint: "One tile laid over and over, hardly a turn" },
-  { band: "medium", label: "Medium", hint: "A few kinds, turning now and then" },
-  { band: "hard", label: "Hard", hint: "Turning — and flipping — all the way" },
+  { band: "easy", label: "Easy", hint: "Hardly a turn, and a tile that fits is right" },
+  { band: "medium", label: "Medium", hint: "Turning now and then, a wrong fit here and there" },
+  { band: "hard", label: "Hard", hint: "Turning all the way, or tiles that fit but are wrong" },
 ];
 
 export function renderHome(

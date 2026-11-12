@@ -332,7 +332,7 @@ jobs:
     # packaged bundle the desktop shell stages — built with VITE_PACKAGED=1 and
     # checked to reference nothing remote. Runs on every change. Rep-tiles'
     # unit tests alone take seven to nine minutes on a runner (they build and
-    # measure every level — every marking on every board, 1639 — and choose
+    # measure every level — every marking on every board, 1654 — and choose
     # the colourings again), so ten was too tight.
     name: game-checks (${{ matrix.game }})
     needs: games

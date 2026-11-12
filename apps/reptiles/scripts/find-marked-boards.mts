@@ -2,16 +2,14 @@
 // tiling's first board — on every other board of its tiling (`markedOn`),
 // and write the boards it is kept on to src/markedBoards.json: those where
 // its marks make the very same tray as on the first board (`sameTray` — a
-// window can show a colouring's tiles in more or fewer ways), measuring no
-// easier than that board plain, as no marked level may. A level is a board
+// window can show a colouring's tiles in more or fewer ways). A level is a board
 // by a marking, so a tiling of six boards and five markings is thirty-six
 // levels. `npm run marked-boards` after `npm run boards`, `npm run
 // colourings` or `npm run levels`, then `npm run difficulty`; the unit
-// tests fail while the file is out of step. A minute and a half.
+// tests fail while the file is out of step. A minute.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format, resolveConfig } from "prettier";
-import { measure } from "../src/difficulty";
 import { LEVELS, levelByKey, markedOn, sameTray } from "../src/levels";
 
 const started = performance.now();
@@ -39,11 +37,7 @@ function keep(first: ReturnType<typeof levelByKey> & object, n: number): string 
   } catch (e) {
     return (e as Error).message;
   }
-  if (!sameTray(first, level)) return "another tray";
-  const plain = measure(levelByKey(`${first.decor!.of}-${n}`)!).score;
-  const score = measure(level).score;
-  if (score < plain - 1e-9) return `easier than plain (${score.toFixed(2)} < ${plain.toFixed(2)})`;
-  return null;
+  return sameTray(first, level) ? null : "another tray";
 }
 
 const path = fileURLToPath(new URL("../src/markedBoards.json", import.meta.url));

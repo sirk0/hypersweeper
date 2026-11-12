@@ -1963,11 +1963,16 @@
     "painting": 2
   },
   {
-    "key": "rhombille.3striped",
-    "label": "Rhombille, 3 colours, striped",
-    "name": "V3.6.3.6 · 3 colours, striped",
+    "key": "rhombille.2oneinthree3",
+    "label": "Rhombille, 2 colours, one in three III",
+    "name": "V3.6.3.6 · 2 colours, one in three III",
     "group": "colourings",
-    "decor": { "of": "rhombille", "colours": 3, "rules": false, "label": "3 colours, striped" },
+    "decor": {
+      "of": "rhombille",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three III"
+    },
     "painting": 3
   },
   {
@@ -2758,19 +2763,19 @@
     "painting": 4
   },
   {
-    "key": "dissectedtrunchexdual.dots",
-    "label": "Dissected truncated hexagonal dual, dots",
-    "name": "V[3².4.3.4; 3.4.6.4] · dots",
+    "key": "dissectedtrunchexdual.lines",
+    "label": "Dissected truncated hexagonal dual, lines",
+    "name": "V[3².4.3.4; 3.4.6.4] · lines",
     "group": "rules",
-    "decor": { "of": "dissectedtrunchexdual", "colours": 1, "rules": true, "label": "dots" },
+    "decor": { "of": "dissectedtrunchexdual", "colours": 1, "rules": true, "label": "lines" },
     "painting": 0
   },
   {
-    "key": "dissectedtrunchexdual.dots2",
-    "label": "Dissected truncated hexagonal dual, dots II",
-    "name": "V[3².4.3.4; 3.4.6.4] · dots II",
+    "key": "dissectedtrunchexdual.lines2",
+    "label": "Dissected truncated hexagonal dual, lines II",
+    "name": "V[3².4.3.4; 3.4.6.4] · lines II",
     "group": "rules",
-    "decor": { "of": "dissectedtrunchexdual", "colours": 1, "rules": true, "label": "dots II" },
+    "decor": { "of": "dissectedtrunchexdual", "colours": 1, "rules": true, "label": "lines II" },
     "painting": 1
   },
   {
@@ -3808,6 +3813,13 @@
     "name": "Kissing squares · 3 colours, apart",
     "group": "colourings",
     "decor": { "of": "kissingsquares", "colours": 3, "rules": false, "label": "3 colours, apart" }
+  },
+  {
+    "key": "kissingtriangles.rules",
+    "label": "Kissing triangles, matching rules",
+    "name": "Kissing triangles · matching rules",
+    "group": "rules",
+    "decor": { "of": "kissingtriangles", "colours": 1, "rules": true, "label": "matching rules" }
   },
   {
     "key": "kissingtriangles.3apart",
