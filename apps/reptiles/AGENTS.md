@@ -271,7 +271,9 @@ some back off.
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
 `public/fonts`). Home (no query): the title on top; Easy, Medium and Hard,
 the main buttons, in the middle, each dealing a random level of that
-difficulty; Tilings and Figures at the foot, side by side at half width.
+difficulty; Tilings and Figures at the foot — all five full-width rows, one under
+another; the difficulties in the accent fill, Tilings and Figures in the
+light one.
 Tilings opens the catalog (`?tilings`; old
 `?catalog` links still work): each family a row of tiling cards scrolling
 sideways — first board's outline, tiles, name, difficulty as Hypersweeper's

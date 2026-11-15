@@ -36,7 +36,7 @@ export function renderHome(
     button.title = hint;
     bands.appendChild(button);
   }
-  // …and Tilings and Figures, side by side at half width, at the foot
+  // …and Tilings and Figures under them, at the foot
   const more = document.createElement("div");
   more.className = "home-more";
   const grid = document.createElement("span");
