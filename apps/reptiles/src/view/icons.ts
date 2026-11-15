@@ -218,7 +218,8 @@ export function starRow(earned: number): HTMLSpanElement {
 const STROKE = `stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
 
 /** The header's and home screen's glyphs, on a 24-unit square: home, restart,
- * a die for a new random level and the settings gear (both Hypersweeper's). */
+ * a light bulb for the hint, a die for a new random level and the settings
+ * gear (both Hypersweeper's). */
 export const GLYPHS: Record<string, string> = {
   back: `<path d="M14.6 5.4 L8 12 L14.6 18.6" ${STROKE}/>`,
   home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
@@ -226,6 +227,9 @@ export const GLYPHS: Record<string, string> = {
     <path d="M10.2 19.6 V14.4 H13.8 V19.6" ${STROKE}/>`,
   restart: `<path d="M4.5 12 A7.5 7.5 0 1 0 12 4.5" ${STROKE}/>
     <path d="M15.1 1.4 L11.4 4.5 L15.1 7.6" ${STROKE}/>`,
+  hint: `<path d="M9.2 17.2 V15.6 C9.2 14.2 8.4 13.4 7.5 12.4 A6 6 0 1 1 16.5 12.4 C15.6 13.4 14.8 14.2 14.8 15.6 V17.2 Z" ${STROKE}/>
+    <path d="M9.6 20.4 H14.4" ${STROKE}/>
+    <path d="M12 13.6 V11.4 M10.4 10.2 L12 11.4 L13.6 10.2" ${STROKE}/>`,
   random: `<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="4.4" stroke="currentColor"
       stroke-width="1.8" fill="none"/>
     <circle cx="8.3" cy="8.3" r="1.55" fill="currentColor"/>

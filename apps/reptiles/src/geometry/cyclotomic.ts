@@ -43,6 +43,10 @@ export interface Ring {
   /** A string naming the point exactly, for Map/Set keys. */
   key(a: Cyc): string;
   toXY(a: Cyc): [number, number];
+  /** What `toXY` sums: ζ^j drawn, for each j < dim (already divided by
+   * `unit`) — for the predicates' float filter, which reads it without
+   * building arrays. */
+  readonly basis: readonly (readonly [number, number])[];
 }
 
 type Poly = number[]; // integer coefficients, lowest degree first
@@ -147,6 +151,7 @@ export function cyclotomic(n: number, unit = 1): Ring {
     eq,
     isZero: (a) => a.every((x) => x === 0),
     key: (a) => a.join(","),
+    basis: basisXY,
     toXY: (a) => {
       let x = 0;
       let y = 0;
@@ -175,8 +180,118 @@ function conjMul(ring: Ring, a: Cyc, b: Cyc): Cyc {
   return ring.mul(ring.conj(a), b);
 }
 
+/**
+ * The float filter in front of the exact signs: a product read in floats
+ * whose size is far past what rounding could make of zero is that sign — the
+ * float decides only a case no tie is near, so the answer is the exact one,
+ * in every browser. Rounding in `toXY` is at most a few ulps of the sum of
+ * the coefficients' sizes (`weight`), so a product of two vectors is wrong by
+ * at most a few ulps of their weights' product; FILTER is a million times
+ * that. Anything nearer zero is worked out exactly. (The exact way multiplies
+ * in the ring, φ(n)² products — the hint's search spends most of its time
+ * here without the filter.)
+ */
+const FILTER = 1e-9;
+
+/** A point drawn, and its weight (the sum of its coefficients' sizes, over
+ * `unit`): the size rounding in `toXY` is measured against. Written into
+ * `out` as [x, y, weight], so the filter builds no arrays. */
+function drawn(ring: Ring, a: Cyc, out: Float64Array, at: number): void {
+  const { basis, dim } = ring;
+  let x = 0;
+  let y = 0;
+  let w = 0;
+  for (let j = 0; j < dim; j++) {
+    const c = a[j]!;
+    if (c === 0) continue;
+    const b = basis[j]!;
+    x += c * b[0];
+    y += c * b[1];
+    w += Math.abs(c);
+  }
+  out[at] = x;
+  out[at + 1] = y;
+  out[at + 2] = w / ring.unit;
+}
+
+const SCRATCH = new Float64Array(9);
+
+/** Per ring order n: for each k in 1..n/2 prime to n — one of each pair of
+ * the field's embeddings ζ ↦ e^{±2πik/n} — the powers e^{2πikj/n}, j < φ(n),
+ * as cos and sin. */
+const EMBEDDINGS = new Map<number, { cos: Float64Array; sin: Float64Array }[]>();
+
+function embeddings(n: number, dim: number): { cos: Float64Array; sin: Float64Array }[] {
+  let out = EMBEDDINGS.get(n);
+  if (out) return out;
+  const gcd = (x: number, y: number): number => (y === 0 ? x : gcd(y, x % y));
+  out = [];
+  for (let k = 1; 2 * k <= n; k++) {
+    if (gcd(k, n) !== 1) continue;
+    const cos = new Float64Array(dim);
+    const sin = new Float64Array(dim);
+    for (let j = 0; j < dim; j++) {
+      const t = (2 * Math.PI * ((k * j) % n)) / n;
+      cos[j] = Math.cos(t);
+      sin[j] = Math.sin(t);
+    }
+    out.push({ cos, sin });
+  }
+  EMBEDDINGS.set(n, out);
+  return out;
+}
+
+/**
+ * Whether Im(conj(a)·b) — or, `real`, Re(conj(a)·b) — is exactly zero, as far
+ * as floats can prove it. The value is an algebraic integer of the ring (its
+ * coefficients are whole), so unless it is zero its norm, the product of its
+ * images under every embedding of the field, is at least 1 in size. Each
+ * image is read in floats, a bound on its rounding added (far past a few
+ * ulps of the coefficients' sizes), and if even that product falls below 1
+ * the value is zero. True means zero for certain; false means not proved
+ * here (the exact way decides).
+ */
+function provedZero(ring: Ring, a: Cyc, b: Cyc, real: boolean): boolean {
+  const { n, dim } = ring;
+  if (n <= 2) return false;
+  let wa = 0;
+  let wb = 0;
+  for (let j = 0; j < dim; j++) {
+    wa += Math.abs(a[j]!);
+    wb += Math.abs(b[j]!);
+  }
+  const slack = 1e-10 * (wa + 1) * (wb + 1);
+  let bound = 1;
+  for (const { cos, sin } of embeddings(n, dim)) {
+    let ar = 0;
+    let ai = 0;
+    let br = 0;
+    let bi = 0;
+    for (let j = 0; j < dim; j++) {
+      ar += a[j]! * cos[j]!;
+      ai += a[j]! * sin[j]!;
+      br += b[j]! * cos[j]!;
+      bi += b[j]! * sin[j]!;
+    }
+    // conj(A)·B = (ar·br + ai·bi) + i(ar·bi − ai·br); its twice-real or
+    // twice-imaginary part is this image (the image under the conjugate
+    // embedding has the same size)
+    const part = real ? ar * br + ai * bi : ar * bi - ai * br;
+    const size = 2 * (Math.abs(part) + slack);
+    bound *= size * size;
+    if (bound >= 1) return false;
+  }
+  return true;
+}
+
 /** Sign of the cross product a × b: +1 if b is counter-clockwise of a. */
 export function crossSign(ring: Ring, a: Cyc, b: Cyc): -1 | 0 | 1 {
+  const s = SCRATCH;
+  drawn(ring, a, s, 0);
+  drawn(ring, b, s, 3);
+  const cross = s[0]! * s[4]! - s[1]! * s[3]!;
+  if (Math.abs(cross) > FILTER * s[2]! * s[5]!) return cross > 0 ? 1 : -1;
+  if (provedZero(ring, a, b, false)) return 0;
   const w = conjMul(ring, a, b);
   // 2i·Im(w) = w − conj(w); its imaginary part has the sign of Im(w).
   const twiceImag = ring.sub(w, ring.conj(w));
@@ -186,12 +301,25 @@ export function crossSign(ring: Ring, a: Cyc, b: Cyc): -1 | 0 | 1 {
 
 /** Sign of the dot product a · b. */
 export function dotSign(ring: Ring, a: Cyc, b: Cyc): -1 | 0 | 1 {
+  const s = SCRATCH;
+  drawn(ring, a, s, 0);
+  drawn(ring, b, s, 3);
+  const dot = s[0]! * s[3]! + s[1]! * s[4]!;
+  if (Math.abs(dot) > FILTER * s[2]! * s[5]!) return dot > 0 ? 1 : -1;
+  if (provedZero(ring, a, b, true)) return 0;
   const w = conjMul(ring, a, b);
   return signOf(ring, ring.add(w, ring.conj(w)));
 }
 
 /** Orientation of the turn a → b → c: +1 left, −1 right, 0 collinear. */
 export function orient(ring: Ring, a: Cyc, b: Cyc, c: Cyc): -1 | 0 | 1 {
+  // the float filter first, before b − a and c − a are built in the ring
+  const s = SCRATCH;
+  drawn(ring, a, s, 0);
+  drawn(ring, b, s, 3);
+  drawn(ring, c, s, 6);
+  const cross = (s[3]! - s[0]!) * (s[7]! - s[1]!) - (s[4]! - s[1]!) * (s[6]! - s[0]!);
+  if (Math.abs(cross) > FILTER * (s[2]! + s[5]!) * (s[2]! + s[8]!)) return cross > 0 ? 1 : -1;
   return crossSign(ring, ring.sub(b, a), ring.sub(c, a));
 }
 

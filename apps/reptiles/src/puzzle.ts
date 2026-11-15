@@ -134,14 +134,14 @@ export class Puzzle {
     return this.tiles.filter((t) => t.kind === kind).length;
   }
 
-  /** The stars a finished board earns, `seconds` after the first tile went
-   * down: one for finishing at all, two for doing it with no more tiles than
-   * the board was cut from, three for that within the level's time limit. */
-  stars(seconds: number): 0 | 1 | 2 | 3 {
+  /** The stars a finished board earns: one for finishing at all, two for
+   * doing it with no more tiles than the board was cut from, three for that
+   * with no hint (`hinted`: one was shown). */
+  stars(hinted: boolean): 0 | 1 | 2 | 3 {
     if (!this.won) return 0;
     const need = this.level.need.reduce((a, b) => a + b, 0);
     if (this.tiles.length > need) return 1;
-    return seconds <= this.level.seconds ? 3 : 2;
+    return hinted ? 2 : 3;
   }
 
   /**

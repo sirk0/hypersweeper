@@ -317,6 +317,45 @@ export class Frontier {
     return this.edges.length === 0;
   }
 
+  /**
+   * The uncovered area in its separate parts, each a frontier of its own —
+   * edges joined through a shared point are one part (two parts that touch
+   * at a point stay one). A part whose loops wind clockwise in all (the rim
+   * of a covered island, its open ground outside) belongs to the part round
+   * it, which a shared point cannot tell; so where any part does, the area is
+   * left whole, one part. Floats only read the sign of an area at least a
+   * tile's.
+   */
+  parts(): Frontier[] {
+    const up = new Map<string, string>();
+    const find = (k: string): string => {
+      let r = k;
+      while (up.get(r) !== r) r = up.get(r)!;
+      for (let c = k; c !== r;) {
+        const next = up.get(c)!;
+        up.set(c, r);
+        c = next;
+      }
+      return r;
+    };
+    for (const e of this.edges) {
+      if (!up.has(e.ak)) up.set(e.ak, e.ak);
+      if (!up.has(e.bk)) up.set(e.bk, e.bk);
+      up.set(find(e.ak), find(e.bk));
+    }
+    const groups = new Map<string, Edge[]>();
+    for (const e of this.edges) {
+      const r = find(e.ak);
+      (groups.get(r) ?? groups.set(r, []).get(r)!).push(e);
+    }
+    if (groups.size < 2) return [this];
+    const area = (edges: readonly Edge[]): number =>
+      edges.reduce((sum, e) => sum + e.axy[0] * e.bxy[1] - e.bxy[0] * e.axy[1], 0) / 2;
+    const parts = [...groups.values()];
+    if (parts.some((edges) => area(edges) <= 1e-6)) return [this];
+    return parts.map((edges) => new Frontier(this.ring, edges));
+  }
+
   private cornerCache: Map<string, Cyc> | null = null;
 
   /** The edges by height: a band of the frontier's y range per bucket, each

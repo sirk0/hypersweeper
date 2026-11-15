@@ -945,17 +945,17 @@ describe("puzzle", () => {
     expect(rhombi.need.reduce((a, b) => a + b)).toBe(rhombi.cells.length);
   });
 
-  it("gives one star for finishing, two for the tiles needed, three in time", () => {
+  it("gives one star for finishing, two for the tiles needed, three with no hint", () => {
     const p = new Puzzle(levelByKey("trihex")!);
     const kindOf = (sides: number): number =>
       p.level.tiles.findIndex((t) => poly(t.pieces).length === sides);
     for (const cell of p.level.cells) p.place(kindOf(poly(cell).length), cell, 0);
-    expect(p.stars(p.level.seconds)).toBe(3);
-    expect(p.stars(p.level.seconds + 1)).toBe(2);
+    expect(p.stars(false)).toBe(3);
+    expect(p.stars(true)).toBe(2);
     // one tile short of finished: nothing yet (the one-star case, more tiles
     // than needed, is in the six-triangles test below)
     p.lift(p.tiles[0]!.id);
-    expect(p.stars(0)).toBe(0);
+    expect(p.stars(false)).toBe(0);
   });
 
   /** A finished trihexagonal board with its innermost hexagon lifted out. */
@@ -993,8 +993,8 @@ describe("puzzle", () => {
     }
     expect(p.won).toBe(true);
     expect(p.tiles.length).toBe(p.level.cells.length + 5);
-    // finished, but with more tiles than needed: one star, however fast
-    expect(p.stars(0)).toBe(1);
+    // finished, but with more tiles than needed: one star, hint or none
+    expect(p.stars(false)).toBe(1);
   });
 
   it("can hold a level to a vertex rule: then no six triangles in a hexagon's place", () => {

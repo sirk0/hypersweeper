@@ -2,6 +2,8 @@ import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
 import { attachDrag, type DragControl } from "./input/drag";
 import { figureSetByKey, figureSets, type FigureSet } from "./figures";
+import type { Laid } from "./hint";
+import { Hinter } from "./hintClient";
 import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
@@ -20,6 +22,12 @@ const count = byId("count");
 const clock = byId("clock");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
+const hintButton = byId<HTMLButtonElement>("hint");
+const thinking = byId("thinking");
+
+/** Works out the hint for the board in play, in the background after every
+ * move (hint.worker.ts), so a press of the hint button often finds it ready. */
+const hinter = new Hinter();
 
 /** Every level of the tiling `plain` is the first board of — each of its
  * boards plain, then marked each way it is (`markedOf`) — and the stars
@@ -175,6 +183,11 @@ interface Session {
   /** The win card was closed (Exit): it stays shut while the board stays
    * finished. */
   dismissed: boolean;
+  /** A hint has been shown on this board: no third star. */
+  hinted: boolean;
+  /** The tiles down when the hint was last asked for, by id — a hint on show
+   * goes once they change. */
+  laidKey: string;
 }
 
 let session: Session | null = null;
@@ -188,17 +201,29 @@ const clockText = (seconds: number): string =>
   `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 
 function tick(s: Session): void {
-  const t = elapsed(s);
-  byId("clock-time").textContent = clockText(t);
-  byId("clock-limit").textContent = `/ ${clockText(s.puzzle.level.seconds)}`;
-  clock.classList.toggle("over", t > s.puzzle.level.seconds);
+  clock.textContent = clockText(elapsed(s));
 }
+
+const laidOf = (s: Session): Laid[] =>
+  s.puzzle.tiles.map(({ id, kind, pieces }) => ({ id, kind, pieces }));
 
 function changed(): void {
   const s = session;
   if (!s) return;
   const { puzzle } = s;
   if (s.started === null && puzzle.tiles.length > 0) s.started = performance.now();
+  // A tile laid or taken off: any hint on show is out of date, and the new
+  // board's is worked out in the background.
+  const laidKey = puzzle.tiles.map((t) => t.id).join(",");
+  if (laidKey !== s.laidKey) {
+    s.laidKey = laidKey;
+    if (s.board.hint) {
+      s.board.hint = null;
+      s.board.draw();
+    }
+    if (!puzzle.won) hinter.update(puzzle.level, laidOf(s));
+  }
+  hintButton.disabled = puzzle.won;
   count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
   if (!puzzle.won) s.dismissed = false;
   won.hidden = !puzzle.won || s.dismissed;
@@ -210,7 +235,7 @@ function changed(): void {
   tick(s);
   s.control.setRemoving(false);
   const seconds = elapsed(s);
-  const stars = puzzle.stars(seconds);
+  const stars = puzzle.stars(s.hinted);
   const need = puzzle.level.need.reduce((a, b) => a + b, 0);
   const stars3 = byId("won-stars");
   stars3.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
@@ -222,10 +247,11 @@ function changed(): void {
       ? `★ ${used} tiles — no more than the ${need} needed.`
       : `☆ ${used} tiles — ${need} would do.`,
     stars === 3
-      ? `★ ${clockText(seconds)} — inside ${clockText(puzzle.level.seconds)}.`
-      : used <= need
-        ? `☆ ${clockText(seconds)} — over ${clockText(puzzle.level.seconds)}.`
-        : `☆ Time counts once the tiles are no more than needed.`,
+      ? "★ No hints."
+      : s.hinted
+        ? "☆ A hint was used."
+        : "☆ No hints — that counts once the tiles are no more than needed.",
+    `Time: ${clockText(seconds)}`,
   ];
   byId("won-detail").replaceChildren(
     ...lines.map((line) => {
@@ -251,7 +277,11 @@ function open(level: Level, push = true): void {
     started: null,
     finished: null,
     dismissed: false,
+    hinted: false,
+    // not the empty board's, so `changed` starts on its hint
+    laidKey: "-",
   };
+  setThinking(false);
   const name = byId("level");
   name.textContent = level.name;
   name.title = level.label;
@@ -265,6 +295,28 @@ function restart(): void {
   if (session) open(session.puzzle.level, false);
 }
 
+function setThinking(on: boolean): void {
+  hintButton.classList.toggle("thinking", on);
+  hintButton.setAttribute("aria-busy", String(on));
+  thinking.hidden = !on;
+}
+
+/** Show the hint for the board as it stands: worked out already, often, in
+ * the background; else "thinking" until it is. Exact however long it takes —
+ * and, once shown, no third star on this board. */
+async function showHint(): Promise<void> {
+  const s = session;
+  if (!s || s.puzzle.won || hintButton.classList.contains("thinking")) return;
+  if (!hinter.ready) setThinking(true);
+  const hint = await hinter.hint();
+  if (session !== s) return;
+  setThinking(false);
+  if (!hint || s.puzzle.won) return;
+  s.hinted = true;
+  s.board.hint = hint;
+  s.board.draw();
+}
+
 /** Close the win card and look at the finished board. */
 function dismiss(): void {
   if (session) session.dismissed = true;
@@ -272,6 +324,7 @@ function dismiss(): void {
 }
 
 byId("restart").addEventListener("click", restart);
+hintButton.addEventListener("click", () => void showHint());
 document
   .querySelector("#home [data-action=settings]")
   ?.addEventListener("click", () => goSettings());
@@ -310,6 +363,7 @@ document.addEventListener("keydown", (ev) => {
   } else if (ev.key === "r" || ev.key === "R") control.turn(ev.shiftKey ? 1 : -1);
   else if (ev.key === "e" || ev.key === "E") control.turn(1);
   else if (ev.key === "f" || ev.key === "F") control.flip();
+  else if (ev.key === "h" || ev.key === "H") void showHint();
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
 setInterval(() => {
