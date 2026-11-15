@@ -1143,7 +1143,7 @@ button:disabled {
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(64px, calc(25% - 4px)), 1fr));
   gap: 4px;
 }
 

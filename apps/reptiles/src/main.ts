@@ -309,6 +309,9 @@ byId("back").addEventListener("click", () => {
   if (level && tiling) goTiling(tiling, true, level.key);
   else goHome();
 });
+// Back from a list page: wherever the player came from, else home.
+for (const button of document.querySelectorAll("[data-go-back]"))
+  button.addEventListener("click", () => (history.length > 1 ? history.back() : goHome()));
 for (const button of document.querySelectorAll("[data-go-home]"))
   button.addEventListener("click", () => goHome());
 document.addEventListener("keydown", (ev) => {
