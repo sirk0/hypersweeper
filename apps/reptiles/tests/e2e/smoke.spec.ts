@@ -200,8 +200,8 @@ test("a tiling's boards: the board button steps through them, round to the first
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^3\.4\.6\.4$/ }) });
   await expect(card).toHaveCount(1);
-  const levels = Number((await card.locator(".card-levels").textContent())!.split(" ")[0]);
-  expect(levels).toBeGreaterThan(boards);
+  await expect(card.locator(".card-boards")).toHaveText(/^\d+ boards$/);
+  await expect(card.locator(".card-rules")).toHaveText(/^\d+ rules?$/);
   expect(errors).toEqual([]);
 });
 
@@ -470,7 +470,7 @@ test("a tiling's page: its boards on top, its tiles under them, then Play", asyn
   const hexagons = page
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^6³$/ }) });
-  await expect(hexagons.locator(".card-levels")).toHaveText(/^\d+ levels$/);
+  await expect(hexagons.locator(".card-rules")).toHaveText(/^\d+ rules?$/);
   await hexagons.click();
   await expect(page).toHaveURL(/\?tiling=hexagons&pick=hexagons$/);
   await expect(page.locator("#tiling .hud-title")).toHaveText("6³");

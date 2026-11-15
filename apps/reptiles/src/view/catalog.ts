@@ -13,7 +13,13 @@ import { barsIcon, outlineIcon, starRow, tileIcon } from "./icons";
 
 /** How many levels the tiling `level` is the first board of has, and the
  * stars earned on them. */
-export type Tally = (level: Level) => { levels: number; stars: number };
+export type Tally = (level: Level) => {
+  levels: number;
+  stars: number;
+  /** Boards the tiling is cut in, and the markings (rules, colourings) it has. */
+  boards?: number;
+  rules?: number;
+};
 
 export function renderCatalog(
   host: HTMLElement,
@@ -49,7 +55,7 @@ export function renderCatalog(
  * difficulty, and the stars — earned of those to earn. */
 export function levelCard(
   level: Level,
-  { levels, stars }: { levels: number; stars: number },
+  { levels, stars, boards = 1, rules = 0 }: ReturnType<Tally>,
   pick: (level: Level) => void,
 ): HTMLButtonElement {
   const button = document.createElement("button");
@@ -76,12 +82,28 @@ export function levelCard(
     tallied.textContent = `★ ${stars}/${levels * 3}`;
     meta.append(bars, tallied);
   } else meta.append(bars, starRow(stars));
-  button.append(outlineIcon(level), tiles, name);
-  if (levels > 1) {
-    const count = document.createElement("span");
-    count.className = "card-levels";
-    count.textContent = `${levels} levels`;
-    button.append(count);
+  // the tiles sit inside the board's outline, as big as it leaves room for
+  const art = document.createElement("span");
+  art.className = "card-art";
+  tiles.dataset["count"] = String(Math.min(level.tiles.length, 4));
+  art.append(outlineIcon(level), tiles);
+  button.append(art, name);
+  if (boards > 1 || rules > 0) {
+    const counts = document.createElement("span");
+    counts.className = "card-levels";
+    if (boards > 1) {
+      const b = document.createElement("span");
+      b.className = "card-boards";
+      b.textContent = `${boards} boards`;
+      counts.append(b);
+    }
+    if (rules > 0) {
+      const r = document.createElement("span");
+      r.className = "card-rules";
+      r.textContent = `${rules} ${rules === 1 ? "rule" : "rules"}`;
+      counts.append(r);
+    }
+    button.append(counts);
   }
   button.append(meta);
   button.addEventListener("click", () => pick(level));

@@ -1002,20 +1002,43 @@ button:disabled {
   scroll-snap-align: start;
 }
 
+/* The tiles sit inside the board's outline, centred, as big as fits. */
+.card-art {
+  position: relative;
+  display: block;
+  width: 112px;
+  height: 112px;
+}
+
 .card .level-outline {
-  width: 84px;
-  height: 84px;
+  width: 100%;
+  height: 100%;
 }
 
 .card-tiles {
-  display: inline-flex;
-  gap: 3px;
-  min-height: 16px;
+  position: absolute;
+  inset: 22%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 
 .card-tiles .level-tile {
-  width: 16px;
-  height: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.card-tiles[data-count="2"] .level-tile {
+  width: 48%;
+  height: 48%;
+}
+
+.card-tiles[data-count="3"] .level-tile,
+.card-tiles[data-count="4"] .level-tile {
+  width: 46%;
+  height: 46%;
 }
 
 .card-name {
@@ -1030,6 +1053,11 @@ button:disabled {
 
 /* How many levels a tiling is — every board by every way its tiles are
    marked — where more than one, and the stars earned of them. */
+.card-levels {
+  display: flex;
+  gap: 8px;
+}
+
 .card-levels,
 .card-stars {
   color: var(--muted);
