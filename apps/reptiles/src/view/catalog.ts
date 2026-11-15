@@ -16,9 +16,10 @@ import { barsIcon, outlineIcon, starRow, tileIcon } from "./icons";
 export type Tally = (level: Level) => {
   levels: number;
   stars: number;
-  /** Boards the tiling is cut in, and the markings (rules, colourings) it has. */
+  /** Boards the tiling is cut in, and the tile sets it has — what its page's
+   * Tiles row holds: plain, matching rules and colourings. */
   boards?: number;
-  rules?: number;
+  sets?: number;
 };
 
 export function renderCatalog(
@@ -55,7 +56,7 @@ export function renderCatalog(
  * difficulty, and the stars — earned of those to earn. */
 export function levelCard(
   level: Level,
-  { levels, stars, boards = 1, rules = 0 }: ReturnType<Tally>,
+  { levels, stars, boards = 1, sets = 1 }: ReturnType<Tally>,
   pick: (level: Level) => void,
 ): HTMLButtonElement {
   const button = document.createElement("button");
@@ -88,7 +89,7 @@ export function levelCard(
   tiles.dataset["count"] = String(Math.min(level.tiles.length, 4));
   art.append(outlineIcon(level), tiles);
   button.append(art, name);
-  if (boards > 1 || rules > 0) {
+  if (boards > 1 || sets > 1) {
     const counts = document.createElement("span");
     counts.className = "card-levels";
     if (boards > 1) {
@@ -97,10 +98,11 @@ export function levelCard(
       b.textContent = `${boards} boards`;
       counts.append(b);
     }
-    if (rules > 0) {
+    if (sets > 1) {
       const r = document.createElement("span");
-      r.className = "card-rules";
-      r.textContent = `${rules} ${rules === 1 ? "rule" : "rules"}`;
+      r.className = "card-sets";
+      r.textContent = `${sets} tile sets`;
+      r.title = "Plain tiles, matching rules and colourings";
       counts.append(r);
     }
     button.append(counts);

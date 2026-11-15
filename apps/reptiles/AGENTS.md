@@ -254,12 +254,15 @@ some back off.
 
 **Screens**, in Hypersweeper's Sand look (its `sand`/`sandDark` palettes,
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
-`public/fonts`). Home (no query): Easy, Medium and Hard each deal a random
-level of that difficulty; Tilings opens the catalog (`?tilings`; old
+`public/fonts`). Home (no query): the title on top; Easy, Medium and Hard,
+the main buttons, in the middle, each dealing a random level of that
+difficulty; Tilings and Figures at the foot, side by side at half width.
+Tilings opens the catalog (`?tilings`; old
 `?catalog` links still work): each family a row of tiling cards scrolling
 sideways — first board's outline, tiles, name, difficulty as Hypersweeper's
-three bars, how many levels it is (every board by every marking) and the
-stars earned of them; a tiling of one level (the P-pentomino) opens it, any
+three bars, how many boards and tile sets it has (a tile set is a card of its
+page's Tiles row: plain, a matching rule or a colouring), and the
+stars earned of its levels; a tiling of one level (the P-pentomino) opens it, any
 other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
 top, as their outlines in a grid, one dealt at random; under them its
 markings in one row scrolling sideways — Plain first and picked, then its
@@ -286,8 +289,7 @@ corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
 version and checks for updates (the shared check in `@tiling/platform`; left
 out of a packaged build). Levels are picked in
 Tilings or Figures. A level is `?level=<key>`: one header row, Hypersweeper's —
-home, on a tiling with more than one board the next board (two squares, the
-window moved along; or B), the clock against the three-star limit, restart,
+home, the clock against the three-star limit, restart,
 and a die that deals another board of the same difficulty as this one — then
 the level's name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest

@@ -21,6 +21,9 @@ export function renderHome(
   figures: () => void,
 ): void {
   host.replaceChildren();
+  // the three difficulties are the main buttons, in the middle…
+  const bands = document.createElement("div");
+  bands.className = "home-bands";
   for (const { band, label, hint } of BANDS) {
     const { levels, stars } = tally(band);
     const button = pick(
@@ -31,20 +34,24 @@ export function renderHome(
       () => play(band),
     );
     button.title = hint;
-    host.appendChild(button);
+    bands.appendChild(button);
   }
+  // …and Tilings and Figures, side by side at half width, at the foot
+  const more = document.createElement("div");
+  more.className = "home-more";
   const grid = document.createElement("span");
   grid.className = "catalog-glyph";
   grid.setAttribute("aria-hidden", "true");
   grid.textContent = "▦";
-  host.appendChild(pick("catalog-pick", grid, "Tilings", "Every tiling, by family", catalog));
+  more.appendChild(pick("catalog-pick", grid, "Tilings", "Every tiling, by family", catalog));
   const shapes = document.createElement("span");
   shapes.className = "catalog-glyph";
   shapes.setAttribute("aria-hidden", "true");
   shapes.textContent = "◆";
-  host.appendChild(
+  more.appendChild(
     pick("figures-pick", shapes, "Figures", "By the tiles: one shape, a pair, a pack", figures),
   );
+  host.append(bands, more);
 }
 
 function pick(
@@ -57,6 +64,7 @@ function pick(
   const button = document.createElement("button");
   button.type = "button";
   button.className = `home-pick ${className}`;
+  if (className.startsWith("band-")) button.classList.add("primary");
   const name = document.createElement("span");
   name.className = "home-label";
   name.textContent = label;

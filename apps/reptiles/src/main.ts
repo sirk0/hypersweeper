@@ -20,7 +20,6 @@ const count = byId("count");
 const clock = byId("clock");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
-const boardButton = byId<HTMLButtonElement>("board");
 
 /** Every level of the tiling `plain` is the first board of — each of its
  * boards plain, then marked each way it is (`markedOf`) — and the stars
@@ -31,7 +30,7 @@ function tallyOf(plain: Level): ReturnType<Tally> {
     levels: keys.length,
     stars: keys.reduce((sum, k) => sum + starsFor(k), 0),
     boards: boardKeys(plain.key).length,
-    rules: markedOf(plain.key).length,
+    sets: markedOf(plain.key).length + 1,
   };
 }
 
@@ -195,13 +194,6 @@ function tick(s: Session): void {
   clock.classList.toggle("over", t > s.puzzle.level.seconds);
 }
 
-/** The next board `level`'s tiles are laid on — its tiling's next board,
- * plain or marked as it is — round to the first after the last. */
-function nextBoard(level: Level): Level | undefined {
-  const keys = boardKeys(level.base);
-  return levelByKey(keys[(keys.indexOf(level.key) + 1) % keys.length]!);
-}
-
 function changed(): void {
   const s = session;
   if (!s) return;
@@ -266,8 +258,6 @@ function open(level: Level, push = true): void {
   const boardOf = byId("board-of");
   boardOf.hidden = level.boards < 2;
   boardOf.textContent = `board ${level.board}/${level.boards}`;
-  boardButton.hidden = boardKeys(level.base).length < 2;
-  boardButton.title = `The next board of this tiling (this is ${level.board} of ${level.boards})`;
   changed();
 }
 
@@ -282,10 +272,6 @@ function dismiss(): void {
 }
 
 byId("restart").addEventListener("click", restart);
-boardButton.addEventListener("click", () => {
-  const level = session && nextBoard(session.puzzle.level);
-  if (level) open(level);
-});
 document
   .querySelector("#home [data-action=settings]")
   ?.addEventListener("click", () => goSettings());
@@ -324,7 +310,6 @@ document.addEventListener("keydown", (ev) => {
   } else if (ev.key === "r" || ev.key === "R") control.turn(ev.shiftKey ? 1 : -1);
   else if (ev.key === "e" || ev.key === "E") control.turn(1);
   else if (ev.key === "f" || ev.key === "F") control.flip();
-  else if ((ev.key === "b" || ev.key === "B") && !boardButton.hidden) boardButton.click();
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
 setInterval(() => {

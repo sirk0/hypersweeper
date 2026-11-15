@@ -20,7 +20,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
   const response = await page.goto("/");
   expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
   await expect(page.locator("#home")).toBeVisible();
-  await expect(page.locator("#home-picks > *")).toHaveCount(5);
+  await expect(page.locator("#home-picks button")).toHaveCount(5);
   // The deployed extras the shared preset adds.
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",
@@ -35,7 +35,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
 test("a pick from home deals a level, and Tilings lists every family", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/");
-  await page.locator("#home-picks > *").first().click();
+  await page.locator("#home-picks button").first().click();
   await expect(page.locator("#game")).toBeVisible();
   await expect(page.locator("svg.board path.region")).toHaveCount(1);
   await expect(page.locator("svg.board .in-tray").first()).toBeVisible();
@@ -144,8 +144,8 @@ test("the level screen: one header row, no level list, a random level of the sam
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=cairo");
-  // home, back, the next of Cairo's boards, restart and the die
-  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(5);
+  // home, back, restart and the die
+  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(4);
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
   // Cairo is hard; the die deals another hard level.
@@ -164,33 +164,18 @@ test("the level screen: one header row, no level list, a random level of the sam
   expect(errors).toEqual([]);
 });
 
-test("a tiling's boards: the board button steps through them, round to the first", async ({
-  page,
-}) => {
+test("a level names its board, and the game screen has no board button", async ({ page }) => {
   const errors = watchErrors(page);
-  // a tiling cut the same wherever it is cut has one board, and no button
+  // a tiling cut the same wherever it is cut has one board, and says nothing
   await page.goto("/?level=squares");
-  await expect(page.locator("#board")).toBeHidden();
   await expect(page.locator("#board-of")).toBeHidden();
-  await page.goto("/?level=rhombitrihex");
-  await expect(page.locator("#board")).toBeVisible();
-  await expect(page.locator("#board-of")).toHaveText(/^board 1\/\d+$/);
-  const boards = Number((await page.locator("#board-of").textContent())!.split("/")[1]);
-  expect(boards).toBeGreaterThan(1);
-  await page.locator("#board").click();
-  await expect(page).toHaveURL(/level=rhombitrihex-2$/);
-  await expect(page.locator("#board-of")).toHaveText(`board 2/${boards}`);
+  // the board is picked on the tiling's page, not in the game
+  await page.goto("/?level=rhombitrihex-2");
+  await expect(page.locator("#board")).toHaveCount(0);
+  await expect(page.locator("#board-of")).toHaveText(/^board 2\/\d+$/);
   await expect(page.locator("svg.board path.region")).toHaveCount(1);
-  // after the last, the first again
-  for (let i = 2; i < boards; i++) await page.keyboard.press("b");
-  await expect(page.locator("#board-of")).toHaveText(`board ${boards}/${boards}`);
-  await page.locator("#board").click();
-  await expect(page).toHaveURL(/level=rhombitrihex$/);
   // a marked level's boards are its tiling's, marked as it is
-  await page.goto("/?level=trihex.lines");
-  await expect(page.locator("#board-of")).toHaveText(/^board 1\/\d+$/);
-  await page.locator("#board").click();
-  await expect(page).toHaveURL(/level=trihex\.lines-2$/);
+  await page.goto("/?level=trihex.lines-2");
   await expect(page.locator("#board-of")).toHaveText(/^board 2\/\d+$/);
   await expect(page.locator("#level")).toHaveText("3.6.3.6 · lines");
   // Tilings lists the tiling once, with how many levels it is: every board
@@ -201,7 +186,7 @@ test("a tiling's boards: the board button steps through them, round to the first
     .filter({ has: page.locator(".card-name", { hasText: /^3\.4\.6\.4$/ }) });
   await expect(card).toHaveCount(1);
   await expect(card.locator(".card-boards")).toHaveText(/^\d+ boards$/);
-  await expect(card.locator(".card-rules")).toHaveText(/^\d+ rules?$/);
+  await expect(card.locator(".card-sets")).toHaveText(/^\d+ tile sets$/);
   expect(errors).toEqual([]);
 });
 
@@ -470,7 +455,7 @@ test("a tiling's page: its boards on top, its tiles under them, then Play", asyn
   const hexagons = page
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^6³$/ }) });
-  await expect(hexagons.locator(".card-rules")).toHaveText(/^\d+ rules?$/);
+  await expect(hexagons.locator(".card-sets")).toHaveText(/^\d+ tile sets$/);
   await hexagons.click();
   await expect(page).toHaveURL(/\?tiling=hexagons&pick=hexagons$/);
   await expect(page.locator("#tiling .hud-title")).toHaveText("6³");
