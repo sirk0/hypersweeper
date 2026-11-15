@@ -1002,20 +1002,43 @@ button:disabled {
   scroll-snap-align: start;
 }
 
+/* The tiles sit inside the board's outline, centred, as big as fits. */
+.card-art {
+  position: relative;
+  display: block;
+  width: 112px;
+  height: 112px;
+}
+
 .card .level-outline {
-  width: 84px;
-  height: 84px;
+  width: 100%;
+  height: 100%;
 }
 
 .card-tiles {
-  display: inline-flex;
-  gap: 3px;
-  min-height: 16px;
+  position: absolute;
+  inset: 22%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 
 .card-tiles .level-tile {
-  width: 16px;
-  height: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.card-tiles[data-count="2"] .level-tile {
+  width: 48%;
+  height: 48%;
+}
+
+.card-tiles[data-count="3"] .level-tile,
+.card-tiles[data-count="4"] .level-tile {
+  width: 46%;
+  height: 46%;
 }
 
 .card-name {
@@ -1030,6 +1053,11 @@ button:disabled {
 
 /* How many levels a tiling is — every board by every way its tiles are
    marked — where more than one, and the stars earned of them. */
+.card-levels {
+  display: flex;
+  gap: 8px;
+}
+
 .card-levels,
 .card-stars {
   color: var(--muted);
@@ -1115,8 +1143,8 @@ button:disabled {
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(max(64px, calc(25% - 4px)), 1fr));
+  gap: 4px;
 }
 
 .tiling-groups .board-grid {
@@ -1125,7 +1153,7 @@ button:disabled {
 }
 
 .tiling-groups .board-card {
-  width: 78px;
+  width: 64px;
 }
 
 .tiling-group {
@@ -1153,9 +1181,9 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
-  padding: 6px 4px 4px;
+  padding: 3px 2px 2px;
   border-radius: 14px;
   box-shadow: var(--shadow);
 }
@@ -1170,13 +1198,6 @@ button:disabled {
 .outline-slot .level-outline {
   width: 100%;
   height: 100%;
-}
-
-.board-n {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
 }
 
 .board-card .stars .star {
@@ -1217,31 +1238,29 @@ button:disabled {
 
 /* The tiling's tiles: plain, matching rules, colourings — one row, each
    card its tray drawn big. */
+.pick-tiles .marking-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  overflow: visible;
+  padding: 2px 16px 8px;
+}
+
 .marking-card {
-  width: 148px;
+  width: auto;
+  min-width: 0;
+  padding: 4px 2px;
 }
 
 .tray-slot {
   display: block;
-  width: 116px;
-  height: 116px;
+  width: 100%;
+  aspect-ratio: 1.25;
 }
 
 .tray-slot .tray-icon {
   width: 100%;
   height: 100%;
-}
-
-.marking-kind {
-  color: var(--muted);
-  font-size: 0.68rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.marking-card .card-name {
-  min-height: 2.5em;
-  font-size: 0.9rem;
 }
 
 /* Play, pinned under the list: what the pick is, and how hard. */

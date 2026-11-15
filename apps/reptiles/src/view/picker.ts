@@ -154,10 +154,7 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
         drawLater(slot, `outline:${keyOf(t.key, n)}`, () =>
           outlineIcon(levelByKey(keyOf(t.key, n))!),
         );
-        const label = document.createElement("span");
-        label.className = "board-n";
-        label.textContent = String(n);
-        button.append(slot, label, starRow(offMarking ? 0 : stars(key)));
+        button.append(slot, starRow(offMarking ? 0 : stars(key)));
         button.title = `Board ${n} of ${t.name}`;
         button.addEventListener("click", () => {
           // a board this marking is not laid on: its plain tiles
@@ -185,20 +182,16 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       button.dataset["marking"] = m.key;
       button.setAttribute("aria-pressed", String(m.key === marking));
       if (!here) button.classList.add("off");
-      button.title = m.label;
+      button.title = m.decor
+        ? `${m.decor.rules ? "Matching rule" : "Colouring"}: ${m.decor.label}`
+        : "Plain tiles";
       const slot = document.createElement("span");
       slot.className = "tray-slot";
       drawLater(slot, `tray:${m.key}`, () => trayIcon(levelByKey(m.key)!));
-      const kind = document.createElement("span");
-      kind.className = "marking-kind";
-      kind.textContent = m.decor ? (m.decor.rules ? "Matching rule" : "Colouring") : "Plain";
-      const name = document.createElement("span");
-      name.className = "card-name";
-      name.textContent = m.decor ? m.decor.label : "Plain tiles";
       const meta = document.createElement("span");
       meta.className = "card-meta";
       meta.append(bandIcon(bandOf(key)), starRow(here ? stars(key) : 0));
-      button.append(slot, kind, name, meta);
+      button.append(slot, meta);
       button.addEventListener("click", () => {
         // a marking not laid on this board: a board it is laid on
         state = { tiling, board: here ? board : random([...on]), marking: m.key };
@@ -261,6 +254,7 @@ function section(className: string, title: string, about: string): HTMLElement {
   const hint = document.createElement("p");
   hint.className = "family-hint";
   hint.textContent = about;
+  hint.hidden = true;
   el.append(heading, hint);
   return el;
 }

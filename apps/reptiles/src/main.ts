@@ -5,7 +5,7 @@ import { figureSetByKey, figureSets, type FigureSet } from "./figures";
 import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
-import { renderCatalog } from "./view/catalog";
+import { renderCatalog, type Tally } from "./view/catalog";
 import { renderFigure, renderFigures } from "./view/figures";
 import { renderHome } from "./view/home";
 import { fillGlyphs } from "./view/icons";
@@ -25,9 +25,14 @@ const boardButton = byId<HTMLButtonElement>("board");
 /** Every level of the tiling `plain` is the first board of — each of its
  * boards plain, then marked each way it is (`markedOf`) — and the stars
  * earned on them: what the catalog and Figures show for it. */
-function tallyOf(plain: Level): { levels: number; stars: number } {
+function tallyOf(plain: Level): ReturnType<Tally> {
   const keys = [plain, ...markedOf(plain.key)].flatMap((l) => boardKeys(l.key));
-  return { levels: keys.length, stars: keys.reduce((sum, k) => sum + starsFor(k), 0) };
+  return {
+    levels: keys.length,
+    stars: keys.reduce((sum, k) => sum + starsFor(k), 0),
+    boards: boardKeys(plain.key).length,
+    rules: markedOf(plain.key).length,
+  };
 }
 
 fillGlyphs(document);
@@ -297,6 +302,16 @@ won.addEventListener("click", (ev) => {
 next.addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));
 });
+// Back from a level: the page of its tiling, with this level picked.
+byId("back").addEventListener("click", () => {
+  const level = session?.puzzle.level;
+  const tiling = level && levelByKey(level.decor?.of ?? level.base);
+  if (level && tiling) goTiling(tiling, true, level.key);
+  else goHome();
+});
+// Back from a list page: wherever the player came from, else home.
+for (const button of document.querySelectorAll("[data-go-back]"))
+  button.addEventListener("click", () => (history.length > 1 ? history.back() : goHome()));
 for (const button of document.querySelectorAll("[data-go-home]"))
   button.addEventListener("click", () => goHome());
 document.addEventListener("keydown", (ev) => {
