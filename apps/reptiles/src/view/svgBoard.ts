@@ -18,7 +18,8 @@
 // getScreenCTM().inverse(), and a turn counter-clockwise in board units reads
 // counter-clockwise on screen.
 
-import { centroidOf, type XY } from "../geometry/shape";
+import { centroidOf, posed, turnsOntoPieces, type Piece, type XY } from "../geometry/shape";
+import type { Hint } from "../hint";
 import {
   edgePath,
   loopsOf,
@@ -196,6 +197,10 @@ export class SvgBoard {
   /** Whether every tray tile is held mirrored — the flip control, on a level
    * whose board uses some kind both ways round. */
   flip = false;
+  /** The hint on show, if any: a tile to lay — drawn where it lands, its tray
+   * tile and the control that turns or flips it as it must be held marked —
+   * or a placed tile to take off, outlined in the remove colour. */
+  hint: Hint = null;
   /** The shelf's tiles and the controls, each padded, in their own units. */
   private shelfBox: Box = [0, 0, 0, 0];
   private knobBox: Box = [0, 0, 0, 0];
@@ -584,11 +589,34 @@ export class SvgBoard {
     for (const e of this.puzzle.openEdges) {
       el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
     }
+    // the hint over everything on the board, so it shows whole: a tile to
+    // take off ringed, or a tile to lay outlined where it lands
+    const hint = this.hint;
+    const off =
+      hint && "remove" in hint ? this.puzzle.tiles.find((t) => t.id === hint.remove) : null;
+    if (off)
+      el(
+        "path",
+        { d: loopsPath(loopsOf(ring, off.pieces)), class: "hint-off", "data-hint": "remove" },
+        this.still,
+      );
+    const lay = hint && "place" in hint ? hint.place : null;
+    const needs = lay ? this.holdFor(lay.kind, lay.spot) : null;
+    if (lay)
+      el(
+        "path",
+        { d: loopsPath(loopsOf(ring, lay.spot)), class: "hint-ghost", "data-hint": "place" },
+        this.still,
+      );
     this.shelf.replaceChildren();
     this.knobs.replaceChildren();
     this.trayAt.forEach(([cx, cy], kind) => {
       const r = this.trayRadius(kind);
-      el("circle", { cx, cy, r, class: "tray", "data-tray": kind }, this.shelf);
+      el(
+        "circle",
+        { cx, cy, r, class: `tray${lay?.kind === kind ? " hinted" : ""}`, "data-tray": kind },
+        this.shelf,
+      );
       const outline = this.outline(kind, this.turn, this.flip);
       const at = ([x, y]: XY): XY => [x + cx, y + cy];
       el(
@@ -619,7 +647,8 @@ export class SvgBoard {
       text.textContent = left < 0 ? `+${-left}` : String(left);
     });
     for (const [control, [kx, ky]] of this.controlsAt) {
-      const knob = el("g", { class: `knob knob-${control}` }, this.knobs);
+      const hinted = needs !== null && needs.control === control;
+      const knob = el("g", { class: `knob knob-${control}${hinted ? " hinted" : ""}` }, this.knobs);
       el("circle", { cx: kx, cy: ky, r: KNOB }, knob);
       let label: string;
       if (control === "rotate-ccw" || control === "rotate-cw") {
@@ -719,6 +748,36 @@ export class SvgBoard {
       );
       text.textContent = label;
     }
+  }
+
+  /** What a hinted tile needs before it lands on `spot`, held as the tray
+   * holds it now: a flip, or turning one way (the way of fewer presses), or
+   * nothing. */
+  private holdFor(kind: number, spot: readonly Piece[]): { control: Control } | null {
+    const { ring, tiles, turn, mirror } = this.puzzle.level;
+    const n = ring.n;
+    const mod = (k: number): number => ((k % n) + n) % n;
+    let best: { flip: boolean; presses: number; control: Control | null } | null = null;
+    for (const flip of mirror ? [this.flip, !this.flip] : [this.flip]) {
+      const shape = { ring, pieces: posed(tiles[kind]!, { rot: 0, flip, t: ring.zero }) };
+      for (const k of turnsOntoPieces(shape, spot)) {
+        const d = mod(k - this.turn);
+        let presses = 0;
+        let control: Control | null = null;
+        if (d !== 0) {
+          if (turn === 0 || d % turn !== 0) continue; // not a way the tray holds it
+          const ccw = d / turn;
+          const cw = (n - d) / turn;
+          presses = Math.min(ccw, cw);
+          control = ccw <= cw ? "rotate-ccw" : "rotate-cw";
+        }
+        // a flip is a press too, and comes first
+        if (flip !== this.flip) control = "flip";
+        const cost = presses + (flip !== this.flip ? 1 : 0);
+        if (!best || cost < best.presses) best = { flip, presses: cost, control };
+      }
+    }
+    return best?.control ? { control: best.control } : null;
   }
 
   /** The dragged tile — `outline` about its centroid, moved to `at` — and,

@@ -112,8 +112,6 @@ export interface Level {
    * number on its pile. Using more is allowed; using no more than these, in
    * all, is worth the second star. */
   need: number[];
-  /** The time limit for the third star, in seconds. */
-  seconds: number;
   /** The board the level was cut from, tile by tile: one way to finish it,
    * not the only one — any exact cover wins (six triangles where a hexagon
    * was are fine), so a player can wander off it, and may have to take tiles
@@ -194,11 +192,6 @@ export interface Level {
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-
-/** The third star's time allowance per tile the board takes — room to pick
- * each one up, turn it and lay it, not to think hard. Rounded up to ten
- * seconds a level. */
-const SECONDS_PER_TILE = 5;
 
 function gcd(a: number, b: number): number {
   return b === 0 ? Math.abs(a) : gcd(b, a % b);
@@ -489,7 +482,6 @@ function makeLevel(
   const need = kinds.map((k) => k.ks.length);
   const mirror = kinds.some((k) => k.flipped);
   const turn = turns.reduce((g, k) => gcd(g, k), 0);
-  const seconds = Math.ceil((cells.length * SECONDS_PER_TILE) / 10) * 10;
   return {
     key,
     base: key,
@@ -505,7 +497,6 @@ function makeLevel(
     turns,
     turn,
     need,
-    seconds,
     cells: laid,
     configs,
     name,

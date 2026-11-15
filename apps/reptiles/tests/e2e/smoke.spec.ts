@@ -144,8 +144,9 @@ test("the level screen: one header row, no level list, a random level of the sam
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=cairo");
-  // home, back, restart and the die
-  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(4);
+  // home, back, the hint, restart and the die — and the clock, time only
+  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(5);
+  await expect(page.locator("#clock")).toHaveText("0:00");
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
   // Cairo is hard; the die deals another hard level.
@@ -319,9 +320,56 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   }
   await expect(page.locator("svg.board [data-tile]")).toHaveCount(16);
   await expect(page.locator("#won")).toBeVisible();
+  // no hint, no more tiles than needed: three stars
+  await expect(page.locator("#won-stars")).toHaveText("★★★");
+  await expect(page.locator("#won-detail")).toContainText("No hints.");
   await page.locator("#exit").click();
   await expect(page.locator("#won")).toBeHidden();
   await expect(page.locator("#count")).toHaveText("100%");
+  expect(errors).toEqual([]);
+});
+
+test("the hint shows a tile to lay, goes with the next move, and costs the third star", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  await page.locator("#hint").click();
+  // worked out in the background (hint.worker.ts): drawn where it lands, its
+  // tray tile ringed
+  const ghost = page.locator('svg.board [data-hint="place"]');
+  await expect(ghost).toHaveCount(1);
+  await expect(page.locator("svg.board .tray.hinted")).toHaveCount(1);
+  await expect(page.locator("#hint")).not.toHaveClass(/thinking/);
+
+  // laying a tile where the hint says puts it away
+  const tray = page.locator("svg.board .tile.in-tray").first();
+  const t = (await tray.boundingBox())!;
+  const g = (await ghost.boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2, { steps: 6 });
+  await page.mouse.up();
+  await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+  await expect(ghost).toHaveCount(0);
+
+  // the H key asks again; following the hint to the end finishes the
+  // board — with two stars, not three
+  for (let laid = 1; laid < 16; laid++) {
+    await page.keyboard.press("h");
+    await expect(ghost).toHaveCount(1);
+    const at = (await tray.boundingBox())!;
+    const to = (await ghost.boundingBox())!;
+    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 4 });
+    await page.mouse.up();
+    await expect(page.locator("svg.board [data-tile]")).toHaveCount(laid + 1);
+  }
+  await expect(page.locator("#won")).toBeVisible();
+  await expect(page.locator("#won-stars")).toHaveText("★★☆");
+  await expect(page.locator("#won-detail")).toContainText("A hint was used.");
+  await expect(page.locator("#hint")).toBeDisabled();
   expect(errors).toEqual([]);
 });
 

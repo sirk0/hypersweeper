@@ -232,8 +232,23 @@ some back off.
   rhombi); a test holds that too.
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
   from still to go (past zero, how many extra). Finishing at all is one star;
-  with no more tiles than that, two; and within the level's time limit
-  (`seconds`, five a tile), three. The clock starts with the first tile down.
+  with no more tiles than that, two; and that with no hint shown, three. The
+  clock starts with the first tile down and only says how long it took —
+  there is no time limit.
+- **The hint** (the bulb in the header, or H) looks at the board as it
+  stands and says what to do next, worked out exactly (`src/hint.ts`). First
+  it checks the tiles down: can the board still be finished round them — any
+  exact cover, not only the board's own? If so, a tile to lay: drawn dashed
+  where it lands, its tray tile ringed, and the control it needs first (flip,
+  or a turn the shorter way) ringed too. If not, a tile to take off, ringed in
+  the remove colour: one whose going alone lets the board be finished, where
+  there is one, else a tile the board was not cut with (taking all of those
+  off always leaves a board that finishes). A hint shown costs the third
+  star. It is worked out in a worker (`src/hint.worker.ts`, driven by
+  `src/hintClient.ts`) after every move, so a press often finds it ready;
+  else the bulb glows and "thinking…" shows until it is — exact however long
+  that takes (most boards in milliseconds; a stray tile on the hardest
+  2-isohedral and coloured boards, tens of seconds).
   The best per level is kept in `localStorage` and shown in Tilings and
   Figures — on a tiling's card and a figure set's, as stars earned of stars
   to earn over all its levels; on a tiling's page, per board and marking.
@@ -289,7 +304,8 @@ corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
 version and checks for updates (the shared check in `@tiling/platform`; left
 out of a packaged build). Levels are picked in
 Tilings or Figures. A level is `?level=<key>`: one header row, Hypersweeper's —
-home, the clock against the three-star limit, restart,
+home and back, the clock (time taken, no limit; centred between the sides,
+which hold two buttons and three), the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
 the level's name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest
@@ -471,7 +487,7 @@ dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
-a tiling's page — a board, its tiles, Play — Figures and a figure set's page, settings, the header, rotating both ways, wheel and pinch zoom, the tray at
+a tiling's page — a board, its tiles, Play — Figures and a figure set's page, settings, the header, the hint (followed to a two-star finish), rotating both ways, wheel and pinch zoom, the tray at
 board scale, its two rows and scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
 its ✕) and every level — every marking on every board — and tiling page opening with no error
@@ -540,7 +556,14 @@ quick way to see the win state.
   triangles/hexagons/most uniform tilings/spectre, ℤ[ζ8] 4.8.8 and
   Ammann–Beenker, ℤ[ζ5]/ℤ[ζ10] Penrose, ℤ[ζ7] Klaassen, ℤ[ζ24] mixes — and
   the exact predicates (`orient`, `sameDirection`, `strictlyBetween`,
-  `properlyCross`) decide zero exactly and only read a float's sign.
+  `properlyCross`) decide zero exactly and only read a float's sign. A float
+  filter goes first: a cross or dot product read in floats far from zero
+  (past a million times its rounding, measured by its coefficients' sizes)
+  is that sign, and one near zero is proved zero by its norm — a nonzero
+  algebraic integer's images under the field's embeddings multiply to at
+  least 1, so if even their bounded product is less it is zero — before the
+  exact product in the ring is ever built (`provedZero`). Neither ever
+  decides a case a tie is near, so every answer is the exact one.
 - `src/geometry/shape.ts` — `Shape`: a tile, its `pieces` — one `Piece`,
   any simple polygon (CCW, y up, concave allowed), or several moved as one
   (the fish, the kissing squares: `polygon` makes the one-piece kind; nothing
@@ -577,6 +600,8 @@ quick way to see the win state.
   centroid out of the drag's reach (`aim`), or a point well inside one of its
   pieces on covered ground, which no placement that fits has — and builds a
   placement reached from several of its corners once.
+  `parts` splits the open ground into its separate pieces (joined only
+  through shared points), for the hint's search.
 - `src/geometry/outline.ts` — a patch of cells' boundary loops (shared edges
   cancel exactly, after each side is cut at every corner lying inside it, for
   the bonds' T-junctions): how a level's region is made from its cells; and
@@ -862,8 +887,7 @@ quick way to see the win state.
   that runs along a ring direction, `restFlat`: not the pentagonal spirals'
   cut, nor across the Klaassen heptagon's dent), whether a kind is
   used both ways round (`mirror`, which brings a flip control), each
-  kind's rotate step from flat (`turns`) and pile (`need`), the time limit
-  (`seconds`), each kind's colour classes (`colours`: by side count, plus
+  kind's rotate step from flat (`turns`) and pile (`need`), each kind's colour classes (`colours`: by side count, plus
   `twin` on a second kind with as many sides as another — the two
   quadrilaterals of V[3².6²; 3.6.3.6]), the region, and keeps the cells
   themselves as one known solution; `turn` is the one rotate step for them all
@@ -874,6 +898,28 @@ quick way to see the win state.
   level's cells are built on the same lattice as the Hypersweeper builder it
   mirrors (`squareBoard`, `triangleGridBoard`, `hexBoard` — Hypersweeper's
   default flat board for each tiling), and its region is their outline.
+- `src/hint.ts` — **the hint**, exact (`HintSolver`). The search works one
+  *convex* corner of the open ground at a time — whatever covers the ground
+  just inside one has a corner there and a side along its edge, so the
+  frontier's `placements` there, every kind every way the tray can hold it
+  (multiples of `turn`, flipped where the level flips), are every way to go
+  on, and a convex corner nothing fits proves the board cannot be finished.
+  It takes the corner with the fewest ways, the board's own tile first;
+  finishes apart parts of the open ground apart (`Frontier.parts`); keeps
+  each corner's ways from step to step while its two edges are unchanged
+  (re-fitting only those near the tile just laid); and remembers frontiers
+  found dead, by their edges with straight runs read whole, for as long as
+  the level stays (up to 20M characters of names). A cover is looked for
+  round the trouble first: the board's own cells laid wherever they fit, the
+  hole they leave searched, then widened a tile's width at a time until it
+  is the whole board. It is a generator, yielding between steps:
+  `runSliced` runs it a slice at a time and drops it once the board has
+  moved on; the tests run it through (`runToEnd`). A level with a vertex
+  rule (`Level.rule`; none ships) is searched without it.
+- `src/hint.worker.ts`, `src/hintClient.ts` — the hint's thread: the page
+  posts the board after every move, the worker builds the level from its
+  key and keeps its solver while the level stays; where a worker cannot
+  start, the same search runs on the page in slices.
 - `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
   the game works without it; the old finished-levels list reads as one star
   each).

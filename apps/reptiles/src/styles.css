@@ -85,6 +85,11 @@
   --stick-ring: #fffdf8;
   --star: #d49a1f;
   --fits: #2f9e5b;
+  /* The hint: where a tile goes (its outline dashed on the board, its tray
+     tile and the control it needs ringed) — green, as the ✓ that says a
+     tile fits; a tile to take off is ringed in the remove colour. */
+  --hint: #2f9e5b;
+  --hint-fill: rgba(47, 158, 91, 0.18);
   --remove: #c9463d;
   --remove-edge: #7a1f19;
   --tray: rgba(64, 35, 16, 0.06);
@@ -157,6 +162,8 @@
     --stick-ring: #1d1c1a;
     --star: #f2c14e;
     --fits: #3fb96f;
+    --hint: #5fd68c;
+    --hint-fill: rgba(95, 214, 140, 0.2);
     --remove: #d0574d;
     --remove-edge: #ffb3ab;
     --tray: rgba(255, 255, 255, 0.06);
@@ -296,17 +303,36 @@ button.primary {
   white-space: nowrap;
 }
 
-.clock-time {
+#clock {
+  min-width: calc(var(--hud-btn) * 1.9);
   font-size: calc(var(--hud-btn) * 0.46);
 }
 
-.clock-limit {
-  font-size: calc(var(--hud-btn) * 0.3);
-  opacity: 0.6;
+/* A level's header holds five buttons, two a side and the hint: its sides
+   take what they need, and the clock is centred in what is left — equal sides
+   would not fit a phone. */
+#game .hud {
+  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
-.hud-counter.over .clock-time {
-  color: #ff5c5c;
+#game .hud-counter {
+  justify-self: center;
+}
+
+/* The hint button while the hint is worked out: its bulb glows on and off. */
+.hud-btn.thinking svg {
+  color: var(--hint);
+  animation: hint-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 /* -- a level: the board fills everything under the header ------------------ */
@@ -700,6 +726,50 @@ button.primary {
   stroke-width: 0.06;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* The hint on the board. A tile to lay: its outline where it lands, dashed,
+   over a pale fill; its tray tile's circle and the control it needs first
+   (a flip, or a turn the shorter way) ringed. A tile to take off: ringed in
+   the remove colour. Each glows on and off, but not where motion is reduced. */
+.hint-ghost {
+  fill: var(--hint-fill);
+  stroke: var(--hint);
+  stroke-width: 0.07;
+  stroke-dasharray: 0.16 0.1;
+  stroke-linejoin: round;
+  pointer-events: none;
+  animation: hint-pulse 1.2s ease-in-out infinite;
+}
+
+.hint-off {
+  fill: none;
+  stroke: var(--remove);
+  stroke-width: 0.1;
+  stroke-linejoin: round;
+  pointer-events: none;
+  animation: hint-pulse 1.2s ease-in-out infinite;
+}
+
+.tray.hinted {
+  fill: var(--hint-fill);
+  stroke: var(--hint);
+  stroke-width: 0.05;
+}
+
+.knob.hinted circle {
+  stroke: var(--hint);
+  stroke-width: 0.08;
+  animation: hint-pulse 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint-ghost,
+  .hint-off,
+  .knob.hinted circle,
+  .hud-btn.thinking svg {
+    animation: none;
+  }
 }
 
 .tile.floating.discard {
