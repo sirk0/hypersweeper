@@ -962,8 +962,9 @@ button:disabled {
   margin: 0 0 18px;
 }
 
-/* Rep-tiles on top, the three difficulties — the main buttons — in the
-   middle, Tilings and Figures at the foot. */
+/* Rep-tiles on top, the three difficulties in the middle, Tilings and
+   Figures at the foot — every one a full-width row, one under another, all
+   in the same light fill. */
 .home-picks {
   display: flex;
   flex: 1;
@@ -980,46 +981,18 @@ button:disabled {
   gap: 10px;
 }
 
-.home-bands .home-pick {
-  padding: 18px 16px;
-}
-
-.home-bands .home-pick .home-meta {
-  color: inherit;
-  opacity: 0.8;
-}
-
-.home-bands .home-pick .bar {
-  stroke: var(--on-accent);
-}
-
-.home-bands .home-pick .bar.on {
-  fill: var(--on-accent);
-}
-
 .home-more {
   display: flex;
-  gap: 10px;
-}
-
-.home-more .home-pick {
-  flex: 1 1 0;
-  min-width: 0;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 8px;
-  text-align: center;
-}
-
-.home-more .home-text {
-  align-items: center;
+  gap: 10px;
 }
 
 .home-pick {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 16px;
+  width: 100%;
+  padding: 16px;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   text-align: left;

@@ -36,7 +36,7 @@ export function renderHome(
     button.title = hint;
     bands.appendChild(button);
   }
-  // …and Tilings and Figures, side by side at half width, at the foot
+  // …and Tilings and Figures under them, at the foot
   const more = document.createElement("div");
   more.className = "home-more";
   const grid = document.createElement("span");
@@ -64,7 +64,6 @@ function pick(
   const button = document.createElement("button");
   button.type = "button";
   button.className = `home-pick ${className}`;
-  if (className.startsWith("band-")) button.classList.add("primary");
   const name = document.createElement("span");
   name.className = "home-label";
   name.textContent = label;
