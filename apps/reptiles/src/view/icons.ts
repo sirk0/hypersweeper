@@ -225,6 +225,7 @@ export const GLYPHS: Record<string, string> = {
   board: `<rect x="2.8" y="6.2" width="11.6" height="11.6" rx="1.6" ${STROKE}
       stroke-dasharray="2.2 2.4"/>
     <rect x="9.6" y="6.2" width="11.6" height="11.6" rx="1.6" ${STROKE}/>`,
+  back: `<path d="M14.6 5.4 L8 12 L14.6 18.6" ${STROKE}/>`,
   home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
     <path d="M6.2 9.4 V19.6 H17.8 V9.4" ${STROKE}/>
     <path d="M10.2 19.6 V14.4 H13.8 V19.6" ${STROKE}/>`,

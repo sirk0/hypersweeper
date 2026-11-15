@@ -297,6 +297,13 @@ won.addEventListener("click", (ev) => {
 next.addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));
 });
+// Back from a level: the page of its tiling, with this level picked.
+byId("back").addEventListener("click", () => {
+  const level = session?.puzzle.level;
+  const tiling = level && levelByKey(level.decor?.of ?? level.base);
+  if (level && tiling) goTiling(tiling, true, level.key);
+  else goHome();
+});
 for (const button of document.querySelectorAll("[data-go-home]"))
   button.addEventListener("click", () => goHome());
 document.addEventListener("keydown", (ev) => {
