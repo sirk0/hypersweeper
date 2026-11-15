@@ -83,21 +83,25 @@ for (const [n, run] of runs(EVERY, 25).entries()) {
   });
 }
 
-test("every tiling with marked levels opens its page, every marked level on it", async ({
-  page,
-}) => {
-  const errors = watchErrors(page);
-  await page.goto("/");
-  for (const { key } of PLAIN) {
-    const marked = markedOf(key);
-    if (marked.length === 0) continue;
-    await go(page, `?tiling=${key}`);
-    await expect(page.locator("#tiling"), key).toBeVisible();
-    await expect(page.locator("#tiling-list .marking-card"), key).toHaveCount(1 + marked.length);
-    // every tray drawn (each marked level built), with no error
-    await expect(page.locator("#tiling-list .marking-card .tray-icon"), key).toHaveCount(
-      1 + marked.length,
-    );
-    expect(errors, key).toEqual([]);
-  }
-});
+// WebKit allows 100 history.pushState calls per 10 seconds a page, so the
+// tilings are spread over several tests, each its own page.
+const WITH_MARKED = PLAIN.filter((e) => markedOf(e.key).length > 0);
+for (const [n, run] of runs(WITH_MARKED, 20).entries()) {
+  test(`every tiling with marked levels opens its page, every marked level on it (${n + 1}: ${run[0]!.key} to ${run.at(-1)!.key})`, async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await page.goto("/");
+    for (const { key } of run) {
+      const marked = markedOf(key);
+      await go(page, `?tiling=${key}`);
+      await expect(page.locator("#tiling"), key).toBeVisible();
+      await expect(page.locator("#tiling-list .marking-card"), key).toHaveCount(1 + marked.length);
+      // every tray drawn (each marked level built), with no error
+      await expect(page.locator("#tiling-list .marking-card .tray-icon"), key).toHaveCount(
+        1 + marked.length,
+      );
+      expect(errors, key).toEqual([]);
+    }
+  });
+}
