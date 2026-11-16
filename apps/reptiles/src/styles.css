@@ -1314,7 +1314,13 @@ button:disabled {
    card its tray drawn big. */
 .pick-tiles .marking-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* three to a row, as wide as the page allows on a phone — but no wider
+     than leaves a row of them on screen under the boards on a wide, short
+     desktop window, where a third of the width is taller than the room */
+  grid-template-columns: repeat(
+    3,
+    minmax(0, max(120px, min(320px, calc((100dvh - 520px) * 1.25))))
+  );
   gap: 6px;
   overflow: visible;
   padding: 2px 16px 8px;

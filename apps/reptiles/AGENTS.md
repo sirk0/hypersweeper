@@ -287,9 +287,11 @@ another; the difficulties in the accent fill, Tilings and Figures in the
 light one.
 Tilings opens the catalog (`?tilings`; old
 `?catalog` links still work): each family a row of tiling cards scrolling
-sideways — first board's outline, tiles (a rep-tile's turned, or mirrored
-where it flips, to be its board's outline made small: `boardPose` in
-`src/view/icons.ts`), name, difficulty as Hypersweeper's
+sideways — first board's outline, tiles (a rep-tile's turned, at any angle —
+the right isosceles triangle and the right-angled fish 45° off any turn of
+their ring — or mirrored where it flips, to be its board's outline made
+small: `boardPose` in `src/view/icons.ts`, held to it by
+`tests/unit/cardPose.test.ts`), name, difficulty as Hypersweeper's
 three bars, how many boards and tile sets it has (a tile set is a card of its
 page's Tiles row: plain, a matching rule or a colouring), and the
 stars earned of its levels; a tiling of one level (the P-pentomino) opens it, any
@@ -297,8 +299,9 @@ other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
 top, as their outlines in a grid, one dealt at random; under them its
 markings in one row scrolling sideways — Plain first and picked, then its
 matching rules, then its colourings — each card the tray's tiles drawn big
-in a grid that fits them all (`trayIcon`), never the board's outline, which
-is up top, with the level's difficulty and stars on the picked board; then
+in a grid that fits them all (`trayIcon`), three cards to a row, no wider
+than leaves a row of them on screen under the boards on a short desktop
+window, never the board's outline, which is up top, with the level's difficulty and stars on the picked board; then
 Play, pinned to the foot of the screen, naming the level. A board the picked
 marking is not laid on is dimmed, as is a marking not laid on the picked
 board; picking one picks what goes with it (a board it is laid on, or the
