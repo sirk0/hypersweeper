@@ -19,7 +19,6 @@ const byId = <T extends HTMLElement>(id: string): T => document.getElementById(i
 
 const host = byId("board-host");
 const count = byId("count");
-const clock = byId("clock");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
 const hintButton = byId<HTMLButtonElement>("hint");
@@ -177,14 +176,16 @@ interface Session {
   board: SvgBoard;
   control: DragControl;
   /** When the first tile went down (performance.now), and when the board was
-   * finished — the clock runs between them. */
+   * finished: the time taken, shown only on the win card — no clock runs in
+   * the header. */
   started: number | null;
   finished: number | null;
   /** The win card was closed (Exit): it stays shut while the board stays
    * finished. */
   dismissed: boolean;
-  /** A hint has been shown on this board: no third star. */
-  hinted: boolean;
+  /** How many hints have been shown on this board — any costs the third
+   * star; the win card says how many. */
+  hints: number;
   /** The tiles down when the hint was last asked for, by id — a hint on show
    * goes once they change. */
   laidKey: string;
@@ -199,10 +200,6 @@ function elapsed(s: Session): number {
 
 const clockText = (seconds: number): string =>
   `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
-
-function tick(s: Session): void {
-  clock.textContent = clockText(elapsed(s));
-}
 
 const laidOf = (s: Session): Laid[] =>
   s.puzzle.tiles.map(({ id, kind, pieces }) => ({ id, kind, pieces }));
@@ -227,15 +224,11 @@ function changed(): void {
   count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
   if (!puzzle.won) s.dismissed = false;
   won.hidden = !puzzle.won || s.dismissed;
-  if (!puzzle.won) {
-    tick(s);
-    return;
-  }
+  if (!puzzle.won) return;
   if (s.finished === null) s.finished = performance.now();
-  tick(s);
   s.control.setRemoving(false);
   const seconds = elapsed(s);
-  const stars = puzzle.stars(s.hinted);
+  const stars = puzzle.stars(s.hints > 0);
   const need = puzzle.level.need.reduce((a, b) => a + b, 0);
   const stars3 = byId("won-stars");
   stars3.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
@@ -248,8 +241,8 @@ function changed(): void {
       : `☆ ${used} tiles — ${need} would do.`,
     stars === 3
       ? "★ No hints."
-      : s.hinted
-        ? "☆ A hint was used."
+      : s.hints > 0
+        ? `☆ ${s.hints} ${s.hints === 1 ? "hint" : "hints"} used.`
         : "☆ No hints — that counts once the tiles are no more than needed.",
     `Time: ${clockText(seconds)}`,
   ];
@@ -277,7 +270,7 @@ function open(level: Level, push = true): void {
     started: null,
     finished: null,
     dismissed: false,
-    hinted: false,
+    hints: 0,
     // not the empty board's, so `changed` starts on its hint
     laidKey: "-",
   };
@@ -312,7 +305,8 @@ async function showHint(): Promise<void> {
   if (session !== s) return;
   setThinking(false);
   if (!hint || s.puzzle.won) return;
-  s.hinted = true;
+  // a press again while this board's hint is on show shows nothing new
+  if (!s.board.hint) s.hints++;
   s.board.hint = hint;
   s.board.draw();
 }
@@ -366,9 +360,6 @@ document.addEventListener("keydown", (ev) => {
   else if (ev.key === "h" || ev.key === "H") void showHint();
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
-setInterval(() => {
-  if (session && session.started !== null && session.finished === null) tick(session);
-}, 250);
 window.addEventListener("popstate", route);
 
 route();

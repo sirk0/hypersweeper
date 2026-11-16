@@ -1488,7 +1488,7 @@ export function paintedCandidates(plain: Level, all: Iterable<Painting>): Painte
       level.tiles.every((t) => new Set(t.pieces[0]!.marks!).size === 1)
     )
       continue;
-    const signature = `${painting.lines}|${traySignature(level.tiles)}`;
+    const signature = `${painting.lines}|${level.mirror}|${traySignature(level.tiles, level.mirror)}`;
     if (seen.has(signature)) continue;
     seen.add(signature);
     // a shape not in every colour

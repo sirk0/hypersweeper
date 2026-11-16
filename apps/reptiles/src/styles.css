@@ -35,8 +35,6 @@
   --border: #dcd3c4;
   --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
   --radius: 20px;
-  --counter-bg: #2e2b25;
-  --counter-ink: #f9f4ed;
   --region: #fbf6ee;
   --region-edge: #a1978a;
   --open: #7b4fd0;
@@ -123,8 +121,6 @@
     --selected: #8c491a55;
     --border: #474238;
     --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
-    --counter-bg: #000000;
-    --counter-ink: #f9f4ed;
     --region: #2a2721;
     --region-edge: #8b8374;
     --open: #b394ff;
@@ -203,8 +199,8 @@ body {
 }
 
 /* -- the header: one row, Hypersweeper's ------------------------------------
-   Three columns, the sides equal, so whatever sits in the middle (the clock,
-   a screen's title) is on the screen's exact centre. */
+   Three columns, the sides equal, so whatever sits in the middle (a screen's
+   title) is on the screen's exact centre. */
 .hud {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -283,38 +279,14 @@ button.primary {
   height: var(--hud-icon);
 }
 
-/* The clock: Hypersweeper's counter panel, as tall as the buttons. */
-.hud-counter {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.35em;
-  height: var(--hud-btn);
-  min-width: calc(var(--hud-btn) * 2.4);
-  padding: 0 calc(var(--hud-btn) * 0.28);
-  line-height: var(--hud-btn);
-  background: var(--counter-bg);
-  color: var(--counter-ink);
-  border-radius: calc(var(--hud-btn) * 0.28);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-#clock {
-  min-width: calc(var(--hud-btn) * 1.9);
-  font-size: calc(var(--hud-btn) * 0.46);
-}
-
-/* A level's header holds five buttons, two a side and the hint: its sides
-   take what they need, and the clock is centred in what is left — equal sides
-   would not fit a phone. */
+/* A level's header holds five buttons, two a side and three: no clock — the
+   time taken shows only on the win card — so the middle is left empty. */
 #game .hud {
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
-#game .hud-counter {
-  justify-self: center;
+#game .hud-right {
+  grid-column: 3;
 }
 
 /* The hint button while the hint is worked out: its bulb glows on and off. */

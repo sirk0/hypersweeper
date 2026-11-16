@@ -630,11 +630,42 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps one of every pair of colourings that make the same tray: rows, not columns too", () => {
+  it("keeps one of every pair of colourings that make the same tray: rows, not columns too, nor a mirror image", () => {
     const signatures = COLOURED.map(
-      (l) => `${l.decor!.of}|${l.decor!.rules}|${traySignature(l.tiles)}`,
+      (l) => `${l.decor!.of}|${l.decor!.rules}|${l.mirror}|${traySignature(l.tiles, l.mirror)}`,
     );
     expect(new Set(signatures).size).toBe(signatures.length);
+  });
+
+  it("reads a tray's mirror image as the tray: each tile reflected, marks and all", () => {
+    // V[3⁶; 3³.4²]₁'s lined house pentagon has no turn of its own, so a
+    // mirror can only be read off where its marks lie — two lined levels
+    // once listed were each other's mirror image, one puzzle
+    const { tiles, mirror } = levelByKey("elongated2dual.lines")!;
+    expect(mirror).toBe(true);
+    const flip = (t: Shape): Shape => ({
+      ...t,
+      pieces: posed(t, { rot: 0, flip: true, t: t.ring.zero }),
+    });
+    const mirrored = tiles.map(flip);
+    // turned and moved: the same tray
+    const turned = tiles.map((t) => ({
+      ...t,
+      pieces: posed(t, { rot: 2, flip: false, t: t.ring.one }),
+    }));
+    expect(traySignature(turned)).toBe(traySignature(tiles));
+    // the whole tray mirrored: the same up to a mirror
+    expect(traySignature(mirrored)).toBe(traySignature(tiles));
+    // two of the house pentagon, which is not its own mirror image, against
+    // it beside its mirror image: one puzzle only where tiles flip
+    const house = tiles.findIndex(
+      (t, i) => traySignature([t, t]) !== traySignature([t, mirrored[i]!]),
+    );
+    expect(house).toBeGreaterThanOrEqual(0);
+    const pair = [tiles[house]!, tiles[house]!];
+    const chiralPair = [tiles[house]!, mirrored[house]!];
+    expect(traySignature(chiralPair)).not.toBe(traySignature(pair));
+    expect(traySignature(chiralPair, true)).toBe(traySignature(pair, true));
   });
 
   it("finds each regular board's lattice from its cells, the one its colourings are painted on", () => {

@@ -3,7 +3,7 @@
 // draws its own), and a row of stars; and the header's and home screen's
 // glyphs, stroked in `currentColor` so they follow the theme.
 
-import { centroidOf, type XY } from "../geometry/shape";
+import { centroidOf, posed, signedArea, type Pose, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
 import { decorParts, markUnit, type MarkUnit } from "./decor";
@@ -58,10 +58,57 @@ export function outlineIcon(level: Level): SVGSVGElement {
   return svg;
 }
 
-/** One tray tile, resting flat as the tray holds it. */
-export function tileIcon(level: Level, kind: number): SVGSVGElement {
+/** The way a rep-tile's one tile is turned (and, where it must be, mirrored)
+ * to be its board's outline made small — the board being one big copy of it —
+ * or null for any other level. Read in floats, for drawing only: the tile,
+ * centred and scaled to the board's area, each way it can be turned, against
+ * the board's outline — every corner of either on the other's outline — and
+ * the closest kept, unmirrored on a tie. */
+export function boardPose(level: Level): Pose | null {
+  if (level.group !== "reptile" || level.tiles.length !== 1) return null;
+  const { ring, region } = level;
+  const tile = level.tiles[0]!;
+  const board = region.map((loop) => loop.map((v) => ring.toXY(v)));
+  const area = (loops: XY[][]): number => Math.abs(loops.reduce((a, l) => a + signedArea(l), 0));
+  const [bx, by] = centroidOf(board);
+  const scale = Math.sqrt(area(board) / area(tile.pieces.map((p) => p.verts.map(ring.toXY))));
+  const segments = (loops: XY[][]): [XY, XY][] =>
+    loops.flatMap((l) => l.map((p, i): [XY, XY] => [p, l[(i + 1) % l.length]!]));
+  const away = ([px, py]: XY, segs: [XY, XY][]): number =>
+    Math.min(
+      ...segs.map(([[ax, ay], [cx, cy]]) => {
+        const dx = cx - ax;
+        const dy = cy - ay;
+        const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+      }),
+    );
+  const boardSegs = segments(board);
+  let best: { pose: Pose; miss: number } | null = null;
+  for (const flip of [false, true])
+    for (let rot = 0; rot < ring.n; rot++) {
+      const pose: Pose = { rot, flip, t: ring.zero };
+      const loops = posed(tile, pose).map((p) => p.verts.map(ring.toXY));
+      const [cx, cy] = centroidOf(loops);
+      const laid = loops.map((l) =>
+        l.map(([x, y]): XY => [bx + (x - cx) * scale, by + (y - cy) * scale]),
+      );
+      const laidSegs = segments(laid);
+      const miss =
+        laid.flat().reduce((m, p) => Math.max(m, away(p, boardSegs)), 0) +
+        board.flat().reduce((m, p) => Math.max(m, away(p, laidSegs)), 0);
+      // a mirror only where it fits clearly better
+      if (best === null || miss < best.miss - 1e-6 * scale) best = { pose, miss };
+    }
+  return best!.pose;
+}
+
+/** One tray tile, resting flat as the tray holds it — or, given `pose`, as
+ * that turns it (a rep-tile's card: its board's outline made small). */
+export function tileIcon(level: Level, kind: number, pose: Pose | null = null): SVGSVGElement {
   const { ring } = level;
-  const loops = loopsOf(ring, level.tiles[kind]!.pieces);
+  const tile = level.tiles[kind]!;
+  const loops = loopsOf(ring, pose ? posed(tile, pose) : tile.pieces);
   const [cx, cy] = centroidOf(loops.map((l) => l.xy));
   const r = Math.max(...loopsReach(loops).map(([x, y]) => Math.hypot(x - cx, y - cy))) * 1.1;
   const svg = svgIn("level-tile", [-r, -r, 2 * r, 2 * r]);

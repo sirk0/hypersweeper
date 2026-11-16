@@ -9,7 +9,7 @@
 
 import { BARS, bandOf } from "../difficulty";
 import { GROUPS, type Level } from "../levels";
-import { barsIcon, outlineIcon, starRow, tileIcon } from "./icons";
+import { barsIcon, boardPose, outlineIcon, starRow, tileIcon } from "./icons";
 
 /** How many levels the tiling `level` is the first board of has, and the
  * stars earned on them. */
@@ -70,7 +70,9 @@ export function levelCard(
   name.textContent = level.name;
   const tiles = document.createElement("span");
   tiles.className = "card-tiles";
-  level.tiles.forEach((_, kind) => tiles.appendChild(tileIcon(level, kind)));
+  // a rep-tile's tile turned as its board is, the outline made small
+  const pose = boardPose(level);
+  level.tiles.forEach((_, kind) => tiles.appendChild(tileIcon(level, kind, pose)));
   const meta = document.createElement("span");
   meta.className = "card-meta";
   const bars = barsIcon(BARS[band]);
