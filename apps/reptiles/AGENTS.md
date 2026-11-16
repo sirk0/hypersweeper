@@ -258,14 +258,24 @@ some back off.
   once zoomed; a wheel or a trackpad pinch zooms about the pointer. Safari's
   own page pinch is cancelled.
 - **The tray** is a strip along the bottom (portrait) or the right
-  (landscape), in two rows — columns in landscape: a shelf of tiles at the
-  board's own scale (a tray tile is the size it lands at, zoomed in or not, up
-  to the strip taking 45% of the screen), then the controls in a row of their
-  own at a fixed size. A shelf longer than the strip scrolls, with a scroll bar
-  between the two rows: drag its thumb or press its track, drag the strip's
-  bare background, or wheel over it. The two four-kind levels,
-  [3.4.6.4; 4.6.12] and the hat's metatiles, are the ones to check a tray
-  change on.
+  (landscape): a shelf of tiles at the board's own scale (a tray tile is the
+  size it lands at, zoomed in or not, up to the strip taking 45% of the
+  screen), then the controls in a row of their own at a fixed size — columns
+  in landscape. Each tile sits in a slot just big enough to hold it every way
+  the level holds it (every rotate step, either side where it flips), so
+  turning never moves one, with no backdrop: the slot is only what a press
+  picks it up by, ringed when the hint names it. **Every tile is on screen
+  at first**: the fit shrinks the board, and its tiles with it, until the
+  shelf fits along the strip, and lays the shelf in one, two or three rows
+  (columns in landscape) — whichever lets the board be biggest, fewer rows
+  unless more are 2% better (`shelfIn`, `fit` in `svgBoard.ts`). Zoomed in,
+  a shelf longer than the strip scrolls, with a scroll bar between the
+  shelf and the controls: drag its thumb or press its track, drag the
+  strip's bare background, or wheel over it. In landscape the level's name
+  is centred over the board's room, clear of the strip (`--tray-side`). The
+  four-kind levels, [3.4.6.4; 4.6.12] and the hat's metatiles, and
+  Ammann–Beenker's five coloured tiles, are the ones to check a tray change
+  on — on a small phone (375 × 667), a large one, and in landscape.
 
 **Screens**, in Hypersweeper's Sand look (its `sand`/`sandDark` palettes,
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
@@ -490,7 +500,7 @@ square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-check
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
 a tiling's page — a board, its tiles, Play — Figures and a figure set's page, settings, the header, the hint (followed to a two-star finish), rotating both ways, wheel and pinch zoom, the tray at
-board scale, its two rows and scroll bar, the family names, the Spectre's round
+board scale, every tile on screen at first, its rows and, zoomed in, its scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
 its ✕) and every level — every marking on every board — and tiling page opening with no error
 (`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
@@ -968,9 +978,10 @@ quick way to see the win state.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
   camera transform — fitted at zoom 1, `zoomAt`/`panBy` — and on the tray's
-  pinned strip the shelf (at the world's scale, clipped to its room,
-  `scrollTray`), its scroll bar (`scrollBarBy`, `scrollBarTo`) and the
-  controls' row (a fixed size).
+  pinned strip the shelf (at the world's scale, its slots in one to three
+  rows, `shelfIn`, all on screen at zoom 1, `fit`; clipped to its room and,
+  zoomed in, scrolled, `scrollTray`), its scroll bar (`scrollBarBy`,
+  `scrollBarTo`) and the controls' row (a fixed size).
 - `src/figures.ts` — **the figures**: every level's tray tiles matched across
   levels — the same figure when one is a turned, moved or mirrored copy of the
   other at its true size (`sameFigure`, exact: both lifted into ℤ[ζ lcm], each
