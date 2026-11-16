@@ -43,7 +43,7 @@ import {
   sharedMark,
 } from "./geometry/marks";
 import type { Piece, Shape } from "./geometry/shape";
-import { selfTurns } from "./geometry/shape";
+import { posed } from "./geometry/shape";
 
 /** The translations a tiling repeats by: every i·u + j·v. */
 export interface Lattice {
@@ -700,21 +700,23 @@ export function marksKey(marks: readonly number[]): string {
   return Array.from({ length: m }, (_, n) => at(best, n)).join(",");
 }
 
-/** The ways a shape's own turns (unmarked) shift its edges: for each, how
- * far round its vertex list a turn carries vertex 0. */
-function shifts(shape: Shape): number[] {
-  const { ring } = shape;
-  const verts = shape.pieces[0]!.verts;
+/** One key for a marked tile, the same for every turn and move of it: read
+ * from each of its corners in turn, each edge as its vector times the
+ * conjugate of the first's (which no turn changes) and its mark, the least
+ * reading kept — so it never hangs on which corner the tile is listed from. */
+function tileKey(ring: Ring, verts: readonly Cyc[], marks: readonly string[]): string {
   const m = verts.length;
-  const bare: Shape = { ring, pieces: [{ verts }] };
-  return selfTurns(bare).map((k) => {
-    const turned = verts.map((v) => ring.mul(ring.zeta(k), v));
-    for (let s = 0; s < m; s++) {
-      const t = ring.sub(verts[s]!, turned[0]!);
-      if (turned.every((v, n) => ring.eq(ring.add(v, t), verts[(s + n) % m]!))) return s;
-    }
-    throw new Error("colourings: a self-turn that moves no vertex onto one");
-  });
+  const edges = verts.map((v, j) => ring.sub(verts[(j + 1) % m]!, v));
+  let best: string | null = null;
+  for (let s = 0; s < m; s++) {
+    const base = ring.conj(edges[s]!);
+    const reading = Array.from({ length: m }, (_, j) => {
+      const e = (s + j) % m;
+      return `${ring.key(ring.mul(edges[e]!, base))}/${marks[e]!}`;
+    }).join(",");
+    if (best === null || reading < best) best = reading;
+  }
+  return `${m}:${best!}`;
 }
 
 /** All orderings of 0..k-1. */
@@ -728,8 +730,12 @@ function permutations(k: number): number[][] {
 /** One key for exactly the trays that are the same up to turning a tile,
  * mirroring them all, and naming the colours differently: two colourings
  * with one key are one puzzle (any cover wins, and the tray is what a
- * player has). */
-export function traySignature(tiles: readonly Shape[]): string {
+ * player has). On a level that flips (`flips`: a tile is laid either side
+ * up), each tile is one with its own mirror image, not only the tray as a
+ * whole. A mirror is the tile reflected, its marks with it (`posed`), edge
+ * for edge — a tile with no turn of its own (the house pentagon of
+ * V[3⁶; 3³.4²]₁) is told from its mirror image only by where its marks lie. */
+export function traySignature(tiles: readonly Shape[], flips = false): string {
   const colourCount =
     1 +
     Math.max(
@@ -738,25 +744,28 @@ export function traySignature(tiles: readonly Shape[]): string {
         .flatMap((t) => t.pieces[0]!.marks ?? [])
         .map((m) => Math.max(pairOf(m)?.own ?? 0, pairOf(m)?.other ?? 0, sharedOf(m)?.hi ?? 0)),
     );
+  const sides = tiles.map((shape) => {
+    const own = shape.pieces[0]!;
+    const flipped = posed(shape, { rot: 0, flip: true, t: shape.ring.zero })[0]!;
+    return { ring: shape.ring, ways: [own, flipped] };
+  });
   let best: string | null = null;
   for (const perm of permutations(colourCount)) {
-    for (const mirror of [false, true]) {
-      const keys = tiles.map((shape) => {
-        const marks = (shape.pieces[0]!.marks ?? []).map((m) => {
-          const pair = pairOf(m);
-          if (pair) return `${perm[pair.own]}${perm[pair.other]}`;
-          const edge = sharedOf(m);
-          if (edge) return `=${[perm[edge.lo]!, perm[edge.hi]!].sort().join("")}`;
-          return String(m);
-        });
-        const seq = mirror ? [...marks].reverse() : marks;
-        const m = seq.length;
-        const turned = shifts(shape).map((s) =>
-          Array.from({ length: m }, (_, n) => seq[mod(n + s, m)]!).join(","),
-        );
-        return `${m}:${turned.sort()[0]}`;
-      });
-      const key = keys.sort().join("|");
+    const read = (m: number): string => {
+      const pair = pairOf(m);
+      if (pair) return `${perm[pair.own]}${perm[pair.other]}`;
+      const edge = sharedOf(m);
+      if (edge) return `=${[perm[edge.lo]!, perm[edge.hi]!].sort().join("")}`;
+      return String(m);
+    };
+    const keyOf = (ring: Ring, p: Piece): string =>
+      tileKey(ring, p.verts, (p.marks ?? p.verts.map(() => 0)).map(read));
+    const ways = sides.map(({ ring, ways }) => ways.map((p) => keyOf(ring, p)));
+    const trays = flips
+      ? [ways.map(([own, flipped]) => (own! < flipped! ? own! : flipped!))]
+      : [ways.map(([own]) => own!), ways.map(([, flipped]) => flipped!)];
+    for (const keys of trays) {
+      const key = [...keys].sort().join("|");
       if (best === null || key < best) best = key;
     }
   }

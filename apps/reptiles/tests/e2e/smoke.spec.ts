@@ -144,9 +144,10 @@ test("the level screen: one header row, no level list, a random level of the sam
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=cairo");
-  // home, back, the hint, restart and the die — and the clock, time only
+  // home, back, the hint, restart and the die — and no clock: the time
+  // taken shows only once the board is finished
   await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(5);
-  await expect(page.locator("#clock")).toHaveText("0:00");
+  await expect(page.locator("#clock")).toHaveCount(0);
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
   // Cairo is hard; the die deals another hard level.
@@ -351,6 +352,7 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   // no hint, no more tiles than needed: three stars
   await expect(page.locator("#won-stars")).toHaveText("★★★");
   await expect(page.locator("#won-detail")).toContainText("No hints.");
+  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d/);
   await page.locator("#exit").click();
   await expect(page.locator("#won")).toBeHidden();
   await expect(page.locator("#count")).toHaveText("100%");
@@ -369,6 +371,9 @@ test("the hint shows a tile to lay, goes with the next move, and costs the third
   await expect(ghost).toHaveCount(1);
   await expect(page.locator("svg.board .tray.hinted")).toHaveCount(1);
   await expect(page.locator("#hint")).not.toHaveClass(/thinking/);
+  // asking again while that hint is on show is not another hint
+  await page.keyboard.press("h");
+  await expect(ghost).toHaveCount(1);
 
   // laying a tile where the hint says puts it away
   const tray = page.locator("svg.board .tile.in-tray").first();
@@ -382,7 +387,8 @@ test("the hint shows a tile to lay, goes with the next move, and costs the third
   await expect(ghost).toHaveCount(0);
 
   // the H key asks again; following the hint to the end finishes the
-  // board — with two stars, not three
+  // board — with two stars, not three, and the win card counts the hints:
+  // one for each of the 16 tiles
   for (let laid = 1; laid < 16; laid++) {
     await page.keyboard.press("h");
     await expect(ghost).toHaveCount(1);
@@ -396,7 +402,8 @@ test("the hint shows a tile to lay, goes with the next move, and costs the third
   }
   await expect(page.locator("#won")).toBeVisible();
   await expect(page.locator("#won-stars")).toHaveText("★★☆");
-  await expect(page.locator("#won-detail")).toContainText("A hint was used.");
+  await expect(page.locator("#won-detail")).toContainText("16 hints used.");
+  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d/);
   await expect(page.locator("#hint")).toBeDisabled();
   expect(errors).toEqual([]);
 });

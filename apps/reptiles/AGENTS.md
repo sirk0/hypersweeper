@@ -232,9 +232,10 @@ some back off.
   rhombi); a test holds that too.
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
   from still to go (past zero, how many extra). Finishing at all is one star;
-  with no more tiles than that, two; and that with no hint shown, three. The
-  clock starts with the first tile down and only says how long it took —
-  there is no time limit.
+  with no more tiles than that, two; and that with no hint shown, three. No
+  clock shows while playing: the time from the first tile down to the last
+  is told only on the win card, with how many hints were shown (a press
+  again while a hint is on show is not another) — there is no time limit.
 - **The hint** (the bulb in the header, or H) looks at the board as it
   stands and says what to do next, worked out exactly (`src/hint.ts`). First
   it checks the tiles down: can the board still be finished round them — any
@@ -286,7 +287,11 @@ another; the difficulties in the accent fill, Tilings and Figures in the
 light one.
 Tilings opens the catalog (`?tilings`; old
 `?catalog` links still work): each family a row of tiling cards scrolling
-sideways — first board's outline, tiles, name, difficulty as Hypersweeper's
+sideways — first board's outline, tiles (a rep-tile's turned, at any angle —
+the right isosceles triangle and the right-angled fish 45° off any turn of
+their ring — or mirrored where it flips, to be its board's outline made
+small: `boardPose` in `src/view/icons.ts`, held to it by
+`tests/unit/cardPose.test.ts`), name, difficulty as Hypersweeper's
 three bars, how many boards and tile sets it has (a tile set is a card of its
 page's Tiles row: plain, a matching rule or a colouring), and the
 stars earned of its levels; a tiling of one level (the P-pentomino) opens it, any
@@ -294,8 +299,9 @@ other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
 top, as their outlines in a grid, one dealt at random; under them its
 markings in one row scrolling sideways — Plain first and picked, then its
 matching rules, then its colourings — each card the tray's tiles drawn big
-in a grid that fits them all (`trayIcon`), never the board's outline, which
-is up top, with the level's difficulty and stars on the picked board; then
+in a grid that fits them all (`trayIcon`), three cards to a row, no wider
+than leaves a row of them on screen under the boards on a short desktop
+window, never the board's outline, which is up top, with the level's difficulty and stars on the picked board; then
 Play, pinned to the foot of the screen, naming the level. A board the picked
 marking is not laid on is dimmed, as is a marking not laid on the picked
 board; picking one picks what goes with it (a board it is laid on, or the
@@ -316,8 +322,7 @@ corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
 version and checks for updates (the shared check in `@tiling/platform`; left
 out of a packaged build). Levels are picked in
 Tilings or Figures. A level is `?level=<key>`: one header row, Hypersweeper's —
-home and back, the clock (time taken, no limit; centred between the sides,
-which hold two buttons and three), the hint, restart,
+home and back, then (no clock: the time taken is on the win card) the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
 the level's name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest
@@ -394,8 +399,8 @@ so its colouring stays on its first board. `npm run marked-boards`
 every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
-colouring's tiles in more ways or fewer: 94 of a thousand do): 913 boards
-past the first, 1654 levels in all. Run it after `npm run boards`,
+colouring's tiles in more ways or fewer: 104 of a thousand do): 891 boards
+past the first, 1628 levels in all. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -436,7 +441,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 188 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1654 levels in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1628 levels in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -765,7 +770,11 @@ quick way to see the win state.
   all round) and need more than one tile per shape (one reads as a lined
   board), and drops any whose tray another already had (`traySignature`: the same up to
   turning a tile, a mirror and renaming the colours — rows and columns are
-  one). `COLOURED` lists the regular boards painted and each one's lattice
+  one; a mirror is each tile reflected, marks and all, so a tile with no turn
+  of its own, V[3⁶; 3³.4²]₁'s house pentagon, is not read as its mirror image
+  — and, on a level that flips, each tile one with its mirror image, since a
+  player can flip, lay it and flip back). A tiling's next candidate takes a
+  dropped one's place, where it has one. `COLOURED` lists the regular boards painted and each one's lattice
   (their paintings listed in `src/colourings.json` too, all that are kept,
   so nothing is searched as the page loads); the
   level is `<plain>.<label>`, `Level.decor` saying what it marks — lined

@@ -175,7 +175,6 @@ describe("colourings", () => {
       "triangles.2apart",
       "triangles.2oneinthree",
       "triangles.3paired",
-      "triangles.3paired2",
       "hexagons.lines",
       "hexagons.2oneinthree",
       "hexagons.2oneinthree2",
@@ -321,31 +320,28 @@ describe("colourings", () => {
       "triakis.lines",
       "triakis.linkedpairs",
       "triakis.2oneinthree",
-      "triakis.2oneinthree2",
       "triakis.3mixed",
+      "triakis.3paired",
       "cairo.lines",
       "cairo.lines2",
       "prismaticpent.lines",
       "prismaticpent.branchinglines",
       "prismaticpent.2oneinthree",
-      "prismaticpent.2oneinthree2",
       "prismaticpent.3paired",
       "floret.lines",
       "floret.lines2",
       "floret.3paired",
       "deltoidal.lines",
-      "deltoidal.linkedpairs",
+      "deltoidal.lines2",
       "deltoidal.2oneinthree",
       "deltoidal.2oneinthree2",
-      "deltoidal.2oneinthree3",
+      "deltoidal.3striped",
       "kisrhombille.lines",
       "kisrhombille.lines2",
       "kisrhombille.2apart",
       "kisrhombille.3mixed",
       "studdedtridual.dots",
-      "studdedtridual.dots2",
       "studdedtridual.2byshape",
-      "studdedtridual.2byshape2",
       "studdedtri2dual.lines",
       "studdedtri2dual.lines2",
       "studdedtri2dual.2colours",
@@ -364,8 +360,8 @@ describe("colourings", () => {
       "trirhombitrihexdual.lines",
       "trirhombitrihexdual.lines2",
       "trirhombitrihexdual.2oneinthree",
-      "trirhombitrihexdual.2oneinthree2",
       "trirhombitrihexdual.3colours",
+      "trirhombitrihexdual.3colours2",
       "tritrunctrihexdual.lines",
       "tritrunctrihexdual.lines2",
       "fannedhexdual.lines",
@@ -373,8 +369,8 @@ describe("colourings", () => {
       "hexbandsdual.lines",
       "hexbandsdual.lines2",
       "hexbandsdual.2oneinthree",
-      "hexbandsdual.2oneinthree2",
-      "hexbandsdual.2oneinthree3",
+      "hexbandsdual.3colours",
+      "hexbandsdual.3colours2",
       "snubelongated2dual.lines",
       "snubelongated2dual.lines2",
       "snubelongated2dual.2oneinthreebyshape",
@@ -385,7 +381,7 @@ describe("colourings", () => {
       "dissectedtrunchex2dual.lines",
       "dissectedtrunchex2dual.lines2",
       "dissectedtrunchex2dual.2colours",
-      "dissectedtrunchex2dual.2colours2",
+      "dissectedtrunchex2dual.2oneinthree",
       "dissectedtrunchex2dual.3byshape",
       "squarerows2dual.lines",
       "squarerows2dual.lines2",
@@ -399,8 +395,8 @@ describe("colourings", () => {
       "squarerows3dual.2oneinthree",
       "dissectedtrunchexdual.lines",
       "dissectedtrunchexdual.lines2",
-      "dissectedtrunchexdual.2colours",
       "dissectedtrunchexdual.2oneinthree",
+      "dissectedtrunchexdual.2colours",
       "dissectedtrunchexdual.3byshape",
       "hexrowsdual.lines",
       "hexrowsdual.lines2",
@@ -423,9 +419,10 @@ describe("colourings", () => {
       "dodecarhombitrihexdual.lines",
       "dodecarhombitrihexdual.lines2",
       "dodecarhombitrihexdual.2oneinthreebyshape",
-      "dodecarhombitrihexdual.2oneinthreebyshape2",
       "dodecarhombitrihexdual.2oneinthree",
+      "dodecarhombitrihexdual.3byshape",
       "stackedbond.lines",
+      "stackedbond.lines2",
       "stackedbond.2oneinthree",
       "stackedbond.2oneinthree2",
       "stackedbond.2oneinthree3",
@@ -438,12 +435,11 @@ describe("colourings", () => {
       "basketweave.lines2",
       "basketweave3.2oneinthree",
       "basketweave3.3mixed",
-      "basketweave3.3mixed2",
       "herringbone.lines",
       "herringbone.branchinglines",
       "herringbone.2oneinthree",
       "herringbone.2oneinthree2",
-      "herringbone.2oneinthree3",
+      "herringbone.3striped",
       "pentagon10.linkedpairs",
       "pentagon10.3mixed",
       "pentagon13.lines",
@@ -630,11 +626,42 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps one of every pair of colourings that make the same tray: rows, not columns too", () => {
+  it("keeps one of every pair of colourings that make the same tray: rows, not columns too, nor a mirror image", () => {
     const signatures = COLOURED.map(
-      (l) => `${l.decor!.of}|${l.decor!.rules}|${traySignature(l.tiles)}`,
+      (l) => `${l.decor!.of}|${l.decor!.rules}|${l.mirror}|${traySignature(l.tiles, l.mirror)}`,
     );
     expect(new Set(signatures).size).toBe(signatures.length);
+  });
+
+  it("reads a tray's mirror image as the tray: each tile reflected, marks and all", () => {
+    // V[3⁶; 3³.4²]₁'s lined house pentagon has no turn of its own, so a
+    // mirror can only be read off where its marks lie — two lined levels
+    // once listed were each other's mirror image, one puzzle
+    const { tiles, mirror } = levelByKey("elongated2dual.lines")!;
+    expect(mirror).toBe(true);
+    const flip = (t: Shape): Shape => ({
+      ...t,
+      pieces: posed(t, { rot: 0, flip: true, t: t.ring.zero }),
+    });
+    const mirrored = tiles.map(flip);
+    // turned and moved: the same tray
+    const turned = tiles.map((t) => ({
+      ...t,
+      pieces: posed(t, { rot: 2, flip: false, t: t.ring.one }),
+    }));
+    expect(traySignature(turned)).toBe(traySignature(tiles));
+    // the whole tray mirrored: the same up to a mirror
+    expect(traySignature(mirrored)).toBe(traySignature(tiles));
+    // two of the house pentagon, which is not its own mirror image, against
+    // it beside its mirror image: one puzzle only where tiles flip
+    const house = tiles.findIndex(
+      (t, i) => traySignature([t, t]) !== traySignature([t, mirrored[i]!]),
+    );
+    expect(house).toBeGreaterThanOrEqual(0);
+    const pair = [tiles[house]!, tiles[house]!];
+    const chiralPair = [tiles[house]!, mirrored[house]!];
+    expect(traySignature(chiralPair)).not.toBe(traySignature(pair));
+    expect(traySignature(chiralPair, true)).toBe(traySignature(pair, true));
   });
 
   it("finds each regular board's lattice from its cells, the one its colourings are painted on", () => {

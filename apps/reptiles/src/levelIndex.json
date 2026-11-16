@@ -512,14 +512,6 @@
     "painting": 4
   },
   {
-    "key": "triangles.3paired2",
-    "label": "Triangles, 3 colours, paired II",
-    "name": "3⁶ · 3 colours, paired II",
-    "group": "colourings",
-    "decor": { "of": "triangles", "colours": 3, "rules": false, "label": "3 colours, paired II" },
-    "painting": 5
-  },
-  {
     "key": "hexagons.lines",
     "label": "Hexagons, lines",
     "name": "6³ · lines",
@@ -2000,24 +1992,19 @@
     "painting": 2
   },
   {
-    "key": "triakis.2oneinthree2",
-    "label": "Triakis triangular, 2 colours, one in three II",
-    "name": "V3.12² · 2 colours, one in three II",
-    "group": "colourings",
-    "decor": {
-      "of": "triakis",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three II"
-    },
-    "painting": 3
-  },
-  {
     "key": "triakis.3mixed",
     "label": "Triakis triangular, 3 colours, mixed",
     "name": "V3.12² · 3 colours, mixed",
     "group": "colourings",
     "decor": { "of": "triakis", "colours": 3, "rules": false, "label": "3 colours, mixed" },
+    "painting": 3
+  },
+  {
+    "key": "triakis.3paired",
+    "label": "Triakis triangular, 3 colours, paired",
+    "name": "V3.12² · 3 colours, paired",
+    "group": "colourings",
+    "decor": { "of": "triakis", "colours": 3, "rules": false, "label": "3 colours, paired" },
     "painting": 4
   },
   {
@@ -2066,25 +2053,12 @@
     "painting": 2
   },
   {
-    "key": "prismaticpent.2oneinthree2",
-    "label": "Prismatic pentagonal, 2 colours, one in three II",
-    "name": "V3³.4² · 2 colours, one in three II",
-    "group": "colourings",
-    "decor": {
-      "of": "prismaticpent",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three II"
-    },
-    "painting": 3
-  },
-  {
     "key": "prismaticpent.3paired",
     "label": "Prismatic pentagonal, 3 colours, paired",
     "name": "V3³.4² · 3 colours, paired",
     "group": "colourings",
     "decor": { "of": "prismaticpent", "colours": 3, "rules": false, "label": "3 colours, paired" },
-    "painting": 4
+    "painting": 3
   },
   {
     "key": "floret.lines",
@@ -2119,11 +2093,11 @@
     "painting": 0
   },
   {
-    "key": "deltoidal.linkedpairs",
-    "label": "Deltoidal trihexagonal, linked pairs",
-    "name": "V3.4.6.4 · linked pairs",
+    "key": "deltoidal.lines2",
+    "label": "Deltoidal trihexagonal, lines II",
+    "name": "V3.4.6.4 · lines II",
     "group": "rules",
-    "decor": { "of": "deltoidal", "colours": 1, "rules": true, "label": "linked pairs" },
+    "decor": { "of": "deltoidal", "colours": 1, "rules": true, "label": "lines II" },
     "painting": 1
   },
   {
@@ -2153,16 +2127,11 @@
     "painting": 3
   },
   {
-    "key": "deltoidal.2oneinthree3",
-    "label": "Deltoidal trihexagonal, 2 colours, one in three III",
-    "name": "V3.4.6.4 · 2 colours, one in three III",
+    "key": "deltoidal.3striped",
+    "label": "Deltoidal trihexagonal, 3 colours, striped",
+    "name": "V3.4.6.4 · 3 colours, striped",
     "group": "colourings",
-    "decor": {
-      "of": "deltoidal",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three III"
-    },
+    "decor": { "of": "deltoidal", "colours": 3, "rules": false, "label": "3 colours, striped" },
     "painting": 4
   },
   {
@@ -2206,14 +2175,6 @@
     "painting": 0
   },
   {
-    "key": "studdedtridual.dots2",
-    "label": "Studded triangular dual, dots II",
-    "name": "V[3⁶; 3⁴.6]₁ · dots II",
-    "group": "rules",
-    "decor": { "of": "studdedtridual", "colours": 1, "rules": true, "label": "dots II" },
-    "painting": 1
-  },
-  {
     "key": "studdedtridual.2byshape",
     "label": "Studded triangular dual, 2 colours, by shape",
     "name": "V[3⁶; 3⁴.6]₁ · 2 colours, by shape",
@@ -2224,20 +2185,7 @@
       "rules": false,
       "label": "2 colours, by shape"
     },
-    "painting": 2
-  },
-  {
-    "key": "studdedtridual.2byshape2",
-    "label": "Studded triangular dual, 2 colours, by shape II",
-    "name": "V[3⁶; 3⁴.6]₁ · 2 colours, by shape II",
-    "group": "colourings",
-    "decor": {
-      "of": "studdedtridual",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, by shape II"
-    },
-    "painting": 3
+    "painting": 1
   },
   {
     "key": "studdedtri2dual.lines",
@@ -2424,24 +2372,19 @@
     "painting": 2
   },
   {
-    "key": "trirhombitrihexdual.2oneinthree2",
-    "label": "Fanned rhombitrihexagonal dual, 2 colours, one in three II",
-    "name": "V[3⁶; 3².4.3.4] · 2 colours, one in three II",
-    "group": "colourings",
-    "decor": {
-      "of": "trirhombitrihexdual",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three II"
-    },
-    "painting": 3
-  },
-  {
     "key": "trirhombitrihexdual.3colours",
     "label": "Fanned rhombitrihexagonal dual, 3 colours",
     "name": "V[3⁶; 3².4.3.4] · 3 colours",
     "group": "colourings",
     "decor": { "of": "trirhombitrihexdual", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 3
+  },
+  {
+    "key": "trirhombitrihexdual.3colours2",
+    "label": "Fanned rhombitrihexagonal dual, 3 colours II",
+    "name": "V[3⁶; 3².4.3.4] · 3 colours II",
+    "group": "colourings",
+    "decor": { "of": "trirhombitrihexdual", "colours": 3, "rules": false, "label": "3 colours II" },
     "painting": 4
   },
   {
@@ -2506,29 +2449,19 @@
     "painting": 2
   },
   {
-    "key": "hexbandsdual.2oneinthree2",
-    "label": "Banded hexagonal dual, 2 colours, one in three II",
-    "name": "V[3⁴.6; 3².6²] · 2 colours, one in three II",
+    "key": "hexbandsdual.3colours",
+    "label": "Banded hexagonal dual, 3 colours",
+    "name": "V[3⁴.6; 3².6²] · 3 colours",
     "group": "colourings",
-    "decor": {
-      "of": "hexbandsdual",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three II"
-    },
+    "decor": { "of": "hexbandsdual", "colours": 3, "rules": false, "label": "3 colours" },
     "painting": 3
   },
   {
-    "key": "hexbandsdual.2oneinthree3",
-    "label": "Banded hexagonal dual, 2 colours, one in three III",
-    "name": "V[3⁴.6; 3².6²] · 2 colours, one in three III",
+    "key": "hexbandsdual.3colours2",
+    "label": "Banded hexagonal dual, 3 colours II",
+    "name": "V[3⁴.6; 3².6²] · 3 colours II",
     "group": "colourings",
-    "decor": {
-      "of": "hexbandsdual",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three III"
-    },
+    "decor": { "of": "hexbandsdual", "colours": 3, "rules": false, "label": "3 colours II" },
     "painting": 4
   },
   {
@@ -2627,15 +2560,15 @@
     "painting": 2
   },
   {
-    "key": "dissectedtrunchex2dual.2colours2",
-    "label": "Turned dissected truncated hexagonal dual, 2 colours II",
-    "name": "V[3³.4²; 3.4.6.4] · 2 colours II",
+    "key": "dissectedtrunchex2dual.2oneinthree",
+    "label": "Turned dissected truncated hexagonal dual, 2 colours, one in three",
+    "name": "V[3³.4²; 3.4.6.4] · 2 colours, one in three",
     "group": "colourings",
     "decor": {
       "of": "dissectedtrunchex2dual",
       "colours": 2,
       "rules": false,
-      "label": "2 colours II"
+      "label": "2 colours, one in three"
     },
     "painting": 3
   },
@@ -2779,14 +2712,6 @@
     "painting": 1
   },
   {
-    "key": "dissectedtrunchexdual.2colours",
-    "label": "Dissected truncated hexagonal dual, 2 colours",
-    "name": "V[3².4.3.4; 3.4.6.4] · 2 colours",
-    "group": "colourings",
-    "decor": { "of": "dissectedtrunchexdual", "colours": 2, "rules": false, "label": "2 colours" },
-    "painting": 2
-  },
-  {
     "key": "dissectedtrunchexdual.2oneinthree",
     "label": "Dissected truncated hexagonal dual, 2 colours, one in three",
     "name": "V[3².4.3.4; 3.4.6.4] · 2 colours, one in three",
@@ -2797,6 +2722,14 @@
       "rules": false,
       "label": "2 colours, one in three"
     },
+    "painting": 2
+  },
+  {
+    "key": "dissectedtrunchexdual.2colours",
+    "label": "Dissected truncated hexagonal dual, 2 colours",
+    "name": "V[3².4.3.4; 3.4.6.4] · 2 colours",
+    "group": "colourings",
+    "decor": { "of": "dissectedtrunchexdual", "colours": 2, "rules": false, "label": "2 colours" },
     "painting": 3
   },
   {
@@ -3016,19 +2949,6 @@
     "painting": 2
   },
   {
-    "key": "dodecarhombitrihexdual.2oneinthreebyshape2",
-    "label": "Studded rhombitrihexagonal dual, 2 colours, one in three, by shape II",
-    "name": "V[3.4.6.4; 4.6.12] · 2 colours, one in three, by shape II",
-    "group": "colourings",
-    "decor": {
-      "of": "dodecarhombitrihexdual",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three, by shape II"
-    },
-    "painting": 3
-  },
-  {
     "key": "dodecarhombitrihexdual.2oneinthree",
     "label": "Studded rhombitrihexagonal dual, 2 colours, one in three",
     "name": "V[3.4.6.4; 4.6.12] · 2 colours, one in three",
@@ -3038,6 +2958,19 @@
       "colours": 2,
       "rules": false,
       "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "dodecarhombitrihexdual.3byshape",
+    "label": "Studded rhombitrihexagonal dual, 3 colours, by shape",
+    "name": "V[3.4.6.4; 4.6.12] · 3 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "dodecarhombitrihexdual",
+      "colours": 3,
+      "rules": false,
+      "label": "3 colours, by shape"
     },
     "painting": 4
   },
@@ -3050,6 +2983,14 @@
     "painting": 0
   },
   {
+    "key": "stackedbond.lines2",
+    "label": "Stacked bond, lines II",
+    "name": "Stacked bond · lines II",
+    "group": "rules",
+    "decor": { "of": "stackedbond", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
     "key": "stackedbond.2oneinthree",
     "label": "Stacked bond, 2 colours, one in three",
     "name": "Stacked bond · 2 colours, one in three",
@@ -3060,7 +3001,7 @@
       "rules": false,
       "label": "2 colours, one in three"
     },
-    "painting": 1
+    "painting": 2
   },
   {
     "key": "stackedbond.2oneinthree2",
@@ -3073,7 +3014,7 @@
       "rules": false,
       "label": "2 colours, one in three II"
     },
-    "painting": 2
+    "painting": 3
   },
   {
     "key": "stackedbond.2oneinthree3",
@@ -3086,7 +3027,7 @@
       "rules": false,
       "label": "2 colours, one in three III"
     },
-    "painting": 3
+    "painting": 4
   },
   {
     "key": "runningbond.lines",
@@ -3181,14 +3122,6 @@
     "painting": 1
   },
   {
-    "key": "basketweave3.3mixed2",
-    "label": "Basket weave 3x3, 3 colours, mixed II",
-    "name": "Basket weave 3x3 · 3 colours, mixed II",
-    "group": "colourings",
-    "decor": { "of": "basketweave3", "colours": 3, "rules": false, "label": "3 colours, mixed II" },
-    "painting": 2
-  },
-  {
     "key": "herringbone.lines",
     "label": "Herringbone, lines",
     "name": "Herringbone · lines",
@@ -3231,16 +3164,11 @@
     "painting": 3
   },
   {
-    "key": "herringbone.2oneinthree3",
-    "label": "Herringbone, 2 colours, one in three III",
-    "name": "Herringbone · 2 colours, one in three III",
+    "key": "herringbone.3striped",
+    "label": "Herringbone, 3 colours, striped",
+    "name": "Herringbone · 3 colours, striped",
     "group": "colourings",
-    "decor": {
-      "of": "herringbone",
-      "colours": 2,
-      "rules": false,
-      "label": "2 colours, one in three III"
-    },
+    "decor": { "of": "herringbone", "colours": 3, "rules": false, "label": "3 colours, striped" },
     "painting": 4
   },
   {

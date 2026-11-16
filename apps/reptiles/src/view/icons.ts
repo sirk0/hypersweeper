@@ -3,7 +3,8 @@
 // draws its own), and a row of stars; and the header's and home screen's
 // glyphs, stroked in `currentColor` so they follow the theme.
 
-import { centroidOf, type XY } from "../geometry/shape";
+import { posedMarks } from "../geometry/marks";
+import { centroidOf, posedCurve, signedArea, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
 import { decorParts, markUnit, type MarkUnit } from "./decor";
@@ -58,10 +59,103 @@ export function outlineIcon(level: Level): SVGSVGElement {
   return svg;
 }
 
-/** One tray tile, resting flat as the tray holds it. */
-export function tileIcon(level: Level, kind: number): SVGSVGElement {
+/** How a card draws a tile: mirrored in the x axis first, where `flip`,
+ * then turned by `angle` radians — any angle, not only the ring's steps: the
+ * right isosceles triangle rests on its long side but its board stands on a
+ * short one, 45° round, which no turn of ℤ[ζ4] reaches. For drawing only. */
+export interface IconPose {
+  angle: number;
+  flip: boolean;
+}
+
+/** The way a rep-tile's one tile is turned (and, where it must be, mirrored)
+ * to be its board's outline made small — the board being one big copy of it —
+ * or null for any other level. Read in floats, for drawing only: each angle
+ * that lays one of the tile's edges along one of the board's, the tile there
+ * centred and scaled to the board's area against the board's outline —
+ * every corner of either on the other's outline — and the closest kept,
+ * unmirrored on a tie. */
+export function boardPose(level: Level): IconPose | null {
+  return boardFit(level)?.pose ?? null;
+}
+
+/** `boardPose`, and how far off it is (`miss`, in board units: the farthest
+ * corner of either from the other's outline — 0 where the tile is the
+ * board made small), for the tests. */
+export function boardFit(level: Level): { pose: IconPose; miss: number } | null {
+  if (level.group !== "reptile" || level.tiles.length !== 1) return null;
+  const { ring, region } = level;
+  const tile = level.tiles[0]!.pieces.map((p) => p.verts.map((v) => ring.toXY(v)));
+  const board = region.map((loop) => loop.map((v) => ring.toXY(v)));
+  const area = (loops: XY[][]): number => Math.abs(loops.reduce((a, l) => a + signedArea(l), 0));
+  const [bx, by] = centroidOf(board);
+  const scale = Math.sqrt(area(board) / area(tile));
+  const segments = (loops: XY[][]): [XY, XY][] =>
+    loops.flatMap((l) => l.map((p, i): [XY, XY] => [p, l[(i + 1) % l.length]!]));
+  const directions = (loops: XY[][]): number[] =>
+    segments(loops).map(([[ax, ay], [cx, cy]]) => Math.atan2(cy - ay, cx - ax));
+  const away = ([px, py]: XY, segs: [XY, XY][]): number =>
+    Math.min(
+      ...segs.map(([[ax, ay], [cx, cy]]) => {
+        const dx = cx - ax;
+        const dy = cy - ay;
+        const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+      }),
+    );
+  const boardSegs = segments(board);
+  const boardDirs = directions(board);
+  let best: { pose: IconPose; miss: number } | null = null;
+  for (const flip of [false, true]) {
+    // mirrored, listed backwards so it still runs counter-clockwise, as the
+    // board does: else every edge would point the other way along the board's
+    const own = tile.map((l) => (flip ? [...l].reverse() : l).map((p) => mirrorIf(p, flip)));
+    const [cx, cy] = centroidOf(own);
+    for (const td of directions(own))
+      for (const bd of boardDirs) {
+        const angle = bd - td;
+        const laid = own.map((l) =>
+          l.map((p): XY => {
+            const [x, y] = turn([p[0] - cx, p[1] - cy], angle);
+            return [bx + x * scale, by + y * scale];
+          }),
+        );
+        const laidSegs = segments(laid);
+        const miss =
+          laid.flat().reduce((m, p) => Math.max(m, away(p, boardSegs)), 0) +
+          board.flat().reduce((m, p) => Math.max(m, away(p, laidSegs)), 0);
+        // a mirror, or another angle, only where it fits clearly better
+        if (best === null || miss < best.miss - 1e-6 * scale)
+          best = { pose: { angle, flip }, miss };
+      }
+  }
+  return best;
+}
+
+const mirrorIf = ([x, y]: XY, flip: boolean): XY => (flip ? [x, -y] : [x, y]);
+const turn = ([x, y]: XY, angle: number): XY => [
+  x * Math.cos(angle) - y * Math.sin(angle),
+  x * Math.sin(angle) + y * Math.cos(angle),
+];
+
+/** One tray tile, resting flat as the tray holds it — or, given `pose`, as
+ * that turns it (a rep-tile's card: its board's outline made small). */
+export function tileIcon(level: Level, kind: number, pose: IconPose | null = null): SVGSVGElement {
   const { ring } = level;
-  const loops = loopsOf(ring, level.tiles[kind]!.pieces);
+  const tile = level.tiles[kind]!;
+  const loops = loopsOf(ring, tile.pieces).map((l) =>
+    pose === null
+      ? l
+      : {
+          // a mirror lists the outline backwards, as `posed` does, so it
+          // still runs counter-clockwise — curves and marks with it
+          xy: (pose.flip ? [...l.xy].reverse() : l.xy).map((p) =>
+            turn(mirrorIf(p, pose.flip), pose.angle),
+          ),
+          curve: posedCurve(l.curve && [...l.curve], pose.flip),
+          marks: posedMarks(l.marks && [...l.marks], pose.flip),
+        },
+  );
   const [cx, cy] = centroidOf(loops.map((l) => l.xy));
   const r = Math.max(...loopsReach(loops).map(([x, y]) => Math.hypot(x - cx, y - cy))) * 1.1;
   const svg = svgIn("level-tile", [-r, -r, 2 * r, 2 * r]);
