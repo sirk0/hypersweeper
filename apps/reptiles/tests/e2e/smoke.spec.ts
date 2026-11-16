@@ -233,14 +233,42 @@ test.describe("on a touchscreen", () => {
     await expect(page.locator("svg.board g.tray-scroll")).toBeHidden();
   });
 
-  test("four kinds of tile scroll, by the scroll bar or the strip's background", async ({
+  test("every tray tile is on screen at first, the board shrunk to make room", async ({ page }) => {
+    // [3.4.6.4; 4.6.12]: a triangle, a square, a hexagon and a dodecagon at
+    // the board's own size; and Ammann–Beenker's five coloured tiles.
+    for (const level of ["dodecarhombitrihex", "ammannbeenker.3apart"]) {
+      await page.goto(`/?level=${level}`);
+      const tiles = page.locator("svg.board .tile.in-tray");
+      await expect(tiles.first()).toBeVisible();
+      for (const tile of await tiles.all()) {
+        const t = (await tile.boundingBox())!;
+        expect(t.x).toBeGreaterThanOrEqual(0);
+        expect(t.x + t.width).toBeLessThanOrEqual(390);
+      }
+      await expect(page.locator("svg.board g.tray-scroll")).toBeHidden();
+    }
+    // Ammann–Beenker's five take two rows: a phone is not wide enough for one
+    // without shrinking the board further than two rows do.
+    const ys = new Set<number>();
+    for (const tile of await page.locator("svg.board .tile.in-tray").all()) {
+      const t = (await tile.boundingBox())!;
+      ys.add(Math.round(t.y + t.height / 2));
+    }
+    expect(ys.size).toBe(2);
+  });
+
+  test("zoomed in, the tray scrolls, by the scroll bar or the strip's background", async ({
     page,
     context,
   }) => {
-    // [3.4.6.4; 4.6.12]: a triangle, a square, a hexagon and a dodecagon at
-    // the board's own size run longer than a phone is wide.
-    await page.goto("/?level=dodecarhombitrihex");
+    // 3.4.6.4's triangle, square and hexagon fit at first; zoomed in they
+    // grow with the board and run longer than a phone is wide.
+    await page.goto("/?level=rhombitrihex");
     const thumb = page.locator("svg.board .tray-scroll-thumb");
+    await expect(page.locator("svg.board g.tray-scroll")).toBeHidden();
+    const r = (await page.locator("svg.board path.region").boundingBox())!;
+    await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+    for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -400);
     await expect(thumb).toBeVisible();
     const tile = page.locator("svg.board .tile.in-tray").first();
     const knob = page.locator('[data-turn="1"]');

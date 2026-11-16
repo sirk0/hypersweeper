@@ -92,7 +92,6 @@
   --hint-fill: rgba(47, 158, 91, 0.18);
   --remove: #c9463d;
   --remove-edge: #7a1f19;
-  --tray: rgba(64, 35, 16, 0.06);
   /* The tray's strip along the bottom (or the right), over a board zoomed in
      under it. */
   --tray-strip: #f9f4ed;
@@ -166,7 +165,6 @@
     --hint-fill: rgba(95, 214, 140, 0.2);
     --remove: #d0574d;
     --remove-edge: #ffb3ab;
-    --tray: rgba(255, 255, 255, 0.06);
     --tray-strip: #2e2b25;
     --scrim: rgba(0, 0, 0, 0.55);
   }
@@ -355,7 +353,8 @@ button.primary {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  /* clear of the tray, in landscape a strip down the right (svgBoard.ts) */
+  right: var(--tray-side, 0px);
   margin: 0;
   padding: 0 16px;
   text-align: center;
@@ -645,8 +644,9 @@ button.primary {
 .decor.label-line.label-5 {
   stroke: var(--stick-ring);
 }
+/* A tray slot: no backdrop, only what a press picks its tile up by. */
 .tray {
-  fill: var(--tray);
+  fill: transparent;
 }
 
 .knob {
@@ -729,7 +729,7 @@ button.primary {
 }
 
 /* The hint on the board. A tile to lay: its outline where it lands, dashed,
-   over a pale fill; its tray tile's circle and the control it needs first
+   over a pale fill; its tray tile's slot and the control it needs first
    (a flip, or a turn the shorter way) ringed. A tile to take off: ringed in
    the remove colour. Each glows on and off, but not where motion is reduced. */
 .hint-ghost {

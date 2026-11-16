@@ -8,12 +8,13 @@
 // one transform, the camera: fitted to the room the tray leaves at zoom 1, and
 // pinched or wheeled in to four times that about any point (`zoomAt`, `panBy`).
 // The *tray* sits on a strip pinned along the bottom (portrait) or the right
-// (landscape), in two rows: a *shelf* of tiles at the board's own scale — so a
-// tray tile is exactly the size it lands at, and zooming in grows them with the
-// board — which scrolls along the strip, with a scroll bar, when it is longer
-// than the room (`scrollTray`, `scrollBarBy`); then the controls, at a fixed
-// size, in a row of their own — in landscape, the same turned: a column of
-// tiles, then a column of controls. The floating
+// (landscape): a *shelf* of tiles at the board's own scale — so a tray tile is
+// exactly the size it lands at, and zooming in grows them with the board — in
+// one to three rows of tight slots, every tile on screen at zoom 1 (the board
+// shrinks to make room), which scrolls along the strip, with a scroll bar, once
+// zooming in makes it longer than the room (`scrollTray`, `scrollBarBy`); then
+// the controls, at a fixed size, in a row of their own — in landscape, the same
+// turned: columns of tiles, then a column of controls. The floating
 // tile is drawn over all of it, in world units. The pointer maps back to the world with one
 // getScreenCTM().inverse(), and a turn counter-clockwise in board units reads
 // counter-clockwise on screen.
@@ -70,8 +71,10 @@ function decor(
 
 /** The gap round the board, in tile edges, at zoom 1. */
 const MARGIN = 0.3;
-/** The tray strip's padding round its contents, in tile edges. */
-const TRAY_PAD = 0.3;
+/** The tray strip's padding round the shelf, in tile edges. */
+const TRAY_PAD = 0.15;
+/** The controls' padding round their row, in control units. */
+const KNOB_PAD = 0.25;
 /** How far in the board zooms, from fitted. */
 export const MAX_ZOOM = 4;
 /** The most of the screen's height (portrait) or width (landscape) the tray
@@ -84,6 +87,9 @@ const KNOB_PX = 48;
 const BAR_ROOM = 16;
 const BAR = 5;
 const BAR_INSET = 10;
+/** The least room, in pixels, left between the shelf's ends and the screen's
+ * edges at zoom 1. */
+const SHELF_INSET = 6;
 /** Each board's own id for its shelf's clip path. */
 let boards = 0;
 /** The room left above the fitted board for the level's name, which is drawn
@@ -99,8 +105,15 @@ const LABEL = 0.3;
  * unit at a couple of dozen pixels. */
 const PILE = 0.22;
 const PILE_PX = 9;
-/** The gap between one tray kind and the next. */
-const TRAY_GAP = 0.35;
+/** A tray slot's padding round its tile, and the gap between one slot and
+ * the next — along a row and from row to row — in tile edges. */
+const SLOT_PAD = 0.08;
+const TRAY_GAP = 0.2;
+/** The most rows (columns, in landscape) the shelf is laid in. */
+const MAX_ROWS = 3;
+/** How much bigger a layout with more rows must let the board be to be
+ * taken over one with fewer. */
+const MORE_ROWS = 1.02;
 
 /**
  * A rotate control's picture, about (cx, cy): the axis of rotation as a dot,
@@ -149,6 +162,10 @@ type Control = "rotate-ccw" | "rotate-cw" | "flip" | "remove";
 
 type Box = [number, number, number, number];
 
+/** A way to lay the shelf: each kind's centroid and slot, and the whole
+ * shelf's box, padded — in tray units. */
+type Shelf = { at: XY[]; slots: Box[]; box: Box };
+
 export class SvgBoard {
   readonly svg: SVGSVGElement;
   /** The world layer (region, tiles, open edges) and the dragged tile over
@@ -171,8 +188,10 @@ export class SvgBoard {
   private track: Box = [0, 0, 0, 0];
   private shelfLength = 0;
   private overflow = 0;
-  /** Where each tray kind sits, centroid in tray units. */
+  /** Where each tray kind sits, centroid in tray units, and its slot: the box
+   * every way it can be held reaches, padded, in the same units. */
   trayAt: XY[] = [];
+  private slots: Box[] = [];
   /** The camera: how far in from fitted, and the board point at the middle of
    * the room the tray leaves (null: the board's own middle). */
   private zoom = 1;
@@ -208,8 +227,10 @@ export class SvgBoard {
   private regionBox: Box = [0, 0, 0, 0];
   /** Where each control sits. */
   private controlsAt = new Map<Control, XY>();
-  /** Per tray kind, its farthest corner from its centroid — the same at any turn. */
-  private radius: number[];
+  /** Per tray kind, the box about its centroid that it reaches held any way
+   * the level holds it — every turn of the rotate step, either side if it
+   * flips — so a slot is the same size whichever way the tray is turned. */
+  private reach: Box[];
   /** Whether the remove mode is on: placed tiles show as removable. */
   get removing(): boolean {
     return this.svg.classList.contains("removing");
@@ -238,10 +259,22 @@ export class SvgBoard {
     this.barTrack = el("rect", { class: "tray-scroll-track", rx: BAR / 2 }, this.bar);
     this.barThumb = el("rect", { class: "tray-scroll-thumb", rx: BAR / 2 }, this.bar);
     this.moving = el("g", {}, this.svg);
-    // as far as the drawn tile reaches, round edges and all
-    this.radius = puzzle.level.tiles.map((_, kind) =>
-      Math.max(...loopsReach(this.outline(kind, 0)).map(([x, y]) => Math.hypot(x, y))),
-    );
+    // as far as the drawn tile reaches, round edges and all, every way held
+    const { turn, ring: tileRing } = puzzle.level;
+    const rots: number[] = [];
+    for (let rot = 0; rot < tileRing.n; rot += turn > 0 ? turn : tileRing.n) rots.push(rot);
+    const flips = puzzle.canFlip() ? [false, true] : [false];
+    this.reach = puzzle.level.tiles.map((_, kind) => {
+      const xy = rots.flatMap((rot) =>
+        flips.flatMap((f) => loopsReach(this.outline(kind, rot, f))),
+      );
+      return [
+        Math.min(...xy.map((p) => p[0])),
+        Math.min(...xy.map((p) => p[1])),
+        Math.max(...xy.map((p) => p[0])),
+        Math.max(...xy.map((p) => p[1])),
+      ];
+    });
     const { ring, region, regionCurves } = puzzle.level;
     const xy = region.flatMap((loop, i) =>
       reachPoints(
@@ -319,11 +352,6 @@ export class SvgBoard {
     return shiftLoops(loops, ([x, y]) => [x - cx, y - cy]);
   }
 
-  /** A kind's tray circle radius. */
-  private trayRadius(kind: number): number {
-    return this.radius[kind]! + 0.25;
-  }
-
   private controls(): Control[] {
     const out: Control[] = [];
     if (this.puzzle.canTurn()) out.push("rotate-ccw", "rotate-cw");
@@ -332,9 +360,11 @@ export class SvgBoard {
     return out;
   }
 
-  /** Lay the tray out and fit everything to the element. The shelf is a row
-   * of circles in portrait, a column in landscape; the controls are two to a
-   * row, at the row's end or the column's foot. */
+  /** Lay the tray out and fit everything to the element. The shelf is the
+   * tiles in rows across the strip — columns in landscape — each in a slot
+   * just big enough to hold it any way the level holds it: one row, or two or
+   * three where that leaves the board bigger. The controls are in a row of
+   * their own under the shelf, or a column beside it. */
   layout(): void {
     const { width, height } = this.svg.getBoundingClientRect();
     this.landscape = width > height;
@@ -346,23 +376,6 @@ export class SvgBoard {
     const rows = Math.ceil(controls.length / cols);
     const gridW = cols * 2 * KNOB + (cols - 1) * KNOB_GAP;
     const gridH = rows * knobH + (rows - 1) * KNOB_GAP;
-    this.trayAt = [];
-    let along = 0;
-    this.radius.forEach((_, kind) => {
-      const r = this.trayRadius(kind);
-      this.trayAt.push(this.landscape ? [0, -(along + r)] : [along + r, 0]);
-      along += 2 * r + TRAY_GAP;
-    });
-    const shelfBoxes: Box[] = this.trayAt.map(([cx, cy], kind) => {
-      const r = this.trayRadius(kind);
-      return [cx - r, cy - r, cx + r, cy + r];
-    });
-    this.shelfBox = [
-      Math.min(...shelfBoxes.map((b) => b[0])) - TRAY_PAD,
-      Math.min(...shelfBoxes.map((b) => b[1])) - TRAY_PAD,
-      Math.max(...shelfBoxes.map((b) => b[2])) + TRAY_PAD,
-      Math.max(...shelfBoxes.map((b) => b[3])) + TRAY_PAD,
-    ];
     this.controlsAt.clear();
     controls.forEach((control, i) => {
       const col = i % cols;
@@ -371,62 +384,174 @@ export class SvgBoard {
       this.controlsAt.set(control, [kx, gridH / 2 - KNOB - row * (knobH + KNOB_GAP)]);
     });
     this.knobBox = [
-      -gridW / 2 - TRAY_PAD,
-      -gridH / 2 - TRAY_PAD,
-      gridW / 2 + TRAY_PAD,
-      gridH / 2 + TRAY_PAD,
+      -gridW / 2 - KNOB_PAD,
+      -gridH / 2 - KNOB_PAD,
+      gridW / 2 + KNOB_PAD,
+      gridH / 2 + KNOB_PAD,
     ];
+    // Every way to lay the shelf in one to three rows; the one that lets the
+    // board be biggest, fewer rows unless more are clearly better.
+    let best: Shelf | null = null;
+    let bestFit = 0;
+    for (let n = 1; n <= Math.min(MAX_ROWS, this.reach.length); n++) {
+      const shelf = this.shelfIn(n);
+      const fit = width > 0 && height > 0 ? this.fit(width, height, shelf.box) : 0;
+      if (best === null || fit > bestFit * MORE_ROWS) {
+        best = shelf;
+        bestFit = fit;
+      }
+    }
+    this.trayAt = best!.at;
+    this.slots = best!.slots;
+    this.shelfBox = best!.box;
     this.place();
     this.draw();
+  }
+
+  /** The shelf in `n` rows (columns, in landscape): the tiles in their order,
+   * cut where that makes the longest row shortest, each row centred along
+   * the strip and each slot across its row. */
+  private shelfIn(n: number): Shelf {
+    const land = this.landscape;
+    // A slot's size along the strip and across it.
+    const sizes = this.reach.map(([x0, y0, x1, y1]): XY => {
+      const w = x1 - x0 + 2 * SLOT_PAD;
+      const h = y1 - y0 + 2 * SLOT_PAD;
+      return land ? [h, w] : [w, h];
+    });
+    const runLength = (from: number, to: number): number =>
+      sizes.slice(from, to).reduce((sum, [a]) => sum + a, 0) + (to - from - 1) * TRAY_GAP;
+    // The cut points: tried every way, kinds are few.
+    let cuts: number[] = [];
+    let longest = Infinity;
+    const tryCuts = (at: number[], from: number, left: number): void => {
+      if (left === 1) {
+        const ends = [...at, sizes.length];
+        let start = 0;
+        let worst = 0;
+        for (const end of ends) {
+          worst = Math.max(worst, runLength(start, end));
+          start = end;
+        }
+        if (worst < longest - 1e-9) {
+          longest = worst;
+          cuts = at;
+        }
+        return;
+      }
+      for (let c = from + 1; c <= sizes.length - left + 1; c++) tryCuts([...at, c], c, left - 1);
+    };
+    tryCuts([], 0, n);
+    const ends = [...cuts, sizes.length];
+    const rows: [number, number][] = [];
+    let start = 0;
+    for (const end of ends) {
+      rows.push([start, end]);
+      start = end;
+    }
+    const thick = rows.map(([a, b]) => Math.max(...sizes.slice(a, b).map(([, c]) => c)));
+    const total = thick.reduce((sum, t) => sum + t, 0) + (rows.length - 1) * TRAY_GAP;
+    const at: XY[] = [];
+    const slots: Box[] = [];
+    // Across: the first row at the top (portrait) or the left (landscape).
+    let across = total / 2;
+    rows.forEach(([a, b], r) => {
+      const middle = across - thick[r]! / 2;
+      across -= thick[r]! + TRAY_GAP;
+      let along = -runLength(a, b) / 2;
+      for (let kind = a; kind < b; kind++) {
+        const [len, wide] = sizes[kind]!;
+        const mid = along + len / 2;
+        along += len + TRAY_GAP;
+        // The slot's middle, then the tile's centroid in it.
+        const [sx, sy]: XY = land ? [-middle, -mid] : [mid, middle];
+        const [hw, hh] = land ? [wide / 2, len / 2] : [len / 2, wide / 2];
+        const [x0, y0, x1, y1] = this.reach[kind]!;
+        at[kind] = [sx - (x0 + x1) / 2, sy - (y0 + y1) / 2];
+        slots[kind] = [sx - hw, sy - hh, sx + hw, sy + hh];
+      }
+    });
+    const half = longest / 2;
+    const box: Box = land
+      ? [-total / 2 - TRAY_PAD, -half - TRAY_PAD, total / 2 + TRAY_PAD, half + TRAY_PAD]
+      : [-half - TRAY_PAD, -total / 2 - TRAY_PAD, half + TRAY_PAD, total / 2 + TRAY_PAD];
+    return { at, slots, box };
+  }
+
+  /** The sizes a fit is made of, for a shelf of `shelfBox`: across the strip
+   * and along it, the screen, the board and the shelf; the most the shelf
+   * may scale to; and the controls' block's thickness across the strip. */
+  private measures(width: number, height: number, shelfBox: Box) {
+    const [x0, y0, x1, y1] = this.regionBox;
+    const [s0, t0, s1, t1] = shelfBox;
+    const [k0, l0, k1, l1] = this.knobBox;
+    const land = this.landscape;
+    const across = land ? width : height;
+    const length = land ? height : width;
+    const shelfAcross = land ? s1 - s0 : t1 - t0;
+    const knobScale = Math.min(KNOB_PX / (2 * KNOB), (0.13 * Math.min(width, height)) / (2 * KNOB));
+    return {
+      land,
+      across,
+      length,
+      boardAcross: (land ? x1 - x0 : y1 - y0) + 2 * MARGIN,
+      boardAlong: (land ? y1 - y0 : x1 - x0) + 2 * MARGIN,
+      shelfAcross,
+      shelfAlong: land ? t1 - t0 : s1 - s0,
+      cap: (TRAY_SHARE * across) / shelfAcross,
+      knobScale,
+      knobsW: knobScale * (k1 - k0),
+      knobsH: knobScale * (l1 - l0),
+    };
+  }
+
+  /** The world's scale at zoom 1: the largest that leaves the board, and the
+   * strip with every tray tile on it, on screen. The strip grows with the
+   * scale, so search for it — a long shelf shrinks the board rather than
+   * scroll. The label's room comes off the screen's height: across the strip
+   * in portrait, along it in landscape. */
+  private fit(width: number, height: number, shelfBox: Box): number {
+    const m = this.measures(width, height, shelfBox);
+    const knobs = m.land ? m.knobsW : m.knobsH;
+    const roomAlong = m.land ? m.length - LABEL_ROOM : m.length;
+    const roomAcross = m.land ? m.across : m.across - LABEL_ROOM;
+    let lo = 0;
+    let hi = Math.min(roomAlong / m.boardAlong, roomAcross / m.boardAcross);
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      const shelf = Math.min(mid, m.cap);
+      if (
+        mid * m.boardAcross + shelf * m.shelfAcross + knobs <= roomAcross &&
+        shelf * m.shelfAlong <= m.length - 2 * SHELF_INSET
+      )
+        lo = mid;
+      else hi = mid;
+    }
+    return lo;
   }
 
   /** The scales, the board's room, the tray strip, and on it the shelf's
    * room, the scroll bar and the controls, for the zoom as it is. The shelf is
    * at the world's scale, up to `TRAY_SHARE` of the screen; the controls at a
-   * fixed size; and the world fitted, at zoom 1, to what the strip leaves. */
+   * fixed size; and the world fitted, at zoom 1, to what the strip leaves.
+   * Zoomed in, a shelf longer than the strip scrolls, and only then is there
+   * a scroll bar to make room for. */
   private frame(width: number, height: number): void {
-    const [x0, y0, x1, y1] = this.regionBox;
     const [s0, t0, s1, t1] = this.shelfBox;
-    const [k0, l0, k1, l1] = this.knobBox;
-    const land = this.landscape;
-    // Across the strip and along it: the screen, the board, the shelf.
-    const across = land ? width : height;
-    const length = land ? height : width;
-    const boardAcross = (land ? x1 - x0 : y1 - y0) + 2 * MARGIN;
-    const boardAlong = (land ? y1 - y0 : x1 - x0) + 2 * MARGIN;
-    const shelfAcross = land ? s1 - s0 : t1 - t0;
-    const shelfAlong = land ? t1 - t0 : s1 - s0;
-    this.knobScale = Math.min(KNOB_PX / (2 * KNOB), (0.13 * Math.min(width, height)) / (2 * KNOB));
-    const ks = this.knobScale;
-    // The controls' block: a row under the shelf in portrait, a column beside
-    // it in landscape.
-    const knobsW = ks * (k1 - k0);
-    const knobsH = ks * (l1 - l0);
-    const cap = (TRAY_SHARE * across) / shelfAcross;
-    const shelfThick = (scale: number): number => Math.min(scale, cap) * shelfAcross;
-    const thickness = (scale: number): number =>
-      shelfThick(scale) + BAR_ROOM + (land ? knobsW : knobsH);
-    // The largest fit that leaves the board and the strip both on screen: the
-    // strip grows with the scale, so search for it. The label's room comes off
-    // the screen's height: across the strip in portrait, along it in landscape.
-    const roomAlong = land ? length - LABEL_ROOM : length;
-    const roomAcross = land ? across : across - LABEL_ROOM;
-    let lo = 0;
-    let hi = Math.min(roomAlong / boardAlong, roomAcross / boardAcross);
-    for (let i = 0; i < 40; i++) {
-      const mid = (lo + hi) / 2;
-      if (mid * boardAcross + thickness(mid) <= roomAcross) lo = mid;
-      else hi = mid;
-    }
-    this.scale = lo * this.zoom;
-    this.shelfScale = Math.min(this.scale, cap);
+    const m = this.measures(width, height, this.shelfBox);
+    const { land, length, knobsW, knobsH } = m;
+    this.knobScale = m.knobScale;
+    this.scale = this.fit(width, height, this.shelfBox) * this.zoom;
+    this.shelfScale = Math.min(this.scale, m.cap);
     const ss = this.shelfScale;
-    const strip = thickness(this.scale);
-    const thick = shelfThick(this.scale);
+    const thick = ss * m.shelfAcross;
     const shelfRoomLen = length;
-    this.shelfLength = ss * shelfAlong;
-    this.overflow = Math.max(0, this.shelfLength - shelfRoomLen);
+    this.shelfLength = ss * m.shelfAlong;
+    // a hair over is no overflow: the fit lands within float error of it
+    this.overflow = this.shelfLength - shelfRoomLen > 0.5 ? this.shelfLength - shelfRoomLen : 0;
     this.scrolled = Math.min(this.overflow, Math.max(0, this.scrolled));
+    const barRoom = this.overflow > 0 ? BAR_ROOM : 0;
+    const strip = thick + barRoom + (land ? knobsW : knobsH);
     // Where the shelf starts along the strip: centred in its room while it
     // fits, scrolled once it does not.
     const start = this.overflow > 0 ? -this.scrolled : (shelfRoomLen - this.shelfLength) / 2;
@@ -434,24 +559,24 @@ export class SvgBoard {
       const sx0 = width - strip;
       this.view = [0, LABEL_ROOM, sx0, height];
       this.strip = [sx0, 0, width, height];
-      // The shelf column, the bar down its right-hand side, the controls'
-      // column beside that.
+      // The shelf, the bar down its right-hand side, the controls' column
+      // beside that.
       const shelfX1 = sx0 + thick;
       this.shelfRoom = [sx0, 0, shelfX1, height];
       this.shelfAt = [(sx0 + shelfX1) / 2 - ss * ((s0 + s1) / 2), start + ss * t1];
       const bx = shelfX1 + (BAR_ROOM - BAR) / 2;
       this.track = [bx, BAR_INSET, bx + BAR, height - BAR_INSET];
-      this.knobsAt = [shelfX1 + BAR_ROOM + knobsW / 2, height / 2];
+      this.knobsAt = [shelfX1 + barRoom + knobsW / 2, height / 2];
     } else {
       const sy0 = height - strip;
       this.view = [0, LABEL_ROOM, width, sy0];
       this.strip = [0, sy0, width, height];
-      // The shelf row, the bar under it, the controls' row under that.
+      // The shelf, the bar under it, the controls' row under that.
       this.shelfRoom = [0, sy0, width, sy0 + thick];
       this.shelfAt = [start - ss * s0, sy0 + thick / 2 + ss * ((t0 + t1) / 2)];
       const by = sy0 + thick + (BAR_ROOM - BAR) / 2;
       this.track = [BAR_INSET, by, width - BAR_INSET, by + BAR];
-      this.knobsAt = [width / 2, sy0 + thick + BAR_ROOM + knobsH / 2];
+      this.knobsAt = [width / 2, sy0 + thick + barRoom + knobsH / 2];
     }
   }
 
@@ -516,6 +641,12 @@ export class SvgBoard {
     const [z0, w0, z1, w1] = this.strip;
     for (const [k, v] of Object.entries({ x: z0, y: w0, width: z1 - z0, height: w1 - w0 }))
       this.zone.setAttribute(k, String(v));
+    // The level's name, on the page behind the board, is centred over the
+    // board's room, not under a strip down the right.
+    this.svg.parentElement?.parentElement?.style.setProperty(
+      "--tray-side",
+      `${this.landscape ? z1 - z0 : 0}px`,
+    );
     const [r0, q0, r1, q1] = this.shelfRoom;
     for (const [k, v] of Object.entries({ x: r0, y: q0, width: r1 - r0, height: q1 - q0 }))
       this.shelfClip.setAttribute(k, String(v));
@@ -611,10 +742,19 @@ export class SvgBoard {
     this.shelf.replaceChildren();
     this.knobs.replaceChildren();
     this.trayAt.forEach(([cx, cy], kind) => {
-      const r = this.trayRadius(kind);
+      // The slot: what a press picks the tile up by, drawn only when hinted.
+      const [x0, y0, x1, y1] = this.slots[kind]!;
       el(
-        "circle",
-        { cx, cy, r, class: `tray${lay?.kind === kind ? " hinted" : ""}`, "data-tray": kind },
+        "rect",
+        {
+          x: x0,
+          y: y0,
+          width: x1 - x0,
+          height: y1 - y0,
+          rx: 0.12,
+          class: `tray${lay?.kind === kind ? " hinted" : ""}`,
+          "data-tray": kind,
+        },
         this.shelf,
       );
       const outline = this.outline(kind, this.turn, this.flip);
@@ -629,17 +769,25 @@ export class SvgBoard {
         this.shelf,
       );
       decor(outline, this.shelf, at, markUnit(this.puzzle.level));
-      // The pile's count: how many more the board was cut with. Past zero it
-      // shows how many extra are down — allowed, but it costs a star.
+    });
+    // The piles' counts, over every tile, so a neighbour never hides one: how
+    // many more the board was cut with. Past zero it shows how many extra are
+    // down — allowed, but it costs a star. Each at the tile's lower right as
+    // it is held, kept on its slot (and a hair past it, into the gap), so the
+    // shelf's edge never clips it.
+    const pr = Math.max(PILE, PILE_PX / this.shelfScale);
+    this.trayAt.forEach(([cx, cy], kind) => {
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
-      const bx = cx + r * 0.72;
-      const by = cy - r * 0.72;
+      const xy = loopsReach(this.outline(kind, this.turn, this.flip));
+      const [, sy0, sx1] = this.slots[kind]!;
+      const edge = Math.min(TRAY_PAD, TRAY_GAP / 2);
+      const bx = Math.min(cx + Math.max(...xy.map((p) => p[0])), sx1 + edge - pr);
+      const by = Math.max(cy + Math.min(...xy.map((p) => p[1])), sy0 - edge + pr);
       const badge = el(
         "g",
         { class: `pile${left < 0 ? " over" : left === 0 ? " done" : ""}`, "data-tray": kind },
         this.shelf,
       );
-      const pr = Math.max(PILE, PILE_PX / this.shelfScale);
       el("circle", { cx: bx, cy: by, r: pr }, badge);
       const text = el("text", { x: bx, y: -by, transform: "scale(1,-1)" }, badge);
       // the stylesheet's size, grown with the badge
