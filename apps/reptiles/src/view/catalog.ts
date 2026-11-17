@@ -1,7 +1,7 @@
 // The catalog — called Tilings on screen: every tiling, a family to a row —
 // named for its symmetry — each row scrolling sideways through its tilings'
 // cards. A card shows what a player starts with (the first board's outline,
-// the tray's tiles), the tiling's name, its first board's difficulty as
+// the tray's tiles inside it at their true sizes — view/cardArt.ts), the tiling's name, its first board's difficulty as
 // Hypersweeper's three bars, and how many levels it is — every board by
 // every way its tiles are marked (plain, matching rules, colourings) — with
 // the stars earned on them. A tiling of more than one level opens its own
@@ -9,7 +9,8 @@
 
 import { BARS, bandOf } from "../difficulty";
 import { GROUPS, type Level } from "../levels";
-import { barsIcon, boardPose, outlineIcon, starRow, tileIcon } from "./icons";
+import { cardArt } from "./cardArt";
+import { barsIcon, starRow } from "./icons";
 
 /** How many levels the tiling `level` is the first board of has, and the
  * stars earned on them. */
@@ -68,11 +69,6 @@ export function levelCard(
   const name = document.createElement("span");
   name.className = "card-name";
   name.textContent = level.name;
-  const tiles = document.createElement("span");
-  tiles.className = "card-tiles";
-  // a rep-tile's tile turned as its board is, the outline made small
-  const pose = boardPose(level);
-  level.tiles.forEach((_, kind) => tiles.appendChild(tileIcon(level, kind, pose)));
   const meta = document.createElement("span");
   meta.className = "card-meta";
   const bars = barsIcon(BARS[band]);
@@ -85,11 +81,10 @@ export function levelCard(
     tallied.textContent = `★ ${stars}/${levels * 3}`;
     meta.append(bars, tallied);
   } else meta.append(bars, starRow(stars));
-  // the tiles sit inside the board's outline, as big as it leaves room for
+  // the tiles inside the board's outline, clear of it (view/cardArt.ts)
   const art = document.createElement("span");
   art.className = "card-art";
-  tiles.dataset["count"] = String(Math.min(level.tiles.length, 4));
-  art.append(outlineIcon(level), tiles);
+  art.append(cardArt(level));
   button.append(art, name);
   if (boards > 1 || sets > 1) {
     const counts = document.createElement("span");

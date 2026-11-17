@@ -369,11 +369,6 @@ button.primary {
   stroke-linejoin: round;
 }
 
-.level-tile {
-  width: 14px;
-  height: 14px;
-}
-
 .board {
   display: block;
   width: 100%;
@@ -514,8 +509,7 @@ button.primary {
   opacity: 0.75;
 }
 
-.level-tile .decor.line,
-.figure-icon .decor.line {
+.card-picture .decor.line {
   stroke-width: 0.1;
 }
 
@@ -534,8 +528,7 @@ button.primary {
   opacity: 1;
 }
 
-.level-tile .decor.arc,
-.figure-icon .decor.arc {
+.card-picture .decor.arc {
   stroke-width: 0.1;
 }
 
@@ -934,9 +927,9 @@ button:disabled {
   margin: 0 0 18px;
 }
 
-/* Rep-tiles on top, the three difficulties in the middle, Tilings and
-   Figures at the foot — every one a full-width row, one under another; the
-   difficulties in the accent fill, Tilings and Figures in the light one. */
+/* Rep-tiles on top, the three difficulties in the middle, Tilings at the
+   foot — every one a full-width row, one under another; the difficulties in
+   the accent fill, Tilings in the light one. */
 .home-picks {
   display: flex;
   flex: 1;
@@ -1084,35 +1077,16 @@ button:disabled {
   height: 112px;
 }
 
-.card .level-outline {
+.card-picture {
+  display: block;
   width: 100%;
   height: 100%;
 }
 
-.card-tiles {
-  position: absolute;
-  inset: 22%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-
-.card-tiles .level-tile {
-  width: 100%;
-  height: 100%;
-}
-
-.card-tiles[data-count="2"] .level-tile {
-  width: 48%;
-  height: 48%;
-}
-
-.card-tiles[data-count="3"] .level-tile,
-.card-tiles[data-count="4"] .level-tile {
-  width: 46%;
-  height: 46%;
+.card-picture .rim {
+  fill: var(--region);
+  stroke: var(--region-edge);
+  stroke-linejoin: round;
 }
 
 .card-name {
@@ -1151,55 +1125,7 @@ button:disabled {
   height: 22px;
 }
 
-/* -- figures: the levels by the tiles in their tray -------------------------- */
-
-.figure-card .figure-icon {
-  width: 84px;
-  height: 84px;
-}
-
-.figure-card .card-meta {
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.figure-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0 16px 10px;
-}
-
-.figure-head .figure-icon {
-  width: 72px;
-  height: 72px;
-  flex: none;
-}
-
-.figure-head .family-hint {
-  margin: 0;
-}
-
-.band-heading {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.band-heading .bars {
-  width: 22px;
-  height: 22px;
-}
-
-.figure-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 2px 16px 10px;
-}
-
-/* -- picking a level: a tiling's or a figure set's page (view/picker.ts) ---- */
+/* -- picking a level: a tiling's page (view/picker.ts) ---------------------- */
 
 /* The boards, as their outlines: one tiling's in a grid that fills the
    width; several tilings' side by side, wrapping, each its name over its
@@ -1294,7 +1220,7 @@ button:disabled {
   box-shadow: none;
 }
 
-/* A figure set's tilings, each over its own boards. */
+/* Several tilings' boards, each tiling over its own. */
 .pick-tiling {
   display: flex;
   align-items: center;

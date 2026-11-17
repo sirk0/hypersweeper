@@ -20,7 +20,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
   const response = await page.goto("/");
   expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
   await expect(page.locator("#home")).toBeVisible();
-  await expect(page.locator("#home-picks button")).toHaveCount(5);
+  await expect(page.locator("#home-picks button")).toHaveCount(4);
   // The deployed extras the shared preset adds.
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",
@@ -44,61 +44,16 @@ test("a pick from home deals a level, and Tilings lists every family", async ({ 
   await expect(page.locator("#catalog")).toBeVisible();
   await expect(page.locator("#catalog .hud-title")).toHaveText("Tilings");
   await expect(page.locator("#catalog-list button, #catalog-list a").first()).toBeVisible();
-  // the old name's links still open it
-  await page.goto("/?catalog");
-  await expect(page.locator("#catalog")).toBeVisible();
-  expect(errors).toEqual([]);
-});
-
-test("Figures lists the tile sets, and a set its tilings' boards to pick from", async ({
-  page,
-}) => {
-  const errors = watchErrors(page);
-  await page.goto("/");
-  await page.locator(".figures-pick").click();
-  await expect(page).toHaveURL(/\?figures$/);
-  await expect(page.locator("#figures .family h2")).toHaveText([
-    "Triangles",
-    "Quadrilaterals",
-    "Pentagons",
-    "Hexagons",
-    "7+-gons",
-    "Several pieces",
-    "Regular pairs",
-    "Irregular pairs",
-    "Packs of 3+",
-  ]);
-  await expect(page.locator("#figures-list .figure-card .card-name").first()).toHaveText(
-    "Triangle",
+  // each card draws its tiles inside its board's outline, in one picture
+  await expect(page.locator("#catalog .card-art svg.card-picture").first()).toBeVisible();
+  await expect(page.locator('#catalog [data-tiling="trihex"] .card-picture path.tile')).toHaveCount(
+    2,
   );
-  await page.locator('#figures-list [data-figure="squares"]').click();
-  await expect(page).toHaveURL(/\?figure=squares&pick=/);
-  await expect(page.locator("#figure-title")).toHaveText("Square");
-  // every board of both its tilings, under each tiling, easiest first
-  await expect(page.locator("#figure-list .pick-tiling")).toHaveText(["4⁴", "Offset square"]);
-  await expect(page.locator('#figure-list [data-board^="offsetsquare"]').first()).toBeVisible();
-  // 4⁴'s one board, plain: Play opens it
-  await page.locator('#figure-list [data-board="squares"]').click();
-  await expect(page.locator('#figure-list [data-board="squares"]')).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(page.locator('#figure-list [data-marking="squares"]')).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(page.locator("#figure-list .play .bars")).toHaveAttribute("aria-label", "easy");
-  await page.locator("#figure-list .play").click();
-  await expect(page.locator("#game")).toBeVisible();
-  await expect(page).toHaveURL(/\?level=squares$/);
-  // Back comes back to the same pick
-  await page.goBack();
-  await expect(page.locator("#figure")).toBeVisible();
-  await expect(page).toHaveURL(/\?figure=squares&pick=squares$/);
-  await expect(page.locator('#figure-list [data-board="squares"]')).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  // the old name's links still open it, and so do the Figures screen's
+  for (const old of ["/?catalog", "/?figures", "/?figure=squares"]) {
+    await page.goto(old);
+    await expect(page.locator("#catalog")).toBeVisible();
+  }
   expect(errors).toEqual([]);
 });
 
@@ -608,11 +563,6 @@ test("a tiling's page: its boards on top, its tiles under them, then Play", asyn
     .filter({ has: page.locator(".card-name", { hasText: /^P-pentomino$/ }) })
     .click();
   await expect(page).toHaveURL(/\?level=ppentomino$/);
-  // the triangle's page: every board of its tilings, then the tiles of the
-  // tiling picked
-  await page.goto("/?figure=triangles");
-  await expect(page.locator("#figure-list .pick-tiling").first()).toBeVisible();
-  await expect(page.locator("#figure-list .marking-card").first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 

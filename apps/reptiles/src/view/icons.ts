@@ -1,10 +1,10 @@
 // The small pictures the catalog and the home screen share: a board's
-// outline, a tray tile, the three-bar difficulty ladder (drawn as Hypersweeper
+// outline (and where a rep-tile's tile lies on it, for the card picture in
+// view/cardArt.ts), a marking's tray, the three-bar difficulty ladder (drawn as Hypersweeper
 // draws its own), and a row of stars; and the header's and home screen's
 // glyphs, stroked in `currentColor` so they follow the theme.
 
-import { posedMarks } from "../geometry/marks";
-import { centroidOf, posedCurve, signedArea, type XY } from "../geometry/shape";
+import { centroidOf, signedArea, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
 import { decorParts, markUnit, type MarkUnit } from "./decor";
@@ -19,10 +19,15 @@ function svgIn(className: string, viewBox: [number, number, number, number]): SV
   return svg;
 }
 
-/** The board's outline, with no tiles in it. */
-export function outlineIcon(level: Level): SVGSVGElement {
+/** A board's outline as the pictures draw it, y flipped (the board draws y
+ * up): a square viewBox round it with a little room, its path, and its
+ * stroke's width. */
+export function outlineFrame(level: Level): {
+  viewBox: [number, number, number, number];
+  d: string;
+  stroke: number;
+} {
   const { ring, region, regionCurves } = level;
-  // y flipped: the board draws y up
   const flipY = ([x, y]: XY): XY => [x, -y];
   const loops = region.map((loop, i) =>
     reachPoints(
@@ -38,28 +43,32 @@ export function outlineIcon(level: Level): SVGSVGElement {
   const size = Math.max(x1 - x0, y1 - y0) * 1.08;
   const cx = (x0 + x1) / 2;
   const cy = (y0 + y1) / 2;
-  const svg = svgIn("level-outline", [cx - size / 2, cy - size / 2, size, size]);
-  const path = document.createElementNS(NS, "path");
   // round edges laid out in board space (y up), then flipped
-  path.setAttribute(
-    "d",
-    region
-      .map((loop, i) =>
-        outlinePath(
-          loop.map((v) => ring.toXY(v)),
-          regionCurves?.[i],
-          flipY,
-        ),
-      )
-      .join(""),
-  );
+  const d = region
+    .map((loop, i) =>
+      outlinePath(
+        loop.map((v) => ring.toXY(v)),
+        regionCurves?.[i],
+        flipY,
+      ),
+    )
+    .join("");
+  return { viewBox: [cx - size / 2, cy - size / 2, size, size], d, stroke: size * 0.035 };
+}
+
+/** The board's outline, with no tiles in it. */
+export function outlineIcon(level: Level): SVGSVGElement {
+  const { viewBox, d, stroke } = outlineFrame(level);
+  const svg = svgIn("level-outline", viewBox);
+  const path = document.createElementNS(NS, "path");
+  path.setAttribute("d", d);
   path.setAttribute("fill-rule", "evenodd");
-  path.setAttribute("stroke-width", String(size * 0.035));
+  path.setAttribute("stroke-width", String(stroke));
   svg.appendChild(path);
   return svg;
 }
 
-/** How a card draws a tile: mirrored in the x axis first, where `flip`,
+/** How a card turns a rep-tile's tile: mirrored in the x axis first, where `flip`,
  * then turned by `angle` radians — any angle, not only the ring's steps: the
  * right isosceles triangle rests on its long side but its board stands on a
  * short one, 45° round, which no turn of ℤ[ζ4] reaches. For drawing only. */
@@ -68,21 +77,28 @@ export interface IconPose {
   flip: boolean;
 }
 
-/** The way a rep-tile's one tile is turned (and, where it must be, mirrored)
- * to be its board's outline made small — the board being one big copy of it —
- * or null for any other level. Read in floats, for drawing only: each angle
+/** How `boardFit` lays a rep-tile's tile on its board: mirrored where
+ * `pose.flip`, its `centre` (the centroid, after the mirror) moved to the
+ * board's centroid `board`, turned by `pose.angle` and scaled by `scale` —
+ * the board's outline, when `miss` is 0. */
+export interface BoardFit {
+  pose: IconPose;
+  /** How far off it is, in board units: the farthest corner of either from
+   * the other's outline — 0 where the tile is the board made small. */
+  miss: number;
+  centre: XY;
+  board: XY;
+  scale: number;
+}
+
+/** How a rep-tile's one tile is turned (and, where it must be, mirrored) and
+ * laid to be its board's outline — the board being one big copy of it — or
+ * null for any other level. Read in floats, for drawing only: each angle
  * that lays one of the tile's edges along one of the board's, the tile there
  * centred and scaled to the board's area against the board's outline —
  * every corner of either on the other's outline — and the closest kept,
  * unmirrored on a tie. */
-export function boardPose(level: Level): IconPose | null {
-  return boardFit(level)?.pose ?? null;
-}
-
-/** `boardPose`, and how far off it is (`miss`, in board units: the farthest
- * corner of either from the other's outline — 0 where the tile is the
- * board made small), for the tests. */
-export function boardFit(level: Level): { pose: IconPose; miss: number } | null {
+export function boardFit(level: Level): BoardFit | null {
   if (level.group !== "reptile" || level.tiles.length !== 1) return null;
   const { ring, region } = level;
   const tile = level.tiles[0]!.pieces.map((p) => p.verts.map((v) => ring.toXY(v)));
@@ -105,7 +121,7 @@ export function boardFit(level: Level): { pose: IconPose; miss: number } | null 
     );
   const boardSegs = segments(board);
   const boardDirs = directions(board);
-  let best: { pose: IconPose; miss: number } | null = null;
+  let best: BoardFit | null = null;
   for (const flip of [false, true]) {
     // mirrored, listed backwards so it still runs counter-clockwise, as the
     // board does: else every edge would point the other way along the board's
@@ -126,7 +142,7 @@ export function boardFit(level: Level): { pose: IconPose; miss: number } | null 
           board.flat().reduce((m, p) => Math.max(m, away(p, laidSegs)), 0);
         // a mirror, or another angle, only where it fits clearly better
         if (best === null || miss < best.miss - 1e-6 * scale)
-          best = { pose: { angle, flip }, miss };
+          best = { pose: { angle, flip }, miss, centre: [cx, cy], board: [bx, by], scale };
       }
   }
   return best;
@@ -137,39 +153,6 @@ const turn = ([x, y]: XY, angle: number): XY => [
   x * Math.cos(angle) - y * Math.sin(angle),
   x * Math.sin(angle) + y * Math.cos(angle),
 ];
-
-/** One tray tile, resting flat as the tray holds it — or, given `pose`, as
- * that turns it (a rep-tile's card: its board's outline made small). */
-export function tileIcon(level: Level, kind: number, pose: IconPose | null = null): SVGSVGElement {
-  const { ring } = level;
-  const tile = level.tiles[kind]!;
-  const loops = loopsOf(ring, tile.pieces).map((l) =>
-    pose === null
-      ? l
-      : {
-          // a mirror lists the outline backwards, as `posed` does, so it
-          // still runs counter-clockwise — curves and marks with it
-          xy: (pose.flip ? [...l.xy].reverse() : l.xy).map((p) =>
-            turn(mirrorIf(p, pose.flip), pose.angle),
-          ),
-          curve: posedCurve(l.curve && [...l.curve], pose.flip),
-          marks: posedMarks(l.marks && [...l.marks], pose.flip),
-        },
-  );
-  const [cx, cy] = centroidOf(loops.map((l) => l.xy));
-  const r = Math.max(...loopsReach(loops).map(([x, y]) => Math.hypot(x - cx, y - cy))) * 1.1;
-  const svg = svgIn("level-tile", [-r, -r, 2 * r, 2 * r]);
-  const poly = document.createElementNS(NS, "path");
-  poly.setAttribute(
-    "d",
-    loopsPath(loops, ([x, y]) => [x - cx, cy - y]),
-  );
-  poly.setAttribute("class", `tile ${level.colours[kind]}`);
-  poly.setAttribute("stroke-width", String(r * 0.1));
-  svg.appendChild(poly);
-  decorate(svg, loops, ([x, y]) => [x - cx, cy - y], markUnit(level));
-  return svg;
-}
 
 /** A coloured or lined tile's bands and lines (view/decor.ts), over it. */
 function decorate(
@@ -185,50 +168,6 @@ function decorate(
     if (part.width !== undefined) path.setAttribute("style", `stroke-width: ${part.width}`);
     svg.appendChild(path);
   }
-}
-
-/** Every tray tile of `level` side by side, resting flat on one baseline, all
- * at one scale — their true sizes — so the Pythagorean tiling's two squares
- * read as two figures. */
-export function figureIcon(level: Level): SVGSVGElement {
-  const { ring } = level;
-  const shapes = level.tiles.map((t) => loopsOf(ring, t.pieces));
-  // what each tile reaches, round edges and all (a bulge dips below the base)
-  const reach = shapes.map(loopsReach);
-  const offsets: number[] = [];
-  const tallest = Math.max(...reach.flat().map(([, y]) => y));
-  const lowest = Math.min(0, ...reach.flat().map(([, y]) => y));
-  const gap = (tallest - lowest) * 0.25;
-  let at = 0;
-  for (const xy of reach) {
-    const x0 = Math.min(...xy.map(([x]) => x));
-    const x1 = Math.max(...xy.map(([x]) => x));
-    offsets.push(at - x0);
-    at += x1 - x0 + gap;
-  }
-  const width = at - gap;
-  const size = Math.max(width, tallest - lowest);
-  const pad = size * 0.08;
-  // centred on the tiles' middle, the tiles sitting on one baseline
-  const svg = svgIn("figure-icon", [
-    width / 2 - size / 2 - pad,
-    -(tallest + lowest) / 2 - size / 2 - pad,
-    size + 2 * pad,
-    size + 2 * pad,
-  ]);
-  shapes.forEach((loops, kind) => {
-    const dx = offsets[kind]!;
-    const poly = document.createElementNS(NS, "path");
-    poly.setAttribute(
-      "d",
-      loopsPath(loops, ([x, y]) => [x + dx, -y]),
-    );
-    poly.setAttribute("class", `tile ${level.colours[kind]}`);
-    poly.setAttribute("stroke-width", String(size * 0.025));
-    svg.appendChild(poly);
-    decorate(svg, loops, ([x, y]) => [x + dx, -y], markUnit(level));
-  });
-  return svg;
 }
 
 /** Every tray tile of `level` in a grid of as near square as fits them —

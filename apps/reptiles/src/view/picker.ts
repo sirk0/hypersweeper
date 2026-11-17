@@ -1,11 +1,11 @@
-// Picking a level on a tiling's page (`?tiling=<key>`) or a figure set's
-// (`?figure=<key>`): a board, then its tiles, then Play.
+// Picking a level on a tiling's page (`?tiling=<key>`): a board, then its
+// tiles, then Play.
 //
 // A level is a board of a tiling and a way of marking its tiles — plain,
 // a matching rule or a colouring — every board by every marking its marks
 // make the same tray on (`boardKeys`). So the page picks the two apart: the
-// boards on top, as their outlines in a grid (a figure set's grouped under
-// each of its tilings), one dealt at random; under them a row of the
+// boards on top, as their outlines in a grid (several tilings' would each be
+// grouped under its name), one dealt at random; under them a row of the
 // tiling's markings, each card its tray's tiles drawn big — never the
 // board's outline, which is already up top — Plain first and picked; then a
 // Play button naming the level. A board a marking is not laid on is greyed
@@ -68,7 +68,7 @@ function drawLater(slot: HTMLElement, id: string, draw: () => SVGSVGElement): vo
 
 export interface PickerOptions {
   /** The tilings to pick from, by their first boards — one on a tiling's
-   * page, a figure set's on its page — easiest first. */
+   * page — easiest first. */
   tilings: Level[];
   /** Stars earned on a level, by key. */
   stars: (key: string) => number;

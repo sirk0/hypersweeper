@@ -16,7 +16,7 @@ import {
   type Piece,
   type Shape,
 } from "../../src/geometry/shape";
-import { figureSetOf, sameFigure } from "../../src/figures";
+import { sameFigure } from "../../src/geometry/congruent";
 import { levelByKey, LEVELS } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
@@ -178,11 +178,6 @@ describe("the rep-tiles of several pieces", () => {
     expect(level.cells.length).toBeGreaterThanOrEqual(8);
     expect(level.cells.length).toBeLessThanOrEqual(16);
     expect(level.configs).toEqual([]);
-    // its own figure, in the row of figures of several pieces
-    const set = figureSetOf(level);
-    expect(set.bucket).toBe("pieces");
-    expect(set.levels).toEqual([level]);
-    expect(set.name).toBe(level.name);
   });
 
   it("can be finished tile by tile, by dragging", () => {

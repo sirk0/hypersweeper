@@ -250,9 +250,9 @@ some back off.
   else the bulb glows and "thinking…" shows until it is — exact however long
   that takes (most boards in milliseconds; a stray tile on the hardest
   2-isohedral and coloured boards, tens of seconds).
-  The best per level is kept in `localStorage` and shown in Tilings and
-  Figures — on a tiling's card and a figure set's, as stars earned of stars
-  to earn over all its levels; on a tiling's page, per board and marking.
+  The best per level is kept in `localStorage` and shown in Tilings — on a
+  tiling's card, as stars earned of stars to earn over all its levels; on a
+  tiling's page, per board and marking.
 - **Zoom.** Two fingers pinch the board in, up to four times fitted, about
   their midpoint (a second finger landing mid-drag puts that tile back first;
   one on a control still turns or flips it); one finger on bare board pans it
@@ -282,16 +282,26 @@ some back off.
 grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
 `public/fonts`). Home (no query): the title on top; Easy, Medium and Hard,
 the main buttons, in the middle, each dealing a random level of that
-difficulty; Tilings and Figures at the foot — all five full-width rows, one under
-another; the difficulties in the accent fill, Tilings and Figures in the
-light one.
+difficulty; Tilings at the foot — all four full-width rows, one under
+another; the difficulties in the accent fill, Tilings in the light one.
 Tilings opens the catalog (`?tilings`; old
-`?catalog` links still work): each family a row of tiling cards scrolling
-sideways — first board's outline, tiles (a rep-tile's turned, at any angle —
-the right isosceles triangle and the right-angled fish 45° off any turn of
-their ring — or mirrored where it flips, to be its board's outline made
-small: `boardPose` in `src/view/icons.ts`, held to it by
-`tests/unit/cardPose.test.ts`), name, difficulty as Hypersweeper's
+`?catalog` links still work, and so do the old Figures screen's `?figures`
+and `?figure=<key>`): each family a row of tiling cards scrolling
+sideways — one picture of the first board's outline with the tray's tiles
+inside it, never crossing it (`src/view/cardArt.ts`, held to it by
+`tests/unit/cardArt.test.ts`). A rep-tile's tile is the outline made small
+(turned at any angle — the right isosceles triangle and the right-angled
+fish 45° off any turn of their ring — or mirrored where it flips:
+`boardFit` in `src/view/icons.ts`, held to it by
+`tests/unit/cardPose.test.ts`), shrunk by half toward the point its two
+parts touch at on a kissing one (the fish, the kissing squares and
+triangles: the tile's touching point is the outline's), else toward the
+middle of the outline's kernel, clear of it all round. Any other tiling's
+tiles sit side by side at their true sizes, three to a row (four as two and
+two), each row on one bottom line, as big as 55% of the outline and near
+its middle as fits clear of the rim — smaller, or off the middle, where it
+must (the kissing square chain, whose three touching points no one
+shrink keeps, too). Then the name, difficulty as Hypersweeper's
 three bars, how many boards and tile sets it has (a tile set is a card of its
 page's Tiles row: plain, a matching rule or a colouring), and the
 stars earned of its levels; a tiling of one level (the P-pentomino) opens it, any
@@ -306,22 +316,11 @@ Play, pinned to the foot of the screen, naming the level. A board the picked
 marking is not laid on is dimmed, as is a marking not laid on the picked
 board; picking one picks what goes with it (a board it is laid on, or the
 plain tiles). The page keeps its pick in its URL (`&pick=<level>`), so Back
-from a level comes back to it. Figures (`?figures`) lists the levels by the tiles in their tray, a
-row each: one figure by its sides — triangles, quadrilaterals, pentagons,
-hexagons, 7+-gons — then one figure of several pieces, regular pairs, irregular pairs (at least one figure
-irregular), and packs of three or more. A row puts the regular figure first,
-then the rest closest to regular first; one lone figure at two sizes is one
-figure, named for its shape (V4.8² and the isosceles right rep-tile are the
-isosceles right triangle). Each card shows the set's tiles side by side at
-their true sizes — and a set's page (`?figure=<key>`, keyed by its first
-level) is a tiling's page for every tiling whose tray is exactly that set:
-their boards side by side, each tiling's name and difficulty over its own,
-easiest first, one dealt at random, then the picked tiling's markings and
-Play. The gear in home's top-left
+from a level comes back to it. The gear in home's top-left
 corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
 version and checks for updates (the shared check in `@tiling/platform`; left
 out of a packaged build). Levels are picked in
-Tilings or Figures. A level is `?level=<key>`: one header row, Hypersweeper's —
+Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
 home and back, then (no clock: the time taken is on the win card) the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
 the level's name, which board it is (`board 2/6`) and the coverage as a faint
@@ -338,7 +337,7 @@ a level of its own (`?level=<key>-<n>`, its own stars and difficulty band;
 the first is `<key>`, the board it shipped with) — and each of its markings
 on each board too (`?level=<marking>-<n>`: `trihex.lines-2` is `trihex-2`
 lined; the next-board control steps through the boards a marking is laid
-on). Tilings and Figures list a tiling once — its first board's outline, how
+on). Tilings lists a tiling once — its first board's outline, how
 many levels it is, the stars earned of them — and Easy/Medium/Hard and the
 die deal from every board, plain and marked.
 `npm run boards` (`scripts/find-boards.mts`) finds them and writes where each
@@ -504,7 +503,7 @@ dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
-a tiling's page — a board, its tiles, Play — Figures and a figure set's page, settings, the header, the hint (followed to a two-star finish), rotating both ways, wheel and pinch zoom, the tray at
+a tiling's page — a board, its tiles, Play — the card pictures, settings, the header, the hint (followed to a two-star finish), rotating both ways, wheel and pinch zoom, the tray at
 board scale, every tile on screen at first, its rows and, zoomed in, its scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
 its ✕) and every level — every marking on every board — and tiling page opening with no error
@@ -872,7 +871,12 @@ quick way to see the win state.
   board is cut (`paintBase`).
 - `src/geometry/congruent.ts` — `congruenceKey`: one key for exactly the
   boards congruent to a given one (turned, mirrored or moved, tile for tile),
-  how the board search tells a new board from one it has.
+  how the board search tells a new board from one it has; and `sameFigure`,
+  whether two tiles are one shape (turned, moved or mirrored, at their true
+  size or, `size` false, any), across rings — exact: both lifted into
+  ℤ[ζ lcm], each scaled by the other's drawing `unit`, compared by products
+  of edge vectors; a round tile matches only one whose curves land on its
+  own, a tile of several pieces only piece for piece.
 - `src/geometry/vertexRule.ts` — the vertex rule: whether the corners round a
   point can still be completed to a vertex configuration. Applied only where a
   level sets `rule`.
@@ -991,33 +995,12 @@ quick way to see the win state.
   rows, `shelfIn`, all on screen at zoom 1, `fit`; clipped to its room and,
   zoomed in, scrolled, `scrollTray`), its scroll bar (`scrollBarBy`,
   `scrollBarTo`) and the controls' row (a fixed size).
-- `src/figures.ts` — **the figures**: every level's tray tiles matched across
-  levels — the same figure when one is a turned, moved or mirrored copy of the
-  other at its true size (`sameFigure`, exact: both lifted into ℤ[ζ lcm], each
-  scaled by the other's drawing `unit`, compared by products of edge vectors;
-  a float area check only ever rejects; a round tile matches only a round one
-  whose curves land on its own, so Tile(1,1) and the Spectre are two figures)
-  — and the levels grouped by the set of
-  figures their tray is (`figureSets`). A lone figure also joins the first
-  lone figure of its shape at any size (`sameFigure(…, false)`): V4.8² with
-  the isosceles right rep-tile, V4.6.12 with the 30-60-90 one; pairs and
-  packs keep true sizes (Pythagorean's two squares). Each set is in a row
-  (`bucket`, the order of `BUCKETS`: one figure by its sides — triangles,
-  quadrilaterals, pentagons, hexagons, 7+-gons — then one figure of several
-  pieces, regular pairs, irregular pairs, packs), and in a row by fewer figures, regular first, then
-  `distortion` ascending (1 − the isoperimetric quotient over the regular
-  n-gon's; a float, for ordering only; a set's is its figures' mean), then
-  side counts compared term by term, then first use in `LEVELS`. A figure is
-  named as a regular polygon or a rectangle by its shape, else for the
-  rep-tile of its shape (rep-tiles are named for their shape), else by the
-  level it alone tiles (V3.6.3.6), else as a rhombus, kite or dart, else by
-  its sides.
-- `src/view/home.ts`, `src/view/catalog.ts`, `src/view/figures.ts`,
+- `src/view/home.ts`, `src/view/catalog.ts`, `src/view/cardArt.ts`,
   `src/view/picker.ts`, `src/view/settings.ts` — the first screen, Tilings
-  (the catalog), Figures, a tiling's or figure set's page (a board, then its
+  (the catalog) and its cards' pictures, a tiling's page (a board, then its
   tiles, then Play: its pictures drawn one a frame after the page is up, each
   building its level), and the settings; `src/view/icons.ts` the pictures
-  they share (board outline, tray tile, a tray's tiles in a grid, the three
+  they share (board outline, a tray's tiles in a grid, the three
   bars, a star row) and the header's glyphs. The catalog shows only what a player starts with: the
   board's outline, the tray's tiles, the vertex configuration as the name
   (`notation`: 4⁴, 3.4.6.4), and the best stars — never a picture of the
