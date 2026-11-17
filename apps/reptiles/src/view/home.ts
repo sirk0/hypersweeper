@@ -1,6 +1,5 @@
 // The first screen: a level of a chosen difficulty, dealt at random, or a
-// level picked by hand — from Tilings (the catalog, by family) or Figures (by
-// the tiles in the tray). (The settings gear is in the screen's corner,
+// level picked by hand from Tilings (the catalog, by family). (The settings gear is in the screen's corner,
 // in index.html.)
 
 import { BARS, type Band } from "../difficulty";
@@ -18,7 +17,6 @@ export function renderHome(
   tally: (band: Band) => { levels: number; stars: number },
   play: (band: Band) => void,
   catalog: () => void,
-  figures: () => void,
 ): void {
   host.replaceChildren();
   // the three difficulties are the main buttons, in the middle…
@@ -36,7 +34,7 @@ export function renderHome(
     button.title = hint;
     bands.appendChild(button);
   }
-  // …and Tilings and Figures under them, at the foot
+  // …and Tilings under them, at the foot
   const more = document.createElement("div");
   more.className = "home-more";
   const grid = document.createElement("span");
@@ -44,13 +42,6 @@ export function renderHome(
   grid.setAttribute("aria-hidden", "true");
   grid.textContent = "▦";
   more.appendChild(pick("catalog-pick", grid, "Tilings", "Every tiling, by family", catalog));
-  const shapes = document.createElement("span");
-  shapes.className = "catalog-glyph";
-  shapes.setAttribute("aria-hidden", "true");
-  shapes.textContent = "◆";
-  more.appendChild(
-    pick("figures-pick", shapes, "Figures", "By the tiles: one shape, a pair, a pack", figures),
-  );
   host.append(bands, more);
 }
 

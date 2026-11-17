@@ -4,7 +4,7 @@ import { Frontier } from "../../src/geometry/frontier";
 import { deform, hatMetatiles, hatPatch } from "../../src/geometry/hat";
 import { ccw, outline } from "../../src/geometry/outline";
 import { piece, polygon, signedArea, sideCount, turnsOnto, posed } from "../../src/geometry/shape";
-import { figureSetOf, sameFigure } from "../../src/figures";
+import { sameFigure } from "../../src/geometry/congruent";
 import { levelByKey, LEVELS } from "../../src/levels";
 
 const Z12 = cyclotomic(12);
@@ -175,15 +175,11 @@ describe("the hat's family's levels", () => {
     }
   });
 
-  it("are three figures, none of them Tile(1,1)", () => {
+  it("are three shapes, none of them Tile(1,1)", () => {
     const tile11 = levelByKey("tile11")!.tiles[0]!;
     expect(sameFigure(hat.tiles[0]!, turtle.tiles[0]!)).toBe(false);
     expect(sameFigure(hat.tiles[0]!, tile11)).toBe(false);
     expect(sameFigure(turtle.tiles[0]!, tile11)).toBe(false);
-    expect(figureSetOf(hat).levels).toEqual([hat]);
-    expect(figureSetOf(turtle).levels).toEqual([turtle]);
-    expect(figureSetOf(meta).levels).toEqual([meta]);
-    expect(figureSetOf(meta).bucket).toBe("packs");
   });
 
   it("lays each tile as one piece", () => {

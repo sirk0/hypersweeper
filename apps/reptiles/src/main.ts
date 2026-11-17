@@ -1,14 +1,12 @@
 import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
 import { attachDrag, type DragControl } from "./input/drag";
-import { figureSetByKey, figureSets, type FigureSet } from "./figures";
 import type { Laid } from "./hint";
 import { Hinter } from "./hintClient";
 import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./levels";
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
 import { renderCatalog, type Tally } from "./view/catalog";
-import { renderFigure, renderFigures } from "./view/figures";
 import { renderHome } from "./view/home";
 import { fillGlyphs } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
@@ -30,7 +28,7 @@ const hinter = new Hinter();
 
 /** Every level of the tiling `plain` is the first board of — each of its
  * boards plain, then marked each way it is (`markedOf`) — and the stars
- * earned on them: what the catalog and Figures show for it. */
+ * earned on them: what the catalog shows for it. */
 function tallyOf(plain: Level): ReturnType<Tally> {
   const keys = [plain, ...markedOf(plain.key)].flatMap((l) => boardKeys(l.key));
   return {
@@ -44,15 +42,15 @@ function tallyOf(plain: Level): ReturnType<Tally> {
 fillGlyphs(document);
 
 // -- screens ------------------------------------------------------------------
-// Seven: home (no query), Tilings — the catalog — (?tilings; old links say
-// ?catalog), one tiling's boards and tiles to pick a level from
-// (?tiling=<key>), Figures (?figures), one figure set's (?figure=<key>), the
+// Five: home (no query), Tilings — the catalog — (?tilings; old links say
+// ?catalog, or ?figures and ?figure=<key> from the Figures screen there was),
+// one tiling's boards and tiles to pick a level from (?tiling=<key>), the
 // settings (?settings) and a level (?level=<key>). Each move between them is a
-// history entry, so the browser's Back goes back; a tiling's or figure set's
-// page keeps its pick in its URL (`&pick=<level>`), so Back from a level
-// comes back to the same one.
+// history entry, so the browser's Back goes back; a tiling's page keeps its
+// pick in its URL (`&pick=<level>`), so Back from a level comes back to the
+// same one.
 
-const SCREENS = ["home", "catalog", "tiling", "figures", "figure", "settings", "game"] as const;
+const SCREENS = ["home", "catalog", "tiling", "settings", "game"] as const;
 type Screen = (typeof SCREENS)[number];
 
 function show(screen: Screen): void {
@@ -63,13 +61,7 @@ function show(screen: Screen): void {
 
 function goHome(push = true): void {
   if (push) history.pushState(null, "", location.pathname);
-  renderHome(
-    byId("home-picks"),
-    tally,
-    playBand,
-    () => goCatalog(),
-    () => goFigures(),
-  );
+  renderHome(byId("home-picks"), tally, playBand, () => goCatalog());
   show("home");
 }
 
@@ -113,26 +105,6 @@ function goTiling(level: Level, push = true, pick: string | null = null): void {
   });
 }
 
-function goFigures(push = true): void {
-  if (push) history.pushState(null, "", "?figures");
-  renderFigures(byId("figures-list"), figureSets(), tallyOf, (set) => goFigure(set));
-  show("figures");
-}
-
-function goFigure(set: FigureSet, push = true, pick: string | null = null): void {
-  if (push) history.pushState(null, "", `?figure=${set.key}`);
-  show("figure");
-  byId("figure-title").textContent = set.name;
-  renderFigure(
-    byId("figure-list"),
-    set,
-    starsFor,
-    (level) => open(level),
-    pick,
-    keepPick(`figure=${set.key}`),
-  );
-}
-
 /** Per band, how many boards — every board of every tiling is a level of its
  * own — and the stars earned on them. */
 function tally(band: Band): { levels: number; stars: number } {
@@ -155,17 +127,12 @@ function route(): void {
   const query = new URLSearchParams(location.search);
   const level = levelByKey(query.get("level") ?? "");
   if (level) open(level, false);
-  else if (query.has("tilings") || query.has("catalog")) goCatalog(false);
+  else if (["tilings", "catalog", "figures", "figure"].some((q) => query.has(q))) goCatalog(false);
   else if (query.has("tiling")) {
     const tiling = levelByKey(query.get("tiling") ?? "");
     if (tiling && !tiling.decor && tiling.board === 1) goTiling(tiling, false, query.get("pick"));
     else goCatalog(false);
-  } else if (query.has("figure")) {
-    const set = figureSetByKey(query.get("figure") ?? "");
-    if (set) goFigure(set, false, query.get("pick"));
-    else goFigures(false);
-  } else if (query.has("figures")) goFigures(false);
-  else if (query.has("settings")) goSettings(false);
+  } else if (query.has("settings")) goSettings(false);
   else goHome(false);
 }
 

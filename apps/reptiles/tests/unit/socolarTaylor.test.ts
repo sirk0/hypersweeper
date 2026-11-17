@@ -14,7 +14,6 @@ import {
   type StTile,
 } from "../../src/geometry/socolarTaylor";
 import { posed, signedArea, turnsOnto } from "../../src/geometry/shape";
-import { figureSetOf } from "../../src/figures";
 import { levelByKey, LEVELS } from "../../src/levels";
 
 const { ring } = SOCOLAR_TAYLOR;
@@ -123,10 +122,6 @@ describe("the Socolar–Taylor level", () => {
     expect((level.turn * 360) / ring.n).toBe(60);
     expect(level.mirror).toBe(true);
     expect(level.need).toEqual([19]);
-    // its own figure, in the row of figures of several pieces
-    const set = figureSetOf(level);
-    expect(set.bucket).toBe("pieces");
-    expect(set.levels).toEqual([level]);
   });
 
   it("is the patch's middle two rings, covering their region exactly", () => {
