@@ -1,9 +1,23 @@
 // The first screen: a level of a chosen difficulty, dealt at random, or a
 // level picked by hand from Tilings (the catalog, by family). (The settings gear is in the screen's corner,
-// in index.html.)
+// in index.html.) On a desktop it is the Quick start page beside the
+// sidebar: the three difficulties as big cards, each the picture of a
+// tiling of that difficulty (`SHOWCASE`) — its board's outline and its tiles,
+// as its Tilings card draws it, never the board tiled, which would give it
+// away — and no Tilings row: the sidebar lists the tilings.
 
 import { BARS, type Band } from "../difficulty";
+import { levelByKey } from "../levels";
+import { cardArt } from "./cardArt";
 import { barsIcon } from "./icons";
+
+/** The tiling each difficulty's desktop card pictures: one of its own
+ * difficulty (held to it by tests/unit/groups.test.ts). */
+export const SHOWCASE: Record<Band, string> = {
+  easy: "trihex",
+  medium: "rhombitrihex",
+  hard: "spectre",
+};
 
 const BANDS: { band: Band; label: string; hint: string }[] = [
   { band: "easy", label: "Easy", hint: "Hardly a turn, and a tile that fits is right" },
@@ -17,6 +31,8 @@ export function renderHome(
   tally: (band: Band) => { levels: number; stars: number },
   play: (band: Band) => void,
   catalog: () => void,
+  /** The desktop's Quick start: the cards carry their pictures. */
+  wide = false,
 ): void {
   host.replaceChildren();
   // the three difficulties are the main buttons, in the middle…
@@ -32,6 +48,20 @@ export function renderHome(
       () => play(band),
     );
     button.title = hint;
+    const about = document.createElement("span");
+    about.className = "home-hint";
+    about.textContent = hint;
+    button.querySelector(".home-text")?.append(about);
+    if (wide) {
+      const art = document.createElement("span");
+      art.className = "home-art";
+      button.prepend(art);
+      // drawn once the page is up: building the level takes a moment
+      setTimeout(() => {
+        const level = levelByKey(SHOWCASE[band]);
+        if (level && art.isConnected) art.replaceChildren(cardArt(level));
+      }, 0);
+    }
     bands.appendChild(button);
   }
   // …and Tilings under them, at the foot
@@ -65,7 +95,11 @@ function pick(
   const text = document.createElement("span");
   text.className = "home-text";
   text.append(name, meta);
-  button.append(icon, text);
+  // the bars and the words: one line under a desktop card's picture
+  const line = document.createElement("span");
+  line.className = "home-line";
+  line.append(icon, text);
+  button.append(line);
   button.addEventListener("click", onClick);
   return button;
 }

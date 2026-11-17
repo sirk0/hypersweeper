@@ -93,8 +93,14 @@ const SHELF_INSET = 6;
 /** Each board's own id for its shelf's clip path. */
 let boards = 0;
 /** The room left above the fitted board for the level's name, which is drawn
- * on the page behind it (`.board-name`), in pixels. */
+ * on the page behind it (`.board-name`), in pixels — unless the stylesheet
+ * says otherwise (`--label-room`): on a desktop the name is in the header,
+ * and the board takes this room too. */
 const LABEL_ROOM = 22;
+/** A desktop's tray is a card rather than a strip (`--tray-card-gap`, 0 on a
+ * phone): inset from the screen's edges by the gap, as long as its tiles and
+ * controls need (the strip, while the shelf scrolls), rounded by this. */
+const CARD_RADIUS = 18;
 /** A control's radius, the gap between controls, and the room its label
  * takes underneath it. */
 const KNOB = 0.4;
@@ -203,7 +209,12 @@ export class SvgBoard {
   private knobScale = 1;
   private view: Box = [0, 0, 0, 0];
   private strip: Box = [0, 0, 0, 0];
+  /** The tray as drawn: the strip, or on a desktop the card inside it. */
+  private card: Box = [0, 0, 0, 0];
   private shelfRoom: Box = [0, 0, 0, 0];
+  /** `LABEL_ROOM` and the card's gap, as the stylesheet sets them. */
+  private labelRoom = LABEL_ROOM;
+  private cardGap = 0;
   /** Where the shelf's own (0, 0) and the controls' land on screen. */
   private shelfAt: XY = [0, 0];
   private knobsAt: XY = [0, 0];
@@ -368,6 +379,13 @@ export class SvgBoard {
   layout(): void {
     const { width, height } = this.svg.getBoundingClientRect();
     this.landscape = width > height;
+    const style = getComputedStyle(this.svg);
+    const px = (name: string, fallback: number): number => {
+      const value = parseFloat(style.getPropertyValue(name));
+      return Number.isFinite(value) ? value : fallback;
+    };
+    this.labelRoom = px("--label-room", LABEL_ROOM);
+    this.cardGap = px("--tray-card-gap", 0);
     const controls = this.controls();
     // A control's own box: the knob and its label underneath. One row of them
     // under the shelf in portrait; one column beside it in landscape.
@@ -512,9 +530,11 @@ export class SvgBoard {
    * in portrait, along it in landscape. */
   private fit(width: number, height: number, shelfBox: Box): number {
     const m = this.measures(width, height, shelfBox);
-    const knobs = m.land ? m.knobsW : m.knobsH;
-    const roomAlong = m.land ? m.length - LABEL_ROOM : m.length;
-    const roomAcross = m.land ? m.across : m.across - LABEL_ROOM;
+    const gap = this.cardGap;
+    const knobs = (m.land ? m.knobsW : m.knobsH) + 2 * gap;
+    const roomAlong = m.land ? m.length - this.labelRoom : m.length;
+    const roomAcross = m.land ? m.across : m.across - this.labelRoom;
+    const inset = Math.max(SHELF_INSET, gap);
     let lo = 0;
     let hi = Math.min(roomAlong / m.boardAlong, roomAcross / m.boardAcross);
     for (let i = 0; i < 40; i++) {
@@ -522,7 +542,7 @@ export class SvgBoard {
       const shelf = Math.min(mid, m.cap);
       if (
         mid * m.boardAcross + shelf * m.shelfAcross + knobs <= roomAcross &&
-        shelf * m.shelfAlong <= m.length - 2 * SHELF_INSET
+        shelf * m.shelfAlong <= m.length - 2 * inset
       )
         lo = mid;
       else hi = mid;
@@ -545,38 +565,53 @@ export class SvgBoard {
     this.shelfScale = Math.min(this.scale, m.cap);
     const ss = this.shelfScale;
     const thick = ss * m.shelfAcross;
-    const shelfRoomLen = length;
+    // on a desktop, the card's gap all round, inside the strip
+    const g = this.cardGap;
+    const shelfRoomLen = length - 2 * g;
     this.shelfLength = ss * m.shelfAlong;
     // a hair over is no overflow: the fit lands within float error of it
     this.overflow = this.shelfLength - shelfRoomLen > 0.5 ? this.shelfLength - shelfRoomLen : 0;
     this.scrolled = Math.min(this.overflow, Math.max(0, this.scrolled));
     const barRoom = this.overflow > 0 ? BAR_ROOM : 0;
-    const strip = thick + barRoom + (land ? knobsW : knobsH);
+    const strip = thick + barRoom + (land ? knobsW : knobsH) + 2 * g;
     // Where the shelf starts along the strip: centred in its room while it
     // fits, scrolled once it does not.
-    const start = this.overflow > 0 ? -this.scrolled : (shelfRoomLen - this.shelfLength) / 2;
+    const start = g + (this.overflow > 0 ? -this.scrolled : (shelfRoomLen - this.shelfLength) / 2);
+    // The card's ends along the strip: about its tiles and its controls, both
+    // centred, or the whole strip less the gap while the shelf scrolls. A
+    // phone's strip (no gap) runs end to end.
+    const content = Math.max(
+      this.overflow > 0 ? shelfRoomLen : this.shelfLength,
+      land ? knobsH : knobsW,
+    );
+    const c0 = g > 0 ? Math.max(g, (length - content) / 2) : 0;
+    const c1 = g > 0 ? Math.min(length - g, (length + content) / 2) : length;
     if (land) {
       const sx0 = width - strip;
-      this.view = [0, LABEL_ROOM, sx0, height];
+      this.view = [0, this.labelRoom, sx0, height];
       this.strip = [sx0, 0, width, height];
+      this.card = [sx0 + g, c0, width - g, c1];
       // The shelf, the bar down its right-hand side, the controls' column
       // beside that.
-      const shelfX1 = sx0 + thick;
-      this.shelfRoom = [sx0, 0, shelfX1, height];
-      this.shelfAt = [(sx0 + shelfX1) / 2 - ss * ((s0 + s1) / 2), start + ss * t1];
+      const shelfX0 = sx0 + g;
+      const shelfX1 = shelfX0 + thick;
+      this.shelfRoom = [shelfX0, c0, shelfX1, c1];
+      this.shelfAt = [(shelfX0 + shelfX1) / 2 - ss * ((s0 + s1) / 2), start + ss * t1];
       const bx = shelfX1 + (BAR_ROOM - BAR) / 2;
-      this.track = [bx, BAR_INSET, bx + BAR, height - BAR_INSET];
+      this.track = [bx, BAR_INSET + g, bx + BAR, height - BAR_INSET - g];
       this.knobsAt = [shelfX1 + barRoom + knobsW / 2, height / 2];
     } else {
       const sy0 = height - strip;
-      this.view = [0, LABEL_ROOM, width, sy0];
+      this.view = [0, this.labelRoom, width, sy0];
       this.strip = [0, sy0, width, height];
+      this.card = [c0, sy0 + g, c1, height - g];
       // The shelf, the bar under it, the controls' row under that.
-      this.shelfRoom = [0, sy0, width, sy0 + thick];
-      this.shelfAt = [start - ss * s0, sy0 + thick / 2 + ss * ((t0 + t1) / 2)];
-      const by = sy0 + thick + (BAR_ROOM - BAR) / 2;
-      this.track = [BAR_INSET, by, width - BAR_INSET, by + BAR];
-      this.knobsAt = [width / 2, sy0 + thick + barRoom + knobsH / 2];
+      const shelfY0 = sy0 + g;
+      this.shelfRoom = [c0, shelfY0, c1, shelfY0 + thick];
+      this.shelfAt = [start - ss * s0, shelfY0 + thick / 2 + ss * ((t0 + t1) / 2)];
+      const by = shelfY0 + thick + (BAR_ROOM - BAR) / 2;
+      this.track = [BAR_INSET + g, by, width - BAR_INSET - g, by + BAR];
+      this.knobsAt = [width / 2, shelfY0 + thick + barRoom + knobsH / 2];
     }
   }
 
@@ -638,14 +673,15 @@ export class SvgBoard {
     const world = `matrix(${this.scale},0,0,${-this.scale},${tx},${ty})`;
     this.still.setAttribute("transform", world);
     this.moving.setAttribute("transform", world);
-    const [z0, w0, z1, w1] = this.strip;
-    for (const [k, v] of Object.entries({ x: z0, y: w0, width: z1 - z0, height: w1 - w0 }))
+    const [z0, w0, z1, w1] = this.card;
+    const rx = this.cardGap > 0 ? CARD_RADIUS : 0;
+    for (const [k, v] of Object.entries({ x: z0, y: w0, width: z1 - z0, height: w1 - w0, rx }))
       this.zone.setAttribute(k, String(v));
     // The level's name, on the page behind the board, is centred over the
     // board's room, not under a strip down the right.
     this.svg.parentElement?.parentElement?.style.setProperty(
       "--tray-side",
-      `${this.landscape ? z1 - z0 : 0}px`,
+      `${this.landscape ? width - this.strip[0] : 0}px`,
     );
     const [r0, q0, r1, q1] = this.shelfRoom;
     for (const [k, v] of Object.entries({ x: r0, y: q0, width: r1 - r0, height: q1 - q0 }))

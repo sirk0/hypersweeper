@@ -332,6 +332,38 @@ corner that closes it to look at the finished board (as do Escape and a tap
 outside it). Each move
 is a history entry, so the browser's Back works.
 
+**The desktop** — from 900px wide and 501px tall, or a tablet held upright
+(720 × 800): Hypersweeper's own query (`WIDE_QUERY` in
+`src/view/groups.ts`, the matching `@media` block at the foot of
+`styles.css`; the two must match) — lays the same screens out as
+Hypersweeper's two-pane menu does: a **sidebar** (the title, Quick start,
+the tilings in five groups with how many each, Settings at its foot) beside
+every screen but a level's, and the page in the pane under a Caprasimo
+title. Home is **Quick start**: Easy, Medium and Hard as three cards side by
+side, each the picture of a tiling of that difficulty (`SHOWCASE` in
+`home.ts`: its outline and tiles, as its Tilings card draws it — never the
+board tiled), its counts and its hint; below 1100px, one under another. The
+catalog's twelve families are put together in **five groups**
+(`MENU_GROUPS`): Regular polygons (regular, uniform, 2-uniform), Irregular
+tiles (Laves, 2-isohedral, pentagonal), Offset corners (isogonal, bonds),
+Self-similar (rep-tiles, spirals) and Aperiodic — each family in exactly one
+(`tests/unit/groups.test.ts`). A group's page (`?group=<key>`; `?tilings`
+opens the first) is its families' sections, their cards in grids that wrap,
+with a jump to each under the title (none for a group of one family, nor its
+heading). A tiling's page is two columns from 1100px (`TWO_COLUMNS`): the
+level the pick makes on the left, held in view — its outline with its tiles
+inside it, its name, difficulty and stars, then Play — and the boards and
+tiles to pick from on the right; narrower, it is the phone's column inside
+the pane. A level has its name in the header, between the two clusters of
+buttons, and its tray is a card inset from the screen's edges and only as
+long as its tiles and controls need (the strip, while the shelf scrolls) —
+`svgBoard.ts` reads both from the stylesheet (`--label-room`,
+`--tray-card-gap`), so a phone's numbers stay as they were. Every screen
+renders at either width, and crossing it re-renders the one on show; a
+level in play only moves its name and refits, keeping its tiles. A phone
+never sees any of it. `tests/e2e/desktop.spec.ts` pins it, and
+`smoke.spec.ts` holds the phone's screens at a phone's size.
+
 **Boards.** A tiling cut in more than one place has more than one board, each
 a level of its own (`?level=<key>-<n>`, its own stars and difficulty band;
 the first is `<key>`, the board it shipped with) — and each of its markings
@@ -503,6 +535,7 @@ dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
 builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
 test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
+the desktop's in `tests/e2e/desktop.spec.ts`,
 a tiling's page — a board, its tiles, Play — the card pictures, settings, the header, the hint (followed to a two-star finish), rotating both ways, wheel and pinch zoom, the tray at
 board scale, every tile on screen at first, its rows and, zoomed in, its scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
@@ -999,7 +1032,9 @@ quick way to see the win state.
   `src/view/picker.ts`, `src/view/settings.ts` — the first screen, Tilings
   (the catalog) and its cards' pictures, a tiling's page (a board, then its
   tiles, then Play: its pictures drawn one a frame after the page is up, each
-  building its level), and the settings; `src/view/icons.ts` the pictures
+  building its level), and the settings; `src/view/groups.ts` the
+  desktop's five groups of families and its two queries (the sidebar itself
+  is built in `main.ts`); `src/view/icons.ts` the pictures
   they share (board outline, a tray's tiles in a grid, the three
   bars, a star row) and the header's glyphs. The catalog shows only what a player starts with: the
   board's outline, the tray's tiles, the vertex configuration as the name

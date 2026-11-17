@@ -103,6 +103,11 @@
   --hud-btn: clamp(36px, 11vw, 48px);
   --hud-icon: calc(var(--hud-btn) * 0.565);
   --hud-gap: calc(var(--hud-btn) * 0.16);
+  /* The level screen's room for the name over the board, and the inset of
+     the tray's card — read by svgBoard.ts; the desktop block changes both. */
+  --label-room: 22px;
+  --tray-card-gap: 0px;
+  --tray-shadow: rgba(64, 35, 16, 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -162,6 +167,7 @@
     --remove: #d0574d;
     --remove-edge: #ffb3ab;
     --tray-strip: #2e2b25;
+    --tray-shadow: rgba(0, 0, 0, 0.45);
     --scrim: rgba(0, 0, 0, 0.55);
   }
 }
@@ -912,8 +918,9 @@ button:disabled {
   gap: 8px;
 }
 
-/* Caprasimo gets exactly one word, as in Hypersweeper's Sand theme: the
-   game's name. */
+/* Caprasimo is for titles alone, as in Hypersweeper's Sand theme: the
+   game's name, and on a desktop the pane's title (Quick start, a group, a
+   tiling), as Hypersweeper's own two-pane menu sets them. */
 .home-title {
   font-family: "Caprasimo", "Space Grotesk", system-ui, sans-serif;
   font-weight: 400;
@@ -1445,4 +1452,530 @@ button.settings-row:active {
 
 .tray-scroll-thumb {
   fill: var(--muted);
+}
+
+/* -- the desktop: a sidebar and a pane --------------------------------------
+   Hypersweeper's two-pane menu, from 900px wide and 501px tall or a tablet
+   held upright — the query `WIDE_QUERY` in view/groups.ts holds too, and the
+   two must match. The same screens, laid out again: the sidebar (Quick start,
+   the five groups of tilings, Settings) beside every screen but a level's;
+   Quick start's three difficulties as big cards; a group's tilings in
+   grids; a tiling's page in two columns; and a level with its name in the
+   header and its tray a card. Below it, none of this is on screen. */
+.sidebar,
+.pane-head,
+.pane-links,
+.home-hint,
+.home-art {
+  display: none;
+}
+
+.home-line {
+  display: contents;
+}
+
+@media (min-width: 900px) and (min-height: 501px), (min-width: 720px) and (min-height: 800px) {
+  :root {
+    --label-room: 0px;
+    --tray-card-gap: 14px;
+  }
+
+  body {
+    display: grid;
+    grid-template-columns: 264px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .screen {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  body[data-screen="game"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-screen="game"] .screen {
+    grid-column: 1;
+  }
+
+  body[data-screen="game"] .sidebar {
+    display: none;
+  }
+
+  /* -- the sidebar ----------------------------------------------------------- */
+  .sidebar {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    overflow-y: auto;
+    padding: max(28px, env(safe-area-inset-top)) 18px 24px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+  }
+
+  .sidebar-title {
+    margin: 0 0 6px 12px;
+    font-family: "Caprasimo", "Space Grotesk", system-ui, sans-serif;
+    font-size: 28px;
+    line-height: 1.05;
+  }
+
+  .side-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .side-section {
+    margin: 8px 0 0 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Nav rows, not cards: no border, shadow or fill of their own. */
+  .side-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 0;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.1;
+    text-align: left;
+  }
+
+  .side-row:hover,
+  .side-row:active {
+    background: var(--selected);
+  }
+
+  .side-row:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .side-row.active {
+    background: var(--selected);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .side-icon {
+    display: block;
+    flex: none;
+    width: 30px;
+    height: 30px;
+  }
+
+  .side-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .side-label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .side-count {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .side-footer {
+    margin-top: auto;
+  }
+
+  .side-small {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .side-small svg {
+    width: 22px;
+    height: 22px;
+    margin: 0 4px;
+  }
+
+  /* -- the pane's header: a title in Caprasimo, the page's hint under it --- */
+  .pane-head {
+    display: block;
+    padding: max(30px, env(safe-area-inset-top)) 34px 6px;
+  }
+
+  .pane-title,
+  .catalog .hud-title,
+  .settings .hud-title {
+    margin: 0;
+    font-family: "Caprasimo", "Space Grotesk", system-ui, sans-serif;
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  .pane-hint {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* The list screens' header row becomes the pane's header: the sidebar
+     goes home and to every group, so only a tiling's page keeps Back. */
+  .catalog .hud,
+  .settings .hud {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: max(30px, env(safe-area-inset-top)) 34px 6px;
+  }
+
+  .catalog .hud [data-go-home],
+  #catalog .hud-left,
+  .settings .hud-left,
+  .catalog .hud-right,
+  .settings .hud-right {
+    display: none;
+  }
+
+  /* A group's families, a jump to each. */
+  .pane-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0 34px 14px;
+  }
+
+  .pane-links .pane-hint {
+    flex-basis: 100%;
+    margin: 0 0 4px;
+  }
+
+  .pane-link {
+    min-height: 30px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .pane-link:hover {
+    border-color: var(--accent);
+  }
+
+  /* -- Quick start: the three difficulties as big cards ---------------------- */
+  .home {
+    align-items: stretch;
+    padding: 0;
+    gap: 0;
+  }
+
+  .home > .home-settings,
+  .home-title,
+  .home-sub,
+  .home-more {
+    display: none;
+  }
+
+  .home-picks {
+    flex: 1;
+    min-height: 0;
+    width: auto;
+    overflow-y: auto;
+    padding: 18px 34px 34px;
+  }
+
+  .home-bands {
+    flex: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    max-width: 1180px;
+  }
+
+  .home-bands .home-pick {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--card);
+    border-color: var(--border);
+    color: var(--ink);
+  }
+
+  .home-art {
+    display: block;
+    aspect-ratio: 1.1;
+    padding: 22px;
+    background: var(--page);
+  }
+
+  .home-art svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .home-line {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px 18px;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .home-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    opacity: 0.85;
+  }
+
+  .home-bands .home-pick .home-label {
+    font-size: 1.3rem;
+  }
+
+  /* -- a group's tilings: grids that fill the width ------------------------- */
+  .catalog-list {
+    padding: 0 34px 34px;
+  }
+
+  .family h2,
+  .family-hint {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .family h2 {
+    font-size: 1.15rem;
+  }
+
+  #catalog-list .family-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+    gap: 16px;
+    overflow: visible;
+    padding: 4px 0 14px;
+  }
+
+  #catalog-list .card {
+    width: auto;
+    padding: 14px 12px 10px;
+  }
+
+  #catalog-list .card-art {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  /* -- a tiling's page: the level picked beside the picks ------------------- */
+  #tiling .hud {
+    gap: 12px;
+  }
+
+  .picker.wide {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.05fr);
+    gap: 30px;
+    overflow: hidden;
+    padding: 10px 34px 0;
+  }
+
+  .pick-side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    padding-bottom: 28px;
+  }
+
+  .pick-art {
+    display: block;
+    flex: 1 1 0;
+    min-height: 160px;
+    padding: 24px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  .pick-art svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* the outline drawn as the board draws its rim, not scaled up with it */
+  .home-art .rim,
+  .pick-art .rim {
+    vector-effect: non-scaling-stroke;
+    stroke-width: 3px;
+  }
+
+  .pick-facts {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .pick-facts .bars {
+    flex: none;
+    width: 22px;
+    height: 22px;
+  }
+
+  .pick-facts .stars {
+    margin-left: auto;
+  }
+
+  .pick-side .pick-play {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+
+  .pick-side .pick-play .play {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .pick-main {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 4px 28px;
+  }
+
+  .pick-main .tiling-one {
+    padding: 2px 0 8px;
+  }
+
+  .pick-main .board-grid {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 8px;
+  }
+
+  .pick-main .outline-slot {
+    max-width: 88px;
+  }
+
+  .pick-main .board-card {
+    padding: 6px 4px 4px;
+  }
+
+  .pick-main .pick-tiles .marking-row {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 2px 0 8px;
+  }
+
+  .pick-main .marking-card {
+    padding: 8px 6px 6px;
+  }
+
+  /* -- settings: a column in the pane, not the whole width ----------------- */
+  .settings-body {
+    width: min(640px, 100%);
+    align-self: flex-start;
+    padding-left: 34px;
+    padding-right: 34px;
+  }
+
+  /* -- a level: the name in the header, the tray a card --------------------- */
+  #game .hud .board-name {
+    position: static;
+    grid-column: 2;
+    padding: 0 12px;
+    color: var(--ink);
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    opacity: 1;
+  }
+
+  #game .hud .board-name .level {
+    font-weight: 600;
+  }
+
+  #game .hud .board-name .board-of,
+  #game .hud .board-name .count,
+  #game .hud .board-name .thinking {
+    color: var(--muted);
+  }
+
+  .tray-zone {
+    filter: drop-shadow(0 2px 8px var(--tray-shadow));
+  }
+}
+
+@media (min-width: 900px) and (min-height: 501px) and (hover: hover),
+  (min-width: 720px) and (min-height: 800px) and (hover: hover) {
+  .home-bands .home-pick,
+  #catalog-list .card {
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .home-bands .home-pick:hover,
+  #catalog-list .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px var(--tray-shadow);
+  }
+}
+
+/* A narrow desktop — a tablet held upright, a small window: the three
+   difficulties one under another, each its picture beside its words; and a
+   tiling's page stays the phone's one column (`TWO_COLUMNS` in
+   view/groups.ts), inside the pane. */
+@media (max-width: 1099px) and (min-width: 900px) and (min-height: 501px),
+  (max-width: 1099px) and (min-width: 720px) and (min-height: 800px) {
+  .home-bands {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 640px;
+    gap: 16px;
+  }
+
+  .home-bands .home-pick {
+    flex-direction: row;
+  }
+
+  .home-art {
+    flex: none;
+    width: 168px;
+    aspect-ratio: 1;
+    padding: 16px;
+  }
+
+  #tiling .catalog-list {
+    padding: 0 18px;
+  }
+
+  #tiling .family h2 {
+    margin: 0 16px 2px;
+  }
 }
