@@ -14,7 +14,30 @@
     <title>Rep-tiles</title>
   </head>
   <body>
+    <!-- The desktop's sidebar (view/groups.ts): Quick start, the tilings in
+         five groups, Settings. A phone never shows it. -->
+    <nav class="sidebar" id="sidebar" aria-label="Rep-tiles">
+      <p class="sidebar-title">Rep-tiles</p>
+      <div class="side-list">
+        <button type="button" class="side-row" data-side="home">
+          <span class="side-icon" id="side-quick"></span>
+          <span class="side-label">Quick start</span>
+        </button>
+      </div>
+      <p class="side-section">Tilings</p>
+      <div class="side-list" id="side-groups"></div>
+      <div class="side-footer">
+        <button type="button" class="side-row side-small" data-side="settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="settings"></svg>
+          <span class="side-label">Settings</span>
+        </button>
+      </div>
+    </nav>
     <section class="screen home" id="home" hidden>
+      <header class="pane-head">
+        <h1 class="pane-title">Quick start</h1>
+        <p class="pane-hint">A level dealt at random, by difficulty, from every tiling's boards.</p>
+      </header>
       <button
         type="button"
         class="menu-header-btn home-settings"
@@ -38,9 +61,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="back"></svg>
           </button>
         </div>
-        <h1 class="hud-title">Tilings</h1>
+        <h1 class="hud-title" id="catalog-title">Tilings</h1>
         <div class="hud-cluster hud-right"></div>
       </header>
+      <nav class="pane-links" id="catalog-links" aria-label="Families"></nav>
       <div class="catalog-list" id="catalog-list"></div>
     </section>
     <section class="screen catalog" id="tiling" hidden>

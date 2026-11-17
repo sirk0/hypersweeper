@@ -7,8 +7,16 @@ import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./l
 import { recordStars, starsFor } from "./progress";
 import { Puzzle } from "./puzzle";
 import { renderCatalog, type Tally } from "./view/catalog";
+import {
+  groupOfFamily,
+  menuGroup,
+  MENU_GROUPS,
+  TWO_COLUMNS,
+  WIDE_QUERY,
+  type MenuGroup,
+} from "./view/groups";
 import { renderHome } from "./view/home";
-import { fillGlyphs } from "./view/icons";
+import { barsIcon, fillGlyphs, trayIcon } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
 import { renderSettings } from "./view/settings";
 import { SvgBoard } from "./view/svgBoard";
@@ -41,46 +49,136 @@ function tallyOf(plain: Level): ReturnType<Tally> {
 
 fillGlyphs(document);
 
+/** The desktop layout (view/groups.ts): a sidebar beside every screen but a
+ * level's, Tilings split into its five groups, a tiling's page in two
+ * columns. Every screen renders at either width, and crossing it re-renders
+ * the one on show (below). */
+const wide = matchMedia(WIDE_QUERY);
+const twoColumns = matchMedia(TWO_COLUMNS);
+
+// -- the sidebar ----------------------------------------------------------------
+// Built once; a screen only moves its highlight. Its icons are tray pictures,
+// which build a level each, so they are drawn after the first screen is up.
+
+const sideRows = new Map<string, HTMLButtonElement>();
+for (const row of document.querySelectorAll<HTMLButtonElement>("#sidebar [data-side]"))
+  sideRows.set(row.dataset["side"]!, row);
+byId("side-quick").append(barsIcon(2));
+for (const group of MENU_GROUPS) {
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "side-row";
+  row.dataset["side"] = `group:${group.key}`;
+  row.title = group.hint;
+  const icon = document.createElement("span");
+  icon.className = "side-icon";
+  const label = document.createElement("span");
+  label.className = "side-label";
+  label.textContent = group.name;
+  const count = document.createElement("span");
+  count.className = "side-count";
+  count.textContent = String(tilingsOf(group).length);
+  row.append(icon, label, count);
+  row.addEventListener("click", () => goCatalog(true, group.key));
+  byId("side-groups").append(row);
+  sideRows.set(row.dataset["side"], row);
+  setTimeout(() => {
+    const level = levelByKey(group.icon);
+    if (level) icon.replaceChildren(trayIcon(level));
+  }, 0);
+}
+sideRows.get("home")?.addEventListener("click", () => goHome());
+sideRows.get("settings")?.addEventListener("click", () => goSettings());
+
+/** The tilings a group lists: the first boards of its families, plain. */
+function tilingsOf(group: MenuGroup): Level[] {
+  return LEVELS.filter((l) => !l.decor && (group.families as readonly string[]).includes(l.group));
+}
+
 // -- screens ------------------------------------------------------------------
 // Five: home (no query), Tilings — the catalog — (?tilings; old links say
-// ?catalog, or ?figures and ?figure=<key> from the Figures screen there was),
-// one tiling's boards and tiles to pick a level from (?tiling=<key>), the
-// settings (?settings) and a level (?level=<key>). Each move between them is a
-// history entry, so the browser's Back goes back; a tiling's page keeps its
-// pick in its URL (`&pick=<level>`), so Back from a level comes back to the
-// same one.
+// ?catalog, or ?figures and ?figure=<key> from the Figures screen there was;
+// on a desktop one group of it, ?group=<key>), one tiling's boards and tiles
+// to pick a level from (?tiling=<key>), the settings (?settings) and a level
+// (?level=<key>). Each move between them is a history entry, so the browser's
+// Back goes back; a tiling's page keeps its pick in its URL (`&pick=<level>`),
+// so Back from a level comes back to the same one.
 
 const SCREENS = ["home", "catalog", "tiling", "settings", "game"] as const;
 type Screen = (typeof SCREENS)[number];
 
-function show(screen: Screen): void {
+/** Show `screen`, and in the sidebar highlight `side` (a `data-side`). */
+function show(screen: Screen, side = ""): void {
   dropQueued();
   for (const s of SCREENS) byId(s).hidden = s !== screen;
+  document.body.dataset["screen"] = screen;
+  for (const [key, row] of sideRows) {
+    row.classList.toggle("active", key === side);
+    if (key === side) row.setAttribute("aria-current", "page");
+    else row.removeAttribute("aria-current");
+  }
   if (screen !== "game") won.hidden = true;
 }
 
 function goHome(push = true): void {
   if (push) history.pushState(null, "", location.pathname);
-  renderHome(byId("home-picks"), tally, playBand, () => goCatalog());
-  show("home");
+  renderHome(byId("home-picks"), tally, playBand, () => goCatalog(), wide.matches);
+  show("home", "home");
 }
 
 function goSettings(push = true): void {
   if (push) history.pushState(null, "", "?settings");
   renderSettings(byId("settings-body"));
-  show("settings");
+  show("settings", "settings");
 }
 
-function goCatalog(push = true): void {
-  if (push) history.pushState(null, "", "?tilings");
+/** Tilings: on a phone every family, a row each (scrolled to `groupKey`'s
+ * first, where one is named); on a desktop one group's families in grids —
+ * `groupKey`'s, or the first group's. */
+function goCatalog(push = true, groupKey: string | null = null): void {
+  const named = menuGroup(groupKey);
+  const group = wide.matches ? (named ?? MENU_GROUPS[0]!) : named;
+  if (push) history.pushState(null, "", group && groupKey ? `?group=${group.key}` : "?tilings");
+  const list = byId("catalog-list");
   renderCatalog(
-    byId("catalog-list"),
+    list,
     LEVELS.filter((l) => !l.decor),
     tallyOf,
     (level) => open(level),
     (level) => goTiling(level),
+    wide.matches ? group?.families : undefined,
   );
-  show("catalog");
+  // a group of one family: the page's title already names it
+  if (wide.matches && group?.families.length === 1)
+    for (const head of list.querySelectorAll<HTMLElement>(".family > h2, .family-hint"))
+      head.hidden = true;
+  byId("catalog-title").textContent = wide.matches && group ? group.name : "Tilings";
+  // the group's hint and its families, each a jump to its section
+  const links = byId("catalog-links");
+  links.replaceChildren();
+  if (wide.matches && group) {
+    const several = group.families.length > 1;
+    const hint = document.createElement("span");
+    hint.className = "pane-hint";
+    hint.textContent = group.hint;
+    links.append(hint);
+    for (const section of several ? list.querySelectorAll<HTMLElement>("section.family") : []) {
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.className = "pane-link";
+      jump.textContent = section.querySelector("h2")?.textContent ?? "";
+      jump.addEventListener("click", () =>
+        list.scrollTo({ top: section.offsetTop - list.offsetTop, behavior: "smooth" }),
+      );
+      links.append(jump);
+    }
+  }
+  show("catalog", group ? `group:${group.key}` : "");
+  list.scrollTop = 0;
+  if (!wide.matches && group) {
+    const first = list.querySelector<HTMLElement>(`[data-family="${group.families[0]}"]`);
+    if (first) list.scrollTop = first.offsetTop - list.offsetTop;
+  }
 }
 
 /** Keep a page's pick in its URL, in place: Back from a level comes back to
@@ -94,7 +192,8 @@ const keepPick =
  * colourings — to pick a level from (view/picker.ts). */
 function goTiling(level: Level, push = true, pick: string | null = null): void {
   if (push) history.pushState(null, "", `?tiling=${level.key}`);
-  show("tiling");
+  const group = groupOfFamily(level.group);
+  show("tiling", group ? `group:${group.key}` : "");
   byId("tiling-title").textContent = level.name;
   renderPicker(byId("tiling-list"), {
     tilings: [level],
@@ -102,6 +201,7 @@ function goTiling(level: Level, push = true, pick: string | null = null): void {
     play: (l) => open(l),
     initial: pick,
     remember: keepPick(`tiling=${level.key}`),
+    wide: wide.matches && twoColumns.matches,
   });
 }
 
@@ -128,6 +228,7 @@ function route(): void {
   const level = levelByKey(query.get("level") ?? "");
   if (level) open(level, false);
   else if (["tilings", "catalog", "figures", "figure"].some((q) => query.has(q))) goCatalog(false);
+  else if (query.has("group")) goCatalog(false, query.get("group"));
   else if (query.has("tiling")) {
     const tiling = levelByKey(query.get("tiling") ?? "");
     if (tiling && !tiling.decor && tiling.board === 1) goTiling(tiling, false, query.get("pick"));
@@ -227,6 +328,7 @@ function changed(): void {
 function open(level: Level, push = true): void {
   if (push) history.pushState(null, "", `?level=${level.key}`);
   show("game");
+  placeName();
   const puzzle = new Puzzle(level);
   host.replaceChildren();
   const board = new SvgBoard(host, puzzle);
@@ -328,6 +430,32 @@ document.addEventListener("keydown", (ev) => {
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
 window.addEventListener("popstate", route);
+
+/** The level's name: on a phone a faint label on the page behind the board;
+ * on a desktop the header's title, between its two clusters of buttons — the
+ * one element, moved. */
+function placeName(): void {
+  const name = document.querySelector<HTMLElement>(".board-name")!;
+  const header = document.querySelector<HTMLElement>("#game .hud")!;
+  if (wide.matches) {
+    if (name.parentElement !== header)
+      header.insertBefore(name, header.querySelector(".hud-right"));
+  } else if (name.parentElement !== byId("stage")) byId("stage").prepend(name);
+}
+
+// Crossing the desktop's width redraws the screen on show for the layout it
+// is now in — but a level in play only moves its name and refits, keeping
+// its tiles.
+function crossed(): void {
+  if (session && !byId("game").hidden) {
+    placeName();
+    session.board.layout();
+  } else route();
+}
+wide.addEventListener("change", crossed);
+twoColumns.addEventListener("change", () => {
+  if (!byId("tiling").hidden) route();
+});
 
 route();
 // The first screen is up: the signal the desktop shell's smoke run waits for

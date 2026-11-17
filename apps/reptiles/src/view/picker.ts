@@ -11,9 +11,15 @@
 // Play button naming the level. A board a marking is not laid on is greyed
 // out, and so is a marking on a board it is not laid on — picking one picks
 // what goes with it.
+//
+// On a desktop the page is two columns: on the left, held in view, the
+// level the pick makes — its board's outline with its tiles inside it, drawn
+// big — and Play under it; on the right the boards and the tiles to pick
+// from, in grids that fill the width.
 
 import { BARS, bandOf, type Band } from "../difficulty";
 import { boardKeys, levelByKey, markedOf, type Level } from "../levels";
+import { cardArt } from "./cardArt";
 import { barsIcon, outlineIcon, starRow, trayIcon } from "./icons";
 
 /** The level a board and a marking make: `<marking>` on the first board,
@@ -80,6 +86,8 @@ export interface PickerOptions {
   remember: (key: string) => void;
   /** Hints under the two headings. */
   hint?: string;
+  /** The desktop's two columns: the level picked, big, beside the picks. */
+  wide?: boolean;
 }
 
 interface State {
@@ -116,6 +124,7 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
     const scroller = host.closest<HTMLElement>(".catalog-list") ?? host;
     const top = scroller.scrollTop;
     const across = host.querySelector(".marking-row")?.scrollLeft;
+    const mainTop = host.querySelector(".pick-main")?.scrollTop;
     host.replaceChildren();
 
     // the boards, grouped under each tiling where there are several
@@ -221,7 +230,29 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
     go.addEventListener("click", () => play(level));
     bar.append(go);
 
-    host.append(boards, tiles, bar);
+    if (options.wide) {
+      host.classList.add("wide");
+      const side = document.createElement("div");
+      side.className = "pick-side";
+      const art = document.createElement("span");
+      art.className = "pick-art";
+      drawLater(art, `art:${level.key}`, () => pictureOf(level));
+      const facts = document.createElement("p");
+      facts.className = "pick-facts";
+      const name = document.createElement("span");
+      name.className = "pick-name";
+      name.textContent = level.decor ? `${tiling.name} · ${level.decor.label}` : tiling.name;
+      facts.append(name, bandIcon(band), starRow(stars(level.key)));
+      side.append(art, facts, bar);
+      const main = document.createElement("div");
+      main.className = "pick-main";
+      main.append(boards, tiles);
+      host.append(side, main);
+      if (mainTop !== undefined) main.scrollTop = mainTop;
+    } else {
+      host.classList.remove("wide");
+      host.append(boards, tiles, bar);
+    }
     scroller.scrollTop = top;
     // the row where it was — or, first time, with the picked tiles in sight
     const picked = row.querySelector<HTMLElement>('[aria-pressed="true"]');
@@ -235,6 +266,17 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
     }
   };
   render();
+}
+
+/** The level picked, as the desktop shows it beside the picks: its board's
+ * outline with its tray's tiles inside it, marks and all (view/cardArt.ts) —
+ * or the outline alone, where they do not fit inside it. */
+function pictureOf(level: Level): SVGSVGElement {
+  try {
+    return cardArt(level);
+  } catch {
+    return outlineIcon(level);
+  }
 }
 
 /** A difficulty as the three bars, read out as its band's name. */

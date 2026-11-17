@@ -5,6 +5,11 @@ import { readFileSync } from "node:fs";
 // screens open, and a tile dragged onto the board lands. Unit tests cover the
 // geometry and the rules; this covers the page.
 
+/** A phone's screen: the home, Tilings and tiling-page tests here are of the
+ * phone's layout, which is what a narrow window gets; the desktop's — the
+ * sidebar, its groups, the two-column tiling page — is desktop.spec.ts's. */
+const PHONE = { width: 390, height: 844 };
+
 /** Collect console errors and CSP violations for the whole test. */
 function watchErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -33,6 +38,7 @@ test("boots under the deployed security policy, with no errors", async ({ page }
 });
 
 test("a pick from home deals a level, and Tilings lists every family", async ({ page }) => {
+  await page.setViewportSize(PHONE);
   const errors = watchErrors(page);
   await page.goto("/");
   await page.locator("#home-picks button").first().click();
@@ -82,6 +88,7 @@ test("a square dragged into the corner of the squares level lands there", async 
 });
 
 test("settings report the version and check for updates", async ({ page }) => {
+  await page.setViewportSize(PHONE);
   const errors = watchErrors(page);
   await page.goto("/");
   await page.locator('#home [data-action="settings"]').click();
@@ -386,6 +393,7 @@ test("tray tiles are the size they land at, zoomed in or not", async ({ page }) 
 });
 
 test("Tilings' families are named as Hypersweeper names them", async ({ page }) => {
+  await page.setViewportSize(PHONE);
   await page.goto("/?tilings");
   await expect(page.locator(".family h2")).toHaveText([
     "Regular",
@@ -485,6 +493,7 @@ test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows
 });
 
 test("a tiling's page: its boards on top, its tiles under them, then Play", async ({ page }) => {
+  await page.setViewportSize(PHONE);
   const errors = watchErrors(page);
   // Tilings has no section of its own for matching rules and colourings:
   // the hexagons' card opens a page of the tiling's boards and its tiles

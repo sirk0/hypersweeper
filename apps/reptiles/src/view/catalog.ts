@@ -29,13 +29,18 @@ export function renderCatalog(
   tally: Tally,
   pick: (level: Level) => void,
   pickTiling: (level: Level) => void,
+  /** The families to list — a desktop group's (view/groups.ts) — or every
+   * one. */
+  families?: readonly string[],
 ): void {
   host.replaceChildren();
   for (const group of GROUPS) {
+    if (families && !families.includes(group.key)) continue;
     const members = levels.filter((l) => l.group === group.key);
     if (members.length === 0) continue;
     const section = document.createElement("section");
     section.className = "family";
+    section.dataset["family"] = group.key;
     const heading = document.createElement("h2");
     heading.textContent = group.name;
     const hint = document.createElement("p");
