@@ -49,6 +49,40 @@ function el<K extends keyof SVGElementTagNameMap>(
 
 const points = (pts: XY[]): string => pts.map(([x, y]) => `${x},${y}`).join(" ");
 
+/** The font size text is laid out at before it is scaled down to the board's
+ * units: WebKit lays out a sub-pixel font (a 0.24px pile count) off where
+ * Chromium does, so no text is ever set that small. */
+const TEXT_PX = 100;
+/** How far above its baseline a line of digits' middle is, in ems: Space
+ * Grotesk's digits stand 0 to 700 of its 1000 units. Read off the font, not
+ * from `dominant-baseline`, which Safari and Chromium place differently. */
+const DIGITS_MIDDLE = 0.35;
+
+/** `content` centred on (x, y) — in y-up units, `size` units to the em —
+ * flipped upright against the root's y flip. */
+function centredText(
+  parent: Element,
+  [x, y]: XY,
+  size: number,
+  content: string,
+  cls?: string,
+): SVGTextElement {
+  const k = size / TEXT_PX;
+  const text = el(
+    "text",
+    {
+      x: 0,
+      y: DIGITS_MIDDLE * TEXT_PX,
+      transform: `translate(${x} ${y}) scale(${k} ${-k})`,
+      ...(cls ? { class: cls } : {}),
+    },
+    parent,
+  );
+  text.style.fontSize = `${TEXT_PX}px`;
+  text.textContent = content;
+  return text;
+}
+
 /** A coloured or lined tile's bands and lines (view/decor.ts), drawn over it
  * in `parent`, and its border (in its colour classes, `edge`) again over
  * them; nothing for a plain tile. */
@@ -112,6 +146,9 @@ const LABEL = 0.3;
  * on screen, where a wide board (the kissing square chain, 16 units) puts a
  * unit at a couple of dozen pixels. */
 const PILE = 0.22;
+/** A pile's count's and a control's label's font sizes, in their units. */
+const PILE_FONT = 0.24;
+const LABEL_FONT = 0.17;
 const PILE_PX = 9;
 /** A tray slot's padding round its tile, and the gap between one slot and
  * the next — along a row and from row to row — in tile edges. */
@@ -833,10 +870,8 @@ export class SvgBoard {
         this.shelf,
       );
       el("circle", { cx: bx, cy: by, r: pr }, badge);
-      const text = el("text", { x: bx, y: -by, transform: "scale(1,-1)" }, badge);
-      // the stylesheet's size, grown with the badge
-      if (pr > PILE) text.style.fontSize = `${(0.24 * pr) / PILE}px`;
-      text.textContent = left < 0 ? `+${-left}` : String(left);
+      // a little over the badge's radius, grown with it
+      centredText(badge, [bx, by], (PILE_FONT * pr) / PILE, left < 0 ? `+${-left}` : String(left));
     });
     for (const [control, [kx, ky]] of this.controlsAt) {
       const hinted = needs !== null && needs.control === control;
@@ -932,13 +967,7 @@ export class SvgBoard {
         );
         label = "remove";
       }
-      // Text has to be flipped back upright against the root's y flip.
-      const text = el(
-        "text",
-        { x: kx, y: -(ky - KNOB - LABEL * 0.75), transform: "scale(1,-1)", class: "knob-label" },
-        knob,
-      );
-      text.textContent = label;
+      centredText(knob, [kx, ky - KNOB - LABEL * 0.75], LABEL_FONT, label, "knob-label");
     }
   }
 
