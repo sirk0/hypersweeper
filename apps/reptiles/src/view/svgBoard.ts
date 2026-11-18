@@ -49,15 +49,51 @@ function el<K extends keyof SVGElementTagNameMap>(
 
 const points = (pts: XY[]): string => pts.map(([x, y]) => `${x},${y}`).join(" ");
 
+/** The font size text is laid out at before it is scaled down to the board's
+ * units: WebKit lays out a sub-pixel font (a 0.24px pile count) off where
+ * Chromium does, so no text is ever set that small. */
+const TEXT_PX = 100;
+/** How far above its baseline a line of digits' middle is, in ems: Space
+ * Grotesk's digits stand 0 to 700 of its 1000 units. Read off the font, not
+ * from `dominant-baseline`, which Safari and Chromium place differently. */
+const DIGITS_MIDDLE = 0.35;
+
+/** `content` centred on (x, y) — in y-up units, `size` units to the em —
+ * flipped upright against the root's y flip. */
+function centredText(
+  parent: Element,
+  [x, y]: XY,
+  size: number,
+  content: string,
+  cls?: string,
+): SVGTextElement {
+  const k = size / TEXT_PX;
+  const text = el(
+    "text",
+    {
+      x: 0,
+      y: DIGITS_MIDDLE * TEXT_PX,
+      transform: `translate(${x} ${y}) scale(${k} ${-k})`,
+      ...(cls ? { class: cls } : {}),
+    },
+    parent,
+  );
+  text.style.fontSize = `${TEXT_PX}px`;
+  text.textContent = content;
+  return text;
+}
+
 /** A coloured or lined tile's bands and lines (view/decor.ts), drawn over it
- * in `parent`; nothing for a plain tile. */
+ * in `parent`, and its border (in its colour classes, `edge`) again over
+ * them; nothing for a plain tile. */
 function decor(
   loops: readonly Loop[],
   parent: Element,
   map: ((p: XY) => XY) | undefined,
   unit: MarkUnit | undefined,
+  edge: string,
 ): void {
-  for (const part of decorParts(loops, map, unit))
+  for (const part of decorParts(loops, map, unit, { class: edge }))
     el(
       "path",
       {
@@ -71,8 +107,10 @@ function decor(
 
 /** The gap round the board, in tile edges, at zoom 1. */
 const MARGIN = 0.3;
-/** The tray strip's padding round the shelf, in tile edges. */
+/** The tray card's padding round the shelf, in tile edges — but never under
+ * `TRAY_PAD_SHARE` of the tiles' size (`Spacing`). */
 const TRAY_PAD = 0.15;
+const TRAY_PAD_SHARE = 0.08;
 /** The controls' padding round their row, in control units. */
 const KNOB_PAD = 0.25;
 /** How far in the board zooms, from fitted. */
@@ -97,9 +135,10 @@ let boards = 0;
  * says otherwise (`--label-room`): on a desktop the name is in the header,
  * and the board takes this room too. */
 const LABEL_ROOM = 22;
-/** A desktop's tray is a card rather than a strip (`--tray-card-gap`, 0 on a
- * phone): inset from the screen's edges by the gap, as long as its tiles and
- * controls need (the strip, while the shelf scrolls), rounded by this. */
+/** The tray is a card (`--tray-card-gap`: 10px on a phone, 14px on a
+ * desktop): inset from the screen's edges by the gap, as long as its tiles
+ * and controls need (the strip, while the shelf scrolls), rounded by this. A
+ * gap of 0 would make it a plain strip from end to end. */
 const CARD_RADIUS = 18;
 /** A control's radius, the gap between controls, and the room its label
  * takes underneath it. */
@@ -110,11 +149,17 @@ const LABEL = 0.3;
  * on screen, where a wide board (the kissing square chain, 16 units) puts a
  * unit at a couple of dozen pixels. */
 const PILE = 0.22;
+/** A pile's count's and a control's label's font sizes, in their units. */
+const PILE_FONT = 0.24;
+const LABEL_FONT = 0.17;
 const PILE_PX = 9;
 /** A tray slot's padding round its tile, and the gap between one slot and
- * the next — along a row and from row to row — in tile edges. */
+ * the next — along a row and from row to row — in tile edges; but never under
+ * these shares of the tiles' size (`Spacing`). */
 const SLOT_PAD = 0.08;
 const TRAY_GAP = 0.2;
+const SLOT_PAD_SHARE = 0.06;
+const TRAY_GAP_SHARE = 0.1;
 /** The most rows (columns, in landscape) the shelf is laid in. */
 const MAX_ROWS = 3;
 /** How much bigger a layout with more rows must let the board be to be
@@ -125,7 +170,10 @@ const MORE_ROWS = 1.02;
  * A rotate control's picture, about (cx, cy): the axis of rotation as a dot,
  * a fixed ray straight up, a second ray turned one step from it, and an arrow
  * sweeping between them — counter-clockwise for dir = 1, clockwise for -1 — so
- * the angle drawn is the angle a press turns the tile by.
+ * the angle drawn is the angle a press turns the tile by. The arrow's head
+ * sits on its circle: its tip on the second ray and its base a chord back
+ * along the arc, which stops inside the head, so its round end never shows
+ * past the head's sides or tip.
  */
 function stepGlyph(
   kx: number,
@@ -144,21 +192,28 @@ function stepGlyph(
   const r = wide ? KNOB * 0.5 : KNOB * 0.68;
   const from = Math.PI / 2;
   const sweep = dir * step;
-  const at = (a: number, len: number): XY => [cx + len * Math.cos(a), cy + len * Math.sin(a)];
-  const rays = points([at(from, ray), [cx, cy], at(from + sweep, ray)]);
-  const arc: XY[] = [];
-  for (let i = 0; i <= 16; i++) arc.push(at(from + (sweep * i) / 16, r));
   const end = from + sweep;
-  const [ex, ey] = at(end, r);
-  const tangent: XY = [-Math.sin(end) * dir, Math.cos(end) * dir];
-  const radial: XY = [Math.cos(end), Math.sin(end)];
-  const w = KNOB * 0.26;
-  // the tip at the second ray, the base behind it along the arc
+  const at = (a: number, len: number): XY => [cx + len * Math.cos(a), cy + len * Math.sin(a)];
+  const rays = points([at(from, ray), [cx, cy], at(end, ray)]);
+  // the head: as long as fits in three quarters of the arc (a 15° step's is
+  // short), and two thirds as wide as long either side of its axis — the
+  // chord from its base's middle to its tip
+  const length = Math.min(KNOB * 0.26, r * step * 0.75);
+  const back = 2 * Math.asin(Math.min(1, length / (2 * r)));
+  const tip = at(end, r);
+  const base = at(end - dir * back, r);
+  const axis: XY = [tip[0] - base[0], tip[1] - base[1]];
+  const norm = Math.hypot(...axis);
+  const side: XY = [(-axis[1] / norm) * length * 0.62, (axis[0] / norm) * length * 0.62];
   const head: XY[] = [
-    [ex, ey],
-    [ex - tangent[0] * w + radial[0] * w * 0.6, ey - tangent[1] * w + radial[1] * w * 0.6],
-    [ex - tangent[0] * w - radial[0] * w * 0.6, ey - tangent[1] * w - radial[1] * w * 0.6],
+    tip,
+    [base[0] + side[0], base[1] + side[1]],
+    [base[0] - side[0], base[1] - side[1]],
   ];
+  // the arc from the fixed ray to the middle of the head's base
+  const stop = sweep - dir * back * 0.8;
+  const arc: XY[] = [];
+  for (let i = 0; i <= 24; i++) arc.push(at(from + (stop * i) / 24, r));
   return { axis: [cx, cy], rays, arc: points(arc), head: points(head) };
 }
 
@@ -167,6 +222,23 @@ function stepGlyph(
 type Control = "rotate-ccw" | "rotate-cw" | "flip" | "remove";
 
 type Box = [number, number, number, number];
+
+/** The shelf's spacing, in tray units: a slot's padding round its tile, the
+ * gap between slots, and the card's padding round the shelf. Each is a share
+ * of a tile edge, or of the tiles' size — the median slot's longer side —
+ * where that is more: the hat's metatiles are many short edges round, and at
+ * a tile edge apiece their plates would touch. */
+type Spacing = { slot: number; gap: number; pad: number };
+
+function spacingOf(reach: readonly Box[]): Spacing {
+  const sides = reach.map(([x0, y0, x1, y1]) => Math.max(x1 - x0, y1 - y0)).sort((a, b) => a - b);
+  const size = sides[Math.floor(sides.length / 2)] ?? 1;
+  return {
+    slot: Math.max(SLOT_PAD, SLOT_PAD_SHARE * size),
+    gap: Math.max(TRAY_GAP, TRAY_GAP_SHARE * size),
+    pad: Math.max(TRAY_PAD, TRAY_PAD_SHARE * size),
+  };
+}
 
 /** A way to lay the shelf: each kind's centroid and slot, and the whole
  * shelf's box, padded — in tray units. */
@@ -242,6 +314,7 @@ export class SvgBoard {
    * the level holds it — every turn of the rotate step, either side if it
    * flips — so a slot is the same size whichever way the tray is turned. */
   private reach: Box[];
+  private space: Spacing;
   /** Whether the remove mode is on: placed tiles show as removable. */
   get removing(): boolean {
     return this.svg.classList.contains("removing");
@@ -286,6 +359,7 @@ export class SvgBoard {
         Math.max(...xy.map((p) => p[1])),
       ];
     });
+    this.space = spacingOf(this.reach);
     const { ring, region, regionCurves } = puzzle.level;
     const xy = region.flatMap((loop, i) =>
       reachPoints(
@@ -431,14 +505,15 @@ export class SvgBoard {
    * the strip and each slot across its row. */
   private shelfIn(n: number): Shelf {
     const land = this.landscape;
+    const { slot: SLOT, gap: GAP, pad: PAD } = this.space;
     // A slot's size along the strip and across it.
     const sizes = this.reach.map(([x0, y0, x1, y1]): XY => {
-      const w = x1 - x0 + 2 * SLOT_PAD;
-      const h = y1 - y0 + 2 * SLOT_PAD;
+      const w = x1 - x0 + 2 * SLOT;
+      const h = y1 - y0 + 2 * SLOT;
       return land ? [h, w] : [w, h];
     });
     const runLength = (from: number, to: number): number =>
-      sizes.slice(from, to).reduce((sum, [a]) => sum + a, 0) + (to - from - 1) * TRAY_GAP;
+      sizes.slice(from, to).reduce((sum, [a]) => sum + a, 0) + (to - from - 1) * GAP;
     // The cut points: tried every way, kinds are few.
     let cuts: number[] = [];
     let longest = Infinity;
@@ -468,19 +543,21 @@ export class SvgBoard {
       start = end;
     }
     const thick = rows.map(([a, b]) => Math.max(...sizes.slice(a, b).map(([, c]) => c)));
-    const total = thick.reduce((sum, t) => sum + t, 0) + (rows.length - 1) * TRAY_GAP;
+    const total = thick.reduce((sum, t) => sum + t, 0) + (rows.length - 1) * GAP;
     const at: XY[] = [];
     const slots: Box[] = [];
     // Across: the first row at the top (portrait) or the left (landscape).
     let across = total / 2;
     rows.forEach(([a, b], r) => {
       const middle = across - thick[r]! / 2;
-      across -= thick[r]! + TRAY_GAP;
+      across -= thick[r]! + GAP;
       let along = -runLength(a, b) / 2;
       for (let kind = a; kind < b; kind++) {
-        const [len, wide] = sizes[kind]!;
+        // every plate as thick as its row, so a row's plates line up
+        const [len] = sizes[kind]!;
+        const wide = thick[r]!;
         const mid = along + len / 2;
-        along += len + TRAY_GAP;
+        along += len + GAP;
         // The slot's middle, then the tile's centroid in it.
         const [sx, sy]: XY = land ? [-middle, -mid] : [mid, middle];
         const [hw, hh] = land ? [wide / 2, len / 2] : [len / 2, wide / 2];
@@ -491,8 +568,8 @@ export class SvgBoard {
     });
     const half = longest / 2;
     const box: Box = land
-      ? [-total / 2 - TRAY_PAD, -half - TRAY_PAD, total / 2 + TRAY_PAD, half + TRAY_PAD]
-      : [-half - TRAY_PAD, -total / 2 - TRAY_PAD, half + TRAY_PAD, total / 2 + TRAY_PAD];
+      ? [-total / 2 - PAD, -half - PAD, total / 2 + PAD, half + PAD]
+      : [-half - PAD, -total / 2 - PAD, half + PAD, total / 2 + PAD];
     return { at, slots, box };
   }
 
@@ -578,8 +655,8 @@ export class SvgBoard {
     // fits, scrolled once it does not.
     const start = g + (this.overflow > 0 ? -this.scrolled : (shelfRoomLen - this.shelfLength) / 2);
     // The card's ends along the strip: about its tiles and its controls, both
-    // centred, or the whole strip less the gap while the shelf scrolls. A
-    // phone's strip (no gap) runs end to end.
+    // centred, or the whole strip less the gap while the shelf scrolls. With
+    // no gap, the strip runs end to end.
     const content = Math.max(
       this.overflow > 0 ? shelfRoomLen : this.shelfLength,
       land ? knobsH : knobsW,
@@ -742,16 +819,12 @@ export class SvgBoard {
     el("path", { d, class: "region", "fill-rule": "evenodd" }, this.still);
     for (const tile of this.puzzle.tiles) {
       const loops = loopsOf(ring, tile.pieces);
-      el(
-        "path",
-        {
-          d: loopsPath(loops),
-          class: `tile ${this.puzzle.level.colours[tile.kind]}`,
-          "data-tile": tile.id,
-        },
-        this.still,
-      );
-      decor(loops, this.still, undefined, markUnit(this.puzzle.level));
+      const colour = this.puzzle.level.colours[tile.kind]!;
+      // a tile and its marks as one group, so its border over them follows
+      // the tile's own hover (remove mode)
+      const placed = el("g", { class: "placed" }, this.still);
+      el("path", { d: loopsPath(loops), class: `tile ${colour}`, "data-tile": tile.id }, placed);
+      decor(loops, placed, undefined, markUnit(this.puzzle.level), colour);
     }
     for (const e of this.puzzle.openEdges) {
       el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
@@ -778,7 +851,8 @@ export class SvgBoard {
     this.shelf.replaceChildren();
     this.knobs.replaceChildren();
     this.trayAt.forEach(([cx, cy], kind) => {
-      // The slot: what a press picks the tile up by, drawn only when hinted.
+      // The slot: what a press picks the tile up by, drawn as a plate under
+      // it, its corners rounded by a share of its padding.
       const [x0, y0, x1, y1] = this.slots[kind]!;
       el(
         "rect",
@@ -787,7 +861,7 @@ export class SvgBoard {
           y: y0,
           width: x1 - x0,
           height: y1 - y0,
-          rx: 0.12,
+          rx: 2 * this.space.slot,
           class: `tray${lay?.kind === kind ? " hinted" : ""}`,
           "data-tray": kind,
         },
@@ -804,7 +878,7 @@ export class SvgBoard {
         },
         this.shelf,
       );
-      decor(outline, this.shelf, at, markUnit(this.puzzle.level));
+      decor(outline, this.shelf, at, markUnit(this.puzzle.level), this.puzzle.level.colours[kind]!);
     });
     // The piles' counts, over every tile, so a neighbour never hides one: how
     // many more the board was cut with. Past zero it shows how many extra are
@@ -816,7 +890,7 @@ export class SvgBoard {
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
       const xy = loopsReach(this.outline(kind, this.turn, this.flip));
       const [, sy0, sx1] = this.slots[kind]!;
-      const edge = Math.min(TRAY_PAD, TRAY_GAP / 2);
+      const edge = Math.min(this.space.pad, this.space.gap / 2);
       const bx = Math.min(cx + Math.max(...xy.map((p) => p[0])), sx1 + edge - pr);
       const by = Math.max(cy + Math.min(...xy.map((p) => p[1])), sy0 - edge + pr);
       const badge = el(
@@ -825,15 +899,13 @@ export class SvgBoard {
         this.shelf,
       );
       el("circle", { cx: bx, cy: by, r: pr }, badge);
-      const text = el("text", { x: bx, y: -by, transform: "scale(1,-1)" }, badge);
-      // the stylesheet's size, grown with the badge
-      if (pr > PILE) text.style.fontSize = `${(0.24 * pr) / PILE}px`;
-      text.textContent = left < 0 ? `+${-left}` : String(left);
+      // a little over the badge's radius, grown with it
+      centredText(badge, [bx, by], (PILE_FONT * pr) / PILE, left < 0 ? `+${-left}` : String(left));
     });
     for (const [control, [kx, ky]] of this.controlsAt) {
       const hinted = needs !== null && needs.control === control;
       const knob = el("g", { class: `knob knob-${control}${hinted ? " hinted" : ""}` }, this.knobs);
-      el("circle", { cx: kx, cy: ky, r: KNOB }, knob);
+      el("circle", { cx: kx, cy: ky, r: KNOB, class: "knob-face" }, knob);
       let label: string;
       if (control === "rotate-ccw" || control === "rotate-cw") {
         // Every tile at once, one step either way: at a 15° step the long way
@@ -924,13 +996,7 @@ export class SvgBoard {
         );
         label = "remove";
       }
-      // Text has to be flipped back upright against the root's y flip.
-      const text = el(
-        "text",
-        { x: kx, y: -(ky - KNOB - LABEL * 0.75), transform: "scale(1,-1)", class: "knob-label" },
-        knob,
-      );
-      text.textContent = label;
+      centredText(knob, [kx, ky - KNOB - LABEL * 0.75], LABEL_FONT, label, "knob-label");
     }
   }
 
@@ -987,7 +1053,13 @@ export class SvgBoard {
       },
       this.moving,
     );
-    decor(outline, this.moving, to, markUnit(this.puzzle.level));
+    decor(
+      outline,
+      this.moving,
+      to,
+      markUnit(this.puzzle.level),
+      `${this.puzzle.level.colours[kind]} floating${discard ? " discard" : ""}`,
+    );
     for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
     if (fitsAt) {
       const [cx, cy] = fitsAt;

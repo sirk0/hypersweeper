@@ -160,8 +160,9 @@ function decorate(
   loops: ReturnType<typeof loopsOf>,
   map: (p: XY) => XY,
   unit: MarkUnit | undefined,
+  edge: string,
 ): void {
-  for (const part of decorParts(loops, map, unit)) {
+  for (const part of decorParts(loops, map, unit, { class: edge })) {
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", part.d);
     path.setAttribute("class", part.class);
@@ -206,7 +207,7 @@ export function trayIcon(level: Level): SVGSVGElement {
     poly.setAttribute("class", `tile ${level.colours[kind]}`);
     poly.setAttribute("stroke-width", String(cell * 0.03));
     svg.appendChild(poly);
-    decorate(svg, loops, map, markUnit(level));
+    decorate(svg, loops, map, markUnit(level), level.colours[kind]!);
   });
   return svg;
 }

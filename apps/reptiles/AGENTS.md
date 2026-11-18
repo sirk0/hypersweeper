@@ -21,7 +21,8 @@ some back off.
   the pointy-top hexagons, 30° on 3.4.6.4, where the squares need it too, so
   its triangles and hexagons pass through turns they fit nowhere at. Turning
   one kind into place can turn another out of it. Each control draws its step
-  as an axis, a fixed ray, the ray turned one step and the arrow between, and
+  as an axis, a fixed ray, the ray turned one step and the arrow between (its
+  head on the arc, tip on the ray: `stepGlyph`), and
   both are left out where nothing ever needs turning.
 - Where a board uses a tile both ways round (the kisrhombille's triangles,
   five of the 2-isohedral levels' tiles, the hat and the turtle),
@@ -258,14 +259,20 @@ some back off.
   one on a control still turns or flips it); one finger on bare board pans it
   once zoomed; a wheel or a trackpad pinch zooms about the pointer. Safari's
   own page pinch is cancelled.
-- **The tray** is a strip along the bottom (portrait) or the right
-  (landscape): a shelf of tiles at the board's own scale (a tray tile is the
+- **The tray** is a card along the bottom (portrait) or the right
+  (landscape), inset from the screen's edges (`--tray-card-gap`: 10px on a
+  phone, 14px on a desktop), shadowed, and only as long as its tiles and
+  controls need (the whole strip while the shelf scrolls): a shelf of tiles at the board's own scale (a tray tile is the
   size it lands at, zoomed in or not, up to the strip taking 45% of the
   screen), then the controls in a row of their own at a fixed size — columns
   in landscape. Each tile sits in a slot just big enough to hold it every way
   the level holds it (every rotate step, either side where it flips), so
-  turning never moves one, with no backdrop: the slot is only what a press
-  picks it up by, ringed when the hint names it. **Every tile is on screen
+  turning never moves one, and as thick as its row, drawn as a plate a shade
+  darker than the card (`--tray-plate`): what a press picks it up by, filled
+  when the hint names it. The padding round a tile, the gap between plates
+  and the card's padding are each a share of a tile edge or of the tiles'
+  size, whichever is more (`spacingOf`), so tiles of many short edges (the
+  hat's metatiles) are not crammed together. **Every tile is on screen
   at first**: the fit shrinks the board, and its tiles with it, until the
   shelf fits along the strip, and lays the shelf in one, two or three rows
   (columns in landscape) — whichever lets the board be biggest, fewer rows
@@ -355,10 +362,8 @@ level the pick makes on the left, held in view — its outline with its tiles
 inside it, its name, difficulty and stars, then Play — and the boards and
 tiles to pick from on the right; narrower, it is the phone's column inside
 the pane. A level has its name in the header, between the two clusters of
-buttons, and its tray is a card inset from the screen's edges and only as
-long as its tiles and controls need (the strip, while the shelf scrolls) —
-`svgBoard.ts` reads both from the stylesheet (`--label-room`,
-`--tray-card-gap`), so a phone's numbers stay as they were. Every screen
+buttons, and its tray card is inset a little further — `svgBoard.ts` reads
+both from the stylesheet (`--label-room`, `--tray-card-gap`). Every screen
 renders at either width, and crossing it re-renders the one on show; a
 level in play only moves its name and refits, keeping its tiles. A phone
 never sees any of it. `tests/e2e/desktop.spec.ts` pins it, and
@@ -1019,7 +1024,10 @@ quick way to see the win state.
   its inward normal (`LABEL_COLOURS`; a lone one a half disc), as wide as
   `markUnit`'s `line`, the level's middle side length, so every line of a
   level is one width. Every tile, tray
-  tile, dragged tile and icon is decorated through it; its parts are
+  tile, dragged tile and icon is decorated through it, and given its colour
+  classes (`edge`) it draws the tile's border again last (`tile-edge`), so a
+  line's end or a half disc never paints over a border — every border is
+  whole, and two tiles' marks meet under it. Its parts are
   `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
