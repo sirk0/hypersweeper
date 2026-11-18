@@ -716,23 +716,20 @@ button.primary {
   stroke-linejoin: round;
 }
 
-.knob-head,
-.knob-axis {
+.knob-head {
   fill: var(--ink);
-}
-
-.knob-ray {
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 0.035;
-  stroke-linecap: round;
+  stroke: var(--ink);
+  stroke-width: 0.02;
   stroke-linejoin: round;
 }
 
-.knob-label {
-  fill: var(--muted);
+/* A rotate control's step, inside its arrow. */
+.knob-degrees {
+  fill: var(--ink);
+  font-weight: 600;
   text-anchor: middle;
   user-select: none;
+  pointer-events: none;
 }
 
 .floating {
