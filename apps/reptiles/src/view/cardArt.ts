@@ -425,7 +425,7 @@ export function cardArt(level: Level): SVGSVGElement {
     // stroked in the tile's own units, which the map scales
     path.setAttribute("stroke-width", String(layout.tileStroke / ratioOf(matrix)));
     g.appendChild(path);
-    for (const part of decorParts(loops, (p) => p, unit)) {
+    for (const part of decorParts(loops, (p) => p, unit, { class: level.colours[kind]! })) {
       const d = document.createElementNS(NS, "path");
       d.setAttribute("d", part.d);
       d.setAttribute("class", part.class);

@@ -505,6 +505,76 @@ button.primary {
   stroke-linejoin: round;
 }
 
+/* A marked tile's border drawn again over its marks (view/decor.ts), so a
+   line's end or a half disc never paints over it: each tile's colour, as its
+   own outline is stroked above. */
+.decor.tile-edge {
+  fill: none;
+  stroke-width: 0.04;
+  stroke-linejoin: round;
+}
+
+.tile-edge.sides-3 {
+  stroke: var(--tile-3-edge);
+}
+
+.tile-edge.sides-4 {
+  stroke: var(--tile-4-edge);
+}
+
+.tile-edge.sides-5 {
+  stroke: var(--tile-5-edge);
+}
+
+.tile-edge.sides-6 {
+  stroke: var(--tile-6-edge);
+}
+
+.tile-edge.sides-7 {
+  stroke: var(--tile-7-edge);
+}
+
+.tile-edge.sides-8 {
+  stroke: var(--tile-8-edge);
+}
+
+.tile-edge.sides-12 {
+  stroke: var(--tile-12-edge);
+}
+
+.tile-edge.sides-13 {
+  stroke: var(--tile-13-edge);
+}
+
+.tile-edge.pieces {
+  stroke: var(--tile-pieces-edge);
+}
+
+.tile-edge.twin {
+  stroke: var(--tile-twin-edge);
+}
+
+.tile-edge.paint-0 {
+  stroke: var(--paint-0-edge);
+}
+
+.tile-edge.paint-1 {
+  stroke: var(--paint-1-edge);
+}
+
+.tile-edge.paint-2 {
+  stroke: var(--paint-2-edge);
+}
+
+.tile-edge.paint-3 {
+  stroke: var(--paint-3-edge);
+}
+
+.removing .placed:hover .tile-edge,
+.tile-edge.floating.discard {
+  stroke: var(--remove-edge);
+}
+
 /* A lined board's line: cut square at each end, which lies on the edge, so
    it never pokes past the tile and runs on into the next one unbroken. */
 .decor.line {
@@ -624,13 +694,13 @@ button.primary {
   cursor: pointer;
 }
 
-.knob circle {
+.knob-face {
   fill: var(--button);
   stroke: var(--button-edge);
   stroke-width: 0.03;
 }
 
-.knob:hover circle {
+.knob:hover .knob-face {
   stroke: var(--muted);
 }
 
@@ -728,7 +798,7 @@ button.primary {
   stroke-width: 0.05;
 }
 
-.knob.hinted circle {
+.knob.hinted .knob-face {
   stroke: var(--hint);
   stroke-width: 0.08;
   animation: hint-pulse 1.2s ease-in-out infinite;
@@ -737,7 +807,7 @@ button.primary {
 @media (prefers-reduced-motion: reduce) {
   .hint-ghost,
   .hint-off,
-  .knob.hinted circle,
+  .knob.hinted .knob-face,
   .hud-btn.thinking svg {
     animation: none;
   }
@@ -815,7 +885,7 @@ button.primary {
   fill: none;
 }
 
-.removing .knob-remove circle {
+.removing .knob-remove .knob-face {
   fill: var(--remove);
   stroke: var(--remove-edge);
 }

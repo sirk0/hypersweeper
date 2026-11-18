@@ -40,7 +40,7 @@
 import type { Cyc } from "../geometry/cyclotomic";
 import { centroid, realCorners, type XY } from "../geometry/shape";
 import { END, LINE, arrow, colours, label } from "../geometry/marks";
-import { alongEdge, type Loop } from "./curve";
+import { alongEdge, loopsPath, type Loop } from "./curve";
 import { PATCH_MARKED, type Level } from "../levels";
 
 export interface DecorPart {
@@ -217,11 +217,19 @@ export function markUnit(level: Level): MarkUnit | undefined {
  * staying on its edge: an edge cut short (a metatile's, where a corner of the
  * tile across lands) keeps a disc as big as its tile's others; and a label's
  * line is as wide as `line` says. A half disc on a round edge sits on its
- * arc. */
+ * arc.
+ *
+ * With `edge` — the tile's colour classes, and its outline's width where the
+ * stylesheet does not set it — the tile's outline is drawn again last, over
+ * its marks (`tile-edge`): a line ends on its edge and a half disc sits on
+ * it, so without it each would paint over half the tile's border, and only
+ * on the side drawn last. Over them, every border is whole, and two tiles'
+ * marks meet under it as one. */
 export function decorParts(
   loops: readonly Loop[],
   map: (p: XY) => XY = (p) => p,
   sizes?: MarkUnit,
+  edge?: { class: string; width?: number },
 ): DecorPart[] {
   const unit = sizes?.disc;
   const discs = new Map<string, string[]>();
@@ -461,5 +469,10 @@ export function decorParts(
         : { d: ds.join(""), class: cls, width };
     });
   if (lines.length) out.push({ d: lines.join(""), class: "decor line" });
+  if (edge && out.length) {
+    const d = loopsPath(loops, map);
+    const cls = `decor tile-edge ${edge.class}`;
+    out.push(edge.width === undefined ? { d, class: cls } : { d, class: cls, width: edge.width });
+  }
   return out;
 }

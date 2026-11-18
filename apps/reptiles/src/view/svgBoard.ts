@@ -50,14 +50,16 @@ function el<K extends keyof SVGElementTagNameMap>(
 const points = (pts: XY[]): string => pts.map(([x, y]) => `${x},${y}`).join(" ");
 
 /** A coloured or lined tile's bands and lines (view/decor.ts), drawn over it
- * in `parent`; nothing for a plain tile. */
+ * in `parent`, and its border (in its colour classes, `edge`) again over
+ * them; nothing for a plain tile. */
 function decor(
   loops: readonly Loop[],
   parent: Element,
   map: ((p: XY) => XY) | undefined,
   unit: MarkUnit | undefined,
+  edge: string,
 ): void {
-  for (const part of decorParts(loops, map, unit))
+  for (const part of decorParts(loops, map, unit, { class: edge }))
     el(
       "path",
       {
@@ -125,7 +127,10 @@ const MORE_ROWS = 1.02;
  * A rotate control's picture, about (cx, cy): the axis of rotation as a dot,
  * a fixed ray straight up, a second ray turned one step from it, and an arrow
  * sweeping between them — counter-clockwise for dir = 1, clockwise for -1 — so
- * the angle drawn is the angle a press turns the tile by.
+ * the angle drawn is the angle a press turns the tile by. The arrow's head
+ * sits on its circle: its tip on the second ray and its base a chord back
+ * along the arc, which stops inside the head, so its round end never shows
+ * past the head's sides or tip.
  */
 function stepGlyph(
   kx: number,
@@ -144,21 +149,28 @@ function stepGlyph(
   const r = wide ? KNOB * 0.5 : KNOB * 0.68;
   const from = Math.PI / 2;
   const sweep = dir * step;
-  const at = (a: number, len: number): XY => [cx + len * Math.cos(a), cy + len * Math.sin(a)];
-  const rays = points([at(from, ray), [cx, cy], at(from + sweep, ray)]);
-  const arc: XY[] = [];
-  for (let i = 0; i <= 16; i++) arc.push(at(from + (sweep * i) / 16, r));
   const end = from + sweep;
-  const [ex, ey] = at(end, r);
-  const tangent: XY = [-Math.sin(end) * dir, Math.cos(end) * dir];
-  const radial: XY = [Math.cos(end), Math.sin(end)];
-  const w = KNOB * 0.26;
-  // the tip at the second ray, the base behind it along the arc
+  const at = (a: number, len: number): XY => [cx + len * Math.cos(a), cy + len * Math.sin(a)];
+  const rays = points([at(from, ray), [cx, cy], at(end, ray)]);
+  // the head: as long as fits in three quarters of the arc (a 15° step's is
+  // short), and two thirds as wide as long either side of its axis — the
+  // chord from its base's middle to its tip
+  const length = Math.min(KNOB * 0.26, r * step * 0.75);
+  const back = 2 * Math.asin(Math.min(1, length / (2 * r)));
+  const tip = at(end, r);
+  const base = at(end - dir * back, r);
+  const axis: XY = [tip[0] - base[0], tip[1] - base[1]];
+  const norm = Math.hypot(...axis);
+  const side: XY = [(-axis[1] / norm) * length * 0.62, (axis[0] / norm) * length * 0.62];
   const head: XY[] = [
-    [ex, ey],
-    [ex - tangent[0] * w + radial[0] * w * 0.6, ey - tangent[1] * w + radial[1] * w * 0.6],
-    [ex - tangent[0] * w - radial[0] * w * 0.6, ey - tangent[1] * w - radial[1] * w * 0.6],
+    tip,
+    [base[0] + side[0], base[1] + side[1]],
+    [base[0] - side[0], base[1] - side[1]],
   ];
+  // the arc from the fixed ray to the middle of the head's base
+  const stop = sweep - dir * back * 0.8;
+  const arc: XY[] = [];
+  for (let i = 0; i <= 24; i++) arc.push(at(from + (stop * i) / 24, r));
   return { axis: [cx, cy], rays, arc: points(arc), head: points(head) };
 }
 
@@ -742,16 +754,12 @@ export class SvgBoard {
     el("path", { d, class: "region", "fill-rule": "evenodd" }, this.still);
     for (const tile of this.puzzle.tiles) {
       const loops = loopsOf(ring, tile.pieces);
-      el(
-        "path",
-        {
-          d: loopsPath(loops),
-          class: `tile ${this.puzzle.level.colours[tile.kind]}`,
-          "data-tile": tile.id,
-        },
-        this.still,
-      );
-      decor(loops, this.still, undefined, markUnit(this.puzzle.level));
+      const colour = this.puzzle.level.colours[tile.kind]!;
+      // a tile and its marks as one group, so its border over them follows
+      // the tile's own hover (remove mode)
+      const placed = el("g", { class: "placed" }, this.still);
+      el("path", { d: loopsPath(loops), class: `tile ${colour}`, "data-tile": tile.id }, placed);
+      decor(loops, placed, undefined, markUnit(this.puzzle.level), colour);
     }
     for (const e of this.puzzle.openEdges) {
       el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
@@ -804,7 +812,7 @@ export class SvgBoard {
         },
         this.shelf,
       );
-      decor(outline, this.shelf, at, markUnit(this.puzzle.level));
+      decor(outline, this.shelf, at, markUnit(this.puzzle.level), this.puzzle.level.colours[kind]!);
     });
     // The piles' counts, over every tile, so a neighbour never hides one: how
     // many more the board was cut with. Past zero it shows how many extra are
@@ -833,7 +841,7 @@ export class SvgBoard {
     for (const [control, [kx, ky]] of this.controlsAt) {
       const hinted = needs !== null && needs.control === control;
       const knob = el("g", { class: `knob knob-${control}${hinted ? " hinted" : ""}` }, this.knobs);
-      el("circle", { cx: kx, cy: ky, r: KNOB }, knob);
+      el("circle", { cx: kx, cy: ky, r: KNOB, class: "knob-face" }, knob);
       let label: string;
       if (control === "rotate-ccw" || control === "rotate-cw") {
         // Every tile at once, one step either way: at a 15° step the long way
@@ -987,7 +995,13 @@ export class SvgBoard {
       },
       this.moving,
     );
-    decor(outline, this.moving, to, markUnit(this.puzzle.level));
+    decor(
+      outline,
+      this.moving,
+      to,
+      markUnit(this.puzzle.level),
+      `${this.puzzle.level.colours[kind]} floating${discard ? " discard" : ""}`,
+    );
     for (const [cx, cy] of stick) el("circle", { cx, cy, r: 0.11, class: "stick" }, this.moving);
     if (fitsAt) {
       const [cx, cy] = fitsAt;

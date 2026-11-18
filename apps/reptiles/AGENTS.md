@@ -21,7 +21,8 @@ some back off.
   the pointy-top hexagons, 30° on 3.4.6.4, where the squares need it too, so
   its triangles and hexagons pass through turns they fit nowhere at. Turning
   one kind into place can turn another out of it. Each control draws its step
-  as an axis, a fixed ray, the ray turned one step and the arrow between, and
+  as an axis, a fixed ray, the ray turned one step and the arrow between (its
+  head on the arc, tip on the ray: `stepGlyph`), and
   both are left out where nothing ever needs turning.
 - Where a board uses a tile both ways round (the kisrhombille's triangles,
   five of the 2-isohedral levels' tiles, the hat and the turtle),
@@ -1019,7 +1020,10 @@ quick way to see the win state.
   its inward normal (`LABEL_COLOURS`; a lone one a half disc), as wide as
   `markUnit`'s `line`, the level's middle side length, so every line of a
   level is one width. Every tile, tray
-  tile, dragged tile and icon is decorated through it; its parts are
+  tile, dragged tile and icon is decorated through it, and given its colour
+  classes (`edge`) it draws the tile's border again last (`tile-edge`), so a
+  line's end or a half disc never paints over a border — every border is
+  whole, and two tiles' marks meet under it. Its parts are
   `pointer-events: none`.
 - `src/view/svgBoard.ts` — the SVG drawing. The SVG is in screen pixels:
   the world (region, tiles, the tile in hand; board units, y up) under one
