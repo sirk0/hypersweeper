@@ -418,7 +418,7 @@ export class SvgBoard {
 
   private controls(): Control[] {
     const out: Control[] = [];
-    if (this.puzzle.canTurn()) out.push("rotate-ccw", "rotate-cw");
+    if (this.puzzle.canTurn()) out.push("rotate-cw", "rotate-ccw");
     if (this.puzzle.canFlip()) out.push("flip");
     out.push("remove");
     return out;
@@ -485,12 +485,12 @@ export class SvgBoard {
   private shelfIn(n: number): Shelf {
     const land = this.landscape;
     const { slot: SLOT, gap: GAP, pad: PAD } = this.space;
-    // A slot's size along the strip and across it.
-    const sizes = this.reach.map(([x0, y0, x1, y1]): XY => {
-      const w = x1 - x0 + 2 * SLOT;
-      const h = y1 - y0 + 2 * SLOT;
-      return land ? [h, w] : [w, h];
-    });
+    // A slot's size along the strip and across it: every slot alike, as wide
+    // and as tall as the widest and the tallest tile any way it is held, so
+    // the plates line up and their counts sit alike.
+    const w = Math.max(...this.reach.map(([x0, , x1]) => x1 - x0)) + 2 * SLOT;
+    const h = Math.max(...this.reach.map(([, y0, , y1]) => y1 - y0)) + 2 * SLOT;
+    const sizes = this.reach.map((): XY => (land ? [h, w] : [w, h]));
     const runLength = (from: number, to: number): number =>
       sizes.slice(from, to).reduce((sum, [a]) => sum + a, 0) + (to - from - 1) * GAP;
     // The cut points: tried every way, kinds are few.
@@ -861,17 +861,15 @@ export class SvgBoard {
     });
     // The piles' counts, over every tile, so a neighbour never hides one: how
     // many more the board was cut with. Past zero it shows how many extra are
-    // down — allowed, but it costs a star. Each at the tile's lower right as
-    // it is held, kept on its slot (and a hair past it, into the gap), so the
-    // shelf's edge never clips it.
+    // down — allowed, but it costs a star. Each in its slot's lower right
+    // corner, the same place on every slot whatever the tile or its turn.
     const pr = Math.max(PILE, PILE_PX / this.shelfScale);
-    this.trayAt.forEach(([cx, cy], kind) => {
+    this.trayAt.forEach((_, kind) => {
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
-      const xy = loopsReach(this.outline(kind, this.turn, this.flip));
       const [, sy0, sx1] = this.slots[kind]!;
-      const edge = Math.min(this.space.pad, this.space.gap / 2);
-      const bx = Math.min(cx + Math.max(...xy.map((p) => p[0])), sx1 + edge - pr);
-      const by = Math.max(cy + Math.min(...xy.map((p) => p[1])), sy0 - edge + pr);
+      const inset = pr + Math.min(this.space.slot, pr * 0.4);
+      const bx = sx1 - inset;
+      const by = sy0 + inset;
       const badge = el(
         "g",
         { class: `pile${left < 0 ? " over" : left === 0 ? " done" : ""}`, "data-tray": kind },
@@ -990,8 +988,10 @@ export class SvgBoard {
     let best: { flip: boolean; presses: number; control: Control | null } | null = null;
     for (const flip of mirror ? [this.flip, !this.flip] : [this.flip]) {
       const shape = { ring, pieces: posed(tiles[kind]!, { rot: 0, flip, t: ring.zero }) };
+      // a flip turns the tray too (`flipTurn`)
+      const from = flip === this.flip ? this.turn : this.puzzle.flipTurn(this.turn);
       for (const k of turnsOntoPieces(shape, spot)) {
-        const d = mod(k - this.turn);
+        const d = mod(k - from);
         let presses = 0;
         let control: Control | null = null;
         if (d !== 0) {
