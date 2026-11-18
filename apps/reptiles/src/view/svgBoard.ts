@@ -107,8 +107,10 @@ function decor(
 
 /** The gap round the board, in tile edges, at zoom 1. */
 const MARGIN = 0.3;
-/** The tray strip's padding round the shelf, in tile edges. */
+/** The tray card's padding round the shelf, in tile edges — but never under
+ * `TRAY_PAD_SHARE` of the tiles' size (`Spacing`). */
 const TRAY_PAD = 0.15;
+const TRAY_PAD_SHARE = 0.08;
 /** The controls' padding round their row, in control units. */
 const KNOB_PAD = 0.25;
 /** How far in the board zooms, from fitted. */
@@ -133,9 +135,10 @@ let boards = 0;
  * says otherwise (`--label-room`): on a desktop the name is in the header,
  * and the board takes this room too. */
 const LABEL_ROOM = 22;
-/** A desktop's tray is a card rather than a strip (`--tray-card-gap`, 0 on a
- * phone): inset from the screen's edges by the gap, as long as its tiles and
- * controls need (the strip, while the shelf scrolls), rounded by this. */
+/** The tray is a card (`--tray-card-gap`: 10px on a phone, 14px on a
+ * desktop): inset from the screen's edges by the gap, as long as its tiles
+ * and controls need (the strip, while the shelf scrolls), rounded by this. A
+ * gap of 0 would make it a plain strip from end to end. */
 const CARD_RADIUS = 18;
 /** A control's radius, the gap between controls, and the room its label
  * takes underneath it. */
@@ -151,9 +154,12 @@ const PILE_FONT = 0.24;
 const LABEL_FONT = 0.17;
 const PILE_PX = 9;
 /** A tray slot's padding round its tile, and the gap between one slot and
- * the next — along a row and from row to row — in tile edges. */
+ * the next — along a row and from row to row — in tile edges; but never under
+ * these shares of the tiles' size (`Spacing`). */
 const SLOT_PAD = 0.08;
 const TRAY_GAP = 0.2;
+const SLOT_PAD_SHARE = 0.06;
+const TRAY_GAP_SHARE = 0.1;
 /** The most rows (columns, in landscape) the shelf is laid in. */
 const MAX_ROWS = 3;
 /** How much bigger a layout with more rows must let the board be to be
@@ -216,6 +222,23 @@ function stepGlyph(
 type Control = "rotate-ccw" | "rotate-cw" | "flip" | "remove";
 
 type Box = [number, number, number, number];
+
+/** The shelf's spacing, in tray units: a slot's padding round its tile, the
+ * gap between slots, and the card's padding round the shelf. Each is a share
+ * of a tile edge, or of the tiles' size — the median slot's longer side —
+ * where that is more: the hat's metatiles are many short edges round, and at
+ * a tile edge apiece their plates would touch. */
+type Spacing = { slot: number; gap: number; pad: number };
+
+function spacingOf(reach: readonly Box[]): Spacing {
+  const sides = reach.map(([x0, y0, x1, y1]) => Math.max(x1 - x0, y1 - y0)).sort((a, b) => a - b);
+  const size = sides[Math.floor(sides.length / 2)] ?? 1;
+  return {
+    slot: Math.max(SLOT_PAD, SLOT_PAD_SHARE * size),
+    gap: Math.max(TRAY_GAP, TRAY_GAP_SHARE * size),
+    pad: Math.max(TRAY_PAD, TRAY_PAD_SHARE * size),
+  };
+}
 
 /** A way to lay the shelf: each kind's centroid and slot, and the whole
  * shelf's box, padded — in tray units. */
@@ -291,6 +314,7 @@ export class SvgBoard {
    * the level holds it — every turn of the rotate step, either side if it
    * flips — so a slot is the same size whichever way the tray is turned. */
   private reach: Box[];
+  private space: Spacing;
   /** Whether the remove mode is on: placed tiles show as removable. */
   get removing(): boolean {
     return this.svg.classList.contains("removing");
@@ -335,6 +359,7 @@ export class SvgBoard {
         Math.max(...xy.map((p) => p[1])),
       ];
     });
+    this.space = spacingOf(this.reach);
     const { ring, region, regionCurves } = puzzle.level;
     const xy = region.flatMap((loop, i) =>
       reachPoints(
@@ -480,14 +505,15 @@ export class SvgBoard {
    * the strip and each slot across its row. */
   private shelfIn(n: number): Shelf {
     const land = this.landscape;
+    const { slot: SLOT, gap: GAP, pad: PAD } = this.space;
     // A slot's size along the strip and across it.
     const sizes = this.reach.map(([x0, y0, x1, y1]): XY => {
-      const w = x1 - x0 + 2 * SLOT_PAD;
-      const h = y1 - y0 + 2 * SLOT_PAD;
+      const w = x1 - x0 + 2 * SLOT;
+      const h = y1 - y0 + 2 * SLOT;
       return land ? [h, w] : [w, h];
     });
     const runLength = (from: number, to: number): number =>
-      sizes.slice(from, to).reduce((sum, [a]) => sum + a, 0) + (to - from - 1) * TRAY_GAP;
+      sizes.slice(from, to).reduce((sum, [a]) => sum + a, 0) + (to - from - 1) * GAP;
     // The cut points: tried every way, kinds are few.
     let cuts: number[] = [];
     let longest = Infinity;
@@ -517,19 +543,21 @@ export class SvgBoard {
       start = end;
     }
     const thick = rows.map(([a, b]) => Math.max(...sizes.slice(a, b).map(([, c]) => c)));
-    const total = thick.reduce((sum, t) => sum + t, 0) + (rows.length - 1) * TRAY_GAP;
+    const total = thick.reduce((sum, t) => sum + t, 0) + (rows.length - 1) * GAP;
     const at: XY[] = [];
     const slots: Box[] = [];
     // Across: the first row at the top (portrait) or the left (landscape).
     let across = total / 2;
     rows.forEach(([a, b], r) => {
       const middle = across - thick[r]! / 2;
-      across -= thick[r]! + TRAY_GAP;
+      across -= thick[r]! + GAP;
       let along = -runLength(a, b) / 2;
       for (let kind = a; kind < b; kind++) {
-        const [len, wide] = sizes[kind]!;
+        // every plate as thick as its row, so a row's plates line up
+        const [len] = sizes[kind]!;
+        const wide = thick[r]!;
         const mid = along + len / 2;
-        along += len + TRAY_GAP;
+        along += len + GAP;
         // The slot's middle, then the tile's centroid in it.
         const [sx, sy]: XY = land ? [-middle, -mid] : [mid, middle];
         const [hw, hh] = land ? [wide / 2, len / 2] : [len / 2, wide / 2];
@@ -540,8 +568,8 @@ export class SvgBoard {
     });
     const half = longest / 2;
     const box: Box = land
-      ? [-total / 2 - TRAY_PAD, -half - TRAY_PAD, total / 2 + TRAY_PAD, half + TRAY_PAD]
-      : [-half - TRAY_PAD, -total / 2 - TRAY_PAD, half + TRAY_PAD, total / 2 + TRAY_PAD];
+      ? [-total / 2 - PAD, -half - PAD, total / 2 + PAD, half + PAD]
+      : [-half - PAD, -total / 2 - PAD, half + PAD, total / 2 + PAD];
     return { at, slots, box };
   }
 
@@ -627,8 +655,8 @@ export class SvgBoard {
     // fits, scrolled once it does not.
     const start = g + (this.overflow > 0 ? -this.scrolled : (shelfRoomLen - this.shelfLength) / 2);
     // The card's ends along the strip: about its tiles and its controls, both
-    // centred, or the whole strip less the gap while the shelf scrolls. A
-    // phone's strip (no gap) runs end to end.
+    // centred, or the whole strip less the gap while the shelf scrolls. With
+    // no gap, the strip runs end to end.
     const content = Math.max(
       this.overflow > 0 ? shelfRoomLen : this.shelfLength,
       land ? knobsH : knobsW,
@@ -823,7 +851,8 @@ export class SvgBoard {
     this.shelf.replaceChildren();
     this.knobs.replaceChildren();
     this.trayAt.forEach(([cx, cy], kind) => {
-      // The slot: what a press picks the tile up by, drawn only when hinted.
+      // The slot: what a press picks the tile up by, drawn as a plate under
+      // it, its corners rounded by a share of its padding.
       const [x0, y0, x1, y1] = this.slots[kind]!;
       el(
         "rect",
@@ -832,7 +861,7 @@ export class SvgBoard {
           y: y0,
           width: x1 - x0,
           height: y1 - y0,
-          rx: 0.12,
+          rx: 2 * this.space.slot,
           class: `tray${lay?.kind === kind ? " hinted" : ""}`,
           "data-tray": kind,
         },
@@ -861,7 +890,7 @@ export class SvgBoard {
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
       const xy = loopsReach(this.outline(kind, this.turn, this.flip));
       const [, sy0, sx1] = this.slots[kind]!;
-      const edge = Math.min(TRAY_PAD, TRAY_GAP / 2);
+      const edge = Math.min(this.space.pad, this.space.gap / 2);
       const bx = Math.min(cx + Math.max(...xy.map((p) => p[0])), sx1 + edge - pr);
       const by = Math.max(cy + Math.min(...xy.map((p) => p[1])), sy0 - edge + pr);
       const badge = el(

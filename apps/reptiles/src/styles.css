@@ -90,9 +90,10 @@
   --hint-fill: rgba(47, 158, 91, 0.18);
   --remove: #c9463d;
   --remove-edge: #7a1f19;
-  /* The tray's strip along the bottom (or the right), over a board zoomed in
-     under it. */
+  /* The tray's card along the bottom (or the right), over a board zoomed in
+     under it, and the plate each of its tiles sits on, a shade darker. */
   --tray-strip: #f9f4ed;
+  --tray-plate: #f0e8dc;
   --button: var(--panel);
   --button-edge: var(--border);
   --scrim: rgba(30, 28, 24, 0.45);
@@ -104,9 +105,10 @@
   --hud-icon: calc(var(--hud-btn) * 0.565);
   --hud-gap: calc(var(--hud-btn) * 0.16);
   /* The level screen's room for the name over the board, and the inset of
-     the tray's card — read by svgBoard.ts; the desktop block changes both. */
+     the tray's card from the screen's edges — read by svgBoard.ts; the
+     desktop block changes both. */
   --label-room: 22px;
-  --tray-card-gap: 0px;
+  --tray-card-gap: 10px;
   --tray-shadow: rgba(64, 35, 16, 0.16);
 }
 
@@ -167,6 +169,7 @@
     --remove: #d0574d;
     --remove-edge: #ffb3ab;
     --tray-strip: #2e2b25;
+    --tray-plate: #3a362f;
     --tray-shadow: rgba(0, 0, 0, 0.45);
     --scrim: rgba(0, 0, 0, 0.55);
   }
@@ -685,9 +688,10 @@ button.primary {
 .decor.label-line.label-5 {
   stroke: var(--stick-ring);
 }
-/* A tray slot: no backdrop, only what a press picks its tile up by. */
+/* A tray slot: what a press picks its tile up by, drawn as a plate a shade
+   darker than the card, so the tray reads as a shelf of pieces. */
 .tray {
-  fill: transparent;
+  fill: var(--tray-plate);
 }
 
 .knob {
@@ -823,6 +827,7 @@ button.primary {
   fill: var(--tray-strip);
   stroke: var(--border);
   stroke-width: 1px;
+  filter: drop-shadow(0 2px 8px var(--tray-shadow));
 }
 
 .discarding .tray-zone {
@@ -1991,10 +1996,6 @@ button.settings-row:active {
   #game .hud .board-name .count,
   #game .hud .board-name .thinking {
     color: var(--muted);
-  }
-
-  .tray-zone {
-    filter: drop-shadow(0 2px 8px var(--tray-shadow));
   }
 }
 
