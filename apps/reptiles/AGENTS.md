@@ -20,16 +20,24 @@ some back off.
   that reaches, from flat, every way any kind sits: 60° for triangles, 30° for
   the pointy-top hexagons, 30° on 3.4.6.4, where the squares need it too, so
   its triangles and hexagons pass through turns they fit nowhere at. Turning
-  one kind into place can turn another out of it. Each control draws its step
-  as an axis, a fixed ray, the ray turned one step and the arrow between (its
-  head on the arc, tip on the ray: `stepGlyph`), and
-  both are left out where nothing ever needs turning.
+  one kind into place can turn another out of it. Each control is a round
+  arrow, open at the top, turning its way, with the step in its middle — the
+  number centred, its ° to the right (`turnGlyph`) — clockwise first (on top
+  in landscape, on the left in portrait), and both are left out where nothing
+  ever needs turning. No control has a label under it: the step is inside
+  the arrows, and a tooltip names each one and its key.
 - Where a board uses a tile both ways round (the kisrhombille's triangles,
   five of the 2-isohedral levels' tiles, the hat and the turtle),
-  a flip control (or F) mirrors every tray tile and the one in hand; a tile
-  lands only on its own side.
+  a flip control (or F) mirrors every tray tile and the one in hand across
+  the upright line through its middle, as its icon draws it, however the
+  tiles are turned — so a flip changes the turn too (`Puzzle.flipTurn`: held
+  at ζ^rot, the other side is at ζ^(n/2 − rot); the hint counts from there;
+  the difficulty measure still counts a flip as keeping the turn, as it did
+  before, so its scores and the colourings chosen by them stand). Where the tray never holds a half turn (a 120°
+  step) the line is the one nearest upright it can, 30° off; with no rotate
+  step at all, the turn stays. A tile lands only on its own side.
 - Taking tiles off: drag a placed tile back over the tray (it turns red on
-  the way), or turn on ✕ remove, the control beside rotate (or X), and tap
+  the way), or turn on ✕ remove, the control after rotate (or X), and tap
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
   A lifted tile dropped anywhere else it cannot land goes back where it was.
 - **Matching rules and colourings** — listed with the tiling they mark,
@@ -265,11 +273,12 @@ some back off.
   controls need (the whole strip while the shelf scrolls): a shelf of tiles at the board's own scale (a tray tile is the
   size it lands at, zoomed in or not, up to the strip taking 45% of the
   screen), then the controls in a row of their own at a fixed size — columns
-  in landscape. Each tile sits in a slot just big enough to hold it every way
-  the level holds it (every rotate step, either side where it flips), so
-  turning never moves one, and as thick as its row, drawn as a plate a shade
-  darker than the card (`--tray-plate`): what a press picks it up by, filled
-  when the hint names it. The padding round a tile, the gap between plates
+  in landscape. Every slot is one size — as wide and as tall as the biggest
+  tile any way the level holds it (every rotate step, either side where it
+  flips) — so turning never moves a tile and the plates line up, drawn a
+  shade darker than the card (`--tray-plate`): what a press picks it up by,
+  filled when the hint names it. Each pile's count sits in its slot's lower
+  right corner, the same place on every slot. The padding round a tile, the gap between plates
   and the card's padding are each a share of a tile edge or of the tiles'
   size, whichever is more (`spacingOf`), so tiles of many short edges (the
   hat's metatiles) are not crammed together. **Every tile is on screen

@@ -224,9 +224,9 @@ test.describe("on a touchscreen", () => {
     page,
     context,
   }) => {
-    // 3.4.6.4's triangle, square and hexagon fit at first; zoomed in they
-    // grow with the board and run longer than a phone is wide.
-    await page.goto("/?level=rhombitrihex");
+    // 4.8²'s square and octagon fit at first; zoomed in they grow with the
+    // board and run longer than a phone is wide.
+    await page.goto("/?level=truncsquare");
     const thumb = page.locator("svg.board .tray-scroll-thumb");
     await expect(page.locator("svg.board g.tray-scroll")).toBeHidden();
     const r = (await page.locator("svg.board path.region").boundingBox())!;

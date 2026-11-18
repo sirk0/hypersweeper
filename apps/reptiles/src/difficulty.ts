@@ -209,6 +209,10 @@ function play(level: Level): Turning & { order: Cell[] } {
     const { i, k } = best as { i: number; k: number };
     const c = left[i]!;
     presses += Math.abs(k);
+    // A flip is counted as keeping the turn, as the flip control did before it
+    // mirrored across the upright line (`Puzzle.flipTurn`, which turns the
+    // tray too): kept so, the measure and the files written from it
+    // (difficulty, colourings) stay as they were.
     if (c.flip !== flip) flips++;
     t = (((t + k * turn) % ring.n) + ring.n) % ring.n;
     flip = c.flip;

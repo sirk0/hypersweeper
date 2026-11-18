@@ -143,9 +143,11 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   const flip = (): void => {
     if (!puzzle.canFlip()) return;
     board.flip = !board.flip;
+    board.turn = puzzle.flipTurn(board.turn);
     board.draw();
     if (drag) {
       drag.flip = !drag.flip;
+      drag.rot = puzzle.flipTurn(drag.rot);
       drag.outline = board.outline(drag.kind, drag.rot, drag.flip);
       update();
     }

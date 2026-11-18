@@ -168,6 +168,21 @@ export class Puzzle {
     return this.level.mirror;
   }
 
+  /** The turn a tile held at ζ^rot is held at once flipped. A flip mirrors
+   * it across one fixed line through its middle whichever way it is turned —
+   * the upright one, as the flip control draws it: held turned by ζ^rot,
+   * mirrored or not, that is the other side turned by ζ^(n/2 − rot). Where
+   * the tray never holds a half turn (a 120° step) the line is the one
+   * nearest upright that it does: ζ^(c − rot), c the multiple of the step
+   * nearest n/2. With no rotate step the turn stays. */
+  flipTurn(rot: number): number {
+    const { ring, turn } = this.level;
+    const n = ring.n;
+    if (turn === 0) return rot;
+    const c = turn * Math.round(n / 2 / turn);
+    return (((c - rot) % n) + n) % n;
+  }
+
   /** Where a tile of `kind`, held turned by ζ^rot (and mirrored, if `flip`)
    * and dragged to `centre`,
    * would land, if anywhere within `reach` of it: only in that orientation,

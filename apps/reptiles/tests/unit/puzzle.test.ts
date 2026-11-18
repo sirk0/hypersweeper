@@ -67,6 +67,48 @@ function fill(p: Puzzle): number {
 const BOARD_LEVELS = BOARDS.map((b) => levelByKey(b.key)!);
 
 describe("puzzle", () => {
+  it.each(["kisrhombille", "hat", "turtle", "klaassen.3apart", "sphinx", "socolartaylor"])(
+    "%s: a flip mirrors every tile across the upright line, however it is turned",
+    (key) => {
+      const p = new Puzzle(levelByKey(key)!);
+      const { ring, tiles, turn } = p.level;
+      expect(p.canFlip()).toBe(true);
+      // the tile's corners as a set: held at ζ^rot (as the tray draws it,
+      // about the origin), and mirrored across the y axis, z → −z̄
+      const corners = (rot: number, flip: boolean, mirror = false): string[] =>
+        p
+          .shapeAt(0, rot, flip)
+          .pieces.flatMap((q) => q.verts)
+          .map((v) => ring.key(mirror ? ring.neg(ring.conj(v)) : v))
+          .sort();
+      for (let rot = 0; rot < ring.n; rot += turn || ring.n) {
+        for (const flip of [false, true]) {
+          const to = p.flipTurn(rot);
+          expect(to % (turn || ring.n), "a turn the tray holds").toBe(0);
+          expect(p.flipTurn(to)).toBe(rot);
+          expect(corners(to, !flip)).toEqual(corners(rot, flip, true));
+        }
+      }
+      expect(tiles.length).toBeGreaterThan(0);
+    },
+  );
+
+  it("a 120° step flips across one line too, the nearest upright it holds", () => {
+    const p = new Puzzle(levelByKey("triangles.3paired")!);
+    const { ring, turn } = p.level;
+    expect([ring.n, turn]).toEqual([12, 4]);
+    // mirrored across the line at 120° (ζ^8's half): z → ζ^8 z̄, every way held
+    const corners = (rot: number, flip: boolean, mirror = false): string[] =>
+      p
+        .shapeAt(0, rot, flip)
+        .pieces.flatMap((q) => q.verts)
+        .map((v) => ring.key(mirror ? ring.mul(ring.zeta(8), ring.conj(v)) : v))
+        .sort();
+    for (let rot = 0; rot < ring.n; rot += turn)
+      for (const flip of [false, true])
+        expect(corners(p.flipTurn(rot), !flip)).toEqual(corners(rot, flip, true));
+  });
+
   it.each(BOARDS.map((b) => b.key))("%s: the board it was cut from fills it exactly", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const { ring, tiles } = p.level;

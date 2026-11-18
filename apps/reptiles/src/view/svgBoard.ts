@@ -140,18 +140,18 @@ const LABEL_ROOM = 22;
  * and controls need (the strip, while the shelf scrolls), rounded by this. A
  * gap of 0 would make it a plain strip from end to end. */
 const CARD_RADIUS = 18;
-/** A control's radius, the gap between controls, and the room its label
- * takes underneath it. */
+/** A control's radius, and the gap between controls. */
 const KNOB = 0.4;
 const KNOB_GAP = 0.15;
-const LABEL = 0.3;
 /** A pile's count badge radius, in tray units — but never under `PILE_PX`
  * on screen, where a wide board (the kissing square chain, 16 units) puts a
  * unit at a couple of dozen pixels. */
 const PILE = 0.22;
-/** A pile's count's and a control's label's font sizes, in their units. */
+/** A pile's count's font size, in its units, and a rotate control's step's
+ * (smaller for a step of three digits, 180°, to stay inside its arrow). */
 const PILE_FONT = 0.24;
-const LABEL_FONT = 0.17;
+const DEGREES_FONT = 0.2;
+const DEGREES_FONT_LONG = 0.16;
 const PILE_PX = 9;
 /** A tray slot's padding round its tile, and the gap between one slot and
  * the next — along a row and from row to row — in tile edges; but never under
@@ -167,54 +167,33 @@ const MAX_ROWS = 3;
 const MORE_ROWS = 1.02;
 
 /**
- * A rotate control's picture, about (cx, cy): the axis of rotation as a dot,
- * a fixed ray straight up, a second ray turned one step from it, and an arrow
- * sweeping between them — counter-clockwise for dir = 1, clockwise for -1 — so
- * the angle drawn is the angle a press turns the tile by. The arrow's head
- * sits on its circle: its tip on the second ray and its base a chord back
- * along the arc, which stops inside the head, so its round end never shows
- * past the head's sides or tip.
+ * A rotate control's picture, about (kx, ky): an open circle of an arrow
+ * round the button's middle — counter-clockwise for dir = 1, clockwise for -1
+ * — its gap at the top and its head at the gap's far side, pointing on round,
+ * so the step's size can sit inside it (`knob-degrees`).
  */
-function stepGlyph(
-  kx: number,
-  ky: number,
-  dir: 1 | -1,
-  step: number,
-): { axis: XY; rays: string; arc: string; head: string } {
-  // A step of up to a right angle is a wedge opening upward, so the axis sits
-  // low and the wedge fills the button. A wider one — the prismatic
-  // pentagonal's 180° — would swing its second ray out through the bottom; it
-  // turns about the button's own centre instead.
-  const wide = step > Math.PI / 2 + 1e-9;
-  const cx = kx;
-  const cy = wide ? ky : ky - KNOB * 0.4;
-  const ray = wide ? KNOB * 0.72 : KNOB * 0.98;
-  const r = wide ? KNOB * 0.5 : KNOB * 0.68;
-  const from = Math.PI / 2;
-  const sweep = dir * step;
+function turnGlyph(kx: number, ky: number, dir: 1 | -1): { arc: string; head: string } {
+  const r = KNOB * 0.66;
+  const gap = (75 * Math.PI) / 180;
+  const from = Math.PI / 2 + (dir * gap) / 2;
+  const sweep = dir * (2 * Math.PI - gap);
+  const at = (a: number, len = r): XY => [kx + len * Math.cos(a), ky + len * Math.sin(a)];
+  // the head: its base square across the arc's end, its tip on round along it
   const end = from + sweep;
-  const at = (a: number, len: number): XY => [cx + len * Math.cos(a), cy + len * Math.sin(a)];
-  const rays = points([at(from, ray), [cx, cy], at(end, ray)]);
-  // the head: as long as fits in three quarters of the arc (a 15° step's is
-  // short), and two thirds as wide as long either side of its axis — the
-  // chord from its base's middle to its tip
-  const length = Math.min(KNOB * 0.26, r * step * 0.75);
-  const back = 2 * Math.asin(Math.min(1, length / (2 * r)));
-  const tip = at(end, r);
-  const base = at(end - dir * back, r);
-  const axis: XY = [tip[0] - base[0], tip[1] - base[1]];
-  const norm = Math.hypot(...axis);
-  const side: XY = [(-axis[1] / norm) * length * 0.62, (axis[0] / norm) * length * 0.62];
+  const length = KNOB * 0.3;
+  const half = KNOB * 0.17;
+  const [ex, ey] = at(end);
+  const tangent: XY = [-dir * Math.sin(end), dir * Math.cos(end)];
   const head: XY[] = [
-    tip,
-    [base[0] + side[0], base[1] + side[1]],
-    [base[0] - side[0], base[1] - side[1]],
+    [ex + tangent[0] * length, ey + tangent[1] * length],
+    at(end, r + half),
+    at(end, r - half),
   ];
-  // the arc from the fixed ray to the middle of the head's base
-  const stop = sweep - dir * back * 0.8;
+  // the arc stops inside the head, so its round end never shows past it
+  const stop = sweep - (dir * (length * 0.3)) / r;
   const arc: XY[] = [];
-  for (let i = 0; i <= 24; i++) arc.push(at(from + (stop * i) / 24, r));
-  return { axis: [cx, cy], rays, arc: points(arc), head: points(head) };
+  for (let i = 0; i <= 48; i++) arc.push(at(from + (stop * i) / 48));
+  return { arc: points(arc), head: points(head) };
 }
 
 /** The tray's controls, after its tiles: turn every tile either way, flip
@@ -439,7 +418,7 @@ export class SvgBoard {
 
   private controls(): Control[] {
     const out: Control[] = [];
-    if (this.puzzle.canTurn()) out.push("rotate-ccw", "rotate-cw");
+    if (this.puzzle.canTurn()) out.push("rotate-cw", "rotate-ccw");
     if (this.puzzle.canFlip()) out.push("flip");
     out.push("remove");
     return out;
@@ -461,9 +440,9 @@ export class SvgBoard {
     this.labelRoom = px("--label-room", LABEL_ROOM);
     this.cardGap = px("--tray-card-gap", 0);
     const controls = this.controls();
-    // A control's own box: the knob and its label underneath. One row of them
-    // under the shelf in portrait; one column beside it in landscape.
-    const knobH = 2 * KNOB + LABEL;
+    // One row of controls under the shelf in portrait; one column beside it
+    // in landscape.
+    const knobH = 2 * KNOB;
     const cols = this.landscape ? 1 : controls.length;
     const rows = Math.ceil(controls.length / cols);
     const gridW = cols * 2 * KNOB + (cols - 1) * KNOB_GAP;
@@ -506,12 +485,12 @@ export class SvgBoard {
   private shelfIn(n: number): Shelf {
     const land = this.landscape;
     const { slot: SLOT, gap: GAP, pad: PAD } = this.space;
-    // A slot's size along the strip and across it.
-    const sizes = this.reach.map(([x0, y0, x1, y1]): XY => {
-      const w = x1 - x0 + 2 * SLOT;
-      const h = y1 - y0 + 2 * SLOT;
-      return land ? [h, w] : [w, h];
-    });
+    // A slot's size along the strip and across it: every slot alike, as wide
+    // and as tall as the widest and the tallest tile any way it is held, so
+    // the plates line up and their counts sit alike.
+    const w = Math.max(...this.reach.map(([x0, , x1]) => x1 - x0)) + 2 * SLOT;
+    const h = Math.max(...this.reach.map(([, y0, , y1]) => y1 - y0)) + 2 * SLOT;
+    const sizes = this.reach.map((): XY => (land ? [h, w] : [w, h]));
     const runLength = (from: number, to: number): number =>
       sizes.slice(from, to).reduce((sum, [a]) => sum + a, 0) + (to - from - 1) * GAP;
     // The cut points: tried every way, kinds are few.
@@ -882,17 +861,15 @@ export class SvgBoard {
     });
     // The piles' counts, over every tile, so a neighbour never hides one: how
     // many more the board was cut with. Past zero it shows how many extra are
-    // down — allowed, but it costs a star. Each at the tile's lower right as
-    // it is held, kept on its slot (and a hair past it, into the gap), so the
-    // shelf's edge never clips it.
+    // down — allowed, but it costs a star. Each in its slot's lower right
+    // corner, the same place on every slot whatever the tile or its turn.
     const pr = Math.max(PILE, PILE_PX / this.shelfScale);
-    this.trayAt.forEach(([cx, cy], kind) => {
+    this.trayAt.forEach((_, kind) => {
       const left = this.puzzle.level.need[kind]! - this.puzzle.used(kind);
-      const xy = loopsReach(this.outline(kind, this.turn, this.flip));
       const [, sy0, sx1] = this.slots[kind]!;
-      const edge = Math.min(this.space.pad, this.space.gap / 2);
-      const bx = Math.min(cx + Math.max(...xy.map((p) => p[0])), sx1 + edge - pr);
-      const by = Math.max(cy + Math.min(...xy.map((p) => p[1])), sy0 - edge + pr);
+      const inset = pr + Math.min(this.space.slot, pr * 0.4);
+      const bx = sx1 - inset;
+      const by = sy0 + inset;
       const badge = el(
         "g",
         { class: `pile${left < 0 ? " over" : left === 0 ? " done" : ""}`, "data-tray": kind },
@@ -906,7 +883,6 @@ export class SvgBoard {
       const hinted = needs !== null && needs.control === control;
       const knob = el("g", { class: `knob knob-${control}${hinted ? " hinted" : ""}` }, this.knobs);
       el("circle", { cx: kx, cy: ky, r: KNOB, class: "knob-face" }, knob);
-      let label: string;
       if (control === "rotate-ccw" || control === "rotate-cw") {
         // Every tile at once, one step either way: at a 15° step the long way
         // round is twenty-odd presses, so each direction has its own control.
@@ -918,12 +894,17 @@ export class SvgBoard {
           dir === 1
             ? `Turn every tile ${degrees} anticlockwise (Shift+R)`
             : `Turn every tile ${degrees} clockwise (R)`;
-        const { axis, rays, arc, head } = stepGlyph(kx, ky, dir, (2 * Math.PI * turn) / ring.n);
-        el("polyline", { points: rays, class: "knob-ray" }, knob);
+        const { arc, head } = turnGlyph(kx, ky, dir);
         el("polyline", { points: arc, class: "knob-arc" }, knob);
         el("polygon", { points: head, class: "knob-head" }, knob);
-        el("circle", { cx: axis[0], cy: axis[1], r: KNOB * 0.1, class: "knob-axis" }, knob);
-        label = `${dir === 1 ? "↺" : "↻"} ${degrees}`;
+        // The number centred on the button, its ° hanging off to the right: a
+        // hidden ° before it balances the one after.
+        const number = degrees.slice(0, -1);
+        const font = number.length > 2 ? DEGREES_FONT_LONG : DEGREES_FONT;
+        const text = centredText(knob, [kx, ky], font, "", "knob-degrees");
+        el("tspan", { "fill-opacity": 0 }, text).textContent = "°";
+        text.append(number);
+        el("tspan", {}, text).textContent = "°";
       } else if (control === "flip") {
         // Mirror every tile in the tray, and the one in hand: a tile and its
         // mirror image either side of a dashed axis.
@@ -966,7 +947,6 @@ export class SvgBoard {
           },
           knob,
         );
-        label = "⇋ flip";
       } else {
         knob.setAttribute("data-remove", "");
         el("title", {}, knob).textContent =
@@ -994,9 +974,7 @@ export class SvgBoard {
           },
           knob,
         );
-        label = "remove";
       }
-      centredText(knob, [kx, ky - KNOB - LABEL * 0.75], LABEL_FONT, label, "knob-label");
     }
   }
 
@@ -1010,8 +988,10 @@ export class SvgBoard {
     let best: { flip: boolean; presses: number; control: Control | null } | null = null;
     for (const flip of mirror ? [this.flip, !this.flip] : [this.flip]) {
       const shape = { ring, pieces: posed(tiles[kind]!, { rot: 0, flip, t: ring.zero }) };
+      // a flip turns the tray too (`flipTurn`)
+      const from = flip === this.flip ? this.turn : this.puzzle.flipTurn(this.turn);
       for (const k of turnsOntoPieces(shape, spot)) {
-        const d = mod(k - this.turn);
+        const d = mod(k - from);
         let presses = 0;
         let control: Control | null = null;
         if (d !== 0) {
