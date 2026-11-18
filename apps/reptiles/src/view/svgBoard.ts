@@ -899,8 +899,14 @@ export class SvgBoard {
         const { arc, head } = turnGlyph(kx, ky, dir);
         el("polyline", { points: arc, class: "knob-arc" }, knob);
         el("polygon", { points: head, class: "knob-head" }, knob);
-        const font = degrees.length > 3 ? DEGREES_FONT_LONG : DEGREES_FONT;
-        centredText(knob, [kx, ky], font, degrees, "knob-degrees");
+        // The number centred on the button, its ° hanging off to the right: a
+        // hidden ° before it balances the one after.
+        const number = degrees.slice(0, -1);
+        const font = number.length > 2 ? DEGREES_FONT_LONG : DEGREES_FONT;
+        const text = centredText(knob, [kx, ky], font, "", "knob-degrees");
+        el("tspan", { "fill-opacity": 0 }, text).textContent = "°";
+        text.append(number);
+        el("tspan", {}, text).textContent = "°";
       } else if (control === "flip") {
         // Mirror every tile in the tray, and the one in hand: a tile and its
         // mirror image either side of a dashed axis.
