@@ -113,3 +113,16 @@ export function flourishVoices(preset: SoundPreset, pan: number): Voice[] {
     noise: 0,
   }));
 }
+
+/** A preset's voice in miniature, for a settings swatch: the loudness of each
+ * of its first `bars` partials, 0..1 — the spectrum the engine synthesises, so
+ * the swatches differ exactly where the presets do (Chime's harmonics fall away
+ * smoothly, Arcade's even ones are missing, Blocks' drop off a cliff). `null`
+ * (Off) is all zeros. */
+export function swatchLevels(preset: SoundPreset | null, bars = 5): number[] {
+  return Array.from({ length: bars }, (_, i) => {
+    const k = i + 1;
+    if (!preset || (preset.timbre.oddOnly && k % 2 === 0)) return 0;
+    return 1 / k ** preset.timbre.decay;
+  });
+}

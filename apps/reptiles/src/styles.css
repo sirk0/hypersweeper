@@ -1582,6 +1582,107 @@ button.settings-row:active {
   transform: translateX(18px);
 }
 
+/* A sound theme's row: its swatch, its name and hint, and a tick on the one
+   in force (view/settings.ts). */
+.settings-sound .settings-text {
+  flex: 1;
+}
+
+.settings-check {
+  flex: none;
+  width: 1.2em;
+  color: var(--accent);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* A theme's voice in miniature: one bar per partial, as tall as that partial
+   is loud — the heights written inline from the preset's own timbre
+   (`swatchLevels` in @tiling/sound), as Hypersweeper's settings draw it. */
+.sound-swatch {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.sound-swatch-bar {
+  flex: 1;
+  border-radius: 1.5px;
+  background: var(--accent);
+}
+
+.sound-swatch[data-sound="off"] .sound-swatch-bar {
+  background: var(--muted);
+  opacity: 0.5;
+}
+
+/* The volume slider, drawn from the scheme's own colours so it follows a
+   scheme as the rest of the page does (Hypersweeper's, the same). */
+.settings-range {
+  flex: 1 1 auto;
+  max-width: 180px;
+  min-width: 96px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  touch-action: none; /* dragging the slider must not scroll the page */
+}
+
+.settings-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.settings-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.settings-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.settings-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px; /* centres the thumb on the 4px track */
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+
+.settings-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+
+.settings-range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
 /* The settings gear in the home screen's top-left corner, drawn like
    Hypersweeper's menu header buttons: a bare glyph in the muted ink, lit in
    the accent when pressed. */

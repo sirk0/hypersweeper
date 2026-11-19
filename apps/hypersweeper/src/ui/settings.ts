@@ -2,7 +2,7 @@ import { checkForUpdate, loadDeployedBuild } from "@tiling/platform";
 import { QUALITY_PREFS, type QualityPref } from "../render/quality";
 import { ACHIEVEMENTS, earned as earnedIds, loadProgress } from "../achievements";
 import { APP_ICONS, appIcon, appIconSupported, appIconUrls, type AppIconKey } from "../appIcon";
-import { SOUND_CHOICES, SOUND_OFF, SOUND_PRESETS, soundLabel } from "@tiling/sound";
+import { SOUND_CHOICES, SOUND_OFF, SOUND_PRESETS, soundLabel, swatchLevels } from "@tiling/sound";
 import { previewSound, setSoundPreset, setSoundVolume } from "../audio/sound";
 import { screens } from "../config/screens";
 import { gameCenterSupported, showGameCenterAchievements } from "../gameCenter";
@@ -278,13 +278,9 @@ function soundSwatch(key: string): HTMLElement {
   const el = document.createElement("span");
   el.className = "sound-swatch";
   el.dataset["sound"] = key;
-  const preset = SOUND_PRESETS[key];
-  const bars = 5;
-  for (let k = 1; k <= bars; k++) {
+  for (const amp of swatchLevels(SOUND_PRESETS[key] ?? null)) {
     const bar = document.createElement("span");
     bar.className = "sound-swatch-bar";
-    const amp =
-      preset && !(preset.timbre.oddOnly && k % 2 === 0) ? 1 / k ** preset.timbre.decay : 0;
     bar.style.height = `${Math.round(12 + 88 * amp)}%`;
     el.append(bar);
   }

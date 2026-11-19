@@ -844,19 +844,76 @@ test("a tile landing clicks, a turn beeps, and a finished board plays its flouri
   expect(await oscillators(page)).toBe(2);
 });
 
-test("Settings › Sound turns the sounds off, and it stays off", async ({ page }) => {
+test("Settings › Sound: Blocks by default, a theme plays when picked, Off silences and stays", async ({
+  page,
+}) => {
   await countOscillators(page);
   await page.goto("/?settings");
-  const sound = page.locator('[data-setting="sound"]');
-  await expect(sound).toHaveAttribute("aria-checked", "true");
-  await sound.click();
-  await expect(sound).toHaveAttribute("aria-checked", "false");
+  const theme = (key: string) => page.locator(`[data-sound="${key}"][role="radio"]`);
+  await expect(theme("blocks")).toHaveAttribute("aria-checked", "true");
+  for (const key of ["chime", "arcade", "off"])
+    await expect(theme(key)).toHaveAttribute("aria-checked", "false");
+  await expect(page.locator('[data-setting="volume"]')).toBeVisible();
+
+  // picking a theme plays its sample
+  await theme("chime").click();
+  await expect(theme("chime")).toHaveAttribute("aria-checked", "true");
+  await expect(theme("blocks")).toHaveAttribute("aria-checked", "false");
+  expect(await oscillators(page)).toBeGreaterThan(0);
+
+  // Off: no volume to set, and it stays off
+  await theme("off").click();
+  await expect(page.locator('[data-setting="volume"]')).toBeHidden();
   await page.reload();
-  await expect(page.locator('[data-setting="sound"]')).toHaveAttribute("aria-checked", "false");
+  await expect(theme("off")).toHaveAttribute("aria-checked", "true");
 
   await page.goto("/?level=squares");
   await dropOneSquare(page);
   await page.goto("/?level=cairo");
   await page.locator('[data-turn="1"]').click();
   expect(await oscillators(page)).toBe(0);
+});
+
+declare global {
+  interface Window {
+    __pans?: number[];
+  }
+}
+
+test("a tile is heard from the side of the screen it lands on", async ({ page }) => {
+  // A phone, where the board is centred: the pan is where the tile is across
+  // the whole screen, so beside a desktop's tray the board sits left of it.
+  await page.setViewportSize(PHONE);
+  // Every stereo panner's opening position, in the order they are made.
+  await page.addInitScript(() => {
+    window.__pans = [];
+    const Ctor = window.AudioContext;
+    if (!Ctor) return;
+    const original = Ctor.prototype.createStereoPanner;
+    Ctor.prototype.createStereoPanner = function (this: AudioContext) {
+      const node = original.call(this);
+      const set = node.pan.setValueAtTime.bind(node.pan);
+      node.pan.setValueAtTime = (value: number, time: number) => {
+        window.__pans!.push(value);
+        return set(value, time);
+      };
+      return node;
+    };
+  });
+  const lastPan = (): Promise<number> => page.evaluate(() => window.__pans!.at(-1)!);
+  const dropAt = async (corner: "left" | "right"): Promise<void> => {
+    await page.goto("/?level=squares");
+    const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+    const r = (await page.locator("svg.board path.region").boundingBox())!;
+    const x = corner === "left" ? r.x + t.width / 2 : r.x + r.width - t.width / 2;
+    await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, r.y + r.height - t.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+  };
+  await dropAt("left");
+  expect(await lastPan()).toBeLessThan(-0.4);
+  await dropAt("right");
+  expect(await lastPan()).toBeGreaterThan(0.4);
 });

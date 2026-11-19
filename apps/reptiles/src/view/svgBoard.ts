@@ -1143,6 +1143,17 @@ export class SvgBoard {
     this.svg.classList.remove("discarding");
   }
 
+  /** Where a board point is across the screen, -1 (the left edge) to +1
+   * (the right): the stereo pan of a sound made there (src/sound.ts). */
+  panAt(point: XY): number {
+    const m = this.still.getScreenCTM();
+    const rect = this.svg.getBoundingClientRect();
+    if (!m || rect.width <= 0) return 0;
+    const x = new DOMPoint(point[0], point[1]).matrixTransform(m).x;
+    const pan = ((x - rect.left) / rect.width) * 2 - 1;
+    return Number.isFinite(pan) ? Math.max(-1, Math.min(1, pan)) : 0;
+  }
+
   /** A client (screen) point in board units. */
   toBoard(clientX: number, clientY: number): XY {
     const m = this.still.getScreenCTM();

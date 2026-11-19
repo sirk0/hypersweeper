@@ -22,10 +22,10 @@ import { renderHelp } from "./view/help";
 import { renderHome } from "./view/home";
 import { barsIcon, fillGlyphs, trayIcon } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
-import { applySound, renderSettings } from "./view/settings";
+import { renderSettings } from "./view/settings";
 import { SvgBoard } from "./view/svgBoard";
 import { unlockAudio } from "@tiling/sound";
-import { playSound } from "./sound";
+import { applySound, playSound } from "./sound";
 
 const byId = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -57,7 +57,7 @@ function tallyOf(plain: Level): ReturnType<Tally> {
 applyScheme(preferences().scheme);
 // Sound as Settings has it; nothing is heard before the player's first touch
 // (a browser starts no audio without a gesture: `unlockAudio`).
-applySound(preferences().sound);
+applySound(preferences().sound, preferences().volume);
 unlockAudio();
 fillGlyphs(document);
 
@@ -320,7 +320,7 @@ function changed(): void {
   hintButton.disabled = puzzle.won;
   count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
   if (!puzzle.won) s.dismissed = false;
-  if (puzzle.won && !s.wasWon) playSound({ kind: "win", pan: 0 });
+  if (puzzle.won && !s.wasWon) playSound({ kind: "win", pan: s.control.lastPan() });
   s.wasWon = puzzle.won;
   won.hidden = !puzzle.won || s.dismissed;
   if (!puzzle.won) {

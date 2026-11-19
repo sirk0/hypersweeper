@@ -5,6 +5,7 @@ import {
   noteFor,
   SOUND_PRESETS,
   strikeVoice,
+  swatchLevels,
   type SoundPreset,
 } from "../src/index";
 
@@ -101,5 +102,16 @@ describe("playVoices", () => {
     expect(engine.soundEnabled()).toBe(false);
     expect(build).not.toHaveBeenCalled();
     expect(audio.oscillators).toBe(0);
+  });
+});
+
+describe("swatchLevels", () => {
+  it("draws each preset's spectrum, and Off flat", () => {
+    const arcade = swatchLevels(SOUND_PRESETS["arcade"]!);
+    expect(arcade[1]).toBe(0); // odd partials only
+    expect(arcade[0]).toBe(1);
+    const chime = swatchLevels(CHIME);
+    for (let i = 1; i < chime.length; i++) expect(chime[i]!).toBeLessThan(chime[i - 1]!);
+    expect(swatchLevels(null)).toEqual([0, 0, 0, 0, 0]);
   });
 });

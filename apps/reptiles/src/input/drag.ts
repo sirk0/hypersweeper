@@ -64,6 +64,9 @@ export interface DragControl {
   flip(): void;
   /** Switch the remove mode on or off. */
   setRemoving(on: boolean): void;
+  /** Where the last tile laid landed across the screen, -1..1: what the win
+   * flourish leans toward. */
+  lastPan(): number;
 }
 
 export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void): DragControl {
@@ -72,6 +75,8 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   const mod = (k: number): number => ((k % ring.n) + ring.n) % ring.n;
   let drag: Drag | null = null;
   let frame = 0;
+  /** Where the last tile landed across the screen (`SvgBoard.panAt`). */
+  let lastPan = 0;
   /** Every pointer down on the board that is not on a control, where it is now. */
   const touches = new Map<number, XY>();
   /** A pan (one pointer) or a pinch (two) in progress: the pointers, and their
@@ -328,9 +333,10 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     }
     if (ghost) {
       puzzle.place(d.kind, ghost, d.rot, d.flip);
-      // A click where it landed — putting a lifted tile back is silent.
-      const pan = (ev.clientX / Math.max(1, innerWidth)) * 2 - 1;
-      playSound({ kind: "place", sides: sides(puzzle.level.tiles[d.kind]!), pan: pan * 0.8 });
+      // A click from where it landed — the tile's middle across the screen;
+      // putting a lifted tile back is silent.
+      lastPan = board.panAt(centroidOf(loopsOf(ring, ghost).map((l) => l.xy)));
+      playSound({ kind: "place", sides: sides(puzzle.level.tiles[d.kind]!), pan: lastPan });
     } else if (d.origin && !discard) {
       puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
     }
@@ -358,5 +364,5 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   // Safari's own pinch, which would zoom the page rather than the board.
   for (const type of ["gesturestart", "gesturechange", "gestureend"])
     svg.addEventListener(type, (ev) => ev.preventDefault());
-  return { turn, flip, setRemoving };
+  return { turn, flip, setRemoving, lastPan: () => lastPan };
 }

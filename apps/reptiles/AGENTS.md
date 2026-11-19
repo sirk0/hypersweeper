@@ -336,8 +336,8 @@ from a level comes back to it. The gear in home's top-left
 corner (Hypersweeper's icon) opens Settings (`?settings`), which has the
 player's choices — the **colour scheme**, Auto (the device's
 `prefers-color-scheme`, the default), Light or Dark, as a three-way pill
-(`src/scheme.ts`, below), **sound effects**, a switch, on by default (below),
-and the tiling past a finished board, a switch, off by
+(`src/scheme.ts`, below), the **sound** theme — Chime, Arcade, Blocks (the
+default) or Off — and its volume (below), and the tiling past a finished board, a switch, off by
 default (below) — then shows the version, checks for updates (the shared check in `@tiling/platform`) and
 links the **privacy policy** (`public/privacy.html`, served as `/privacy`, in
 a new tab); the update row and the policy link are left out of a packaged
@@ -360,17 +360,29 @@ outside it). Each move
 is a history entry, so the browser's Back works.
 
 **Sound** — Hypersweeper's synthesiser, shared as `@tiling/sound`
-(`packages/sound`), at its default preset, Chime: a click as a tile lands,
-pitched by its shape and panned where it landed (Hypersweeper's cell-opening
-click, `strikeVoice`); a short centred beep as the tray turns, gliding up one
-way round and down the other (`glideVoice`; flip is silent); and the win
-flourish as the board is finished (`flourishVoices`) — again only after a
-tile is taken off and it is finished anew. Putting a lifted tile back is
-silent. Nothing sounds before the player's first touch (`unlockAudio`).
-Settings › Sound turns it off (`src/preferences.ts`). `src/sound.ts` is the
-seam (`voicesFor`, pure, pinned by `tests/unit/sound.test.ts`), called from
-`src/input/drag.ts` and `changed` in `src/main.ts`; `smoke.spec.ts` counts
-the oscillators the page builds, with sound on and off.
+(`packages/sound`), in its three themes — Chime, Arcade and **Blocks**, the
+default here (`DEFAULT_THEME` in `src/sound.ts`) — or Off, picked in
+Settings › Sound (`src/preferences.ts`): a row each with Hypersweeper's
+swatch (`swatchLevels`) and a line of Rep-tiles' own (`THEME_HINTS`: the
+presets' own hints name Hypersweeper's mine blast), the one in force ticked,
+and picking one plays a sample; under them, but for Off, a volume slider,
+heard while dragged and kept when let go. A click as a tile lands, pitched by
+its shape (Hypersweeper's cell-opening click, `strikeVoice`); a short centred
+beep as the tray turns, gliding up one way round and down the other
+(`glideVoice`; flip is silent); and the win flourish as the board is
+finished (`flourishVoices`) — again only after a tile is taken off and it is
+finished anew. Putting a lifted tile back is silent. **Stereo:** a click is
+panned to where the tile's middle landed across the screen
+(`SvgBoard.panAt`, -1 at the left edge to +1 at the right — the whole
+screen, as the speakers are, so on a desktop, the tray on the right, the
+board leans left), and the flourish leans toward the last tile laid
+(`DragControl.lastPan`). Nothing sounds before the player's first touch
+(`unlockAudio`). `src/sound.ts` is the seam (`voicesFor`, pure, pinned by
+`tests/unit/sound.test.ts`), called from `src/input/drag.ts`, `changed` in
+`src/main.ts` and the settings; `smoke.spec.ts` counts the oscillators the
+page builds (sound on, a theme picked, Off) and reads each panner's position
+(a tile in the board's left corner heard left, its right corner right, at a
+phone's size).
 
 **The tiling past a finished board** — a setting, off by default (Settings ›
 Board, `src/preferences.ts`). With it on, once the region is covered, the
@@ -1067,7 +1079,9 @@ quick way to see the win state.
   scheme, sound, the tiling past a finished board), in
   `localStorage` through the shared guard, defaults where it is unreadable.
 - `src/sound.ts` — what each move sounds like (`RepSound`: a tile placed,
-  a turn, a win) as `@tiling/sound`'s figures, and `playSound`.
+  a turn, a win, the settings' sample) as `@tiling/sound`'s figures,
+  `playSound`, `applySound` (theme and volume), the default theme and each
+  theme's line in Settings.
 - `src/scheme.ts` — the colour scheme: `applyScheme` sets `data-scheme` on
   `<html>` (none for Auto) and points the `theme-color` metas at the page
   colour. The dark colours are in `styles.css` twice, with the same

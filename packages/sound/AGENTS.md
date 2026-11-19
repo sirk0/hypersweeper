@@ -12,7 +12,8 @@ Games import the index (`@tiling/sound`) alone.
 - `src/figures.ts` — the voices a game's events are built from, each a pure
   function of a preset: `strikeVoice` (a tile struck, and by `ring` a grain
   of a cascade), `glideVoice` (a short glide up, or the same figure down),
-  `flourishVoices` (a finished board's rising run).
+  `flourishVoices` (a finished board's rising run), and `swatchLevels`, a
+  preset's spectrum for a settings swatch.
 - `src/engine.ts` — the pitch helpers (`gridNote`, `noteFor`, `partialsFor`)
   and the player: `setSoundPreset`, `setSoundVolume`, `unlockAudio` (the
   `AudioContext` is built on the first gesture, never before) and
@@ -31,8 +32,8 @@ and Hypersweeper's `tests/unit/sound.test.ts` and `soundHarmony.test.ts` pin
 it; a change here is heard in both games.
 
 Users: Hypersweeper (every event, and its Settings › Sound preset picker and
-volume); Rep-tiles (a tile landing, a turn, a win; Settings › Sound on/off,
-at the default preset).
+volume); Rep-tiles (a tile landing, a turn, a win; Settings › Sound, the same
+three presets and Off with a volume, Blocks by default).
 
 ```sh
 cd packages/sound && npm run typecheck && npm run test
