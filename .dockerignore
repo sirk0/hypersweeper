@@ -11,5 +11,6 @@
 !apps/reptiles/package.json
 !packages/geometry/package.json
 !packages/platform/package.json
+!packages/sound/package.json
 !packages/vite-preset/package.json
 !data/package.json

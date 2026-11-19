@@ -783,3 +783,137 @@ test("a tile of several pieces moves as one: the kissing squares", async ({ page
   await expect(placed).toHaveAttribute("d", /^M[^M]*Z\s*M[^M]*Z$/);
   expect(errors).toEqual([]);
 });
+
+// -- sound ---------------------------------------------------------------------
+// A synthesised sound leaves nothing in the DOM, so the init script counts the
+// oscillators the page builds — nodes being *scheduled*, which needs no output
+// device and no autoplay policy (as Hypersweeper's tests/e2e/sound.spec.ts).
+
+declare global {
+  interface Window {
+    __oscillators?: number;
+  }
+}
+
+async function countOscillators(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.__oscillators = 0;
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    const original = Ctor.prototype.createOscillator;
+    Ctor.prototype.createOscillator = function (this: AudioContext) {
+      window.__oscillators = (window.__oscillators ?? 0) + 1;
+      return original.call(this);
+    };
+  });
+}
+
+const oscillators = (page: Page): Promise<number> => page.evaluate(() => window.__oscillators ?? 0);
+
+/** Drop the tray square into the squares level's bottom-left corner. */
+async function dropOneSquare(page: Page): Promise<void> {
+  const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + t.width / 2, r.y + r.height - t.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+}
+
+test("a tile landing clicks, a turn beeps, and a finished board plays its flourish", async ({
+  page,
+}) => {
+  await countOscillators(page);
+  await page.goto("/?level=squares");
+  await dropOneSquare(page);
+  expect(await oscillators(page)).toBe(1);
+
+  // the rest of the board: a click a tile, then the flourish
+  await page.goto("/?level=squares");
+  const before = await oscillators(page);
+  await finishSquares(page);
+  expect((await oscillators(page)) - before).toBeGreaterThan(16);
+
+  await page.goto("/?level=cairo");
+  await page.locator('[data-turn="1"]').click();
+  expect(await oscillators(page)).toBe(1);
+  await page.keyboard.press("r");
+  expect(await oscillators(page)).toBe(2);
+});
+
+test("Settings › Sound: Blocks by default, a theme plays when picked, Off silences and stays", async ({
+  page,
+}) => {
+  await countOscillators(page);
+  await page.goto("/?settings");
+  const theme = (key: string) => page.locator(`[data-sound="${key}"][role="radio"]`);
+  await expect(theme("blocks")).toHaveAttribute("aria-checked", "true");
+  for (const key of ["chime", "arcade", "off"])
+    await expect(theme(key)).toHaveAttribute("aria-checked", "false");
+  await expect(page.locator('[data-setting="volume"]')).toBeVisible();
+
+  // picking a theme plays its sample
+  await theme("chime").click();
+  await expect(theme("chime")).toHaveAttribute("aria-checked", "true");
+  await expect(theme("blocks")).toHaveAttribute("aria-checked", "false");
+  expect(await oscillators(page)).toBeGreaterThan(0);
+
+  // Off: no volume to set, and it stays off
+  await theme("off").click();
+  await expect(page.locator('[data-setting="volume"]')).toBeHidden();
+  await page.reload();
+  await expect(theme("off")).toHaveAttribute("aria-checked", "true");
+
+  await page.goto("/?level=squares");
+  await dropOneSquare(page);
+  await page.goto("/?level=cairo");
+  await page.locator('[data-turn="1"]').click();
+  expect(await oscillators(page)).toBe(0);
+});
+
+declare global {
+  interface Window {
+    __pans?: number[];
+  }
+}
+
+test("a tile is heard from the side of the screen it lands on", async ({ page }) => {
+  // A phone, where the board is centred: the pan is where the tile is across
+  // the whole screen, so beside a desktop's tray the board sits left of it.
+  await page.setViewportSize(PHONE);
+  // Every stereo panner's opening position, in the order they are made.
+  await page.addInitScript(() => {
+    window.__pans = [];
+    const Ctor = window.AudioContext;
+    if (!Ctor) return;
+    const original = Ctor.prototype.createStereoPanner;
+    Ctor.prototype.createStereoPanner = function (this: AudioContext) {
+      const node = original.call(this);
+      const set = node.pan.setValueAtTime.bind(node.pan);
+      node.pan.setValueAtTime = (value: number, time: number) => {
+        window.__pans!.push(value);
+        return set(value, time);
+      };
+      return node;
+    };
+  });
+  const lastPan = (): Promise<number> => page.evaluate(() => window.__pans!.at(-1)!);
+  const dropAt = async (corner: "left" | "right"): Promise<void> => {
+    await page.goto("/?level=squares");
+    const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+    const r = (await page.locator("svg.board path.region").boundingBox())!;
+    const x = corner === "left" ? r.x + t.width / 2 : r.x + r.width - t.width / 2;
+    await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, r.y + r.height - t.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+  };
+  await dropAt("left");
+  expect(await lastPan()).toBeLessThan(-0.4);
+  await dropAt("right");
+  expect(await lastPan()).toBeGreaterThan(0.4);
+});

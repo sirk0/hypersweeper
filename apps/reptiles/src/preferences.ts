@@ -4,7 +4,9 @@
 // unreadable record reads as the defaults.
 
 import { readObject, storage } from "@tiling/platform";
+import { clampVolume, DEFAULT_VOLUME, SOUND_OFF, SOUND_PRESETS } from "@tiling/sound";
 import { isScheme, type SchemePref } from "./scheme";
+import { DEFAULT_THEME } from "./sound";
 
 const KEY = "rep-tiles.settings";
 
@@ -16,9 +18,30 @@ export interface Preferences {
   tilingPastBoard: boolean;
   /** The colour scheme (src/scheme.ts): Auto follows the device. */
   scheme: SchemePref;
+  /** The sound theme (src/sound.ts): a preset of the shared synthesiser —
+   * Chime, Arcade or Blocks, Hypersweeper's three — or `off`. Blocks unless
+   * the player picks another. */
+  sound: string;
+  /** How loud it plays, 0..1. */
+  volume: number;
 }
 
-const DEFAULTS: Preferences = { tilingPastBoard: false, scheme: "auto" };
+const DEFAULTS: Preferences = {
+  tilingPastBoard: false,
+  scheme: "auto",
+  sound: DEFAULT_THEME,
+  volume: DEFAULT_VOLUME,
+};
+
+/** A stored theme, or the default for anything this build does not know. An
+ * on/off switch came before the themes: off stays off. */
+function soundOf(stored: unknown): string {
+  if (stored === false) return SOUND_OFF;
+  if (stored === SOUND_OFF) return SOUND_OFF;
+  return typeof stored === "string" && Object.hasOwn(SOUND_PRESETS, stored)
+    ? stored
+    : DEFAULTS.sound;
+}
 
 function load(): Preferences {
   const stored = readObject(KEY);
@@ -28,6 +51,9 @@ function load(): Preferences {
         ? stored["tilingPastBoard"]
         : DEFAULTS.tilingPastBoard,
     scheme: isScheme(stored?.["scheme"]) ? stored["scheme"] : DEFAULTS.scheme,
+    sound: soundOf(stored?.["sound"]),
+    volume:
+      typeof stored?.["volume"] === "number" ? clampVolume(stored["volume"]) : DEFAULTS.volume,
   };
 }
 

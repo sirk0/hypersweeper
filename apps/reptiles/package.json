@@ -25,7 +25,8 @@
   "dependencies": {
     "@tiling/data": "*",
     "@tiling/geometry": "*",
-    "@tiling/platform": "*"
+    "@tiling/platform": "*",
+    "@tiling/sound": "*"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

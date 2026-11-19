@@ -1,5 +1,5 @@
 // The settings screen: the player's choices (src/preferences.ts) — the colour
-// scheme, then the board — then what this build is, whether a newer one is
+// scheme, the sound theme and its volume, then the board — then what this build is, whether a newer one is
 // deployed, and the privacy policy. The check itself is the shared one (`@tiling/platform`'s
 // update.ts, Hypersweeper's too): it asks the server's `version.json`, not the
 // service worker, and only then gets the worker onto the new build. A packaged
@@ -9,7 +9,15 @@
 // settings there hand no URL to the system browser.
 
 import { checkForUpdate, loadDeployedBuild } from "@tiling/platform";
+import {
+  SOUND_CHOICES,
+  SOUND_OFF,
+  SOUND_PRESETS,
+  swatchLevels,
+  type SoundPreset,
+} from "@tiling/sound";
 import { preferences, setPreferences, type Preferences } from "../preferences";
+import { applySound, playSound, THEME_HINTS } from "../sound";
 import { deviceScheme, SCHEME_LABELS, SCHEMES, type SchemePref } from "../scheme";
 
 /** This build: the package version, and the short commit on a CI build. */
@@ -37,6 +45,10 @@ export function renderSettings(
     ),
   );
   host.append(lookHeading, lookList);
+
+  const soundHeading = document.createElement("h2");
+  soundHeading.textContent = "Sound";
+  host.append(soundHeading, soundList(changed));
 
   const boardHeading = document.createElement("h2");
   boardHeading.textContent = "Board";
@@ -97,6 +109,109 @@ export function renderSettings(
     list.append(item(policy));
   }
   host.append(heading, list);
+}
+
+/** The sound themes — Hypersweeper's three presets, then Off — each a row
+ * with its swatch, the one in force ticked; and under them, while one is on,
+ * the volume. Picking a theme plays it (and the click that picks it is the
+ * gesture a browser lets audio start on); the slider is heard as it is
+ * dragged, and kept, with a sample, when it is let go. */
+function soundList(changed: (now: Preferences) => void): HTMLElement {
+  const list = document.createElement("ul");
+  list.className = "settings-list";
+  list.setAttribute("role", "radiogroup");
+  list.setAttribute("aria-label", "Sound");
+  const rows = SOUND_CHOICES.map((key) => {
+    const preset = SOUND_PRESETS[key] ?? null;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "settings-row settings-sound";
+    button.setAttribute("role", "radio");
+    button.dataset["sound"] = key;
+    const { block, hint } = textBlock(preset?.label ?? "Off");
+    hint.textContent = THEME_HINTS[key] ?? preset?.hint ?? "";
+    hint.removeAttribute("aria-live");
+    const check = document.createElement("span");
+    check.className = "settings-check";
+    check.setAttribute("aria-hidden", "true");
+    button.append(swatch(key, preset), block, check);
+    button.addEventListener("click", () => {
+      setPreferences({ sound: key });
+      applySound(key, preferences().volume);
+      show();
+      playSound({ kind: "preview" });
+      changed(preferences());
+    });
+    list.append(item(button));
+    return button;
+  });
+
+  const volume = volumeRow((level, keep) => {
+    applySound(preferences().sound, level);
+    if (!keep) return;
+    setPreferences({ volume: level });
+    playSound({ kind: "preview" });
+    changed(preferences());
+  });
+  const volumeItem = item(volume);
+  list.append(volumeItem);
+
+  const show = (): void => {
+    const picked = preferences().sound;
+    for (const row of rows) {
+      const on = row.dataset["sound"] === picked;
+      row.setAttribute("aria-checked", String(on));
+      row.querySelector(".settings-check")!.textContent = on ? "✓" : "";
+    }
+    // Off has no level to set.
+    volumeItem.hidden = picked === SOUND_OFF;
+  };
+  show();
+  return list;
+}
+
+/** A theme's voice in miniature: a bar per partial, as loud as that partial
+ * (`swatchLevels`, the same picture Hypersweeper's settings draw). */
+function swatch(key: string, preset: SoundPreset | null): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "sound-swatch";
+  el.dataset["sound"] = key;
+  el.setAttribute("aria-hidden", "true");
+  for (const amp of swatchLevels(preset)) {
+    const bar = document.createElement("span");
+    bar.className = "sound-swatch-bar";
+    bar.style.height = `${Math.round(12 + 88 * amp)}%`;
+    el.append(bar);
+  }
+  return el;
+}
+
+/** The volume: a slider, 0–100%. `set(level, keep)` hears it as it is
+ * dragged (`keep` false) and once more when it is let go (`keep` true). */
+function volumeRow(set: (level: number, keep: boolean) => void): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "settings-row";
+  const { block, hint } = textBlock("Volume");
+  const percent = (level: number): string => `${Math.round(level * 100)}%`;
+  hint.textContent = percent(preferences().volume);
+  hint.removeAttribute("aria-live");
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.className = "settings-range";
+  slider.min = "0";
+  slider.max = "100";
+  slider.step = "5";
+  slider.value = String(Math.round(preferences().volume * 100));
+  slider.dataset["setting"] = "volume";
+  slider.setAttribute("aria-label", "Volume");
+  const level = (): number => Number(slider.value) / 100;
+  slider.addEventListener("input", () => {
+    hint.textContent = percent(level());
+    set(level(), false);
+  });
+  slider.addEventListener("change", () => set(level(), true));
+  row.append(block, slider);
+  return row;
 }
 
 /** The colour scheme: Auto, Light and Dark side by side, the one in force

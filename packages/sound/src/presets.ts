@@ -1,12 +1,13 @@
-// What the game sounds like — a table of numbers rather than a folder of audio
-// files. Every sound is synthesised at play time (audio/sound.ts), for the same
+// What the games sound like — a table of numbers rather than a folder of audio
+// files. Every sound is synthesised at play time (engine.ts), for the same
 // reason the menu icons are drawn from paths and the boards from lattices: a
 // sound here is *parametric*. A cell's voice is derived from how many sides it
 // has, a flood fill's cascade from how far the flood spread, a Klein scroll's
 // glide from which way it went — none of which a set of recorded clips could
 // carry without one file per case.
 //
-// A preset is one entry in this table, in the shape of `render/cellStyle.ts`:
+// A preset is one entry in this table, in the shape of Hypersweeper's
+// `render/cellStyle.ts`:
 // a stack of plain numbers the engine reads, so adding a fourth character is a
 // row here rather than a change in the engine. `off` is not an entry — it is
 // the absence of one (`soundPreset` returns null), so a silenced game never
@@ -15,6 +16,9 @@
 // These stay in TypeScript rather than in `data/ui/screens.json`: that file is
 // the config the pygame front-end shares, and sound is web-only (the pygame
 // build is deliberately silent). Cell styles live in TS for the same reason.
+// The knobs are named for Hypersweeper's events (open, flag, win…), which
+// were the first to use them; Rep-tiles voices its own through the same
+// figures (figures.ts), so a preset sounds alike in both games.
 
 /** How a cell's tone is built. A voice is one oscillator running a periodic
  * wave of `partials` harmonics, where the partial count is the cell's own side
@@ -65,7 +69,7 @@ export interface SoundPreset {
   rootHz: number;
   /** The preset's pitch collection: one octave of semitone offsets below
    * `rootHz`, descending from 0, repeating every 12 semitones in both
-   * directions (`gridNote` in audio/sound.ts). Every note the preset can play
+   * directions (`gridNote` in engine.ts). Every note the preset can play
    * is a member — the shapes, the cascade's rise and the win flourish all
    * land on it — which is what keeps simultaneous voices consonant however
    * they are combined. All three are anhemitonic pentatonics: no semitone, no
@@ -97,8 +101,9 @@ export interface SoundPreset {
      * arriving together. */
     step: number;
     /** Most grains one flood may schedule. A 500-cell flood is thinned to
-     * this many across its whole spread (audio/sound.ts `thin`), so the wave
-     * keeps its shape instead of turning into a wall of voices. */
+     * this many across its whole spread (`thin` in Hypersweeper's
+     * audio/sound.ts), so the wave keeps its shape instead of turning into a
+     * wall of voices. */
     maxVoices: number;
     /** Degrees of `grid` the wave rises per ring, rounded to a whole degree
      * and capped at an octave. Without it a flood on a board of one tile

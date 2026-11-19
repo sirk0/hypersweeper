@@ -1,0 +1,23 @@
+{
+  "name": "@tiling/sound",
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "The games' synthesiser: sound presets as tables of numbers, the figures a game's events are voiced as, and a Web Audio player that starts on the first gesture. No audio files.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

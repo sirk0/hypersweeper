@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import presets from "@tiling/data/presets.json";
 import { buildBoard } from "../../src/modes/presets";
 import { cellSides } from "../../src/render/shapePalette";
-import { SOUND_PRESETS, type SoundPreset } from "../../src/audio/presets";
+import { SOUND_PRESETS, type SoundPreset } from "@tiling/sound";
 import { gridNote, noteFor, voicesFor, type CellSound } from "../../src/audio/sound";
 
 // What a board sounds like when several of its cells open at once. A move can
