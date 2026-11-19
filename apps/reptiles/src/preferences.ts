@@ -4,6 +4,7 @@
 // unreadable record reads as the defaults.
 
 import { readObject, storage } from "@tiling/platform";
+import { isScheme, type SchemePref } from "./scheme";
 
 const KEY = "rep-tiles.settings";
 
@@ -13,9 +14,11 @@ export interface Preferences {
    * (src/extension.ts, `SvgBoard.showBeyond`). Off unless the player turns it
    * on. */
   tilingPastBoard: boolean;
+  /** The colour scheme (src/scheme.ts): Auto follows the device. */
+  scheme: SchemePref;
 }
 
-const DEFAULTS: Preferences = { tilingPastBoard: false };
+const DEFAULTS: Preferences = { tilingPastBoard: false, scheme: "auto" };
 
 function load(): Preferences {
   const stored = readObject(KEY);
@@ -24,6 +27,7 @@ function load(): Preferences {
       typeof stored?.["tilingPastBoard"] === "boolean"
         ? stored["tilingPastBoard"]
         : DEFAULTS.tilingPastBoard,
+    scheme: isScheme(stored?.["scheme"]) ? stored["scheme"] : DEFAULTS.scheme,
   };
 }
 

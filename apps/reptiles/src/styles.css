@@ -112,8 +112,13 @@
   --tray-shadow: rgba(64, 35, 16, 0.16);
 }
 
+/* The dark scheme, laid over the light one twice with the same declarations
+   (src/scheme.ts): on Auto, where the device asks for dark — and on the first
+   frame, before the stored choice is read — and wherever the player picked
+   Dark in Settings. CSS cannot join a media query and a selector in one rule;
+   tests/unit/scheme.test.ts holds the two lists equal, so change both. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-scheme="light"]) {
     color-scheme: dark;
     --page: #191712;
     --page-texture:
@@ -173,6 +178,67 @@
     --tray-shadow: rgba(0, 0, 0, 0.45);
     --scrim: rgba(0, 0, 0, 0.55);
   }
+}
+
+:root[data-scheme="dark"] {
+  color-scheme: dark;
+  --page: #191712;
+  --page-texture:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%),
+    radial-gradient(140% 110% at 50% 100%, #00000088 0%, #00000000 60%);
+  --panel: #2e2b25;
+  --ink: #f9f4ed;
+  --muted: #a19786;
+  --accent: #f6a06b;
+  --on-accent: #2e2b25;
+  --selected: #8c491a55;
+  --border: #474238;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  --region: #2a2721;
+  --region-edge: #8b8374;
+  --open: #b394ff;
+  --tile-3: #c9665a;
+  --tile-3-edge: #f4b8ae;
+  --tile-4: #d0904a;
+  --tile-4-edge: #f6cf9c;
+  --tile-5: #c2a743;
+  --tile-5-edge: #f1e1a6;
+  --tile-6: #6f9f5c;
+  --tile-6-edge: #c3e2b4;
+  --tile-7: #5f9e78;
+  --tile-7-edge: #bae1c7;
+  --tile-8: #4f9c94;
+  --tile-8-edge: #b2e0da;
+  --tile-12: #5f8db8;
+  --tile-12-edge: #b8d4ee;
+  --tile-13: #987bae;
+  --tile-13-edge: #dac8e8;
+  --tile-twin: #b8708c;
+  --tile-twin-edge: #f2c0d2;
+  --tile-pieces: #7c859a;
+  --tile-pieces-edge: #d3d9e6;
+  --paint-0: #c9665a;
+  --paint-0-edge: #f4b8ae;
+  --paint-1: #5f8db8;
+  --paint-1-edge: #b8d4ee;
+  --paint-2: #c2a743;
+  --paint-2-edge: #f1e1a6;
+  --paint-3: #6f9f5c;
+  --paint-3-edge: #c3e2b4;
+  --decor-line: #f9f4ed;
+  --stick: #b394ff;
+  --stick-ring: #1d1c1a;
+  --star: #f2c14e;
+  --fits: #3fb96f;
+  --hint: #5fd68c;
+  --hint-fill: rgba(95, 214, 140, 0.2);
+  --remove: #d0574d;
+  --remove-edge: #ffb3ab;
+  --tray-strip: #2e2b25;
+  --tray-plate: #3a362f;
+  --tray-shadow: rgba(0, 0, 0, 0.45);
+  --scrim: rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -1551,6 +1617,76 @@ button.settings-row:active {
   left: var(--hud-pad);
 }
 
+/* How to play, the gear's partner in the top-right corner. */
+.home-help {
+  position: absolute;
+  top: max(var(--hud-pad), env(safe-area-inset-top));
+  right: var(--hud-pad);
+}
+
+/* The colour scheme: Auto, Light and Dark as one segmented pill, the one in
+   force in the accent, as a switch is when on. */
+.settings-choice {
+  flex: none;
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.settings-choice button {
+  min-height: 0;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.settings-choice button[aria-checked="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* A link row (the privacy policy) reads as the buttons beside it. */
+a.settings-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.settings-row:active {
+  background: var(--selected);
+}
+
+/* How to play: a row's name over its text, the keys as key caps. */
+.help-label {
+  font-weight: 600;
+}
+
+.help-list .settings-hint {
+  line-height: 1.45;
+}
+
+.help-list kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.35em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
 /* The win card's ✕, in its top-right corner: closes it to look at the board. */
 .won-close {
   position: absolute;
@@ -1810,6 +1946,7 @@ button.settings-row:active {
   }
 
   .home > .home-settings,
+  .home > .home-help,
   .home-title,
   .home-sub,
   .home-more {

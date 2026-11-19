@@ -7,9 +7,14 @@ name: Bump version
 #
 #   - Hypersweeper (pyproject.toml + apps/hypersweeper/package.json, which share
 #     a version with the pygame build): every push, as it always has been.
+#   - A game whose packaging.json says "sharedVersion": true (Rep-tiles): it
+#     has Hypersweeper's version, so bump_version.py --hypersweeper writes the
+#     same number into its package.json, on every push, and it is never bumped
+#     on its own.
 #   - Every other game (apps/<game>/package.json — the games are listed from
-#     their packaging.json files by scripts/games.mjs): a push that changed what
-#     ships in it — its own folder, the packages it is built from, or data/.
+#     their packaging.json files by `scripts/games.mjs own-version`): a push
+#     that changed what ships in it — its own folder, the packages it is built
+#     from, or data/.
 #
 # Either is skipped when the push set that game's version itself (a minor or
 # major release written by hand), so it lands as written rather than one patch
@@ -53,7 +58,7 @@ jobs:
 
           others=()
           if changed=$(git diff --name-only "$BEFORE" HEAD 2>/dev/null); then
-            for game in $(node scripts/games.mjs others); do
+            for game in $(node scripts/games.mjs own-version); do
               grep -qE "^(apps/$game/|packages/|data/)" <<<"$changed" || continue
               old=$(git show "$BEFORE:apps/$game/package.json" 2>/dev/null | pkgver || true)
               new=$(pkgver < "apps/$game/package.json")

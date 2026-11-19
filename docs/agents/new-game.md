@@ -93,7 +93,7 @@ with both games importing it.
 | CI `template-check` | scaffolds a throwaway game on every change and runs all of the above on it, so the template stays working |
 | `deploy-cloudflare.yml` | on every push to `master`, builds and publishes it to `<key>.pages.dev` |
 | `pr-preview.yml` | `https://pr-<n>.<key>.pages.dev` per pull request, with its own sticky comment |
-| `bump-version.yml` | bumps its patch version on a push that changes its folder, `packages/` or `data/`. Its first push lands at its own version, 0.1.0 |
+| `bump-version.yml` | bumps its patch version on a push that changes its folder, `packages/` or `data/`. Its first push lands at its own version, 0.1.0. With `"sharedVersion": true` in its `packaging.json` (as Rep-tiles has) it has Hypersweeper's version instead, written into its `package.json` on every Hypersweeper bump (`scripts/bump_version.py`), and set it to Hypersweeper's to start |
 | `make desktop-run GAME=<key>`, `make mac-app GAME=<key>` | the offline desktop app (`shells/desktop/README.md`) |
 
 The game's own iPhone app is a separate recipe ("A second game's iPhone app"
