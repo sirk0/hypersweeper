@@ -31,6 +31,7 @@ import {
   shiftLoops,
   type Loop,
 } from "./curve";
+import type { TilingExtension } from "../geometry/extension";
 import type { Puzzle } from "../puzzle";
 import { decorParts, markUnit, type MarkUnit } from "./decor";
 
@@ -115,6 +116,15 @@ const TRAY_PAD_SHARE = 0.08;
 const KNOB_PAD = 0.25;
 /** How far in the board zooms, from fitted. */
 export const MAX_ZOOM = 4;
+/** How far out a finished board zooms, to see the tiling round it
+ * (`showBeyond`): to a third of the fit at most — less where the tiles would
+ * shrink under `MIN_TILE_PX` across, or the view would run past where the
+ * tiling is known. */
+export const WON_MIN_ZOOM = 1 / 3;
+const MIN_TILE_PX = 14;
+/** How much further than the view needs the outlines round a finished board
+ * are drawn, so a zoom or a pan does not redraw them every step. */
+const BEYOND_HEADROOM = 1.4;
 /** The most of the screen's height (portrait) or width (landscape) the tray
  * strip grows to as the board zooms in: past it, the shelf stops growing. */
 const TRAY_SHARE = 0.45;
@@ -253,6 +263,12 @@ export class SvgBoard {
    * the room the tray leaves (null: the board's own middle). */
   private zoom = 1;
   private centre: XY | null = null;
+  /** A finished board's tiling, carried on past its edge as outlines
+   * (`showBeyond`), its path, and how far round the board that path reaches. */
+  private beyond: { ext: TilingExtension; mid: XY; path: SVGPathElement; covered: number } | null =
+    null;
+  /** The world's scale at zoom 1, from the last framing. */
+  private fitScale = 1;
   /** Pixels per board unit for the world, the shelf and the controls; the
    * room the board is framed in, the tray strip, and the shelf's room on it. */
   private scale = 1;
@@ -617,8 +633,10 @@ export class SvgBoard {
     const m = this.measures(width, height, this.shelfBox);
     const { land, length, knobsW, knobsH } = m;
     this.knobScale = m.knobScale;
-    this.scale = this.fit(width, height, this.shelfBox) * this.zoom;
-    this.shelfScale = Math.min(this.scale, m.cap);
+    this.fitScale = this.fit(width, height, this.shelfBox);
+    this.scale = this.fitScale * this.zoom;
+    // zoomed out (a finished board), the tray stays its fitted size
+    this.shelfScale = Math.min(this.fitScale * Math.max(1, this.zoom), m.cap);
     const ss = this.shelfScale;
     const thick = ss * m.shelfAcross;
     // on a desktop, the card's gap all round, inside the strip
@@ -694,10 +712,11 @@ export class SvgBoard {
   }
 
   /** The camera's middle, held where the board can still fill the room: the
-   * board's own middle at zoom 1, and within reach of its edges zoomed in. */
+   * board's own middle at zoom 1, and within reach of its edges zoomed in —
+   * zoomed out (a finished board), as far as keeps the board in the room. */
   private clamp([cx, cy]: XY): XY {
     const [x0, y0, x1, y1] = this.regionBox;
-    const slack = 1 - 1 / this.zoom;
+    const slack = Math.abs(1 - 1 / this.zoom);
     const hx = ((x1 - x0) / 2 + MARGIN) * slack;
     const hy = ((y1 - y0) / 2 + MARGIN) * slack;
     const mx = (x0 + x1) / 2;
@@ -729,6 +748,7 @@ export class SvgBoard {
     const world = `matrix(${this.scale},0,0,${-this.scale},${tx},${ty})`;
     this.still.setAttribute("transform", world);
     this.moving.setAttribute("transform", world);
+    this.coverBeyond(width, height);
     const [z0, w0, z1, w1] = this.card;
     const rx = this.cardGap > 0 ? CARD_RADIUS : 0;
     for (const [k, v] of Object.entries({ x: z0, y: w0, width: z1 - z0, height: w1 - w0, rx }))
@@ -755,9 +775,70 @@ export class SvgBoard {
     );
   }
 
+  /** Carry the finished board's tiling on past its edge, as outlines out to
+   * the edges of the screen under the region and its tiles, and let the board
+   * zoom out past the fit to see more of it — or, with null, take them away
+   * again (a tile lifted off), back to the fit if zoomed out. `ext` is in board
+   * units, about `mid` (src/extension.ts). */
+  showBeyond(ext: TilingExtension | null, mid: XY = [0, 0]): void {
+    this.beyond?.path.remove();
+    this.beyond = ext
+      ? { ext, mid, path: el("path", { class: "beyond", "data-beyond": "" }), covered: 0 }
+      : null;
+    if (!ext && this.zoom < 1) this.zoom = 1;
+    this.place();
+    this.draw();
+  }
+
+  /** Whether the board shows its tiling past its edge. */
+  get extended(): boolean {
+    return this.beyond !== null;
+  }
+
+  /** The furthest the board zooms out: the fit, or on a finished board
+   * showing its tiling as far as `WON_MIN_ZOOM` allows (see there). */
+  private get minZoom(): number {
+    const beyond = this.beyond;
+    if (!beyond) return 1;
+    const { width, height } = this.svg.getBoundingClientRect();
+    const tiles = MIN_TILE_PX / (2 * beyond.ext.tile * this.fitScale);
+    // the view's half-diagonal, in board units at zoom z, is |(w, h)| / 2 s z;
+    // a little over it, so only a view slid to the edge of the pan sees the
+    // patch run out
+    const reach = (0.6 * Math.hypot(width, height)) / (this.fitScale * beyond.ext.reach);
+    return Math.min(1, Math.max(WON_MIN_ZOOM, tiles, reach));
+  }
+
+  /** Make sure the outlines reach every corner of the screen. */
+  private coverBeyond(width: number, height: number): void {
+    const beyond = this.beyond;
+    if (!beyond) return;
+    const [mx, my] = beyond.mid;
+    let need = 0;
+    for (const corner of [
+      [0, 0],
+      [width, 0],
+      [0, height],
+      [width, height],
+    ] as XY[]) {
+      const [x, y] = this.screenToWorld(corner);
+      need = Math.max(need, Math.hypot(x - mx, y - my));
+    }
+    need = Math.min(need, beyond.ext.reach);
+    if (need <= beyond.covered) return;
+    const r = Math.min(need * BEYOND_HEADROOM, beyond.ext.reach);
+    const f = (v: number): string => (Math.round(v * 1000) / 1000).toString();
+    const d = beyond.ext
+      .cells(r)
+      .map((poly) => `M${poly.map(([x, y]) => `${f(x)},${f(y)}`).join("L")}Z`)
+      .join("");
+    beyond.path.setAttribute("d", d);
+    beyond.covered = r;
+  }
+
   /** Zoom by `factor` about a client point, which stays put on the board. */
   zoomAt(factor: number, clientX: number, clientY: number): void {
-    const zoom = Math.min(MAX_ZOOM, Math.max(1, this.zoom * factor));
+    const zoom = Math.min(MAX_ZOOM, Math.max(this.minZoom, this.zoom * factor));
     if (zoom === this.zoom) return;
     const p = this.toBoard(clientX, clientY);
     const r = this.svg.getBoundingClientRect();
@@ -787,6 +868,8 @@ export class SvgBoard {
   draw(): void {
     const { ring, region, regionCurves } = this.puzzle.level;
     this.still.replaceChildren();
+    // the tiling past a finished board, under everything on it
+    if (this.beyond) this.still.appendChild(this.beyond.path);
     const d = region
       .map((loop, i) =>
         outlinePath(

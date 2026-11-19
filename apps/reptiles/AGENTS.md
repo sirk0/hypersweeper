@@ -333,8 +333,9 @@ marking is not laid on is dimmed, as is a marking not laid on the picked
 board; picking one picks what goes with it (a board it is laid on, or the
 plain tiles). The page keeps its pick in its URL (`&pick=<level>`), so Back
 from a level comes back to it. The gear in home's top-left
-corner (Hypersweeper's icon) opens Settings (`?settings`), which shows the
-version and checks for updates (the shared check in `@tiling/platform`; left
+corner (Hypersweeper's icon) opens Settings (`?settings`), which has the
+player's one choice — the tiling past a finished board, a switch, off by
+default (below) — then shows the version and checks for updates (the shared check in `@tiling/platform`; left
 out of a packaged build). Levels are picked in
 Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
 home and back, then (no clock: the time taken is on the win card) the hint, restart,
@@ -347,6 +348,21 @@ the same difficulty, dealt at random as the die deals), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
 outside it). Each move
 is a history entry, so the browser's Back works.
+
+**The tiling past a finished board** — a setting, off by default (Settings ›
+Board, `src/preferences.ts`). With it on, once the region is covered, the
+tiling the level was cut from is carried on round it as faint outlines (`path.beyond`,
+`--muted`, a 1px non-scaling hairline under the region — nothing filled,
+nothing to tap) out to the edges of the screen, fading in, and the board may
+then be zoomed out past the fit to see more of it: to `WON_MIN_ZOOM` (a
+third), held up where its tiles would be under `MIN_TILE_PX` across or the view
+would outrun how far the tiling is known; the tray keeps its fitted size.
+Taking a tile off takes them away and fits the board again. Where the tiling
+comes from is `src/extension.ts`, below. Three levels' boards have none
+(pentagon13 and pentagon15, whose windows sit in no wider window, and the
+right-angled fish, which grows once only and shows no period), and the round
+Spectre's outlines are its corners joined straight. `smoke.spec.ts` ("the win
+card's Exit…" with it off, "with its setting on…") pins it.
 
 **The desktop** — from 900px wide and 501px tall, or a tablet held upright
 (720 × 800): Hypersweeper's own query (`WIDE_QUERY` in
@@ -992,6 +1008,31 @@ quick way to see the win state.
   posts the board after every move, the worker builds the level from its
   key and keeps its solver while the level stays; where a worker cannot
   start, the same search runs on the page in slices.
+- `src/extension.ts`, `src/extension.worker.ts` — a finished level's tiling
+  carried on past its edge, when the setting is on. A periodic level is
+  carried on from its own tiles by their measured lattice, or, its window too
+  small to hold a whole period, off a window three times as wide
+  (`periodicContext`, found round the level by `placeIn` wherever its board
+  was cut). The rest are found in bigger patches their own builders grow — the
+  whole patch an aperiodic or hat window was cut from and deeper ones, more
+  spiral rings, more inflations — by a similarity, the copy with the most
+  patch round it kept. A rep-tile is tried as periodic first (most are cut
+  from a lattice). A marked level is its plain level's board (`decor.of`). It
+  runs in a worker (the deeper patches take a second or two to build exactly
+  on a phone), which builds the level from its key and sends the tiles back;
+  `tests/unit/extension.test.ts` holds each kind of level to it.
+- `src/geometry/extension.ts` — the geometry under it, in floats (render-only:
+  nothing is placed or keyed by it, so the exact-identity rule does not reach
+  it): `latticeOf` measures a patch's periods (a translation is one when every
+  tile lands on a tile of the same shape or off the patch, never on a
+  different tile), `periodicExtension` lays one tile of each translation class
+  out again (and refuses a patch whose classes do not add up to one period's
+  area), `placeIn` finds a board in a bigger patch by a similarity, walking
+  each candidate tile's corners both ways, mirrored or not, and
+  `grownExtension` keeps the first patch that reaches far enough.
+  `tests/unit/tilingExtension.test.ts` tests it on Hypersweeper's boards.
+- `src/preferences.ts` — the player's choices from Settings (one so far), in
+  `localStorage` through the shared guard, defaults where it is unreadable.
 - `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
   the game works without it; the old finished-levels list reads as one star
   each).

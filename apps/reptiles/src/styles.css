@@ -394,6 +394,27 @@ button.primary {
   stroke-linejoin: round;
 }
 
+/* The tiling past a finished board (src/extension.ts): its tiles' outlines,
+   faint, out to the screen's edges under the region — nothing filled, nothing
+   to tap. They come in once the board is finished. */
+.beyond {
+  fill: none;
+  stroke: var(--muted);
+  /* a hairline at every zoom and on every tiling, whatever its units */
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  opacity: 0.55;
+  pointer-events: none;
+  animation: beyond-in 0.9s ease-out;
+}
+
+@keyframes beyond-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .open {
   fill: none;
   stroke: var(--open);
@@ -804,6 +825,7 @@ button.primary {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .beyond,
   .hint-ghost,
   .hint-off,
   .knob.hinted .knob-face,
@@ -1459,6 +1481,39 @@ button.settings-row:active {
 .settings-value {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* A setting's on/off switch: a pill whose knob slides across, in the accent
+   while on. */
+.settings-switch {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.15s;
+}
+
+.settings-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s;
+}
+
+[aria-checked="true"] > .settings-switch {
+  background: var(--accent);
+}
+
+[aria-checked="true"] > .settings-switch::after {
+  transform: translateX(18px);
 }
 
 /* The settings gear in the home screen's top-left corner, drawn like
