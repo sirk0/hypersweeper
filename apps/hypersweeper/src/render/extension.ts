@@ -4,7 +4,7 @@
 // was one window onto a tiling that goes on. Nothing out there is coloured or
 // can be tapped — the board stays the only thing with tiles on it.
 //
-// The tiles come from modes/extension.ts (`BoardExtension`), in the board's
+// The tiles come from modes/extension.ts (`TilingExtension`), in the board's
 // pixel space; this lays them out in the flat board's mesh space ([x - w/2,
 // h/2 - y], as polygonBoard.ts does), as a child of the board so they turn with
 // it on a portrait screen. Only what the view can reach is built (`cover`), and
@@ -20,7 +20,7 @@ import { Color, LessDepth } from "three";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
-import type { BoardExtension } from "../modes/extension";
+import type { TilingExtension } from "@tiling/geometry";
 
 /** How opaque the outlines end up, over the page. Faint on purpose: they are
  * the board's surroundings, not more board. */
@@ -41,7 +41,7 @@ export class TilingOutline extends LineSegments2 {
   declare material: LineMaterial;
 
   constructor(
-    private readonly extension: BoardExtension,
+    private readonly extension: TilingExtension,
     private readonly width: number,
     private readonly height: number,
     color: string,

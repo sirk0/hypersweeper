@@ -18,9 +18,8 @@ import {
   type Texture,
 } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import type { CellId } from "@tiling/geometry";
+import type { CellId, TilingExtension } from "@tiling/geometry";
 import { SOLID_GROUPS, surfaceOf, viewHint } from "../modes/catalog";
-import type { BoardExtension } from "../modes/extension";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
 import { TilingOutline } from "./extension";
 import { halfPlaneDrag } from "./halfPlane";
@@ -294,7 +293,7 @@ export class BoardRenderer {
    * fading in over the page, and let the view zoom out past the fit to see
    * more of it — what a won board gets. `extension` is in the board's own
    * pixel space (modes/extension.ts). */
-  showExtension(extension: BoardExtension, animate: boolean): void {
+  showExtension(extension: TilingExtension, animate: boolean): void {
     const view = this.board?.view;
     if (!this.board || view?.kind !== "flat" || this.board.discPans || this.board.halfPlane) {
       return;

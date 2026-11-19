@@ -218,3 +218,15 @@ export {
   type ClipPiece,
   type Tri,
 } from "./clipSolid";
+
+// A finished board's tiling carried on past its edge, for the outlines a game
+// draws round it.
+export {
+  grownExtension,
+  latticeOf,
+  listedExtension,
+  patchExtension,
+  periodicExtension,
+  placeIn,
+  type TilingExtension,
+} from "./extension";

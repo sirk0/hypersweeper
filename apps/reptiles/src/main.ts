@@ -1,5 +1,6 @@
 import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
+import { findExtension, levelMid } from "./extension";
 import { attachDrag, type DragControl } from "./input/drag";
 import type { Laid } from "./hint";
 import { Hinter } from "./hintClient";
@@ -257,6 +258,10 @@ interface Session {
   /** The tiles down when the hint was last asked for, by id — a hint on show
    * goes once they change. */
   laidKey: string;
+  /** The tiling round the finished board has been asked for (src/extension.ts):
+   * once a finish, again only after a tile is taken off and it is finished
+   * anew. */
+  extending: boolean;
 }
 
 let session: Session | null = null;
@@ -292,7 +297,13 @@ function changed(): void {
   count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
   if (!puzzle.won) s.dismissed = false;
   won.hidden = !puzzle.won || s.dismissed;
-  if (!puzzle.won) return;
+  if (!puzzle.won) {
+    // a tile taken off a finished board: the tiling round it goes with it
+    s.extending = false;
+    if (s.board.extended) s.board.showBeyond(null);
+    return;
+  }
+  extendTiling(s);
   if (s.finished === null) s.finished = performance.now();
   s.control.setRemoving(false);
   const seconds = elapsed(s);
@@ -342,6 +353,7 @@ function open(level: Level, push = true): void {
     hints: 0,
     // not the empty board's, so `changed` starts on its hint
     laidKey: "-",
+    extending: false,
   };
   setThinking(false);
   const name = byId("level");
@@ -378,6 +390,21 @@ async function showHint(): Promise<void> {
   if (!s.board.hint) s.hints++;
   s.board.hint = hint;
   s.board.draw();
+}
+
+/** Carry a finished board's tiling on past its edge, as outlines out to the
+ * screen's edges, and let it zoom out past the fit (`SvgBoard.showBeyond`).
+ * Worked out off the page (src/extension.ts), so it arrives a moment after
+ * the win — and only if the board is still on screen, and still finished. */
+function extendTiling(s: Session): void {
+  if (s.extending) return;
+  s.extending = true;
+  const { level } = s.puzzle;
+  void findExtension(level).then((ext) => {
+    if (ext && session === s && s.extending && s.puzzle.won) {
+      s.board.showBeyond(ext, levelMid(level));
+    }
+  });
 }
 
 /** Close the win card and look at the finished board. */

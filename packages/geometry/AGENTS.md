@@ -9,6 +9,10 @@ Hypersweeper (`apps/hypersweeper`) plays minesweeper on them, and Rep-tiles
 the aperiodic windows, and the hat's patch (`hat.ts`, `hatMetatiles`), which
 both games cut their own way.
 
+It also carries a finished board's tiling on past its edge (`extension.ts`):
+the outlines both games draw round a won board, found from the board's own
+lattice or by finding it in a bigger patch of its tiling.
+
 It is pure geometry: no DOM, no rendering, no mine counts, no levels, no menus.
 
 - **Public surface:** `src/index.ts`. Games import `@tiling/geometry` and

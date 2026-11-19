@@ -394,6 +394,27 @@ button.primary {
   stroke-linejoin: round;
 }
 
+/* The tiling past a finished board (src/extension.ts): its tiles' outlines,
+   faint, out to the screen's edges under the region — nothing filled, nothing
+   to tap. They come in once the board is finished. */
+.beyond {
+  fill: none;
+  stroke: var(--muted);
+  /* a hairline at every zoom and on every tiling, whatever its units */
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  opacity: 0.55;
+  pointer-events: none;
+  animation: beyond-in 0.9s ease-out;
+}
+
+@keyframes beyond-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .open {
   fill: none;
   stroke: var(--open);
@@ -804,6 +825,7 @@ button.primary {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .beyond,
   .hint-ghost,
   .hint-off,
   .knob.hinted .knob-face,

@@ -348,6 +348,20 @@ corner that closes it to look at the finished board (as do Escape and a tap
 outside it). Each move
 is a history entry, so the browser's Back works.
 
+**The tiling past a finished board.** Once the region is covered, the tiling
+the level was cut from is carried on round it as faint outlines (`path.beyond`,
+`--muted`, a 1px non-scaling hairline under the region — nothing filled,
+nothing to tap) out to the edges of the screen, fading in, and the board may
+then be zoomed out past the fit to see more of it: to `WON_MIN_ZOOM` (a
+third), held up where its tiles would be under `MIN_TILE_PX` across or the view
+would outrun how far the tiling is known; the tray keeps its fitted size.
+Taking a tile off takes them away and fits the board again. Where the tiling
+comes from is `src/extension.ts`, below. Three levels' boards have none
+(pentagon13 and pentagon15, whose windows sit in no wider window, and the
+right-angled fish, which grows once only and shows no period), and the round
+Spectre's outlines are its corners joined straight. `smoke.spec.ts` ("the win
+card's Exit…", "an unfinished board…") pins it.
+
 **The desktop** — from 900px wide and 501px tall, or a tablet held upright
 (720 × 800): Hypersweeper's own query (`WIDE_QUERY` in
 `src/view/groups.ts`, the matching `@media` block at the foot of
@@ -992,6 +1006,20 @@ quick way to see the win state.
   posts the board after every move, the worker builds the level from its
   key and keeps its solver while the level stays; where a worker cannot
   start, the same search runs on the page in slices.
+- `src/extension.ts`, `src/extension.worker.ts` — a finished level's tiling
+  carried on past its edge (the geometry is `@tiling/geometry`'s
+  `extension.ts`, shared with Hypersweeper's won boards). A periodic level is
+  carried on from its own tiles by their measured lattice, or, its window too
+  small to hold a whole period, off a window three times as wide
+  (`periodicContext`, found round the level by `placeIn` wherever its board
+  was cut). The rest are found in bigger patches their own builders grow — the
+  whole patch an aperiodic or hat window was cut from and deeper ones, more
+  spiral rings, more inflations — by a similarity, the copy with the most
+  patch round it kept. A rep-tile is tried as periodic first (most are cut
+  from a lattice). A marked level is its plain level's board (`decor.of`). It
+  runs in a worker (the deeper patches take a second or two to build exactly
+  on a phone), which builds the level from its key and sends the tiles back;
+  `tests/unit/extension.test.ts` holds each kind of level to it.
 - `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
   the game works without it; the old finished-levels list reads as one star
   each).

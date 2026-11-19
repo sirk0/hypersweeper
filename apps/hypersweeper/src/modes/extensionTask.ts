@@ -10,8 +10,8 @@
 // refuses one), it runs here after all, a moment after the win, so the
 // celebration gets its first frames first.
 
-import type { Board, Vertex } from "@tiling/geometry";
-import { boardExtension, listedExtension, type BoardExtension } from "./extension";
+import { listedExtension, type Board, type TilingExtension, type Vertex } from "@tiling/geometry";
+import { boardExtension } from "./extension";
 import { grownBoards, grows } from "./presets";
 
 /** What the worker is asked. */
@@ -53,7 +53,7 @@ export function solveExtension(board: Board, req: ExtensionRequest): ExtensionRe
   return { coords, sizes, tile: ext.tile };
 }
 
-function fromReply(board: Board, reply: ExtensionReply): BoardExtension | null {
+function fromReply(board: Board, reply: ExtensionReply): TilingExtension | null {
   if (!reply) return null;
   const cells: Vertex[][] = [];
   let at = 0;
@@ -72,7 +72,7 @@ export function findExtension(
   mode: string,
   difficulty: string,
   seed: number,
-): Promise<BoardExtension | null> {
+): Promise<TilingExtension | null> {
   if (board.disc || board.halfPlane || board.faces) return Promise.resolve(null);
   if (!grows(mode)) return Promise.resolve(boardExtension(board, null));
   const req: ExtensionRequest = { mode, difficulty, seed, want: wantedReach(board) };

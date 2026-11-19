@@ -1705,8 +1705,9 @@ function paintedLevel(of: Level, i: number): Level {
 }
 
 /** Where the tiling's boxes are listed: a painted tiling's first board's
- * window, in edges. */
-function paintedBox(key: string): number | undefined {
+ * window, in edges — every periodic window's, painted or not (src/extension.ts
+ * reads a too-small window's period off a wider one cut with it). */
+export function paintedBox(key: string): number | undefined {
   return [
     ...UNIFORM,
     ...TWO_UNIFORM,

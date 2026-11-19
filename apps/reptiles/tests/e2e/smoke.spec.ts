@@ -318,7 +318,42 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   await page.locator("#exit").click();
   await expect(page.locator("#won")).toBeHidden();
   await expect(page.locator("#count")).toHaveText("100%");
+  // The finished board's tiling, carried on past its edge as outlines
+  // (src/extension.ts, worked out in a worker), and with it zoom out past the
+  // fit — to a third of it, and no further.
+  await expect(page.locator("svg.board path.beyond")).toHaveCount(1);
+  expect((await page.locator("svg.board path.beyond").getAttribute("d"))!.length).toBeGreaterThan(
+    1000,
+  );
+  const fitted = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(fitted.x + fitted.width / 2, fitted.y + fitted.height / 2);
+  for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 200);
+  await expect
+    .poll(async () => (await page.locator("svg.board path.region").boundingBox())!.width)
+    .toBeLessThan(fitted.width * 0.4);
+  const out = (await page.locator("svg.board path.region").boundingBox())!;
+  expect(out.width).toBeGreaterThan(fitted.width / 3 - 1);
+  // Taking a tile off un-finishes it: the outlines go, and the board is fitted
+  // again.
+  await page.keyboard.press("x"); // ✕ remove mode
+  await page.locator("svg.board [data-tile]").first().click();
+  await expect(page.locator("svg.board path.beyond")).toHaveCount(0);
+  const back = (await page.locator("svg.board path.region").boundingBox())!;
+  expect(back.width).toBeCloseTo(fitted.width, 0);
   expect(errors).toEqual([]);
+});
+
+test("an unfinished board does not zoom out past the fit", async ({ page }) => {
+  await page.goto("/?level=squares");
+  const fitted = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(fitted.x + fitted.width / 2, fitted.y + fitted.height / 2);
+  for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 200);
+  await page.waitForTimeout(200);
+  expect((await page.locator("svg.board path.region").boundingBox())!.width).toBeCloseTo(
+    fitted.width,
+    0,
+  );
+  await expect(page.locator("svg.board path.beyond")).toHaveCount(0);
 });
 
 test("the hint shows a tile to lay, goes with the next move, and costs the third star", async ({

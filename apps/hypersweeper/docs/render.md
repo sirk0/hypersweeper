@@ -87,7 +87,9 @@ outrun how far the tiling is known; and while zoomed out the board can be slid
 anywhere inside the view (`clampPan`'s `inside`). A new board is framed and
 plain again. Not on a solid, a surface or a hyperbolic board.
 
-Where the tiles come from is `src/modes/extension.ts`:
+Where the tiles come from is `src/modes/extension.ts`, over the geometry in
+`@tiling/geometry` (`packages/geometry/src/extension.ts`, which Rep-tiles'
+finished levels use too):
 
 - **A periodic board** is carried on from the board alone. `latticeOf`
   measures its periods off the drawing (a translation is one when every tile
@@ -114,7 +116,8 @@ The lines are three.js's screen-space fat lines in `--muted`, a hairline at
 every zoom, just under the tiles and depth tested with a strict test so an edge
 two outline tiles share is not drawn darker. `window.__ms.extended()` says
 whether a board shows them; `tests/e2e/extension.spec.ts` pins the behaviour,
-`tests/unit/extension.test.ts` the geometry.
+`tests/unit/extension.test.ts` the modes' patches and
+`packages/geometry/tests/extension.test.ts` the geometry.
 
 ### Hyperbolic panning (`src/render/disc.ts`)
 
