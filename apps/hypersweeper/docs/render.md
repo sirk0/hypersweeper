@@ -12,7 +12,8 @@ scroll, or `+` / `-` / `0` (frame it again); a zoomed flat board is dragged
 with one finger, any board with two, and a hyperbolic board with one at any
 zoom — by a disc isometry rather than a slide (see "Hyperbolic panning"
 below). Zoom is bounded — `MIN_ZOOM` is the fitted
-board (it can never be shrunk into the void) and `MAX_ZOOM` caps magnification
+board (it can never be shrunk into the void — but see "The tiling past a won
+board" below) and `MAX_ZOOM` caps magnification
 — and the pan is clamped to the board's overhang, so no gesture can lose the
 board off-screen. A new board always starts framed. `window.__ms.zoom()` reads
 the level and `zoomBy(factor, x, y)` drives it; `tests/e2e/zoom.spec.ts` pins
@@ -73,6 +74,47 @@ press drops them, a hidden page forgets everything, and lifts are heard on
 `window`, so one that is hit-tested onto the chrome still counts.
 `tests/e2e/stuckTouch.spec.ts` loses a lift on purpose and drives real touches
 (DevTools `Input.dispatchTouchEvent`) after it.
+
+### The tiling past a won board (`src/render/extension.ts`)
+
+A won **flat** board carries its tiling on past its edge: the tiles it was cut
+from are drawn round it as faint outlines out to the edges of the screen —
+contours only, nothing coloured and nothing tappable — so the player sees the
+board was one window onto a tiling that goes on. With them comes **zoom out
+past the fit**: `minZoom` drops from 1 to as low as `WON_MIN_ZOOM` (a third),
+held up where the tiles would shrink under `MIN_TILE_PX` or the view would
+outrun how far the tiling is known; and while zoomed out the board can be slid
+anywhere inside the view (`clampPan`'s `inside`). A new board is framed and
+plain again. Not on a solid, a surface or a hyperbolic board.
+
+Where the tiles come from is `src/modes/extension.ts`:
+
+- **A periodic board** is carried on from the board alone. `latticeOf`
+  measures its periods off the drawing (a translation is one when every tile
+  lands on a tile of the same shape or off the board, never on a different
+  tile), the tiles are folded to one per translation class, and the classes'
+  areas must add up to one period's — else the board holds too little of the
+  tiling and gets nothing. Milliseconds, and it never runs out.
+- **Anything else** — the aperiodic patches, the spirals, most rep-tiles and
+  the fractals — is found in a bigger patch of its own tiling, grown by its own
+  builder (`GROW` / `grownBoards` in `modes/presets.ts`): the whole patch a
+  window was cut from and deeper ones, more rings, more levels. `placeIn` finds
+  the board in it by a similarity (a rep-tile's inflation can turn and mirror)
+  and keeps the copy with the most patch round it. A builder with a `GROW`
+  rule is never tried as periodic: the carpet's squares sit on a lattice and
+  its holes do not. The other way round, the rep-tiles whose patches are cut
+  from a periodic tiling (the Gosper island's hexagons, the drafter, …) have
+  no rule: a patch that looks the same everywhere is slow to search and the
+  lattice is exact. That can take a second or two on a phone, so it runs in a
+  worker (`modes/extensionTask.ts`, `extensionWorker.ts`), which rebuilds the
+  board from its mode, difficulty and seed; the outlines arrive a moment after
+  the win, and only if that board is still on screen.
+
+The lines are three.js's screen-space fat lines in `--muted`, a hairline at
+every zoom, just under the tiles and depth tested with a strict test so an edge
+two outline tiles share is not drawn darker. `window.__ms.extended()` says
+whether a board shows them; `tests/e2e/extension.spec.ts` pins the behaviour,
+`tests/unit/extension.test.ts` the geometry.
 
 ### Hyperbolic panning (`src/render/disc.ts`)
 

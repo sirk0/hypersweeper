@@ -63,6 +63,7 @@ import {
   hyperbolicBoard,
   hyperbolicUniformBoard,
   type AnyBoard,
+  type Board,
   brickCubeBoard,
   c180Board,
   gp21Board,
@@ -376,3 +377,110 @@ function presetBuilder(
  */
 const BUILT = new Map<string, AnyBoard>();
 const BUILT_KEEP = 4;
+
+/**
+ * How a builder that is not periodic grows a bigger patch of its tiling, the
+ * `k`-th size up: its preset args (mine count already split out) rewritten, or
+ * null past the last size it has. A periodic board needs none — its tiling is
+ * measured off the board itself (modes/extension.ts) — and neither does a board
+ * with no flat tiling to carry on (the solids, the surfaces, the hyperbolic
+ * boards).
+ *
+ * The windowed patches keep `keep` tiles of a patch grown to some depth, so the
+ * whole patch at that depth (`keep` null) is the first size up and every
+ * deeper one after it; the spirals add rings; a rep-tile adds levels, each one
+ * a copy of the last in every corner. The rep-tiles whose patches are cut from
+ * a periodic tiling (the right isosceles triangle, the drafter, the T-tetromino
+ * and the Gosper island's hexagons) are left to the lattice, which is exact,
+ * unbounded and instant where a search of a patch that looks the same
+ * everywhere is not.
+ */
+const GROW: Record<string, (args: Arg[], k: number) => (Arg | null)[]> = {
+  // (subdivisions, scale, keep)
+  penrose_board: ([d, scale], k) => [Number(d) + k, scale!, null],
+  kitedart_board: ([d, scale], k) => [Number(d) + k, scale!, null],
+  ammann_beenker_board: ([d, scale], k) => [Number(d) + k, scale!, null],
+  // (depth, keep, scale)
+  spectre_board: ([d, , scale], k) => [Number(d) + k, null, scale!],
+  hat_board: ([d, , scale], k) => [Number(d) + k, null, scale!],
+  turtle_board: ([d, , scale], k) => [Number(d) + k, null, scale!],
+  hat_metatiles_board: ([d, , scale], k) => [Number(d) + k, null, scale!],
+  // (rings, keep, scale)
+  phyllotaxis_board: ([n, , scale], k) => [Number(n) * 2 ** (k + 1), null, scale!],
+  klaassen_board: ([n, , scale], k) => [Number(n) * 2 ** (k + 1), null, scale!],
+  pentaspiral5_board: ([n, , scale], k) => [Number(n) * 2 ** (k + 1), null, scale!],
+  pentaspiral6_board: ([n, , scale], k) => [Number(n) * 2 ** (k + 1), null, scale!],
+  pentaspiral7_board: ([n, , scale], k) => [Number(n) * 2 ** (k + 1), null, scale!],
+  // (rings, scale)
+  brick_rings_board: ([n, scale], k) => [Number(n) * 2 ** (k + 1), scale!],
+  // (levels, scale): the rep-tiles
+  ...Object.fromEntries(
+    [
+      "sphinx_board",
+      "chair_board",
+      "ltetromino_board",
+      "ppentomino_board",
+      "trapezoid_board",
+      "right_trapezoid_board",
+      "half_trapezoid_board",
+      "stretched_chair_board",
+      "rhombic_l_board",
+      "five_triangle_board",
+      "carpet_board",
+      "pentaflake_board",
+    ].map((name) => [name, ([d, scale]: Arg[], k: number) => [Number(d) + k + 1, scale!]]),
+  ),
+};
+
+/** How many times more tiles a builder's next size up has than the last,
+ * where that is not about four — the guess `grownBoards` stops on before it
+ * has seen two sizes and can measure it: a Penrose patch deflates by φ² a
+ * step, the hat's family and the Spectre grow about eightfold. */
+const GROWTH: Record<string, number> = {
+  penrose_board: 2.7,
+  kitedart_board: 2.7,
+  ammann_beenker_board: 6,
+  spectre_board: 8,
+  hat_board: 8,
+  turtle_board: 8,
+  hat_metatiles_board: 8,
+};
+
+/** Where a builder may grow past `grownBoards`' usual cap, because the usual
+ * cap stops it with the board still at the edge of its patch: the carpet,
+ * whose squares are cheap and whose next level is eight times the last, and
+ * the Spectre, whose windows sit far out in a patch that grows eightfold. */
+const CAP: Record<string, number> = { carpet_board: 40000, spectre_board: 40000 };
+
+/** Whether a mode's board is carried on by growing its patch (`GROW`) rather
+ * than as a periodic tiling. */
+export function grows(mode: string): boolean {
+  return Object.hasOwn(PRESETS, mode) && Object.hasOwn(GROW, PRESETS[mode]!.builder);
+}
+
+/**
+ * Bigger and bigger patches of the tiling a mode's board is cut from, for
+ * `boardExtension` (modes/extension.ts) to find the board in — none for a mode
+ * whose builder has no rule in `GROW`. Each is built only when asked for, and
+ * the run stops before a patch it expects to pass `maxCells` (judged by the
+ * growth so far, or by `GROWTH` before there is any), since the biggest take
+ * seconds to build.
+ */
+export function* grownBoards(mode: string, difficulty: string, maxCells?: number): Iterable<Board> {
+  if (!grows(mode)) return;
+  const name = PRESETS[mode]!.builder;
+  const grow = GROW[name]!;
+  const { builder, args } = presetBuilder(mode, difficulty);
+  let last = 0;
+  let ratio = GROWTH[name] ?? 4;
+  const cap = maxCells ?? CAP[name] ?? 20000;
+  for (let k = 0; k < 6; k++) {
+    if (last * ratio > cap) return;
+    const board = builder(...grow(args, k)) as Board;
+    const cells = board.polygons.size;
+    if (cells <= last) return;
+    if (last) ratio = cells / last;
+    last = cells;
+    yield board;
+  }
+}
