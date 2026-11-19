@@ -1,11 +1,14 @@
 """Bump the games' patch versions, for .github/workflows/bump-version.yml.
 
-Each TypeScript game (every ``apps/<key>/`` with a ``packaging.json``) has its
-own version, in its package.json and mirrored in the root package-lock.json's
+Each TypeScript game (every ``apps/<key>/`` with a ``packaging.json``) has a
+version, in its package.json and mirrored in the root package-lock.json's
 entry for its workspace:
 
 - **Hypersweeper** shares its version with the pygame build: ``pyproject.toml``
   is the source of truth, and ``apps/hypersweeper/package.json`` follows it.
+- **A game whose packaging.json says ``"sharedVersion": true``** (Rep-tiles)
+  shares Hypersweeper's: every Hypersweeper bump writes the same version into
+  its package.json, and it is never bumped on its own.
 - **Every other game** has its own (``apps/<key>/package.json``).
 
     python scripts/bump_version.py [--hypersweeper] [--game <key> ...]
@@ -46,6 +49,16 @@ def games(root: Path) -> dict[str, tuple[str, str, str]]:
     return found
 
 
+def sharing_games(root: Path) -> list[str]:
+    """The games whose version is Hypersweeper's (``"sharedVersion": true``)."""
+    return [
+        manifest.parent.name
+        for manifest in sorted((root / "apps").glob("*/packaging.json"))
+        if manifest.parent.name != "hypersweeper"
+        and json.loads(manifest.read_text()).get("sharedVersion") is True
+    ]
+
+
 def _set_package(root: Path, game: str, new: str) -> None:
     folder, name, _ = games(root)[game]
     pkg = root / folder / "package.json"
@@ -76,12 +89,18 @@ def bump_hypersweeper(root: Path) -> str:
     new = next_patch(".".join(m.groups()))
     py.write_text(text[: m.start()] + f'version = "{new}"' + text[m.end() :])
     _set_package(root, "hypersweeper", new)
+    # Hypersweeper's new version, not each one's own next patch: a sharing
+    # game that drifted (set by hand) comes back in step here.
+    for game in sharing_games(root):
+        _set_package(root, game, new)
     return new
 
 
 def bump_game(root: Path, game: str) -> str:
     if game == "hypersweeper":
         raise SystemExit("Hypersweeper's version follows pyproject.toml: use --hypersweeper")
+    if game in sharing_games(root):
+        raise SystemExit(f"{game} shares Hypersweeper's version: use --hypersweeper")
     new = next_patch(package_version(root, game))
     _set_package(root, game, new)
     return new

@@ -334,9 +334,18 @@ board; picking one picks what goes with it (a board it is laid on, or the
 plain tiles). The page keeps its pick in its URL (`&pick=<level>`), so Back
 from a level comes back to it. The gear in home's top-left
 corner (Hypersweeper's icon) opens Settings (`?settings`), which has the
-player's one choice — the tiling past a finished board, a switch, off by
-default (below) — then shows the version and checks for updates (the shared check in `@tiling/platform`; left
-out of a packaged build). Levels are picked in
+player's choices — the **colour scheme**, Auto (the device's
+`prefers-color-scheme`, the default), Light or Dark, as a three-way pill
+(`src/scheme.ts`, below), and the tiling past a finished board, a switch, off by
+default (below) — then shows the version, checks for updates (the shared check in `@tiling/platform`) and
+links the **privacy policy** (`public/privacy.html`, served as `/privacy`, in
+a new tab); the update row and the policy link are left out of a packaged
+build. The **?** in home's top-right corner (Hypersweeper's, too) opens **How
+to play** (`?help`, `src/view/help.ts`): the puzzle, laying, turning,
+flipping and taking off tiles with their keys, marks, the stars and the hint,
+zoom — drawn as the settings are; every line of it is a statement about the
+code, so it changes with the behaviour it describes. On a desktop both are in
+the sidebar's foot. `smoke.spec.ts` pins all three. Levels are picked in
 Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
 home and back, then (no clock: the time taken is on the win card) the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
@@ -593,10 +602,19 @@ Like Hypersweeper, and by the same workflows, one matrix entry each:
   - the version stamp;
   - `public/_headers` — Hypersweeper's security policy, applied at the edge
     and, through the preset, by `vite dev` / `vite preview`.
-- **Versions:** `bump-version.yml` bumps this game's patch version (in
-  `package.json`) on every push to `master` that changes this folder,
-  `packages/` or `data/` (`scripts/bump_version.py`). A version set by hand
-  lands as written.
+- **Versions:** Rep-tiles shares Hypersweeper's version
+  (`"sharedVersion": true` in `packaging.json`): every push to `master`,
+  `bump-version.yml` bumps Hypersweeper's patch version (`pyproject.toml`, the
+  source of truth) and `scripts/bump_version.py` writes the same number into
+  this `package.json` and its lockfile entry — never a patch of its own, so a
+  hand-edited version comes back in step at the next bump.
+  `tests/test_bump_version.py` fails if the two differ.
+- **The privacy policy:** `public/privacy.html`, a flat page served as
+  `/privacy` (Cloudflare Pages and `vite preview` both resolve it; the service
+  worker precaches it and `vite.config.ts` keeps it off the app shell's
+  navigation fallback). No script, nothing remote. Its head comment lists the
+  code each claim rests on — the page changes with any of it, and with
+  turning on Cloudflare Web Analytics for the project, which it says is off.
 - **Icons:** `npm run icons` redraws them (`scripts/make-icons.mts`): a
   triangle as four half-size copies of itself, in the tile colours — the web
   icons in `public/` and the desktop app's `packaging/icon.png`. Commit what
@@ -1031,8 +1049,16 @@ quick way to see the win state.
   each candidate tile's corners both ways, mirrored or not, and
   `grownExtension` keeps the first patch that reaches far enough.
   `tests/unit/tilingExtension.test.ts` tests it on Hypersweeper's boards.
-- `src/preferences.ts` — the player's choices from Settings (one so far), in
+- `src/preferences.ts` — the player's choices from Settings (the colour
+  scheme, the tiling past a finished board), in
   `localStorage` through the shared guard, defaults where it is unreadable.
+- `src/scheme.ts` — the colour scheme: `applyScheme` sets `data-scheme` on
+  `<html>` (none for Auto) and points the `theme-color` metas at the page
+  colour. The dark colours are in `styles.css` twice, with the same
+  declarations — under `prefers-color-scheme: dark` on
+  `:root:not([data-scheme="light"])`, and on `:root[data-scheme="dark"]` — as
+  plain CSS cannot join a media query and a selector; `tests/unit/scheme.test.ts`
+  holds them equal, so a colour changes in both.
 - `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
   the game works without it; the old finished-levels list reads as one star
   each).
@@ -1087,10 +1113,10 @@ quick way to see the win state.
   zoomed in, scrolled, `scrollTray`), its scroll bar (`scrollBarBy`,
   `scrollBarTo`) and the controls' row (a fixed size).
 - `src/view/home.ts`, `src/view/catalog.ts`, `src/view/cardArt.ts`,
-  `src/view/picker.ts`, `src/view/settings.ts` — the first screen, Tilings
+  `src/view/picker.ts`, `src/view/settings.ts`, `src/view/help.ts` — the first screen, Tilings
   (the catalog) and its cards' pictures, a tiling's page (a board, then its
   tiles, then Play: its pictures drawn one a frame after the page is up, each
-  building its level), and the settings; `src/view/groups.ts` the
+  building its level), the settings, and How to play; `src/view/groups.ts` the
   desktop's five groups of families and its two queries (the sidebar itself
   is built in `main.ts`); `src/view/icons.ts` the pictures
   they share (board outline, a tray's tiles in a grid, the three

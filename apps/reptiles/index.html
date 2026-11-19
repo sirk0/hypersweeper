@@ -15,7 +15,7 @@
   </head>
   <body>
     <!-- The desktop's sidebar (view/groups.ts): Quick start, the tilings in
-         five groups, Settings. A phone never shows it. -->
+         five groups, How to play and Settings. A phone never shows it. -->
     <nav class="sidebar" id="sidebar" aria-label="Rep-tiles">
       <p class="sidebar-title">Rep-tiles</p>
       <div class="side-list">
@@ -27,6 +27,10 @@
       <p class="side-section">Tilings</p>
       <div class="side-list" id="side-groups"></div>
       <div class="side-footer">
+        <button type="button" class="side-row side-small" data-side="help">
+          <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="help"></svg>
+          <span class="side-label">How to play</span>
+        </button>
         <button type="button" class="side-row side-small" data-side="settings">
           <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="settings"></svg>
           <span class="side-label">Settings</span>
@@ -46,6 +50,15 @@
         aria-label="Settings"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="settings"></svg>
+      </button>
+      <button
+        type="button"
+        class="menu-header-btn home-help"
+        data-action="help"
+        title="How to play"
+        aria-label="How to play"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="help"></svg>
       </button>
       <h1 class="home-title">Rep-tiles</h1>
       <p class="home-sub">Cover the board, tile by tile.</p>
@@ -93,6 +106,18 @@
         <div class="hud-cluster hud-right"></div>
       </header>
       <div class="settings-body" id="settings-body"></div>
+    </section>
+    <section class="screen settings help" id="help" hidden>
+      <header class="hud">
+        <div class="hud-cluster hud-left">
+          <button type="button" class="hud-btn" data-go-home title="Home" aria-label="Home">
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="home"></svg>
+          </button>
+        </div>
+        <h1 class="hud-title">How to play</h1>
+        <div class="hud-cluster hud-right"></div>
+      </header>
+      <div class="settings-body" id="help-body"></div>
     </section>
     <div class="screen game" id="game" hidden>
       <header class="hud">

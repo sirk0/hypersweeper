@@ -13,6 +13,7 @@ export const FLAGSHIP = "hypersweeper";
 
 /**
  * @typedef {{ key: string, dir: string, name: string, productName: string,
+ *   sharedVersion: boolean,
  *   web: { project: string, url: string, analytics?: boolean, siteUrlVariable?: string } | null }} Game
  */
 
@@ -32,6 +33,7 @@ export function listGames(root) {
         dir: `apps/${key}`,
         name: pkg.name,
         productName: packaging.productName,
+        sharedVersion: packaging.sharedVersion === true,
         web: packaging.web ?? null,
       };
     });
@@ -40,6 +42,14 @@ export function listGames(root) {
 /** The games other than the flagship: the generic CI jobs' matrix. */
 export function otherGames(games) {
   return games.filter((g) => g.key !== FLAGSHIP).map((g) => g.key);
+}
+
+/** The games other than the flagship with a version of their own — the ones
+ * bump-version.yml bumps one by one. A game whose packaging.json says
+ * `"sharedVersion": true` has the flagship's, and is bumped with it
+ * (scripts/bump_version.py). */
+export function ownVersionGames(games) {
+  return games.filter((g) => g.key !== FLAGSHIP && !g.sharedVersion).map((g) => g.key);
 }
 
 /** One deploy / PR-preview matrix entry per game with a site. The flagship

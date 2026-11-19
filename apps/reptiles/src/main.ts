@@ -2,6 +2,7 @@ import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
 import { findExtension, levelMid } from "./extension";
 import { preferences, type Preferences } from "./preferences";
+import { applyScheme } from "./scheme";
 import { attachDrag, type DragControl } from "./input/drag";
 import type { Laid } from "./hint";
 import { Hinter } from "./hintClient";
@@ -17,6 +18,7 @@ import {
   WIDE_QUERY,
   type MenuGroup,
 } from "./view/groups";
+import { renderHelp } from "./view/help";
 import { renderHome } from "./view/home";
 import { barsIcon, fillGlyphs, trayIcon } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
@@ -49,6 +51,8 @@ function tallyOf(plain: Level): ReturnType<Tally> {
   };
 }
 
+// The colour scheme picked in Settings, before anything is drawn.
+applyScheme(preferences().scheme);
 fillGlyphs(document);
 
 /** The desktop layout (view/groups.ts): a sidebar beside every screen but a
@@ -90,6 +94,7 @@ for (const group of MENU_GROUPS) {
   }, 0);
 }
 sideRows.get("home")?.addEventListener("click", () => goHome());
+sideRows.get("help")?.addEventListener("click", () => goHelp());
 sideRows.get("settings")?.addEventListener("click", () => goSettings());
 
 /** The tilings a group lists: the first boards of its families, plain. */
@@ -98,15 +103,16 @@ function tilingsOf(group: MenuGroup): Level[] {
 }
 
 // -- screens ------------------------------------------------------------------
-// Five: home (no query), Tilings — the catalog — (?tilings; old links say
+// Six: home (no query), Tilings — the catalog — (?tilings; old links say
 // ?catalog, or ?figures and ?figure=<key> from the Figures screen there was;
 // on a desktop one group of it, ?group=<key>), one tiling's boards and tiles
-// to pick a level from (?tiling=<key>), the settings (?settings) and a level
-// (?level=<key>). Each move between them is a history entry, so the browser's
+// to pick a level from (?tiling=<key>), How to play (?help), the settings
+// (?settings) and a level (?level=<key>). The privacy policy, /privacy, is a
+// page of its own (public/privacy.html), not a screen of the app. Each move between them is a history entry, so the browser's
 // Back goes back; a tiling's page keeps its pick in its URL (`&pick=<level>`),
 // so Back from a level comes back to the same one.
 
-const SCREENS = ["home", "catalog", "tiling", "settings", "game"] as const;
+const SCREENS = ["home", "catalog", "tiling", "help", "settings", "game"] as const;
 type Screen = (typeof SCREENS)[number];
 
 /** Show `screen`, and in the sidebar highlight `side` (a `data-side`). */
@@ -126,6 +132,12 @@ function goHome(push = true): void {
   if (push) history.pushState(null, "", location.pathname);
   renderHome(byId("home-picks"), tally, playBand, () => goCatalog(), wide.matches);
   show("home", "home");
+}
+
+function goHelp(push = true): void {
+  if (push) history.pushState(null, "", "?help");
+  renderHelp(byId("help-body"));
+  show("help", "help");
 }
 
 function goSettings(push = true): void {
@@ -235,7 +247,8 @@ function route(): void {
     const tiling = levelByKey(query.get("tiling") ?? "");
     if (tiling && !tiling.decor && tiling.board === 1) goTiling(tiling, false, query.get("pick"));
     else goCatalog(false);
-  } else if (query.has("settings")) goSettings(false);
+  } else if (query.has("help")) goHelp(false);
+  else if (query.has("settings")) goSettings(false);
   else goHome(false);
 }
 
@@ -410,8 +423,10 @@ function extendTiling(s: Session): void {
 }
 
 /** A choice made in Settings, while a level may still be open behind them:
- * the tiling round a finished board comes or goes with its switch. */
+ * the colour scheme repaints the page, and the tiling round a finished board
+ * comes or goes with its switch. */
 function settingsChanged(now: Preferences): void {
+  applyScheme(now.scheme);
   const s = session;
   if (!s || !s.puzzle.won) return;
   if (now.tilingPastBoard) extendTiling(s);
@@ -432,6 +447,7 @@ hintButton.addEventListener("click", () => void showHint());
 document
   .querySelector("#home [data-action=settings]")
   ?.addEventListener("click", () => goSettings());
+document.querySelector("#home [data-action=help]")?.addEventListener("click", () => goHelp());
 // Another level of the same difficulty as this one, however it was picked.
 byId("random").addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));

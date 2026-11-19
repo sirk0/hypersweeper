@@ -253,7 +253,7 @@ const STROKE = `stroke="currentColor" stroke-width="1.9" fill="none" stroke-line
 
 /** The header's and home screen's glyphs, on a 24-unit square: home, restart,
  * a light bulb for the hint, a die for a new random level and the settings
- * gear (both Hypersweeper's). */
+ * gear, and the question mark for How to play (all three Hypersweeper's). */
 export const GLYPHS: Record<string, string> = {
   back: `<path d="M14.6 5.4 L8 12 L14.6 18.6" ${STROKE}/>`,
   home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
@@ -269,6 +269,12 @@ export const GLYPHS: Record<string, string> = {
     <circle cx="8.3" cy="8.3" r="1.55" fill="currentColor"/>
     <circle cx="12" cy="12" r="1.55" fill="currentColor"/>
     <circle cx="15.7" cy="15.7" r="1.55" fill="currentColor"/>`,
+  // How to play: Hypersweeper's question mark in a ring (its src/ui/help.ts
+  // HELP_ICON), on the gear's 24 × 24 box and about its span.
+  help: `<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.9"/>
+    <text x="12" y="12.7" text-anchor="middle" dominant-baseline="central"
+      font-family="Space Grotesk, system-ui, sans-serif" font-weight="700" font-size="12.5"
+      fill="currentColor">?</text>`,
   // Hypersweeper's own gear (apps/hypersweeper/src/ui/settings.ts GEAR_ICON).
   settings: `<path fill="currentColor" fill-rule="evenodd" d="M21.48 10.50A9.6 9.6 0 0 1 21.48 13.50L18.60 13.65A6.8 6.8 0 0 1 17.83 15.50L19.77 17.64A9.6 9.6 0 0 1 17.64 19.77L15.50 17.83A6.8 6.8 0 0 1 13.65 18.60L13.50 21.48A9.6 9.6 0 0 1 10.50 21.48L10.35 18.60A6.8 6.8 0 0 1 8.50 17.83L6.36 19.77A9.6 9.6 0 0 1 4.23 17.64L6.17 15.50A6.8 6.8 0 0 1 5.40 13.65L2.52 13.50A9.6 9.6 0 0 1 2.52 10.50L5.40 10.35A6.8 6.8 0 0 1 6.17 8.50L4.23 6.36A9.6 9.6 0 0 1 6.36 4.23L8.50 6.17A6.8 6.8 0 0 1 10.35 5.40L10.50 2.52A9.6 9.6 0 0 1 13.50 2.52L13.65 5.40A6.8 6.8 0 0 1 15.50 6.17L17.64 4.23A9.6 9.6 0 0 1 19.77 6.36L17.83 8.50A6.8 6.8 0 0 1 18.60 10.35L21.48 10.50ZM8.6 12A3.4 3.4 0 1 0 15.4 12A3.4 3.4 0 1 0 8.6 12Z"/>`,
 };

@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { deployMatrix, listGames, needsFlagship, otherGames } from "../lib/games.mjs";
+import { deployMatrix, listGames, needsFlagship, otherGames, ownVersionGames } from "../lib/games.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -49,6 +49,25 @@ test("the flagship keeps its comment marker, analytics and site variable", () =>
   assert.equal(rt.marker, "<!-- pr-preview:rep-tiles -->");
   assert.equal(rt.title, "Play this PR in Rep-tiles");
   assert.equal(rt.analytics, "");
+});
+
+test("Rep-tiles shares the flagship's version; a game without the flag has its own", () => {
+  assert.deepEqual(ownVersionGames(listGames(ROOT)), []);
+  const root = fakeRepo({
+    hypersweeper: { productName: "Hypersweeper" },
+    follows: { productName: "Follows", sharedVersion: true },
+    own: { productName: "Own" },
+  });
+  const games = listGames(root);
+  assert.deepEqual(
+    games.map((g) => [g.key, g.sharedVersion]),
+    [
+      ["follows", true],
+      ["hypersweeper", false],
+      ["own", false],
+    ],
+  );
+  assert.deepEqual(ownVersionGames(games), ["own"]);
 });
 
 test("a folder without packaging.json is not a game; a game without web is not deployed", () => {

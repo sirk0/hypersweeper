@@ -101,6 +101,102 @@ test("settings report the version and check for updates", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("How to play opens from home's ?, and by its own link", async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  const errors = watchErrors(page);
+  await page.goto("/");
+  await page.locator('#home [data-action="help"]').click();
+  await expect(page).toHaveURL(/\?help$/);
+  await expect(page.locator("#help")).toBeVisible();
+  await expect(page.locator("#help .hud-title")).toHaveText("How to play");
+  // the keys the level screen answers to, as key caps
+  const keys = await page.locator("#help-body kbd").allTextContents();
+  for (const key of ["R", "E", "F", "X", "H", "Esc"]) expect(keys).toContain(key);
+  await page.goBack();
+  await expect(page.locator("#home")).toBeVisible();
+  await page.goto("/?help");
+  await expect(page.locator("#help")).toBeVisible();
+  await page.locator("#help [data-go-home]").click();
+  await expect(page.locator("#home")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("the colour scheme: Auto follows the device, Light and Dark override it, and stay", async ({
+  page,
+}) => {
+  await page.setViewportSize(PHONE);
+  const errors = watchErrors(page);
+  const page_ = () =>
+    page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--page"));
+  const scheme = page.locator('[role="radiogroup"][aria-label="Colour scheme"]');
+
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/?settings");
+  await expect(scheme.locator('[data-scheme="auto"]')).toHaveAttribute("aria-checked", "true");
+  await expect(scheme.locator("..").locator(".settings-hint")).toHaveText(
+    "Following your device (light)",
+  );
+  await expect(page.locator("html")).not.toHaveAttribute("data-scheme");
+  expect((await page_()).trim()).toBe("#f5ead8");
+
+  // Dark on a light device: the dark page, and the browser's bar with it
+  await scheme.locator('[data-scheme="dark"]').click();
+  await expect(scheme.locator('[data-scheme="dark"]')).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator("html")).toHaveAttribute("data-scheme", "dark");
+  expect((await page_()).trim()).toBe("#191712");
+  for (const meta of await page.locator('meta[name="theme-color"]').all())
+    await expect(meta).toHaveAttribute("content", "#191712");
+
+  // kept: a fresh page — a level, even — opens dark
+  await page.goto("/?level=squares");
+  await expect(page.locator("html")).toHaveAttribute("data-scheme", "dark");
+  expect((await page_()).trim()).toBe("#191712");
+
+  // Light on a dark device
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/?settings");
+  await scheme.locator('[data-scheme="light"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-scheme", "light");
+  expect((await page_()).trim()).toBe("#f5ead8");
+
+  // and Auto again follows the device, dark
+  await scheme.locator('[data-scheme="auto"]').click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-scheme");
+  expect((await page_()).trim()).toBe("#191712");
+  await expect(page.locator('meta[name="theme-color"][media*="light"]')).toHaveAttribute(
+    "content",
+    "#f5ead8",
+  );
+  expect(errors).toEqual([]);
+});
+
+test("the privacy policy: linked from Settings, served at /privacy under the site's policy", async ({
+  page,
+}) => {
+  await page.setViewportSize(PHONE);
+  const errors = watchErrors(page);
+  await page.goto("/?settings");
+  const link = page.locator('[data-action="privacy-policy"]');
+  await expect(link).toHaveAttribute("href", "/privacy");
+  await expect(link).toHaveAttribute("target", "_blank");
+
+  const response = await page.goto("/privacy");
+  expect(response?.status()).toBe(200);
+  expect(response?.headers()["content-type"]).toContain("text/html");
+  expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
+  await expect(page.locator("h1")).toHaveText("Privacy policy");
+  await expect(page).toHaveTitle("Privacy policy — Rep-tiles");
+  // the page, not the game: no app screens, and no boot marker
+  await expect(page.locator("#home")).toHaveCount(0);
+  await expect(page.locator("body[data-ready]")).toHaveCount(0);
+  await page.evaluate(() => document.fonts.ready);
+  expect(await page.evaluate(() => document.fonts.check('16px "Space Grotesk"'))).toBe(true);
+  // and back to the game
+  await page.locator("footer a.play").click();
+  await expect(page.locator("#home")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test("the level screen: one header row, no level list, a random level of the same band", async ({
   page,
 }) => {

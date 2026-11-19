@@ -1,12 +1,16 @@
-// The settings screen: the player's choices (src/preferences.ts), then what
-// this build is, and whether a newer one is deployed. The check itself is the shared one (`@tiling/platform`'s
+// The settings screen: the player's choices (src/preferences.ts) — the colour
+// scheme, then the board — then what this build is, whether a newer one is
+// deployed, and the privacy policy. The check itself is the shared one (`@tiling/platform`'s
 // update.ts, Hypersweeper's too): it asks the server's `version.json`, not the
 // service worker, and only then gets the worker onto the new build. A packaged
 // app (the desktop shell) carries its build inside the bundle and has nothing
-// to check against, so the row is left out there.
+// to check against, so the row is left out there — and so is the link to the
+// privacy policy (public/privacy.html): as in Hypersweeper's packaged apps, the
+// settings there hand no URL to the system browser.
 
 import { checkForUpdate, loadDeployedBuild } from "@tiling/platform";
 import { preferences, setPreferences, type Preferences } from "../preferences";
+import { deviceScheme, SCHEME_LABELS, SCHEMES, type SchemePref } from "../scheme";
 
 /** This build: the package version, and the short commit on a CI build. */
 export function buildVersion(): string {
@@ -20,6 +24,20 @@ export function renderSettings(
   changed: (now: Preferences) => void = () => {},
 ): void {
   host.replaceChildren();
+  const lookHeading = document.createElement("h2");
+  lookHeading.textContent = "Appearance";
+  const lookList = document.createElement("ul");
+  lookList.className = "settings-list";
+  lookList.append(
+    item(
+      schemeRow(preferences().scheme, (scheme) => {
+        setPreferences({ scheme });
+        changed(preferences());
+      }),
+    ),
+  );
+  host.append(lookHeading, lookList);
+
   const boardHeading = document.createElement("h2");
   boardHeading.textContent = "Board";
   const boardList = document.createElement("ul");
@@ -63,8 +81,56 @@ export function renderSettings(
     button.append(block);
     button.addEventListener("click", () => void checkUpdates(hint));
     list.append(item(button));
+
+    const policy = document.createElement("a");
+    policy.className = "settings-row";
+    policy.href = `${import.meta.env.BASE_URL}privacy`;
+    // A tab of its own, so the player reading it keeps their place here.
+    policy.target = "_blank";
+    policy.rel = "noopener";
+    policy.dataset["action"] = "privacy-policy";
+    const arrow = document.createElement("span");
+    arrow.className = "settings-value";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "↗";
+    policy.append(textBlock("Privacy policy").block, arrow);
+    list.append(item(policy));
   }
   host.append(heading, list);
+}
+
+/** The colour scheme: Auto, Light and Dark side by side, the one in force
+ * lit. Auto says which the device is asking for. */
+function schemeRow(current: SchemePref, set: (scheme: SchemePref) => void): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "settings-row";
+  const { block, hint } = textBlock("Colour scheme");
+  hint.removeAttribute("aria-live");
+  const group = document.createElement("div");
+  group.className = "settings-choice";
+  group.setAttribute("role", "radiogroup");
+  group.setAttribute("aria-label", "Colour scheme");
+  const buttons = SCHEMES.map((scheme) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("role", "radio");
+    button.dataset["scheme"] = scheme;
+    button.textContent = SCHEME_LABELS[scheme];
+    button.addEventListener("click", () => {
+      show(scheme);
+      set(scheme);
+    });
+    return button;
+  });
+  const show = (picked: SchemePref): void => {
+    for (const button of buttons)
+      button.setAttribute("aria-checked", String(button.dataset["scheme"] === picked));
+    hint.textContent = picked === "auto" ? `Following your device (${deviceScheme()})` : "";
+  };
+  show(current);
+  group.append(...buttons);
+  row.append(block, group);
+  return row;
 }
 
 /** A row that turns a choice on and off: a switch, its label and what it

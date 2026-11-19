@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy policy — Rep-tiles</title>
+    <meta
+      name="description"
+      content="What Rep-tiles collects: nothing. Your stars and settings stay in your browser or on your computer."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#f5ead8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191712" media="(prefers-color-scheme: dark)" />
+    <!--
+      Rep-tiles' privacy policy: rep-tiles.pages.dev/privacy, linked from
+      Settings › About (src/view/settings.ts; left out of the packaged desktop
+      app, which hands no URL to the system browser).
+
+      A flat privacy.html, as Hypersweeper's (apps/hypersweeper/public/privacy.html
+      explains why): Cloudflare Pages and `vite preview` both serve the bare
+      /privacy from it, the service worker precaches it, and vite.config.ts
+      keeps /privacy off the app shell's navigation fallback, so an installed
+      visitor gets this page rather than the game. tests/e2e/smoke.spec.ts
+      ("the privacy policy…") pins that against `vite preview`, under the
+      site's real Content-Security-Policy — so this page has no script and
+      loads nothing from anywhere else.
+
+      Every claim below is checked against the code that makes it true. If any
+      of these change, this page changes in the same commit:
+        - the game sends nothing: no analytics, no events (there is no
+          __APP_ANALYTICS__ collector in this game, and nothing in src/ calls
+          fetch but the update check);
+        - what is kept on the device: the stars, in localStorage under
+          "rep-tiles.stars" (src/progress.ts), and the settings, under
+          "rep-tiles.settings" (src/preferences.ts) — through
+          packages/platform's storage guard, and never sent;
+        - Settings › Check for updates fetches the site's own version stamp
+          (packages/platform/src/update.ts) and sends nothing about the player;
+          the desktop app has no such row (__APP_PACKAGED__);
+        - Cloudflare Web Analytics: public/_headers allows its origins so that
+          it *could* be turned on in the Cloudflare dashboard without a policy
+          change. Nothing in the game loads it, and this page is written for
+          it being off in the dashboard for the rep-tiles project: turning it
+          on means adding a "Website visits" paragraph here, as Hypersweeper's
+          policy has.
+    -->
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("/fonts/SpaceGrotesk-Variable.ttf") format("truetype-variations");
+        font-weight: 300 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Caprasimo";
+        src: url("/fonts/Caprasimo-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: light;
+        --bg: #f5ead8;
+        --bg-texture:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E"),
+          radial-gradient(120% 90% at 50% 0%, #fffaf0 0%, #fffaf000 55%);
+        --panel: #f9f4ed;
+        --text: #2e2b25;
+        --muted: #82796a;
+        --accent: #c67139;
+        --on-accent: #ffffff;
+        --selected: #ffe1d0;
+        --border: #dcd3c4;
+        --radius: 20px;
+        --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #191712;
+          --bg-texture:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
+            radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #3a332a00 55%);
+          --panel: #2e2b25;
+          --text: #f9f4ed;
+          --muted: #a19786;
+          --accent: #f6a06b;
+          --on-accent: #2e2b25;
+          --selected: #8c491a55;
+          --border: #474238;
+          --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+        }
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: var(--bg);
+        background-image: var(--bg-texture);
+        background-attachment: fixed;
+        color: var(--text);
+        font:
+          16px/1.55 "Space Grotesk",
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+          max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      }
+      .wordmark {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-family: "Caprasimo", "Space Grotesk", system-ui, sans-serif;
+        font-size: 28px;
+        line-height: 1.2;
+        text-decoration: none;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(30px, 8vw, 40px);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+      .effective {
+        margin: 8px 0 24px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      section {
+        margin: 0 0 16px;
+        padding: 20px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      section.summary {
+        background: var(--selected);
+      }
+      h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+      p,
+      ul {
+        margin: 0 0 12px;
+      }
+      section > :last-child {
+        margin-bottom: 0;
+      }
+      ul {
+        padding-left: 1.25em;
+      }
+      li + li {
+        margin-top: 4px;
+      }
+      a {
+        color: var(--accent);
+        text-underline-offset: 2px;
+        overflow-wrap: anywhere;
+      }
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      .play {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 10px 22px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--on-accent);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .play:focus-visible {
+        outline-color: var(--text);
+      }
+      footer {
+        margin-top: 24px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="wordmark" href="/">Rep-tiles</a>
+      <h1>Privacy policy</h1>
+      <p class="effective">Effective 19 November 2026</p>
+
+      <section class="summary" aria-labelledby="short">
+        <h2 id="short">In short</h2>
+        <ul>
+          <li>
+            Rep-tiles collects nothing. It sends no analytics, no play counts and nothing about you
+            to any server.
+          </li>
+          <li>
+            Your stars and settings are kept in your browser, or on your computer in the desktop
+            app, and never leave it.
+          </li>
+          <li>No accounts, no ads, no cookies, and no tracking across other apps or websites.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="device">
+        <h2 id="device">On your device</h2>
+        <p>
+          The stars you have earned on each level and your choices in Settings are saved in your
+          browser's local storage, and the game's files are cached so it works offline. None of that
+          is sent anywhere. Clearing the site's data in your browser deletes it.
+        </p>
+        <p>
+          Settings › Check for updates asks the website for its current version number. It sends
+          nothing about you.
+        </p>
+      </section>
+
+      <section aria-labelledby="desktop">
+        <h2 id="desktop">The desktop app</h2>
+        <p>
+          The desktop app is the same game, carried with everything it needs. It contacts no server
+          at all, and keeps your stars and settings in its own folder on your computer.
+        </p>
+      </section>
+
+      <section aria-labelledby="hosting">
+        <h2 id="hosting">Hosting</h2>
+        <p>
+          Cloudflare hosts the website at rep-tiles.pages.dev. Like any web host, it receives your
+          IP address and browser details with each request, in order to deliver the pages and
+          protect the site. It handles them under its own privacy policy. The game itself adds
+          nothing to them.
+        </p>
+      </section>
+
+      <section aria-labelledby="children">
+        <h2 id="children">Children</h2>
+        <p>
+          The game is for everyone. It asks for no personal information and collects none, from
+          children or anyone else.
+        </p>
+      </section>
+
+      <section aria-labelledby="changes">
+        <h2 id="changes">Changes and contact</h2>
+        <p>
+          If this policy changes, the new version will be posted on this page with a new effective
+          date. Rep-tiles is open source, so every change to this page and to the code it describes
+          is public.
+        </p>
+        <p>
+          Questions or requests:
+          <a href="https://github.com/sirk0/hypersweeper/issues"
+            >github.com/sirk0/hypersweeper/issues</a
+          >.
+        </p>
+      </section>
+
+      <footer>
+        <a class="play" href="/">Play Rep-tiles</a>
+      </footer>
+    </main>
+  </body>
+</html>

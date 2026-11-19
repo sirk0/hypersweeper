@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
 // The desktop layout (view/groups.ts, the wide block in styles.css): from
-// 900px wide a sidebar — Quick start, the tilings in five groups, Settings —
-// beside every screen but a level's; Quick start's three difficulties as
+// 900px wide a sidebar — Quick start, the tilings in five groups, How to play,
+// Settings — beside every screen but a level's; Quick start's three difficulties as
 // cards; a group's tilings in grids; a tiling's page in two columns; a level
 // with its name in the header and its tray a card. smoke.spec.ts holds the
 // phone's screens.
@@ -194,5 +194,20 @@ test("crossing the desktop's width redraws the screen, and keeps a level's tiles
   await page.setViewportSize({ width: 1280, height: 720 });
   await expect(page.locator("#game .hud .board-name")).toHaveCount(1);
   await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test("the sidebar's How to play: its page in the pane, the row lit", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/");
+  await page.locator('#sidebar [data-side="help"]').click();
+  await expect(page.locator("#help")).toBeVisible();
+  await expect(page.locator('#sidebar [data-side="help"]')).toHaveClass(/\bactive\b/);
+  // the pane's own header: the title, and no Home button (the sidebar goes home)
+  await expect(page.locator("#help .hud-title")).toBeVisible();
+  await expect(page.locator("#help [data-go-home]")).toBeHidden();
+  // home's own ? is the phone's; the sidebar has it here
+  await page.locator('#sidebar [data-side="home"]').click();
+  await expect(page.locator('#home [data-action="help"]')).toBeHidden();
   expect(errors).toEqual([]);
 });

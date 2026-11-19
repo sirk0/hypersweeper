@@ -50,6 +50,10 @@ export default defineConfig(
         // precache could only ever name the build that installed the worker.
         // Keeping workbox's own default beside it.
         globIgnores: ["**/node_modules/**/*", STAMP_FILE],
+        // The privacy policy (public/privacy.html) is a page of its own: the
+        // precache answers /privacy with it already (Workbox's `cleanURLs`),
+        // and this keeps the app shell from ever answering it instead.
+        navigateFallbackDenylist: [/^\/privacy(\.html)?$/],
       },
     },
     overrides: {
