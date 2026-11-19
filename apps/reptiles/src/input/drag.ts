@@ -25,7 +25,8 @@
 // it can run longer than the screen: its scroll bar, a drag on the strip's bare
 // background, or the wheel over it scrolls it along.
 
-import { centroidOf, signedArea, type Piece, type XY } from "../geometry/shape";
+import { centroidOf, sides, signedArea, type Piece, type XY } from "../geometry/shape";
+import { playSound } from "../sound";
 import type { Placed, Puzzle } from "../puzzle";
 import { loopsOf, shiftLoops, type Loop } from "../view/curve";
 import type { SvgBoard } from "../view/svgBoard";
@@ -130,6 +131,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   // One turn for everything: every tray tile, and the one in hand.
   const turn = (dir: 1 | -1): void => {
     if (!puzzle.canTurn()) return;
+    playSound({ kind: "turn", dir });
     const step = dir * puzzle.level.turn;
     board.turn = mod(board.turn + step);
     board.draw();
@@ -326,6 +328,9 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     }
     if (ghost) {
       puzzle.place(d.kind, ghost, d.rot, d.flip);
+      // A click where it landed — putting a lifted tile back is silent.
+      const pan = (ev.clientX / Math.max(1, innerWidth)) * 2 - 1;
+      playSound({ kind: "place", sides: sides(puzzle.level.tiles[d.kind]!), pan: pan * 0.8 });
     } else if (d.origin && !discard) {
       puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
     }

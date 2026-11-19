@@ -1,25 +1,39 @@
-# Sound (`src/audio/`)
+# Sound (`src/audio/`, on `@tiling/sound`)
 
 **Web-only** — the pygame build is silent — and synthesised, never sampled:
 there is no audio file in the repo and there is not meant to be, because every
 sound here is derived from the move that caused it.
 
-Two files, and the split between them is the point:
+The synthesiser itself is the shared `@tiling/sound` package
+([`packages/sound`](../../../packages/sound)), which Rep-tiles plays through
+too; what is Hypersweeper's own is which events there are and what each one
+sounds as. The split is the point:
 
-- **`presets.ts`** — the table. One `SoundPreset` per character (Chime, Arcade,
-  Blocks), in the shape of `cellStyle.ts`: plain numbers the engine reads, so a
-  fourth character is a row here and nothing else. `off` is deliberately *not*
-  an entry — `soundPreset()` returns `null` for it, and a silenced game never
-  builds an audio graph at all. It also holds the guards a stored record has to
-  pass before it reaches the engine: `resolveSound` for the key, `clampVolume`
-  for the level.
-- **`sound.ts`** — `voicesFor(event, preset)` is **pure** (an event in, a list
-  of grains out: when, what pitch, how wide, how loud), and `playSound(event)`
-  renders those grains onto the shared `AudioContext`. Every rule the feature
-  has lives in the pure half, which is why `tests/unit/sound.test.ts` can pin
+- **`packages/sound/src/presets.ts`** — the table. One `SoundPreset` per
+  character (Chime, Arcade, Blocks), in the shape of `cellStyle.ts`: plain
+  numbers the engine reads, so a fourth character is a row there and nothing
+  else. `off` is deliberately *not* an entry — `soundPreset()` returns `null`
+  for it, and a silenced game never builds an audio graph at all. It also
+  holds the guards a stored record has to pass before it reaches the engine:
+  `resolveSound` for the key, `clampVolume` for the level. A preset is shared,
+  so a change there is heard in Rep-tiles too.
+- **`packages/sound/src/figures.ts`** — the voices both games build from, each
+  a pure function of a preset: `strikeVoice` (a tile struck — a cell opening
+  here, a tile landing there — and, by ring, one grain of a cascade),
+  `glideVoice` (a flag going down or coming off) and `flourishVoices` (a
+  cleared board).
+- **`packages/sound/src/engine.ts`** — the pitch helpers (`gridNote`,
+  `noteFor`, `partialsFor`) and the player: the shared `AudioContext`, its
+  master gain, `unlockAudio`, and `playVoices(build)`, which renders the grains
+  `build` makes from the preset in force.
+- **`src/audio/sound.ts`** — `voicesFor(event, preset)` is **pure** (an event
+  in, a list of grains out: when, what pitch, how wide, how loud), and
+  `playSound(event)` hands it to `playVoices`. Every rule the feature has
+  lives in the pure half, which is why `tests/unit/sound.test.ts` can pin
   what the game sounds like under node with no audio stack at all. The call
   sites (`session.ts`, and the settings preview) name events, never
-  oscillators — the same seam `haptics.ts` is for touch.
+  oscillators — the same seam `haptics.ts` is for touch. It re-exports the
+  player's calls, so the game imports sound from here alone.
 
 ### One collection, and a spelling measured against the catalog
 
@@ -150,8 +164,8 @@ Things that will bite:
   persists the value and plays the preview.
 - **A cascade is bounded, twice.** `cascade.maxVoices` thins the cells at an
   even stride across the whole ring range (so the first ring and the last are
-  always heard), and `MAX_CASCADE_S` clamps the delay. Beyond that
-  `MAX_ACTIVE_VOICES` drops grains rather than letting a loss over a flood turn
+  always heard), and `MAX_CASCADE_S` (`figures.ts`) clamps the delay. Beyond that
+  `MAX_ACTIVE_VOICES` (`engine.ts`) drops grains rather than letting a loss over a flood turn
   into a wall. Raising any of them is a decision about the worst board (a 500+
   cell flood on `hard`), not the average one.
 - **The shape map is lazy.** `GameSession.sidesOf` measures every cell's

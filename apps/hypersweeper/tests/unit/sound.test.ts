@@ -10,7 +10,7 @@ import {
   soundLabel,
   soundPreset,
   type SoundPreset,
-} from "../../src/audio/presets";
+} from "@tiling/sound";
 import { noteFor, partialsFor, voicesFor, type CellSound, type Voice } from "../../src/audio/sound";
 
 // `voicesFor` is the whole of the sound design as a pure function: an event in,

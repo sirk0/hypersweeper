@@ -31,6 +31,7 @@
     "@tiling/data": "*",
     "@tiling/geometry": "*",
     "@tiling/platform": "*",
+    "@tiling/sound": "*",
     "three": "^0.171.0"
   },
   "devDependencies": {

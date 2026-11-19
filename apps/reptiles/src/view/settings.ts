@@ -1,5 +1,5 @@
 // The settings screen: the player's choices (src/preferences.ts) — the colour
-// scheme, then the board — then what this build is, whether a newer one is
+// scheme, sound, then the board — then what this build is, whether a newer one is
 // deployed, and the privacy policy. The check itself is the shared one (`@tiling/platform`'s
 // update.ts, Hypersweeper's too): it asks the server's `version.json`, not the
 // service worker, and only then gets the worker onto the new build. A packaged
@@ -9,6 +9,7 @@
 // settings there hand no URL to the system browser.
 
 import { checkForUpdate, loadDeployedBuild } from "@tiling/platform";
+import { DEFAULT_SOUND, setSoundPreset, SOUND_OFF } from "@tiling/sound";
 import { preferences, setPreferences, type Preferences } from "../preferences";
 import { deviceScheme, SCHEME_LABELS, SCHEMES, type SchemePref } from "../scheme";
 
@@ -37,6 +38,27 @@ export function renderSettings(
     ),
   );
   host.append(lookHeading, lookList);
+
+  const soundHeading = document.createElement("h2");
+  soundHeading.textContent = "Sound";
+  const soundList = document.createElement("ul");
+  soundList.className = "settings-list";
+  soundList.append(
+    item(
+      toggle(
+        "sound",
+        "Sound effects",
+        "A click as a tile lands, a beep as the tiles turn, a flourish when the board is done.",
+        preferences().sound,
+        (on) => {
+          setPreferences({ sound: on });
+          applySound(on);
+          changed(preferences());
+        },
+      ),
+    ),
+  );
+  host.append(soundHeading, soundList);
 
   const boardHeading = document.createElement("h2");
   boardHeading.textContent = "Board";
@@ -97,6 +119,11 @@ export function renderSettings(
     list.append(item(policy));
   }
   host.append(heading, list);
+}
+
+/** Sound on (the shared synthesiser's default preset, Chime) or off. */
+export function applySound(on: boolean): void {
+  setSoundPreset(on ? DEFAULT_SOUND : SOUND_OFF);
 }
 
 /** The colour scheme: Auto, Light and Dark side by side, the one in force

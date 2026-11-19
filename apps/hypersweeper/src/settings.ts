@@ -1,5 +1,5 @@
 import { DEFAULT_APP_ICON, resolveAppIcon, type AppIconKey } from "./appIcon";
-import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "./audio/presets";
+import { clampVolume, DEFAULT_SOUND, DEFAULT_VOLUME, resolveSound } from "@tiling/sound";
 import { hasDifficulty, screens } from "./config/screens";
 import { clampHoldMs, DEFAULT_HOLD_MS } from "./input/hold";
 import { DEFAULT_SHAPE, resolveShape } from "./render/cellStyle";

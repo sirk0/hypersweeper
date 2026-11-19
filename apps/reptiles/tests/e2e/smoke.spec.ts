@@ -783,3 +783,80 @@ test("a tile of several pieces moves as one: the kissing squares", async ({ page
   await expect(placed).toHaveAttribute("d", /^M[^M]*Z\s*M[^M]*Z$/);
   expect(errors).toEqual([]);
 });
+
+// -- sound ---------------------------------------------------------------------
+// A synthesised sound leaves nothing in the DOM, so the init script counts the
+// oscillators the page builds — nodes being *scheduled*, which needs no output
+// device and no autoplay policy (as Hypersweeper's tests/e2e/sound.spec.ts).
+
+declare global {
+  interface Window {
+    __oscillators?: number;
+  }
+}
+
+async function countOscillators(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.__oscillators = 0;
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    const original = Ctor.prototype.createOscillator;
+    Ctor.prototype.createOscillator = function (this: AudioContext) {
+      window.__oscillators = (window.__oscillators ?? 0) + 1;
+      return original.call(this);
+    };
+  });
+}
+
+const oscillators = (page: Page): Promise<number> => page.evaluate(() => window.__oscillators ?? 0);
+
+/** Drop the tray square into the squares level's bottom-left corner. */
+async function dropOneSquare(page: Page): Promise<void> {
+  const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + t.width / 2, r.y + r.height - t.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.locator("svg.board [data-tile]")).toHaveCount(1);
+}
+
+test("a tile landing clicks, a turn beeps, and a finished board plays its flourish", async ({
+  page,
+}) => {
+  await countOscillators(page);
+  await page.goto("/?level=squares");
+  await dropOneSquare(page);
+  expect(await oscillators(page)).toBe(1);
+
+  // the rest of the board: a click a tile, then the flourish
+  await page.goto("/?level=squares");
+  const before = await oscillators(page);
+  await finishSquares(page);
+  expect((await oscillators(page)) - before).toBeGreaterThan(16);
+
+  await page.goto("/?level=cairo");
+  await page.locator('[data-turn="1"]').click();
+  expect(await oscillators(page)).toBe(1);
+  await page.keyboard.press("r");
+  expect(await oscillators(page)).toBe(2);
+});
+
+test("Settings › Sound turns the sounds off, and it stays off", async ({ page }) => {
+  await countOscillators(page);
+  await page.goto("/?settings");
+  const sound = page.locator('[data-setting="sound"]');
+  await expect(sound).toHaveAttribute("aria-checked", "true");
+  await sound.click();
+  await expect(sound).toHaveAttribute("aria-checked", "false");
+  await page.reload();
+  await expect(page.locator('[data-setting="sound"]')).toHaveAttribute("aria-checked", "false");
+
+  await page.goto("/?level=squares");
+  await dropOneSquare(page);
+  await page.goto("/?level=cairo");
+  await page.locator('[data-turn="1"]').click();
+  expect(await oscillators(page)).toBe(0);
+});

@@ -16,9 +16,13 @@ export interface Preferences {
   tilingPastBoard: boolean;
   /** The colour scheme (src/scheme.ts): Auto follows the device. */
   scheme: SchemePref;
+  /** Sound effects (src/sound.ts): a click as a tile lands, a beep as the
+   * tray turns, a flourish on a finished board. On unless the player turns
+   * them off. */
+  sound: boolean;
 }
 
-const DEFAULTS: Preferences = { tilingPastBoard: false, scheme: "auto" };
+const DEFAULTS: Preferences = { tilingPastBoard: false, scheme: "auto", sound: true };
 
 function load(): Preferences {
   const stored = readObject(KEY);
@@ -28,6 +32,7 @@ function load(): Preferences {
         ? stored["tilingPastBoard"]
         : DEFAULTS.tilingPastBoard,
     scheme: isScheme(stored?.["scheme"]) ? stored["scheme"] : DEFAULTS.scheme,
+    sound: typeof stored?.["sound"] === "boolean" ? stored["sound"] : DEFAULTS.sound,
   };
 }
 

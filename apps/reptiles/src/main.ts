@@ -22,8 +22,10 @@ import { renderHelp } from "./view/help";
 import { renderHome } from "./view/home";
 import { barsIcon, fillGlyphs, trayIcon } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
-import { renderSettings } from "./view/settings";
+import { applySound, renderSettings } from "./view/settings";
 import { SvgBoard } from "./view/svgBoard";
+import { unlockAudio } from "@tiling/sound";
+import { playSound } from "./sound";
 
 const byId = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -53,6 +55,10 @@ function tallyOf(plain: Level): ReturnType<Tally> {
 
 // The colour scheme picked in Settings, before anything is drawn.
 applyScheme(preferences().scheme);
+// Sound as Settings has it; nothing is heard before the player's first touch
+// (a browser starts no audio without a gesture: `unlockAudio`).
+applySound(preferences().sound);
+unlockAudio();
 fillGlyphs(document);
 
 /** The desktop layout (view/groups.ts): a sidebar beside every screen but a
@@ -276,6 +282,10 @@ interface Session {
    * once a finish, again only after a tile is taken off and it is finished
    * anew. */
   extending: boolean;
+  /** The board was finished at the last change — so the flourish plays once
+   * as it is finished, and again only after a tile is taken off and it is
+   * finished anew. */
+  wasWon: boolean;
 }
 
 let session: Session | null = null;
@@ -310,6 +320,8 @@ function changed(): void {
   hintButton.disabled = puzzle.won;
   count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
   if (!puzzle.won) s.dismissed = false;
+  if (puzzle.won && !s.wasWon) playSound({ kind: "win", pan: 0 });
+  s.wasWon = puzzle.won;
   won.hidden = !puzzle.won || s.dismissed;
   if (!puzzle.won) {
     // a tile taken off a finished board: the tiling round it goes with it
@@ -368,6 +380,7 @@ function open(level: Level, push = true): void {
     // not the empty board's, so `changed` starts on its hint
     laidKey: "-",
     extending: false,
+    wasWon: false,
   };
   setThinking(false);
   const name = byId("level");

@@ -8,7 +8,7 @@ import {
   subscribeSettings,
   type Settings,
 } from "../../src/settings";
-import { DEFAULT_SOUND } from "../../src/audio/presets";
+import { DEFAULT_SOUND } from "@tiling/sound";
 import { DEFAULT_HOLD_MS, HOLD_MS_MAX, HOLD_MS_MIN } from "../../src/input/hold";
 import { DEFAULT_THEME } from "../../src/ui/theme";
 

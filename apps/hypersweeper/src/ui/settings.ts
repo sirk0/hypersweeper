@@ -2,7 +2,7 @@ import { checkForUpdate, loadDeployedBuild } from "@tiling/platform";
 import { QUALITY_PREFS, type QualityPref } from "../render/quality";
 import { ACHIEVEMENTS, earned as earnedIds, loadProgress } from "../achievements";
 import { APP_ICONS, appIcon, appIconSupported, appIconUrls, type AppIconKey } from "../appIcon";
-import { SOUND_CHOICES, SOUND_OFF, SOUND_PRESETS, soundLabel } from "../audio/presets";
+import { SOUND_CHOICES, SOUND_OFF, SOUND_PRESETS, soundLabel } from "@tiling/sound";
 import { previewSound, setSoundPreset, setSoundVolume } from "../audio/sound";
 import { screens } from "../config/screens";
 import { gameCenterSupported, showGameCenterAchievements } from "../gameCenter";

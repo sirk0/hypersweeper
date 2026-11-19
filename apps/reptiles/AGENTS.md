@@ -336,7 +336,8 @@ from a level comes back to it. The gear in home's top-left
 corner (Hypersweeper's icon) opens Settings (`?settings`), which has the
 player's choices — the **colour scheme**, Auto (the device's
 `prefers-color-scheme`, the default), Light or Dark, as a three-way pill
-(`src/scheme.ts`, below), and the tiling past a finished board, a switch, off by
+(`src/scheme.ts`, below), **sound effects**, a switch, on by default (below),
+and the tiling past a finished board, a switch, off by
 default (below) — then shows the version, checks for updates (the shared check in `@tiling/platform`) and
 links the **privacy policy** (`public/privacy.html`, served as `/privacy`, in
 a new tab); the update row and the policy link are left out of a packaged
@@ -357,6 +358,19 @@ the same difficulty, dealt at random as the die deals), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
 outside it). Each move
 is a history entry, so the browser's Back works.
+
+**Sound** — Hypersweeper's synthesiser, shared as `@tiling/sound`
+(`packages/sound`), at its default preset, Chime: a click as a tile lands,
+pitched by its shape and panned where it landed (Hypersweeper's cell-opening
+click, `strikeVoice`); a short centred beep as the tray turns, gliding up one
+way round and down the other (`glideVoice`; flip is silent); and the win
+flourish as the board is finished (`flourishVoices`) — again only after a
+tile is taken off and it is finished anew. Putting a lifted tile back is
+silent. Nothing sounds before the player's first touch (`unlockAudio`).
+Settings › Sound turns it off (`src/preferences.ts`). `src/sound.ts` is the
+seam (`voicesFor`, pure, pinned by `tests/unit/sound.test.ts`), called from
+`src/input/drag.ts` and `changed` in `src/main.ts`; `smoke.spec.ts` counts
+the oscillators the page builds, with sound on and off.
 
 **The tiling past a finished board** — a setting, off by default (Settings ›
 Board, `src/preferences.ts`). With it on, once the region is covered, the
@@ -1050,8 +1064,10 @@ quick way to see the win state.
   `grownExtension` keeps the first patch that reaches far enough.
   `tests/unit/tilingExtension.test.ts` tests it on Hypersweeper's boards.
 - `src/preferences.ts` — the player's choices from Settings (the colour
-  scheme, the tiling past a finished board), in
+  scheme, sound, the tiling past a finished board), in
   `localStorage` through the shared guard, defaults where it is unreadable.
+- `src/sound.ts` — what each move sounds like (`RepSound`: a tile placed,
+  a turn, a win) as `@tiling/sound`'s figures, and `playSound`.
 - `src/scheme.ts` — the colour scheme: `applyScheme` sets `data-scheme` on
   `<html>` (none for Auto) and points the `theme-color` metas at the page
   colour. The dark colours are in `styles.css` twice, with the same
@@ -1128,9 +1144,9 @@ quick way to see the win state.
 - `src/input/drag.ts` — pointer drag and drop, rotate and flip, the ✕
   remove mode, and pinch, pan and wheel zoom.
 
-The geometry is the `@tiling/geometry` workspace package (`packages/geometry`)
-and the shared data the `@tiling/data` one (`data/`) — both listed in
-`package.json`, so no alias sets them up.
+The geometry is the `@tiling/geometry` workspace package (`packages/geometry`),
+the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
+(`packages/sound`) — all listed in `package.json`, so no alias sets them up.
 
 ## Rules
 

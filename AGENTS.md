@@ -47,6 +47,7 @@ extends) and `.prettierrc.json`.
 | `apps/reptiles/` | Rep-tiles, the tiling game |
 | `packages/geometry/` | `@tiling/geometry` — the boards both games are built on: tilings, solids, surfaces, adjacency (was `apps/hypersweeper/src/boards/`) |
 | `packages/platform/` | `@tiling/platform` — what a game needs from the browser, guarded: `localStorage`, and the update check both games' settings run |
+| `packages/sound/` | `@tiling/sound` — the synthesiser both games' sound effects play through: the presets, the figures (a struck tile, a glide, the win flourish) and the Web Audio player (was `apps/hypersweeper/src/audio/presets.ts` and half of `sound.ts`) |
 | `packages/vite-preset/` | `@tiling/vite-preset` — the build every game shares: `VITE_BASE`/`VITE_PACKAGED`/`VITE_NO_SW`, the version stamp, link-preview tags, dev-server security headers, PWA. A game's `vite.config.ts` is a `gameConfig({...})` call |
 | `shells/desktop/` | the Electron shell that packages any game as an offline macOS app — `make mac-app GAME=reptiles` — from the game's `apps/<game>/packaging.json` (its own `npm` project, outside the workspace — Electron is a 300 MB download nothing else needs) |
 | `apps/hypersweeper/ios/` | the Capacitor iPhone project — Hypersweeper's own (App Clip, Game Center, iCloud, stickers); a second game's would be `apps/<game>/ios/` |
