@@ -75,10 +75,6 @@ export interface MsHook {
   /** Multiply the zoom by `factor`, about a point in canvas CSS pixels (the
    * centre of the view by default); clamped like the pinch gesture. */
   zoomBy(factor: number, x?: number, y?: number): void;
-  /** Whether the board on screen shows its tiling carried on past its edge
-   * (a won flat board, once that tiling has been found — render/extension.ts),
-   * and so may be zoomed out past the fit. */
-  extended(): boolean;
   /** Enable or disable board animations (reveal ripple, flag pop, lose shake).
    * e2e tests disable them so a screenshot captures the settled frame. */
   animations(enabled: boolean): void;

@@ -21,11 +21,9 @@ export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 6;
 
 /** `max` is `MAX_ZOOM` but for a board drawn in the half-plane, whose bottom
- * row can need far more to be tapped (render/halfPlane.ts); `min` is
- * `MIN_ZOOM` but for a won board, which may be shrunk to see the tiling round
- * it (render/extension.ts). */
-export function clampZoom(zoom: number, max = MAX_ZOOM, min = MIN_ZOOM): number {
-  return Math.min(max, Math.max(min, zoom));
+ * row can need far more to be tapped (render/halfPlane.ts). */
+export function clampZoom(zoom: number, max = MAX_ZOOM): number {
+  return Math.min(max, Math.max(MIN_ZOOM, zoom));
 }
 
 /** The pan that keeps the world point under an anchor pixel fixed while the
@@ -44,10 +42,8 @@ export function anchoredPan(
 /** Pan clamped so the board can never be dragged off the screen: with a board
  * half-extent of `halfBoard` world units and a view half-extent of `halfView`,
  * there is exactly their difference of slack (and none at all — the board stays
- * centred — while the view is the larger of the two). `inside` gives the
- * smaller board that slack too, to slide about inside the view: a won board
- * zoomed out to see the tiling round it. */
-export function clampPan(pan: number, halfBoard: number, halfView: number, inside = false): number {
-  const limit = inside ? Math.abs(halfBoard - halfView) : Math.max(0, halfBoard - halfView);
+ * centred — while the view is the larger of the two). */
+export function clampPan(pan: number, halfBoard: number, halfView: number): number {
+  const limit = Math.max(0, halfBoard - halfView);
   return Math.min(limit, Math.max(-limit, pan));
 }

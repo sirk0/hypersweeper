@@ -31,7 +31,7 @@ import {
   shiftLoops,
   type Loop,
 } from "./curve";
-import type { TilingExtension } from "@tiling/geometry";
+import type { TilingExtension } from "../geometry/extension";
 import type { Puzzle } from "../puzzle";
 import { decorParts, markUnit, type MarkUnit } from "./decor";
 

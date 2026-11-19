@@ -1,6 +1,7 @@
 import "./styles.css";
 import { bandOf, type Band } from "./difficulty";
 import { findExtension, levelMid } from "./extension";
+import { preferences, type Preferences } from "./preferences";
 import { attachDrag, type DragControl } from "./input/drag";
 import type { Laid } from "./hint";
 import { Hinter } from "./hintClient";
@@ -129,7 +130,7 @@ function goHome(push = true): void {
 
 function goSettings(push = true): void {
   if (push) history.pushState(null, "", "?settings");
-  renderSettings(byId("settings-body"));
+  renderSettings(byId("settings-body"), settingsChanged);
   show("settings", "settings");
 }
 
@@ -393,11 +394,12 @@ async function showHint(): Promise<void> {
 }
 
 /** Carry a finished board's tiling on past its edge, as outlines out to the
- * screen's edges, and let it zoom out past the fit (`SvgBoard.showBeyond`).
+ * screen's edges, and let it zoom out past the fit (`SvgBoard.showBeyond`) —
+ * where the player has turned it on in Settings (off by default).
  * Worked out off the page (src/extension.ts), so it arrives a moment after
  * the win — and only if the board is still on screen, and still finished. */
 function extendTiling(s: Session): void {
-  if (s.extending) return;
+  if (s.extending || !preferences().tilingPastBoard) return;
   s.extending = true;
   const { level } = s.puzzle;
   void findExtension(level).then((ext) => {
@@ -405,6 +407,18 @@ function extendTiling(s: Session): void {
       s.board.showBeyond(ext, levelMid(level));
     }
   });
+}
+
+/** A choice made in Settings, while a level may still be open behind them:
+ * the tiling round a finished board comes or goes with its switch. */
+function settingsChanged(now: Preferences): void {
+  const s = session;
+  if (!s || !s.puzzle.won) return;
+  if (now.tilingPastBoard) extendTiling(s);
+  else {
+    s.extending = false;
+    if (s.board.extended) s.board.showBeyond(null);
+  }
 }
 
 /** Close the win card and look at the finished board. */

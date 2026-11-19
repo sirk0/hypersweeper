@@ -141,9 +141,6 @@ design rather than the rule itself.
   vertex shader applies), `particles.ts` (puffs, blast sparks, confetti) and
   `quality.ts` (whether those look-only effects run on this device). See
   "Motion and effects" in [`docs/render.md`](docs/render.md).
-  `extension.ts` draws a won flat board's tiling on past its edge, as
-  outlines (found by `src/modes/extension.ts`) — see "The tiling past a won
-  board" in [`docs/render.md`](docs/render.md).
 - `src/session.ts` — `GameSession`: Game ↔ mesh ↔ HUD.
 - `src/input/controls.ts` — pointer/touch state machine (tap, long-press,
   right-click, drag-rotate on 3D boards, pinch-zoom and drag-pan on every

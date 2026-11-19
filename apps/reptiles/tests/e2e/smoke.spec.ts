@@ -289,11 +289,9 @@ test.describe("on a touchscreen", () => {
   });
 });
 
-test("the win card's Exit closes it, leaving the finished board", async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.goto("/?level=squares");
-  // Lay the 4×4 squares row by row from the bottom-left: each dropped on its
-  // own cell snaps to the corner the cells before it left open.
+/** Finish the 4×4 squares, row by row from the bottom-left: each square
+ * dropped on its own cell snaps to the corner the cells before it left open. */
+async function finishSquares(page: Page): Promise<void> {
   const tray = page.locator("svg.board .tile.in-tray").first();
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) {
@@ -311,6 +309,21 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   }
   await expect(page.locator("svg.board [data-tile]")).toHaveCount(16);
   await expect(page.locator("#won")).toBeVisible();
+}
+
+/** The region's on-screen width after wheeling out hard over the board. */
+async function wheelOut(page: Page, steps: number): Promise<number> {
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  for (let i = 0; i < steps; i++) await page.mouse.wheel(0, 200);
+  await page.waitForTimeout(200);
+  return (await page.locator("svg.board path.region").boundingBox())!.width;
+}
+
+test("the win card's Exit closes it, leaving the finished board", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  await finishSquares(page);
   // no hint, no more tiles than needed: three stars
   await expect(page.locator("#won-stars")).toHaveText("★★★");
   await expect(page.locator("#won-detail")).toContainText("No hints.");
@@ -318,6 +331,36 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   await page.locator("#exit").click();
   await expect(page.locator("#won")).toBeHidden();
   await expect(page.locator("#count")).toHaveText("100%");
+  // The tiling past the board is a setting, off by default: no outlines, and
+  // the board stays fitted.
+  const fitted = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.waitForTimeout(1500);
+  await expect(page.locator("svg.board path.beyond")).toHaveCount(0);
+  expect(await wheelOut(page, 6)).toBeCloseTo(fitted.width, 0);
+  expect(errors).toEqual([]);
+});
+
+test("with its setting on, a finished board shows the tiling past it and zooms out", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto("/?settings");
+  const toggle = page.locator('[data-setting="tiling-past-board"]');
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  // kept: a fresh page reads it back on
+  await page.reload();
+  await expect(page.locator('[data-setting="tiling-past-board"]')).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await page.goto("/?level=squares");
+  // An unfinished board does not zoom out past the fit, setting or not.
+  const fitted = (await page.locator("svg.board path.region").boundingBox())!;
+  expect(await wheelOut(page, 6)).toBeCloseTo(fitted.width, 0);
+  await finishSquares(page);
+  await page.locator("#exit").click();
   // The finished board's tiling, carried on past its edge as outlines
   // (src/extension.ts, worked out in a worker), and with it zoom out past the
   // fit — to a third of it, and no further.
@@ -325,14 +368,9 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   expect((await page.locator("svg.board path.beyond").getAttribute("d"))!.length).toBeGreaterThan(
     1000,
   );
-  const fitted = (await page.locator("svg.board path.region").boundingBox())!;
-  await page.mouse.move(fitted.x + fitted.width / 2, fitted.y + fitted.height / 2);
-  for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 200);
-  await expect
-    .poll(async () => (await page.locator("svg.board path.region").boundingBox())!.width)
-    .toBeLessThan(fitted.width * 0.4);
-  const out = (await page.locator("svg.board path.region").boundingBox())!;
-  expect(out.width).toBeGreaterThan(fitted.width / 3 - 1);
+  const out = await wheelOut(page, 12);
+  expect(out).toBeLessThan(fitted.width * 0.4);
+  expect(out).toBeGreaterThan(fitted.width / 3 - 1);
   // Taking a tile off un-finishes it: the outlines go, and the board is fitted
   // again.
   await page.keyboard.press("x"); // ✕ remove mode
@@ -341,19 +379,6 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   const back = (await page.locator("svg.board path.region").boundingBox())!;
   expect(back.width).toBeCloseTo(fitted.width, 0);
   expect(errors).toEqual([]);
-});
-
-test("an unfinished board does not zoom out past the fit", async ({ page }) => {
-  await page.goto("/?level=squares");
-  const fitted = (await page.locator("svg.board path.region").boundingBox())!;
-  await page.mouse.move(fitted.x + fitted.width / 2, fitted.y + fitted.height / 2);
-  for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 200);
-  await page.waitForTimeout(200);
-  expect((await page.locator("svg.board path.region").boundingBox())!.width).toBeCloseTo(
-    fitted.width,
-    0,
-  );
-  await expect(page.locator("svg.board path.beyond")).toHaveCount(0);
 });
 
 test("the hint shows a tile to lay, goes with the next move, and costs the third star", async ({

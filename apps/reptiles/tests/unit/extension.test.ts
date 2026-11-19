@@ -4,9 +4,9 @@ import { levelExtension, levelMid, wantedReach } from "../../src/extension";
 import { levelByKey, type Level } from "../../src/levels";
 
 // A finished level's tiling carried on past its edge (src/extension.ts): what
-// the board draws round it as outlines. The geometry is the shared package's
-// (packages/geometry/tests/extension.test.ts); this holds Rep-tiles' side of
-// it — that each kind of level finds its tiling, and never over its own tiles.
+// the board draws round it as outlines. The geometry is tested on its own
+// (tilingExtension.test.ts); this holds that each kind of level finds its
+// tiling, and never over its own tiles.
 
 const level = (key: string): Level => levelByKey(key)!;
 

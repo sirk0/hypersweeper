@@ -1,9 +1,9 @@
 // The tiling a finished level was cut from, carried on past its edge: what the
 // board draws round the region once it is covered, as outlines only, out to
-// the edges of the screen (`SvgBoard.beyond`) — a level is one window onto a
-// tiling that goes on. The geometry is `@tiling/geometry`'s (its
-// `extension.ts`, shared with Hypersweeper); this is Rep-tiles' side of it:
-// where a level's bigger patches come from.
+// the edges of the screen (`SvgBoard.showBeyond`), when the player has it on
+// (src/preferences.ts) — a level is one window onto a tiling that goes on. The
+// geometry is `geometry/extension.ts`; this is where a level's tiling comes
+// from.
 //
 // - **A periodic level** (the uniform, 2-uniform, Laves, 2-isohedral, bond,
 //   pentagonal and isogonal windows, and the rep-tiles that are cut from a
@@ -19,15 +19,15 @@
 // thousand reaches far past any zoom out; the search still runs in a worker
 // (extension.worker.ts), as building the deeper patches exactly takes a moment.
 
+import type { Vertex } from "@tiling/geometry";
+import { aperiodicPatch } from "./geometry/aperiodic";
 import {
   grownExtension,
   listedExtension,
   periodicExtension,
   placeIn,
   type TilingExtension,
-  type Vertex,
-} from "@tiling/geometry";
-import { aperiodicPatch } from "./geometry/aperiodic";
+} from "./geometry/extension";
 import type { Cyc, Ring } from "./geometry/cyclotomic";
 import { hatPatch } from "./geometry/hat";
 import { piecePatch } from "./geometry/pieces";

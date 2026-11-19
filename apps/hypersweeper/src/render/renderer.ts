@@ -18,10 +18,9 @@ import {
   type Texture,
 } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import type { CellId, TilingExtension } from "@tiling/geometry";
+import type { CellId } from "@tiling/geometry";
 import { SOLID_GROUPS, surfaceOf, viewHint } from "../modes/catalog";
 import { PICK_LAYERS, type BoardMesh, type PickLayer } from "./boardMesh";
-import { TilingOutline } from "./extension";
 import { halfPlaneDrag } from "./halfPlane";
 import { anchoredPan, clampPan, clampZoom, MAX_ZOOM, MIN_ZOOM } from "./zoom";
 import { ParticleField } from "./particles";
@@ -62,12 +61,6 @@ const ROTATE_ASPECT = 1.2;
 const ALWAYS_ROTATE_MODES = new Set(["hex", "hexhex", "hextriangle", "hextri"]);
 /** Air left around a framed flat board (bevels and antialiasing off the edge). */
 const FLAT_MARGIN = 1.06;
-
-/** How far out a won board's view may zoom (render/extension.ts): a third of
- * the fitted size, at most — less where the tiles would shrink below
- * `MIN_TILE_PX` across, or the view would outrun how far the tiling is known. */
-const WON_MIN_ZOOM = 1 / 3;
-const MIN_TILE_PX = 14;
 
 const X_AXIS = new Vector3(1, 0, 0);
 const Y_AXIS = new Vector3(0, 1, 0);
@@ -116,9 +109,6 @@ export class BoardRenderer {
   readonly perspCamera: PerspectiveCamera;
   private readonly raycaster = new Raycaster();
   private board: BoardMesh | null = null;
-  /** The won board's tiling carried on past its edge, as outlines
-   * (render/extension.ts) — and with it, zoom out past the fit. */
-  private outline: TilingOutline | null = null;
   private frameHandle = 0;
   private dirty = true;
   /** CSS px of chrome reserved at the top (the HUD header); flat boards are
@@ -135,8 +125,6 @@ export class BoardRenderer {
    * last framing so the gesture handlers can do their arithmetic without
    * re-deriving the whole fit. */
   private wpp = 1;
-  /** `wpp` at the fit (zoom 1), from the last flat framing. */
-  private fitWpp = 1;
   private centerX = 0;
   private centerY = 0;
   /** Particles over the board (render/particles.ts). */
@@ -255,7 +243,6 @@ export class BoardRenderer {
 
   setBoard(board: BoardMesh): void {
     if (this.board) this.scene.remove(this.board);
-    this.dropOutline();
     this.board = board;
     this.nudging = null;
     if (board.view.kind === "solid") {
@@ -280,43 +267,11 @@ export class BoardRenderer {
    * through between its rows. */
   clearBoard(): void {
     if (this.board) this.scene.remove(this.board);
-    this.dropOutline();
     this.board = null;
     this.fling = null;
     this.spin = null;
     this.particles.reset();
     this.ground.visible = false;
-    this.dirty = true;
-  }
-
-  /** Carry the current flat board's tiling on past its edge, as outlines
-   * fading in over the page, and let the view zoom out past the fit to see
-   * more of it — what a won board gets. `extension` is in the board's own
-   * pixel space (modes/extension.ts). */
-  showExtension(extension: TilingExtension, animate: boolean): void {
-    const view = this.board?.view;
-    if (!this.board || view?.kind !== "flat" || this.board.discPans || this.board.halfPlane) {
-      return;
-    }
-    this.dropOutline();
-    const ink = getComputedStyle(document.documentElement).getPropertyValue("--muted").trim();
-    this.outline = new TilingOutline(extension, view.width, view.height, ink);
-    this.outline.setResolution(this.canvas.clientWidth || 1, this.canvas.clientHeight || 1);
-    this.outline.show(performance.now(), animate && this.motion);
-    this.board.add(this.outline);
-    this.frame();
-  }
-
-  /** Whether the current board shows its tiling past its edge. */
-  get extended(): boolean {
-    return this.outline !== null;
-  }
-
-  private dropOutline(): void {
-    if (!this.outline) return;
-    this.outline.removeFromParent();
-    this.outline.dispose();
-    this.outline = null;
     this.dirty = true;
   }
 
@@ -383,7 +338,6 @@ export class BoardRenderer {
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
     this.particles.bufferHeight = h * dpr;
-    this.outline?.setResolution(w, h);
     this.frame();
   }
 
@@ -428,15 +382,11 @@ export class BoardRenderer {
     const halfH = ((rotated ? view.width : view.height) * FLAT_MARGIN) / 2;
     // World units per CSS pixel: the fit that shows the whole board in the
     // region both ways, magnified by the current zoom.
-    const fit = Math.max((2 * halfW) / w, (2 * halfH) / usableH);
-    this.fitWpp = fit;
-    const wpp = fit / this.zoomLevel;
+    const wpp = Math.max((2 * halfW) / w, (2 * halfH) / usableH) / this.zoomLevel;
     // Zoomed in, the board is larger than the region and can be panned by the
-    // overhang; fitted, it stays centred. Zoomed out (a won board, which has
-    // its tiling round it to look at), it slides anywhere inside the view.
-    const inside = this.outline !== null;
-    this.panX = clampPan(this.panX, halfW, (wpp * w) / 2, inside);
-    this.panY = clampPan(this.panY, halfH, (wpp * usableH) / 2, inside);
+    // overhang; fitted (or smaller), it stays centred.
+    this.panX = clampPan(this.panX, halfW, (wpp * w) / 2);
+    this.panY = clampPan(this.panY, halfH, (wpp * usableH) / 2);
     this.cacheViewMetrics(wpp, w, top, usableH);
     // Keep the frustum full-canvas (so mouse→NDC picking stays consistent),
     // but bias it vertically so the board is *centred* in the region below
@@ -447,14 +397,6 @@ export class BoardRenderer {
     this.orthoCamera.top = wpp * (top + usableH / 2) + this.panY;
     this.orthoCamera.bottom = this.orthoCamera.top - wpp * h;
     this.orthoCamera.updateProjectionMatrix();
-    if (this.outline) {
-      // The board sits at the origin (turned or not), so the view's furthest
-      // corner from it is how far out the outlines have to reach.
-      const cam = this.orthoCamera;
-      const x = Math.max(Math.abs(cam.left), Math.abs(cam.right));
-      const y = Math.max(Math.abs(cam.top), Math.abs(cam.bottom));
-      this.outline.cover(Math.hypot(x, y));
-    }
   }
 
   /** Remember the screen->world scale and the pixel the view is centred on
@@ -510,28 +452,6 @@ export class BoardRenderer {
     return Math.max(MAX_ZOOM, this.board?.halfPlane?.maxZoom ?? 0);
   }
 
-  /** The furthest the current board may be shrunk: the fit, or on a won board
-   * showing its tiling (`showExtension`) as far out as `WON_MIN_ZOOM` — kept
-   * to where its tiles are still `MIN_TILE_PX` across, and to where the view
-   * stays inside the tiling as far as it is known. */
-  get minZoom(): number {
-    const outline = this.outline;
-    if (!outline) return MIN_ZOOM;
-    const { w, h } = this.viewport();
-    const tiles = (MIN_TILE_PX * this.fitWpp) / (2 * outline.tile);
-    // the view's half-diagonal at zoom z is fitWpp |(w, h)| / 2z; a little
-    // over it, so only a view slid right to the edge of the pan sees the
-    // patch run out
-    const reach = (0.6 * this.fitWpp * Math.hypot(w, h)) / outline.reach;
-    return Math.min(MIN_ZOOM, Math.max(WON_MIN_ZOOM, tiles, reach));
-  }
-
-  /** Whether a one-finger drag moves the board: zoomed in, zoomed out on a
-   * won board, or on a board drawn in a hyperbolic plane at any zoom. */
-  get dragPans(): boolean {
-    return this.zoomLevel > 1 || this.zoomLevel < 1 || this.hyperbolicPans;
-  }
-
   /** Multiply the zoom by `factor`, keeping the board fixed under the anchor
    * pixel (a pinch's midpoint, the mouse under the wheel; the centre of the
    * view when omitted). Clamped to [MIN_ZOOM, MAX_ZOOM] — further, on a board
@@ -541,7 +461,7 @@ export class BoardRenderer {
   }
 
   private zoomTo(zoom: number, anchorX?: number, anchorY?: number): void {
-    const next = clampZoom(zoom, this.maxZoom, this.minZoom);
+    const next = clampZoom(zoom, this.maxZoom);
     if (next === this.zoomLevel || !this.board) return;
     const before = this.wpp;
     const after = (before * this.zoomLevel) / next;
@@ -1034,7 +954,7 @@ export class BoardRenderer {
     // frame, then fall idle again when it settles.
     const now = performance.now();
     const animating = this.board?.tickAnimations(now) ?? false;
-    const effects = this.stepEffects(now) || (this.outline?.step(now) ?? false);
+    const effects = this.stepEffects(now);
     if (this.dirty || animating || effects) {
       this.renderer.render(this.scene, this.camera);
       this.dirty = animating || effects;

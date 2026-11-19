@@ -1,6 +1,6 @@
-// A patch of a tiling carried on past its edge: the outlines a game draws
-// round a finished board, to show that the board was one window onto a tiling
-// that goes on (Hypersweeper's render/extension.ts, Rep-tiles' svgBoard.ts).
+// A patch of a tiling carried on past its edge: the outlines the board draws
+// round a finished level, to show that it was one window onto a tiling that
+// goes on (`SvgBoard.showBeyond`; which levels get what is src/extension.ts).
 //
 // Two ways to find it, and a patch that neither fits has none:
 //
@@ -9,20 +9,18 @@
 //   representative per translation class, and those are laid out again over
 //   whatever region is asked for (`periodicExtension`). It never runs out.
 // - **Anything else** (the aperiodic patches, the spirals, the rep-tiles) is
-//   handed bigger patches of the same tiling, which each game grows its own way,
-//   and the board is located inside one by a similarity (`placeIn`): a
-//   translation, and for a rep-tile whose inflation turns or mirrors, a
-//   rotation, reflection and scale too (`grownExtension`). It reaches as far as
-//   that patch does (`reach`).
+//   handed bigger patches of the same tiling, and the level is located inside
+//   one by a similarity (`placeIn`): a translation, and for a rep-tile whose
+//   inflation turns or mirrors, a rotation, reflection and scale too
+//   (`grownExtension`). It reaches as far as that patch does (`reach`).
 //
-// A board is a list of tiles, each its polygon's points in order (pixels y
-// down or board units y up — nothing here minds), and `mid`, the point the
-// game measures the view from. Everything here is render-only: no cell ids, no
-// adjacency, nothing a game's rules read. Points are matched to a tolerance,
-// which the rule against rounding vertex ids does not reach — nothing here is
-// a vertex id.
+// A board here is a list of tiles, each its polygon's points in order, and
+// `mid`, the point the view is measured from. This is the one place in the
+// game that compares points in floats, and it may: everything here is
+// render-only — no tile is placed, keyed or matched by it, and the rule that
+// identity is exact (AGENTS.md) is about those. The floats are the drawing's.
 
-import type { Vertex } from "./core";
+import type { Vertex } from "@tiling/geometry";
 
 export interface TilingExtension {
   /** How far from the board's `mid`, in its own units, the tiling is known in

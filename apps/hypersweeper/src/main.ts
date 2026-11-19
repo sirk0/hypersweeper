@@ -24,16 +24,9 @@ import {
   soundVolume,
   unlockAudio,
 } from "./audio/sound";
-import {
-  isBoard3D,
-  pansHyperbolically,
-  type Board,
-  type CellId,
-  type SymmetryId,
-} from "@tiling/geometry";
+import { isBoard3D, pansHyperbolically, type CellId, type SymmetryId } from "@tiling/geometry";
 import { fairnessOf, modeFairness } from "./modes/fairness";
 import { gameCenterSupported, reportUnlocks, startGameCenter } from "./gameCenter";
-import { findExtension } from "./modes/extensionTask";
 import { hasMode } from "./modes/presets";
 import { isRandomKind, randomKindOf, randomMode } from "./modes/randomBoard";
 import { hasDifficulty } from "./config/screens";
@@ -261,12 +254,14 @@ class App {
       onHover: (cell) => this.hover(cell),
       rotates: () => this.screen === "game" && (this.session?.is3d ?? false),
       onRotate: (dx, dy) => this.rotate(dx, dy),
-      // A zoomed-in flat board is dragged around, as is a won one zoomed out
-      // to see the tiling round it, and a hyperbolic one at any zoom (it
-      // moves by an isometry of the disc or the half-plane, which needs no
-      // overhang); a 3D one is rotated instead (two fingers still pan it).
+      // A zoomed-in flat board is dragged around, and a hyperbolic one at any
+      // zoom (it moves by an isometry of the disc or the half-plane, which
+      // needs no overhang); a 3D one is rotated instead (two fingers still pan
+      // it).
       pans: () =>
-        this.screen === "game" && !(this.session?.is3d ?? false) && this.renderer.dragPans,
+        this.screen === "game" &&
+        !(this.session?.is3d ?? false) &&
+        (this.renderer.zoom > 1 || this.renderer.hyperbolicPans),
       onPan: (dx, dy, x, y) => this.pan(dx, dy, x, y),
       onZoom: (factor, x, y) => this.zoom(factor, x, y),
       // The wheel walks the ring; with shift held it rolls round the tube, on
@@ -667,10 +662,7 @@ class App {
       fx: {
         flag: (cell, on) => this.renderer.puff(cell, on),
         blast: (cell) => this.renderer.blast(cell),
-        win: (origin) => {
-          this.renderer.celebrate(origin);
-          this.extendTiling();
-        },
+        win: (origin) => this.renderer.celebrate(origin),
       },
     });
     // A board built from an explicit mine layout (the test seam) is not
@@ -709,26 +701,6 @@ class App {
       from: this.from,
       cells: this.session.cellCount,
       mines: this.session.mineCount,
-    });
-  }
-
-  /** A won flat board's tiling, carried on past its edge to the edges of the
-   * screen as outlines, with zoom out past the fit to see more of it
-   * (render/extension.ts). Found off the main thread where it takes long
-   * (modes/extensionTask.ts), so it arrives a moment after the win — and only
-   * if that board is still the one on screen. */
-  private extendTiling(): void {
-    const session = this.session;
-    if (!session || session.is3d) return;
-    void findExtension(
-      session.board as Board,
-      session.mode,
-      session.difficulty,
-      session.seed ?? 0,
-    ).then((extension) => {
-      if (extension && this.session === session && this.screen === "game") {
-        this.renderer.showExtension(extension, this.animationsEnabled);
-      }
     });
   }
 
@@ -1419,7 +1391,6 @@ class App {
       cellState: (cell) => this.session?.game.cellState(cell) ?? null,
       zoom: () => this.renderer.zoom,
       zoomBy: (factor, x, y) => this.zoom(factor, x, y),
-      extended: () => this.renderer.extended,
       scroll: (direction, id) => this.move(id ?? "ring", direction),
       animations: (enabled) => {
         this.animationsEnabled = enabled;

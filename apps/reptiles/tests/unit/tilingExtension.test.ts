@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { Board, Vertex } from "../src/core";
-import { grownExtension, latticeOf, periodicExtension, placeIn } from "../src/extension";
-import { carpetBoard } from "../src/fractal";
-import { hexhexBoard, squareBoard } from "../src/tilings";
+import { carpetBoard, hexhexBoard, squareBoard, type Board, type Vertex } from "@tiling/geometry";
+import {
+  grownExtension,
+  latticeOf,
+  periodicExtension,
+  placeIn,
+} from "../../src/geometry/extension";
 
-// A finished board's tiling carried on past its edge (src/extension.ts): found
-// from the board's own periods, or by finding the board in a bigger patch of
-// its tiling.
+// The geometry of a finished board's tiling carried on past its edge
+// (src/geometry/extension.ts), on Hypersweeper's boards, which come in pixels
+// with known periods: found from the board's own periods, or by finding the
+// board in a bigger patch of its tiling.
 
 const cellsOf = (board: Board): Vertex[][] => [...board.polygons.values()];
 const midOf = (board: Board): Vertex => [board.width / 2, board.height / 2];
