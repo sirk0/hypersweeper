@@ -271,6 +271,13 @@ export const GLYPHS: Record<string, string> = {
     <circle cx="15.7" cy="15.7" r="1.55" fill="currentColor"/>`,
   // How to play: Hypersweeper's question mark in a ring (its src/ui/help.ts
   // HELP_ICON), on the gear's 24 × 24 box and about its span.
+  // More games: a 2×2 of tiles, Hypersweeper's glyph for the same link.
+  games: `<g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+    <rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/>
+    <rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/>
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/>
+    <rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>
+  </g>`,
   help: `<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.9"/>
     <text x="12" y="12.7" text-anchor="middle" dominant-baseline="central"
       font-family="Space Grotesk, system-ui, sans-serif" font-weight="700" font-size="12.5"

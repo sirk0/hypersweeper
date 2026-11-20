@@ -5,9 +5,12 @@
 //
 //   - the build flags: VITE_BASE, VITE_PACKAGED, VITE_NO_SW (`buildFlags`);
 //   - the build constants `__APP_VERSION__`, `__APP_COMMIT__`,
-//     `__APP_PACKAGED__` and, for a deployed game, `__APP_SITE_URL__`;
+//     `__APP_PACKAGED__`, the outward links `__GAMES_SITE_URL__` and
+//     `__APP_STORE_URL__` (`outwardLinks`) and, for a deployed game,
+//     `__APP_SITE_URL__`;
 //   - the version stamp (`version.json`), emitted and served;
-//   - the link-preview tags in index.html;
+//   - the link-preview tags in index.html, and Safari's App Store banner for a
+//     game that is on the App Store (`appStoreBanner`);
 //   - the deployed response headers (public/_headers) on the dev and preview
 //     servers;
 //   - the PWA (service worker and web manifest).
@@ -92,6 +95,51 @@ export interface GameOptions {
   readonly overrides?: UserConfig;
 }
 
+/** Where a web build sends a player who wants more than this game: the shared
+ * site with every game on it, and this game's App Store page. */
+export interface OutwardLinks {
+  /** The landing page of every game, `url` in the repo's `site/site.json`. */
+  readonly gamesSite: string | null;
+  /** This game's App Store page, `appStore` in its `packaging.json` — the
+   * same link the landing page's card carries. */
+  readonly appStore: string | null;
+}
+
+/** The two outward links, read from the files that already hold them, so the
+ * landing page and the games cannot disagree. `root` is the game's folder,
+ * `apps/<key>/`, so the site's file is two folders up. Both are null in a
+ * packaged build: an app links out to nothing (an App Store link inside the
+ * App Store app least of all), and every URL left in its bundle would be one
+ * scripts/check-offline-assets.mjs has to be taught. A file that is not there
+ * (a game outside this repo's layout, the tests' throwaway folders) is a link
+ * that is not there. */
+export function outwardLinks(root: string, packaged: boolean): OutwardLinks {
+  if (packaged) return { gamesSite: null, appStore: null };
+  const read = (file: string): Record<string, unknown> | null =>
+    existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>) : null;
+  const text = (value: unknown): string | null =>
+    typeof value === "string" && value !== "" ? value : null;
+  return {
+    gamesSite: text(read(join(root, "../../site/site.json"))?.["url"]),
+    appStore: text(read(join(root, "packaging.json"))?.["appStore"]),
+  };
+}
+
+/** Safari's Smart App Banner: the App Store's own strip across the top of the
+ * page on an iPhone or an iPad, offering the app — or, where it is installed
+ * already, opening it. One meta tag naming the app's id, which is the number
+ * at the end of its App Store URL; Safari draws the rest, and leaves it out of
+ * a page launched from the Home Screen. */
+export function appStoreBanner(appStoreUrl: string): Plugin {
+  const id = /\/id(\d+)/.exec(appStoreUrl)?.[1];
+  if (!id) throw new Error(`no App Store id in ${appStoreUrl}`);
+  const tag = `<meta name="apple-itunes-app" content="app-id=${id}" />`;
+  return {
+    name: "tiling:app-store-banner",
+    transformIndexHtml: (html) => html.replace("</head>", `  ${tag}\n  </head>`),
+  };
+}
+
 /** The trailing-slash form a URL base is compared and joined in. */
 export function siteUrlFor(url: string, env: NodeJS.ProcessEnv = process.env): string {
   return (env["VITE_SITE_URL"] ?? url).replace(/\/*$/, "/");
@@ -106,6 +154,7 @@ export function gameConfig(options: GameOptions): UserConfig {
   const commit = (process.env["GITHUB_SHA"] ?? "").slice(0, 7);
   const siteUrl = options.site ? siteUrlFor(options.site.url) : null;
   const headersFile = join(root, "public/_headers");
+  const links = outwardLinks(root, flags.packaged);
 
   const define: Record<string, string> = {
     // The settings screen reports which build is running. The version comes
@@ -115,6 +164,8 @@ export function gameConfig(options: GameOptions): UserConfig {
     __APP_VERSION__: JSON.stringify(version),
     __APP_COMMIT__: JSON.stringify(commit),
     __APP_PACKAGED__: JSON.stringify(flags.packaged),
+    __GAMES_SITE_URL__: JSON.stringify(links.gamesSite),
+    __APP_STORE_URL__: JSON.stringify(links.appStore),
   };
   for (const [name, value] of Object.entries(options.define ?? {})) {
     define[name] = JSON.stringify(value);
@@ -125,6 +176,7 @@ export function gameConfig(options: GameOptions): UserConfig {
     ? []
     : [
         ...(options.site && siteUrl ? [socialMeta(options.name, options.site, siteUrl)] : []),
+        ...(links.appStore ? [appStoreBanner(links.appStore)] : []),
         ...(options.plugins ?? []),
         versionStamp(JSON.stringify({ version, commit })),
         ...(existsSync(headersFile)

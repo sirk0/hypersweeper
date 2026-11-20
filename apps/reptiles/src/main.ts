@@ -99,6 +99,28 @@ for (const group of MENU_GROUPS) {
     if (level) icon.replaceChildren(trayIcon(level));
   }, 0);
 }
+// More games, at the head of the sidebar's foot, a row like How to play and
+// Settings under it: only in a web build (null in a packaged one), in a new tab
+// so the game stays put. The phone's is under Tilings on the home screen.
+if (__GAMES_SITE_URL__) {
+  const games = document.createElement("a");
+  games.className = "side-row side-small";
+  games.href = __GAMES_SITE_URL__;
+  games.target = "_blank";
+  games.rel = "noopener";
+  games.dataset["action"] = "more-games";
+  games.title = "Every game, on tiling-games.pages.dev";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.dataset["icon"] = "games";
+  const label = document.createElement("span");
+  label.className = "side-label";
+  label.textContent = "More games ↗";
+  games.append(svg, label);
+  fillGlyphs(games);
+  document.querySelector(".side-footer")?.prepend(games);
+}
 sideRows.get("home")?.addEventListener("click", () => goHome());
 sideRows.get("help")?.addEventListener("click", () => goHelp());
 sideRows.get("settings")?.addEventListener("click", () => goSettings());
