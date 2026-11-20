@@ -147,6 +147,69 @@ function textBlock(label: string, hint?: string): HTMLElement {
   return box;
 }
 
+/** More games: a 2×2 of tiles, drawn like the How to play and Settings glyphs
+ * beside it in the sidebar. */
+const GAMES_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+    <rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/>
+    <rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/>
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/>
+    <rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>
+  </g>
+</svg>`;
+
+/** The way out to the rest of the games: a banner for the App Store app and a
+ * link to the site with every game on it, under the home page's rows on a
+ * phone and at the foot of the sidebar on a desktop. Only a web build has
+ * either (`__APP_STORE_URL__`, `__GAMES_SITE_URL__`, null in a packaged one —
+ * the App Store app does not advertise itself), so there this is null and
+ * the menu is as it was. Both open in a new tab, so the game stays where it
+ * was; on an iPhone the App Store link opens the App Store. */
+function promoLinks(): HTMLElement | null {
+  if (!__APP_STORE_URL__ && !__GAMES_SITE_URL__) return null;
+  const box = document.createElement("div");
+  box.className = "menu-promo";
+  const link = (href: string, action: string): HTMLAnchorElement => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.dataset["action"] = action;
+    return a;
+  };
+  if (__APP_STORE_URL__) {
+    const store = link(__APP_STORE_URL__, "app-store");
+    store.className = "menu-entry menu-promo-store";
+    // The app's own icon, from this origin (the CSP allows no other).
+    const icon = document.createElement("img");
+    icon.className = "menu-promo-icon";
+    icon.src = `${import.meta.env.BASE_URL}apple-touch-icon.png`;
+    icon.alt = "";
+    icon.width = 40;
+    icon.height = 40;
+    const arrow = document.createElement("span");
+    arrow.className = "menu-promo-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "↗";
+    store.title = "Hypersweeper for iPhone, iPad and Mac";
+    store.append(icon, textBlock("Get the app", "On the App Store"), arrow);
+    box.append(store);
+  }
+  if (__GAMES_SITE_URL__) {
+    const games = link(__GAMES_SITE_URL__, "more-games");
+    games.className = "menu-entry menu-promo-games";
+    games.title = "Every game, on tiling-games.pages.dev";
+    // The glyph is the sidebar's, where it lines the row up with How to play
+    // and Settings under it; the phone shows the label alone, as a link.
+    const icon = document.createElement("span");
+    icon.className = "menu-promo-games-icon";
+    icon.innerHTML = GAMES_ICON;
+    games.append(icon, textBlock("More games"));
+    box.append(games);
+  }
+  return box;
+}
+
 export class Menu {
   readonly root: HTMLElement;
   private readonly groups: Group[];
@@ -840,9 +903,13 @@ export class Menu {
       list.append(li);
     }
     this.favouritesOnScreen = true;
+    // At the foot of the page, under the rows (and their favourites), which
+    // stay centred in the room above it.
+    const promo = promoLinks();
+    const tail = promo ? [promo] : [];
     const faves = this.favouriteRows();
     if (faves.length === 0) {
-      this.body.replaceChildren(list);
+      this.body.replaceChildren(list, ...tail);
       return;
     }
     // The two lists are centred as one block: the first gives up its bottom
@@ -851,7 +918,7 @@ export class Menu {
     const favList = document.createElement("ul");
     favList.className = "menu-list menu-fav-list";
     favList.append(...faves);
-    this.body.replaceChildren(list, this.sectionHeading("Favourites"), favList);
+    this.body.replaceChildren(list, this.sectionHeading("Favourites"), favList, ...tail);
   }
 
   private showCustom(): void {
@@ -1064,6 +1131,9 @@ export class Menu {
 
     this.sidebarFooterEl = document.createElement("div");
     this.sidebarFooterEl.className = "menu-sidebar-footer";
+    // Above How to play and Settings, which `placeHeaderButtons` appends.
+    const promo = promoLinks();
+    if (promo) this.sidebarFooterEl.append(promo);
     sidebar.append(this.sidebarFooterEl);
 
     return sidebar;

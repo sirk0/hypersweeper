@@ -170,6 +170,31 @@ test("the colour scheme: Auto follows the device, Light and Dark override it, an
   expect(errors).toEqual([]);
 });
 
+test("More games links to the shared site: under Tilings on a phone, in the sidebar on a desktop", async ({
+  page,
+}) => {
+  // The shared site's own address, as the shared Vite preset reads it.
+  const site = JSON.parse(
+    readFileSync(new URL("../../../../site/site.json", import.meta.url), "utf8"),
+  ).url as string;
+  const games = page.locator('[data-action="more-games"]:visible');
+  await page.setViewportSize(PHONE);
+  await page.goto("/");
+  await expect(games).toHaveCount(1);
+  await expect(games).toHaveAttribute("href", site);
+  await expect(games).toHaveAttribute("target", "_blank");
+  // under the Tilings row, on the home screen
+  const tilings = await page.locator(".catalog-pick").boundingBox();
+  expect((await games.boundingBox())!.y).toBeGreaterThan(tilings!.y + tilings!.height);
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect(games).toHaveCount(1);
+  await expect(page.locator('.side-footer [data-action="more-games"]')).toBeVisible();
+  await expect(games).toHaveAttribute("href", site);
+  // no App Store page yet, so nothing tells Safari of one
+  await expect(page.locator('meta[name="apple-itunes-app"]')).toHaveCount(0);
+});
+
 test("the privacy policy: linked from Settings, served at /privacy under the site's policy", async ({
   page,
 }) => {

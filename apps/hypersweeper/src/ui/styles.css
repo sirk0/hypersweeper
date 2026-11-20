@@ -1035,6 +1035,81 @@ body {
   margin-top: 0;
 }
 
+/* The way out to the other games (menu.ts `promoLinks`), web builds only: the
+   App Store banner, a slim card as wide as the rows, and More games as a quiet
+   link under it. At the foot of the phone's home page — the rows above keep
+   their auto margins, so they stay centred in the room left, and a phone too
+   short for it all scrolls the page as it does for the favourites — and at the
+   top of the desktop sidebar's footer. */
+.menu-promo {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 12px;
+}
+
+.menu-promo .menu-entry {
+  text-decoration: none;
+}
+
+.menu-promo-store {
+  padding: 8px 14px 8px 10px;
+  gap: 12px;
+}
+
+.menu-promo-store .menu-entry-label {
+  font-size: 15px;
+}
+
+.menu-promo-store .menu-entry-hint {
+  font-size: 12px;
+}
+
+.menu-promo-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  /* The iOS icon mask, near enough: the PNG itself is square. */
+  border-radius: 22%;
+}
+
+.menu-promo-arrow {
+  flex: none;
+  color: var(--muted);
+}
+
+/* A link, not a card, on the phone: one muted line. */
+.menu-promo-games {
+  width: auto;
+  padding: 6px 12px;
+  color: var(--muted);
+  background: none;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+}
+
+.menu-promo-games:hover,
+.menu-promo-games:focus-visible {
+  color: var(--accent);
+}
+
+.menu-promo-games .menu-entry-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.menu-promo-games .menu-entry-label::after {
+  content: " ↗";
+}
+
+.menu-promo-games .menu-entry-hint,
+.menu-promo-games-icon {
+  display: none;
+}
+
 .menu-section-heading {
   margin: 22px 0 10px;
   font-size: 13px;
@@ -1277,6 +1352,52 @@ body {
 
   .menu-sidebar-footer .menu-header-btn-label {
     display: inline;
+  }
+
+  /* In the sidebar the promo is one more block of its footer, above How to
+     play and Settings: the banner a card as wide as the rows, More games a
+     nav row like theirs, its glyph and label lined up with them. */
+  .menu-sidebar-footer .menu-promo {
+    align-items: stretch;
+    gap: 3px;
+    margin: 0 0 6px;
+  }
+
+  /* A card, not a nav row: `.menu-sidebar .menu-entry` strips the rows to
+     bare text and hides their hints, and this one keeps both. */
+  .menu-sidebar-footer .menu-promo-store {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px 12px 8px 8px;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .menu-sidebar-footer .menu-promo-store .menu-entry-hint {
+    display: block;
+  }
+
+  .menu-sidebar-footer .menu-promo-games {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .menu-sidebar-footer .menu-promo-games .menu-entry-label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .menu-sidebar-footer .menu-promo-games-icon {
+    display: block;
+    flex: none;
+    width: 22px;
+    height: 22px;
+  }
+
+  .menu-sidebar-footer .menu-promo-games-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .menu-body {

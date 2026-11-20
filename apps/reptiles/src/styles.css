@@ -1128,6 +1128,21 @@ button:disabled {
   gap: 10px;
 }
 
+/* More games (home.ts): a quiet link under Tilings, web builds only. */
+.home-games {
+  align-self: center;
+  padding: 4px 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.home-games:hover,
+.home-games:focus-visible {
+  color: var(--accent);
+}
+
 .home-pick {
   display: flex;
   align-items: center;
@@ -1965,6 +1980,11 @@ a.settings-row:active {
   .side-small {
     font-size: 14px;
     color: var(--muted);
+  }
+
+  /* More games (main.ts) is a link, not a button: a row all the same. */
+  a.side-row {
+    text-decoration: none;
   }
 
   .side-small svg {

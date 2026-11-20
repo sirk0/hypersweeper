@@ -231,6 +231,32 @@ the plane's squares. `data-won` ("easy hard") is the e2e handle, and the
 `aria-label` says it in words. `tests/e2e/favourites.spec.ts` pins both
 features.
 
+### More games, and the App Store
+
+A web build points the player at the rest: under the phone home page's rows (and
+the Favourites, if any) an **App Store banner** — a slim card with the app's
+icon, "Get the app · On the App Store" — and a quiet **More games** link under
+it, to the shared site with every game on it,
+<https://tiling-games.pages.dev/>. On a desktop both sit at the top of the
+sidebar's footer, above How to play and Settings: the banner a card, More games
+a nav row with a glyph of its own (`Menu.promoLinks`). The rows above them keep
+their auto margins, so they stay centred in the room left; a phone too short
+for it all scrolls the page, as it does for the favourites. Both open in a new
+tab, so the game stays where it was.
+
+Neither address is written here. The shared Vite preset reads them from the
+files that already hold them — the site's `url` in `site/site.json`, the App
+Store page in `packaging.json` (`appStore`, the link the landing page's card
+carries too) — into `__GAMES_SITE_URL__` and `__APP_STORE_URL__`, which are
+`null` in a **packaged build**: the macOS and iPhone apps link out to nothing,
+and the App Store app does not advertise itself, so there the menu is as it
+was. The preset also gives the web build Safari's own **Smart App Banner**
+(`<meta name="apple-itunes-app" content="app-id=…">`), the App Store's strip
+across the top of the page on an iPhone or iPad, which offers the app — or
+opens it, where it is installed — and is never shown in a page launched from
+the Home Screen. See `packages/vite-preset/AGENTS.md`.
+`tests/e2e/promo.spec.ts` pins the links, where they sit, and the meta tag.
+
 ## Telling the player where they are
 
 `src/ui/boardInfo.ts` owns the board's name and the row of controls under the
