@@ -5,7 +5,9 @@ import { defineConfig } from "vite";
 // the VITE_BASE / VITE_PACKAGED / VITE_NO_SW flags, `__APP_VERSION__` and the
 // rest, the version stamp, the link-preview tags, public/_headers on the dev
 // and preview servers, and the PWA. What follows is __TITLE__'s own: where it
-// is deployed (wrangler.toml names the Pages project) and its web manifest.
+// is deployed (its folder on the shared site, https://tiling-games.pages.dev/__KEY__/,
+// which scripts/build-site.mjs builds with VITE_BASE=/__KEY__/) and its web
+// manifest.
 
 const DESCRIPTION = "__TITLE__: a game on the shared tilings.";
 
@@ -14,7 +16,7 @@ export default defineConfig(
     configUrl: import.meta.url,
     name: "__TITLE__",
     // A text-only link card until there is a public/og.png (then add imageAlt).
-    site: { url: "https://__KEY__.pages.dev/", description: DESCRIPTION },
+    site: { url: "https://tiling-games.pages.dev/__KEY__/", description: DESCRIPTION },
     pwa: {
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],

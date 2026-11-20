@@ -85,7 +85,6 @@ test("the template's tokens are all ones the scaffold fills", () => {
     "playwright.config.ts",
     "index.html",
     "packaging.json",
-    "wrangler.toml",
     "AGENTS.md",
     "src/main.ts",
     "scripts/make-icons.mts",

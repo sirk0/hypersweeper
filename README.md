@@ -7,10 +7,10 @@ from a flat aperiodic Penrose mosaic to a Goldberg sphere or a Möbius strip.
 (the TypeScript/WebGL app in [`apps/hypersweeper/`](apps/hypersweeper), deployed from master by GitHub
 Actions; installable, and it works offline once loaded)
 
-**Also in this repo — Rep-tiles:** <https://rep-tiles.pages.dev/>, a drag-and-drop
+**Also in this repo — Rep-tiles:** <https://tiling-games.pages.dev/rep-tiles/>, a drag-and-drop
 puzzle built on the same tilings: cover each board exactly with its tiles
 ([`apps/reptiles/`](apps/reptiles)). The repo is a set of games on one shared
-geometry ([`packages/`](packages)); a new one starts with
+geometry ([`packages/`](packages)), all listed at <https://tiling-games.pages.dev/>; a new one starts with
 `node scripts/new-game.mjs <key> "<Title>"` — see
 [`docs/agents/new-game.md`](docs/agents/new-game.md).
 

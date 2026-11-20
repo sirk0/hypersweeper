@@ -1,8 +1,11 @@
 {
-  "$comment": "How this game is shipped: its site (web: the Cloudflare Pages project the deploy and PR-preview workflows publish to), the files its packaged bundle must carry (bundledAssets, checked by scripts/check-offline-assets.mjs) and its desktop app (desktop, staged by scripts/stage-desktop.sh). The workflows list the games from these files (scripts/games.mjs). See docs/agents/new-game.md.",
+  "$comment": "How this game is shipped: its site (web: its folder on the shared site, tiling-games.pages.dev/<path>/; the Cloudflare Pages project of its own, if it still has one; where it is played; and movedFrom, a project it left that now redirects to it — see scripts/lib/games.mjs), its landing-page card (description, appStore), the files its packaged bundle must carry (bundledAssets, checked by scripts/check-offline-assets.mjs) and its desktop app (desktop, staged by scripts/stage-desktop.sh). The workflows list the games from these files (scripts/games.mjs). See docs/agents/new-game.md.",
   "productName": "Hypersweeper",
+  "description": "Minesweeper on flat, hyperbolic and 3D boards: tilings, polyhedra, a donut, a Klein bottle.",
+  "appStore": "https://apps.apple.com/us/app/hypersweeper/id6822071409",
   "bundledAssets": ["fonts/Rubik-Bold.ttf", "fonts/DSEG7Classic-Bold.ttf"],
   "web": {
+    "path": "hypersweeper",
     "project": "hypersweeper",
     "url": "https://hypersweeper.pages.dev/",
     "analytics": true,

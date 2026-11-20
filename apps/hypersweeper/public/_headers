@@ -10,8 +10,11 @@
 # reading the shipped file rather than a copy of it is the point: a policy
 # restated in TypeScript would drift from the one Cloudflare serves.
 #
-# The PR preview inserts `X-Robots-Tag: noindex` into the `/*` block below at
-# deploy time (.github/workflows/pr-preview.yml). A preview is the only place
+# The PR preview builds the game into a folder of the shared site,
+# tiling-games.pages.dev/hypersweeper/ (scripts/build-site.mjs), which moves
+# every rule here under that folder (`/*` becomes `/hypersweeper/*`) — the
+# site's root _headers is the only one Cloudflare reads there — and adds
+# `X-Robots-Tag: noindex` as a `/*` rule of its own. A preview is the only place
 # the *edge* behaviour of this file can be checked before it reaches
 # production — `vite preview` applies the policy, but Cloudflare is the only
 # thing that applies these rules the way Cloudflare applies them.
@@ -27,8 +30,10 @@
 #     that needs something the policy withholds has to stop needing it — which
 #     is why public/next/redirect.js is a file and not an inline <script>.
 #   - Two rules with the *same* pattern do not merge: the later one replaces the
-#     earlier wholesale. The PR preview therefore edits the `/*` block below
-#     rather than adding a second one, which would drop every header here.
+#     earlier wholesale. That is why the preview's noindex rule can be a `/*`
+#     of its own only once this file's `/*` has been moved under its folder —
+#     and why nothing here may set X-Robots-Tag, which the two rules would
+#     then both send.
 #
 # This file has no extension, which keeps it out of two things that would
 # otherwise object: scripts/check-offline-assets.mjs scans only known text

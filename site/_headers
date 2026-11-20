@@ -1,0 +1,28 @@
+# The landing page's response headers. scripts/build-site.mjs writes this file
+# first into the shared site's root _headers, then each game's own rules, every
+# pattern moved under the game's folder (a game's `/*` becomes `/rep-tiles/*`),
+# then, for a PR preview, a `/*` rule carrying only `X-Robots-Tag: noindex`.
+#
+# So nothing here may match a game's folder. Cloudflare applies every rule whose
+# pattern matches, and joins a header two rules both set with a comma: a second
+# Content-Security-Policy is a second policy the browser enforces as well. That
+# is why these rules name the landing page's own paths rather than `/*`, and why
+# the preview's `/*` rule sets a header no game does.
+#
+# The same policy as the games' (apps/hypersweeper/public/_headers explains it):
+# the page has no script and loads nothing from another origin.
+
+/
+  Content-Security-Policy: default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/icons/*
+  X-Content-Type-Options: nosniff
+
+/fonts/*
+  X-Content-Type-Options: nosniff

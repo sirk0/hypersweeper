@@ -4,7 +4,9 @@ A game in this repo is a folder, `apps/<key>/`, built on the shared packages.
 CI, the deploy, the PR previews, the version bump and the desktop shell all
 find a game by its `apps/<key>/packaging.json` (`scripts/games.mjs` lists
 them). So adding a game means writing that folder. The scaffold writes it, and
-only one manual step is left outside the repo: the Cloudflare Pages project.
+nothing is left to do outside the repo: the game is deployed to a folder of the
+shared site, `https://tiling-games.pages.dev/<key>/` (`site/`,
+`scripts/build-site.mjs`), and gets a card on its landing page.
 
 ## 1. Scaffold it
 
@@ -12,8 +14,8 @@ only one manual step is left outside the repo: the Cloudflare Pages project.
 node scripts/new-game.mjs <key> "<Title>"      # e.g. tile-slide "Tile Slide"
 ```
 
-The `key` is the game's folder, npm package name, Pages project and
-`<key>.pages.dev` subdomain. Use lowercase letters, digits and single hyphens.
+The `key` is the game's folder, npm package name and its folder on the shared
+site. Use lowercase letters, digits and single hyphens.
 
 The scaffold copies `templates/game/` into `apps/<key>/`, filling in the key,
 the title, a desktop app id and a `vite preview` port of the game's own. It
@@ -39,23 +41,25 @@ every seam a real game here needs:
 | `src/styles.css` | colours as `var(--…)` tokens, with the dark block in step |
 | `vite.config.ts` | one `gameConfig({...})` call (`@tiling/vite-preset`): site, PWA, its preview port |
 | `public/_headers` | the security policy (Hypersweeper's), applied at the edge and by `vite dev` / `vite preview` |
-| `wrangler.toml` | names the Pages project |
-| `packaging.json` | `web` (the Pages project and URL), `desktop` (app id, icon, colours, smoke check), `bundledAssets` |
+| `packaging.json` | `web` (its folder on the shared site, and its URL), `description` (the landing page's card), `desktop` (app id, icon, colours, smoke check), `bundledAssets` |
 | `playwright.config.ts`, `tests/e2e/smoke.spec.ts` | the smoke test against the production bundle, under the real CSP |
 | `scripts/make-icons.mts` | draws `public/` icons and `packaging/icon.png` from one SVG |
 | `AGENTS.md`, `CLAUDE.md` | the game's guide — rewrite it once the game is yours |
 
-## 2. Create its Pages project
+## 2. Where it is deployed
 
-In the Cloudflare dashboard, go to Workers & Pages → Create → Pages, and choose
-**direct upload**. Name the project `<key>`, and set the production branch to
-**`master`**. The workflows deploy with `--branch=master`, so a project whose
-production branch is `main` gets every deploy as a preview, and the site
-stays empty.
+Nowhere new: the shared site builds every game with a `web` block into a
+folder of its own (`VITE_BASE=/<key>/`), so the game must work under a subpath.
+The template does — it reads `import.meta.env.BASE_URL`, and Vite rewrites
+`url("/…")` in CSS. What Vite does *not* rewrite is a file copied from
+`public/` verbatim: an HTML page there (a privacy policy, say) links its assets
+relatively. The game's `public/_headers` is moved under its folder by
+`scripts/build-site.mjs`.
 
-Do this before the first pull request: the PR preview deploys every game with
-a `web` block, and it fails for a project that does not exist yet. A game that
-should not be deployed yet can drop `web` from `packaging.json`.
+A game that should not be deployed yet can drop `web` from `packaging.json`.
+A game that needs a Pages project of its own (Hypersweeper, for now) sets
+`web.project`; the shared site then redirects its folder there
+(`scripts/lib/games.mjs` explains the fields).
 
 ## 3. Make it the game
 
@@ -91,8 +95,8 @@ with both games importing it.
 | CI `game-checks (<key>)` | typecheck, Prettier, unit tests, build, the packaged bundle's offline check, the desktop shell's tests |
 | CI `game-e2e (<key>)` | the Playwright smoke test |
 | CI `template-check` | scaffolds a throwaway game on every change and runs all of the above on it, so the template stays working |
-| `deploy-cloudflare.yml` | on every push to `master`, builds and publishes it to `<key>.pages.dev` |
-| `pr-preview.yml` | `https://pr-<n>.<key>.pages.dev` per pull request, with its own sticky comment |
+| `deploy-cloudflare.yml` | on every push to `master`, builds it into the shared site and publishes it at `https://tiling-games.pages.dev/<key>/` |
+| `pr-preview.yml` | `https://pr-<n>.tiling-games.pages.dev/<key>/` per pull request (and `alpha.tiling-games.pages.dev/<key>/`, the latest PR's), in the one sticky comment |
 | `bump-version.yml` | bumps its patch version on a push that changes its folder, `packages/` or `data/`. Its first push lands at its own version, 0.1.0. With `"sharedVersion": true` in its `packaging.json` (as Rep-tiles has) it has Hypersweeper's version instead, written into its `package.json` on every Hypersweeper bump (`scripts/bump_version.py`), and set it to Hypersweeper's to start |
 | `make desktop-run GAME=<key>`, `make mac-app GAME=<key>` | the offline desktop app (`shells/desktop/README.md`) |
 
@@ -106,4 +110,4 @@ in `apps/hypersweeper/ios/README.md`).
    `.dockerignore`.
 3. Run `npm install`, then check that `package-lock.json` has no leftover
    `"apps/<key>"` entry marked `extraneous` (delete it by hand if so).
-4. Delete the Pages project in Cloudflare.
+4. If it had a Pages project of its own, delete it in Cloudflare.

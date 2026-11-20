@@ -13,7 +13,7 @@ import { defineConfig, type Connect } from "vite";
 // The dev server may serve their files with no `server.fs.allow`: Vite's
 // default allow-list is the npm workspace root — the repo root.
 
-const { packaged } = buildFlags();
+const { packaged, base } = buildFlags();
 
 // VITE_ANALYTICS=1 builds the bundle that carries the anonymous play counter
 // (src/analytics.ts). It is *opt-in per build* rather than on by default,
@@ -127,7 +127,14 @@ export default defineConfig(
         // (Workbox's `cleanURLs` tries /privacy.html), so this only matters if
         // that ever stops matching: the request then goes to the network, which
         // serves the page, rather than to the app shell.
-        navigateFallbackDenylist: [/^\/api\//, /^\/privacy(\.html)?$/],
+        //
+        // Both under the base the build is mounted at ("/" here; a folder on
+        // the shared site in a PR preview, scripts/build-site.mjs), since the
+        // worker matches full paths.
+        navigateFallbackDenylist: [
+          new RegExp(`^${escapeRegExp(base)}api/`),
+          new RegExp(`^${escapeRegExp(base)}privacy(\\.html)?$`),
+        ],
       },
     },
     overrides: {
@@ -155,3 +162,7 @@ export default defineConfig(
     },
   }),
 );
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

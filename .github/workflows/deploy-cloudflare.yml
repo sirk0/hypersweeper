@@ -1,25 +1,28 @@
 name: Deploy to Cloudflare Pages
 
-# The whole deploy: every TypeScript game, each to its own Cloudflare Pages
-# project, one matrix entry per game —
+# The whole deploy, from the games' own packaging.json files
+# (scripts/games.mjs, the `games` job below). Three jobs:
 #
-#   apps/hypersweeper  ->  the `hypersweeper` project, https://hypersweeper.pages.dev
-#   apps/reptiles      ->  the `rep-tiles` project,    https://rep-tiles.pages.dev
+#   site    the shared site, https://tiling-games.pages.dev (site/site.json):
+#           the landing page, every game without a Pages project of its own
+#           in its folder (Rep-tiles at /rep-tiles/), and a 302 from the folder
+#           of every game that has one (/hypersweeper -> hypersweeper.pages.dev).
+#           Built by scripts/build-site.mjs, published from site/.
+#   deploy  each game with a Pages project of its own (`web.project`), one
+#           matrix entry each — today Hypersweeper, to https://hypersweeper.pages.dev.
+#   moved   each Pages project a game has left (`web.movedFrom`), republished
+#           as a redirect to the game's new address — today rep-tiles.pages.dev,
+#           which 301s to /rep-tiles/ on the shared site.
 #
-# The matrix comes from the games' own packaging.json files (scripts/games.mjs,
-# the `games` job below). Each entry builds its game and runs wrangler from the
-# game's folder, whose wrangler.toml names the project. This is the only thing
-# that publishes them; the pygame build stays in the repo as the reference
-# implementation and goes nowhere. A new game needs no edit here — only its
-# Pages project, created once in the Cloudflare dashboard with `master` as its
-# production branch (docs/agents/new-game.md).
+# This is the only thing that publishes them; the pygame build stays in the repo
+# as the reference implementation and goes nowhere. A new game needs no edit
+# here: the scaffold puts it on the shared site (docs/agents/new-game.md).
 #
-# Each game is served from its domain root, which is `VITE_BASE`'s default, so
-# nothing here sets it. That path is baked into the bundle at build time —
-# asset URLs, the PWA manifest and the service worker scope all derive from it
-# — so serving the same artifact from a subdirectory would take its own build.
-# No source file hardcodes it either (public/next/index.html redirects with a
-# relative "../").
+# A game with its own project is served from its domain root, which is
+# `VITE_BASE`'s default, so the `deploy` job sets none. On the shared site it is
+# its folder, which build-site.mjs sets. That path is baked into the bundle at
+# build time — asset URLs, the PWA manifest and the service worker scope all
+# derive from it — so the same artifact cannot be served from both.
 #
 # The game used to be deployed to GitHub Pages as well, from a second workflow
 # building the same commit under /hypersweeper/. That is gone;
@@ -41,19 +44,79 @@ concurrency:
 jobs:
   games:
     # Every game with a site, read from its apps/<game>/packaging.json (`web`:
-    # its Pages project and URL; Hypersweeper's also `analytics` — it carries
-    # the anonymous play counter, and this is the one host that serves the
-    # Pages Function it posts to — and `siteUrlVariable`, the repository
-    # variable a custom domain overrides its URL with). A new game is a new
-    # folder, not an edit here.
+    # its folder on the shared site, its Pages project and URL; Hypersweeper's
+    # also `analytics` — it carries the anonymous play counter, and its own
+    # project is the one host that serves the Pages Function it posts to — and
+    # `siteUrlVariable`, the repository variable a custom domain overrides its
+    # URL with). A new game is a new folder, not an edit here.
     if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to')
     runs-on: ubuntu-latest
     outputs:
       deploy: ${{ steps.list.outputs.deploy }}
+      moved: ${{ steps.list.outputs.moved }}
     steps:
       - uses: actions/checkout@v4
       - id: list
         run: node scripts/games.mjs github >> "$GITHUB_OUTPUT"
+
+  site:
+    # The shared site: scripts/build-site.mjs builds each game that lives there
+    # into its folder (VITE_BASE=/<path>/, VITE_SITE_URL=<site>/<path>/) and
+    # writes the landing page, the root _headers and the root _redirects.
+    needs: games
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Build the shared site
+        run: |
+          npm ci
+          node scripts/build-site.mjs site --mode production
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # From site/, whose wrangler.toml names the project (tiling-games)
+          # and the folder (dist). `--branch=master` is the project's
+          # production branch, so this is the production deploy.
+          workingDirectory: site
+          command: pages deploy --branch=master
+
+  moved:
+    # A project a game has left keeps answering its old links: a 301 for each
+    # path it used to serve, and a service worker that retires the game's old
+    # one so an installed copy stops showing it (scripts/lib/site.mjs). Static
+    # files, no build — cheap enough to republish on every push.
+    name: moved (${{ matrix.project }})
+    needs: games
+    if: >-
+      (github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to'))
+      && needs.games.outputs.moved != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.games.outputs.moved) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write the redirect site
+        run: node scripts/build-site.mjs moved "${{ matrix.project }}" --out "$RUNNER_TEMP/moved"
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # From the repo root, which has no wrangler.toml, so the folder and
+          # the project are named on the command line. (Not from the folder:
+          # the action installs wrangler where it runs, and would leave a
+          # package.json in the upload.)
+          command: pages deploy ${{ runner.temp }}/moved --project-name=${{ matrix.project }} --branch=master
 
   deploy:
     name: deploy (${{ matrix.app }})
@@ -68,7 +131,9 @@ jobs:
     # pushes with the default GITHUB_TOKEN, and a GITHUB_TOKEN push triggers no
     # workflow, so that commit does not reach here anyway — but it would the day
     # that token becomes a PAT.
-    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to')
+    if: >-
+      (github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Bump version to'))
+      && needs.games.outputs.deploy != '[]'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

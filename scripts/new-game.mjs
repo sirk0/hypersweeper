@@ -10,8 +10,10 @@
 //
 // e.g. node scripts/new-game.mjs tile-slide "Tile Slide"
 //
-// Then: create the Cloudflare Pages project <key> (production branch master),
-// replace the template game, redraw the icons, and open a pull request.
+// Then: replace the template game, redraw the icons, and open a pull request.
+// The game is deployed to https://tiling-games.pages.dev/<key>/, a folder of
+// the shared site (scripts/build-site.mjs), so there is no Pages project to
+// create.
 import { cpSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, extname, join } from "node:path";
@@ -83,8 +85,8 @@ if (install) {
 
 console.log(`
 ${title} is in apps/${key}/. Next (docs/agents/new-game.md):
-  1. Create the Cloudflare Pages project "${key}" (direct upload, production
-     branch master), or the deploy and PR preview will fail for it.
-  2. cd apps/${key} && npm run dev — and replace the template game.
-  3. npm run icons after changing the picture in scripts/make-icons.mts.
-  4. Commit (including package-lock.json) and open a pull request.`);
+  1. cd apps/${key} && npm run dev — and replace the template game.
+  2. npm run icons after changing the picture in scripts/make-icons.mts.
+  3. Write its one-line description in packaging.json (the landing page's card).
+  4. Commit (including package-lock.json) and open a pull request: its preview
+     is https://pr-<number>.tiling-games.pages.dev/${key}/.`);

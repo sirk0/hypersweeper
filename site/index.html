@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Tiling games</title>
+    <meta
+      name="description"
+      content="Games on flat, hyperbolic and 3D tilings: Hypersweeper, Rep-tiles and more."
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="theme-color" content="#f5ead8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191712" media="(prefers-color-scheme: dark)" />
+    <!--
+      The landing page of https://tiling-games.pages.dev/, the site every game
+      is served from. A template: scripts/build-site.mjs replaces the games
+      comment below with one card per game, from each apps/<game>/packaging.json
+      (productName, description, appStore, web.path), and copies each game's
+      favicon to icons/<game>.svg. So a new game appears here by itself.
+
+      Every link is relative, so a PR preview's landing page leads to that
+      preview's own builds. In production a game with a Pages project of its
+      own (Hypersweeper, for now) is a redirect at its folder — the
+      /hypersweeper link goes there through it.
+
+      No script, and nothing from another origin: site/_headers gives it the
+      same Content-Security-Policy as the games.
+    -->
+    <style>
+      @font-face {
+        font-family: "Caprasimo";
+        src: url("fonts/Caprasimo-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: light;
+        --bg: #f5ead8;
+        --glow: #fffaf0;
+        --panel: #f9f4ed;
+        --text: #2e2b25;
+        --muted: #82796a;
+        --accent: #c67139;
+        --on-accent: #ffffff;
+        --border: #dcd3c4;
+        --shadow: 0 2px 10px rgba(64, 35, 16, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #191712;
+          --glow: #3a332a;
+          --panel: #2e2b25;
+          --text: #f9f4ed;
+          --muted: #a19786;
+          --accent: #f6a06b;
+          --on-accent: #2e2b25;
+          --border: #474238;
+          --shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+        }
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(120% 70% at 50% 0%, var(--glow) 0%, transparent 60%) fixed,
+          var(--bg);
+        color: var(--text);
+        font:
+          16px/1.55 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        max-width: 44rem;
+        margin: 0 auto;
+        padding: max(40px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+          max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      }
+      h1 {
+        margin: 0;
+        color: var(--accent);
+        font-family: "Caprasimo", system-ui, sans-serif;
+        font-size: clamp(36px, 10vw, 56px);
+        font-weight: 400;
+        line-height: 1.05;
+      }
+      .lede {
+        margin: 12px 0 32px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+      .games {
+        display: grid;
+        gap: 16px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .game {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        gap: 4px 18px;
+        align-items: start;
+        padding: 20px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+      }
+      .game img {
+        grid-row: span 3;
+        width: 72px;
+        height: 72px;
+        border-radius: 16px;
+      }
+      .game h2 {
+        margin: 0;
+        font-family: "Caprasimo", system-ui, sans-serif;
+        font-size: 26px;
+        font-weight: 400;
+        line-height: 1.2;
+      }
+      .game h2 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .game p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .button {
+        display: inline-block;
+        padding: 9px 20px;
+        border: 2px solid var(--accent);
+        border-radius: 999px;
+        color: var(--accent);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .button.play {
+        background: var(--accent);
+        color: var(--on-accent);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 2px;
+      }
+      footer {
+        margin-top: 32px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      footer a {
+        color: inherit;
+      }
+      @media (max-width: 420px) {
+        .game {
+          grid-template-columns: 56px 1fr;
+          gap: 4px 14px;
+          padding: 16px;
+        }
+        .game img {
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Tiling games</h1>
+      <p class="lede">Games on flat, hyperbolic and 3D tilings.</p>
+      <ul class="games">
+        <!-- games -->
+      </ul>
+      <footer>
+        <!-- privacy -->
+      </footer>
+    </main>
+  </body>
+</html>

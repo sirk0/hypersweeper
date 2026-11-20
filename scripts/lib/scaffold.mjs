@@ -4,8 +4,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-/** A game's key is its folder (apps/<key>), npm package name, Pages project
- * and *.pages.dev subdomain, so it is held to what all four accept. */
+/** A game's key is its folder (apps/<key>), npm package name and its folder
+ * on the shared site (tiling-games.pages.dev/<key>/), so it is held to what
+ * all of them accept — and, should it ever get a Pages project of its own, to
+ * what a project name and *.pages.dev subdomain accept too. */
 export function checkKey(key, root) {
   if (!/^[a-z][a-z0-9-]{1,30}[a-z0-9]$/.test(key) || key.includes("--")) {
     return `"${key}" is not a key: lowercase letters, digits and single hyphens, 3–32 characters, starting with a letter`;

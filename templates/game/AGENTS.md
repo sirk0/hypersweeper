@@ -7,8 +7,9 @@ when every cell is dark. Replace it with the game — `src/game.ts` holds the
 rules (pure, unit-tested), `src/main.ts` the page.
 
 Read [`docs/agents/new-game.md`](../../docs/agents/new-game.md) for what the
-scaffold set up and what is left to do (the Cloudflare Pages project, icons,
-this file).
+scaffold set up and what is left to do (icons, this file). It is deployed to
+<https://tiling-games.pages.dev/__KEY__/>, a folder of the shared site, and
+listed on its landing page.
 
 ## Build and run
 
@@ -32,7 +33,8 @@ From the root: `make desktop-run GAME=__KEY__` runs it as a desktop app, and
 - `@tiling/geometry` — the boards (`hexBoard` here; any builder in its index).
 - `@tiling/platform` — `storage()` / `readObject()`, the guarded localStorage.
 - `@tiling/vite-preset` — the whole build (`vite.config.ts` is one call).
-- `packaging.json` — the site (`web`), the desktop app (`desktop`), and
+- `packaging.json` — the site (`web`: its folder on the shared site), the
+  landing-page card (`description`), the desktop app (`desktop`), and
   `bundledAssets`. CI, the deploy, the PR previews and the version bump all
   list games from these files, so nothing else names this game.
 

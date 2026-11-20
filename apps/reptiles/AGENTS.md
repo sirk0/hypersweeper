@@ -537,7 +537,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1628 levels in all (see Boards above), deployed at <https://rep-tiles.pages.dev/>** — named as
+**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1628 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -613,14 +613,23 @@ its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
 
 ## Deploy
 
-Like Hypersweeper, and by the same workflows, one matrix entry each:
+On the shared site, <https://tiling-games.pages.dev/rep-tiles/> — a folder of
+the one Cloudflare Pages project every game is moving to (`site/`, see "Deploy"
+in `apps/hypersweeper/docs/deploy.md`):
 
-- **Production:** `deploy-cloudflare.yml` builds this folder on every push to
-  `master` and publishes it to the `rep-tiles` Cloudflare Pages project
-  (`wrangler.toml` names it) at <https://rep-tiles.pages.dev/>.
+- **Production:** `deploy-cloudflare.yml`'s `site` job runs
+  `scripts/build-site.mjs`, which builds this folder with
+  `VITE_BASE=/rep-tiles/` on every push to `master` and publishes it with the
+  landing page. The privacy policy is
+  <https://tiling-games.pages.dev/rep-tiles/privacy>.
+- **The old address:** `rep-tiles.pages.dev` (packaging.json
+  `web.movedFrom`) is republished by the `moved` job as 301s to the new one,
+  `/privacy` included, plus a service worker that retires the old one, so an
+  installed copy stops showing the old build.
 - **Previews:** `pr-preview.yml` publishes each pull request to
-  `https://pr-<number>.rep-tiles.pages.dev`, with its own sticky comment, and
-  deletes it when the PR closes.
+  `https://pr-<number>.tiling-games.pages.dev/rep-tiles/`, beside the other
+  games, with one sticky comment for all of them, and deletes it when the PR
+  closes. `https://alpha.tiling-games.pages.dev/rep-tiles/` is the latest PR's.
 - **What the build adds** — all from the shared preset (`vite.config.ts`, see
   `packages/vite-preset`):
   - the link-preview tags (a text card: there is no `public/og.png`);
