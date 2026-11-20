@@ -1,0 +1,14 @@
+# Cloudflare Pages configuration for the shared site, https://tiling-games.pages.dev.
+#
+# `wrangler pages deploy` reads it from its working directory, which is why the
+# deploy and PR-preview workflows run wrangler from site/: `name` picks the
+# project and `pages_build_output_dir` the folder scripts/build-site.mjs writes
+# (site/dist). The project's production branch is `master`; site/site.json
+# names the same project.
+#
+# No Pages Functions yet. When a game with a functions/ folder (Hypersweeper's
+# /api/tally) moves here, its functions go under site/functions/<path>/.
+
+name = "tiling-games"            # must match the Pages project name (and site/site.json)
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"

@@ -7,8 +7,12 @@ name: Sweep stale PR previews
 # cancellation. A preview that outlives its pull request is exactly the thing
 # that accumulates, so once a day this deletes every preview whose PR is closed.
 #
-# It also cleans up anything left over from before previews existed, and gives a
-# workflow_dispatch button to purge by hand.
+# It covers every Pages project a preview may be on — the shared site's, where
+# previews go now, and each game's own or former project, where they went
+# before (scripts/games.mjs `projects`). It also cleans up anything left over
+# from before previews existed, and gives a workflow_dispatch button to purge by
+# hand. Only `pr-<number>` branches are touched: the `alpha` alias, the latest
+# PR's constant link (pr-preview.yml), is never deleted.
 #
 # A separate file rather than a third job in pr-preview.yml, because that
 # workflow's concurrency group is keyed on a PR number a schedule event does not
@@ -32,8 +36,23 @@ permissions:
   pull-requests: read
 
 jobs:
-  sweep:
+  projects:
     runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.list.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: node scripts/games.mjs github >> "$GITHUB_OUTPUT"
+
+  sweep:
+    name: sweep (${{ matrix.project }})
+    needs: projects
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.projects.outputs.projects) }}
     steps:
       - name: Delete previews whose pull request is closed
         env:
@@ -41,6 +60,7 @@ jobs:
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          PROJECT: ${{ matrix.project }}
         run: |
           set -euo pipefail
           # A blank secret here does not fail the run — it builds a malformed
@@ -50,7 +70,7 @@ jobs:
             echo "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is empty for this job run." >&2
             exit 1
           fi
-          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/hypersweeper/deployments"
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$PROJECT/deployments"
 
           # Collect (branch, id) pairs first, across every page: deleting as we
           # paginate would shift the pages under us. Only `pr-<number>` branches
@@ -79,7 +99,7 @@ jobs:
           done
 
           if [ "${#pairs[@]}" -eq 0 ]; then
-            echo "No pr-<number> preview deployments on the project."
+            echo "No pr-<number> preview deployments on $PROJECT."
             exit 0
           fi
 
@@ -115,4 +135,4 @@ jobs:
             deleted=$((deleted + 1))
           done
 
-          echo "Swept $deleted stale preview deployment(s)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Swept $deleted stale preview deployment(s) from $PROJECT." >> "$GITHUB_STEP_SUMMARY"

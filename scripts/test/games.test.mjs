@@ -2,13 +2,22 @@
 //
 //   node --test scripts/test/
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { deployMatrix, listGames, needsFlagship, otherGames, ownVersionGames } from "../lib/games.mjs";
+import {
+  deployMatrix,
+  listGames,
+  movedMatrix,
+  needsFlagship,
+  otherGames,
+  ownVersionGames,
+  previewProjects,
+  readSite,
+} from "../lib/games.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -23,32 +32,57 @@ function fakeRepo(games) {
   return root;
 }
 
-test("the real repo's games: Hypersweeper and Rep-tiles, both deployed", () => {
+test("the real repo's games: Hypersweeper on its own project, Rep-tiles on the shared site", () => {
   const games = listGames(ROOT);
   assert.deepEqual(
-    games.map((g) => g.key),
-    ["hypersweeper", "reptiles"],
-  );
-  assert.deepEqual(otherGames(games), ["reptiles"]);
-  const deploy = deployMatrix(games);
-  assert.deepEqual(
-    deploy.map((d) => [d.app, d.project]),
+    games.map((g) => [g.key, g.web.path]),
     [
       ["hypersweeper", "hypersweeper"],
       ["reptiles", "rep-tiles"],
     ],
   );
+  assert.deepEqual(otherGames(games), ["reptiles"]);
+  assert.deepEqual(
+    deployMatrix(games).map((d) => [d.app, d.project]),
+    [["hypersweeper", "hypersweeper"]],
+  );
+  assert.deepEqual(movedMatrix(games), [
+    { app: "reptiles", project: "rep-tiles", url: "https://tiling-games.pages.dev/rep-tiles/" },
+  ]);
+  assert.deepEqual(previewProjects(games, readSite(ROOT)), [
+    "tiling-games",
+    "hypersweeper",
+    "rep-tiles",
+  ]);
 });
 
-test("the flagship keeps its comment marker, analytics and site variable", () => {
-  const [hs, rt] = deployMatrix(listGames(ROOT));
-  assert.equal(hs.marker, "<!-- pr-preview -->");
-  assert.equal(hs.title, "Play this PR");
+test("the flagship keeps its analytics, site variable and App Store link", () => {
+  const games = listGames(ROOT);
+  const [hs] = deployMatrix(games);
   assert.equal(hs.analytics, "1");
   assert.equal(hs.siteUrlVariable, "SITE_URL");
-  assert.equal(rt.marker, "<!-- pr-preview:rep-tiles -->");
-  assert.equal(rt.title, "Play this PR in Rep-tiles");
-  assert.equal(rt.analytics, "");
+  assert.equal(games[0].appStore, "https://apps.apple.com/us/app/hypersweeper/id6822071409");
+  assert.equal(games[1].appStore, null);
+  assert.ok(games.every((g) => g.description));
+});
+
+test("the shared site: site/site.json agrees with site/wrangler.toml", () => {
+  const site = readSite(ROOT);
+  assert.equal(site.url, `https://${site.project}.pages.dev/`);
+  const toml = readFileSync(join(ROOT, "site/wrangler.toml"), "utf8");
+  assert.match(toml, new RegExp(`^name = "${site.project}"`, "m"));
+  assert.match(toml, /^pages_build_output_dir = "dist"/m);
+});
+
+test("a game's folder defaults to its key; the scaffold's games go on the shared site", () => {
+  const root = fakeRepo({
+    plain: { productName: "Plain", web: { url: "https://tiling-games.pages.dev/plain/" } },
+  });
+  const games = listGames(root);
+  assert.equal(games[0].web.path, "plain");
+  assert.deepEqual(deployMatrix(games), []);
+  assert.deepEqual(movedMatrix(games), []);
+  assert.deepEqual(previewProjects(games, { project: "shared" }), ["shared"]);
 });
 
 test("Rep-tiles shares the flagship's version; a game without the flag has its own", () => {
@@ -72,7 +106,10 @@ test("Rep-tiles shares the flagship's version; a game without the flag has its o
 
 test("a folder without packaging.json is not a game; a game without web is not deployed", () => {
   const root = fakeRepo({
-    hypersweeper: { productName: "Hypersweeper", web: { project: "hypersweeper", url: "u" } },
+    hypersweeper: {
+      productName: "Hypersweeper",
+      web: { path: "hypersweeper", project: "hypersweeper", url: "u" },
+    },
     "local-only": { productName: "Local" },
   });
   const games = listGames(root);

@@ -1,17 +1,22 @@
-import { gameConfig, STAMP_FILE } from "@tiling/vite-preset";
+import { buildFlags, gameConfig, STAMP_FILE } from "@tiling/vite-preset";
 import { defineConfig } from "vite";
 
 // The build every game shares is `@tiling/vite-preset` (packages/vite-preset):
 // the VITE_BASE / VITE_PACKAGED / VITE_NO_SW flags, `__APP_VERSION__` and the
 // rest, the version stamp, the link-preview tags, public/_headers on the dev
 // and preview servers, and the PWA. What follows is Rep-tiles' own: where it is
-// deployed (the `rep-tiles` Cloudflare Pages project, see wrangler.toml) and its
-// web manifest.
+// deployed (https://tiling-games.pages.dev/rep-tiles/, the shared site that
+// scripts/build-site.mjs builds — which is also what sets VITE_BASE to
+// /rep-tiles/ for it) and its web manifest.
 //
 // The geometry (`@tiling/geometry`, packages/geometry) and the shared data
 // (`@tiling/data`, data/) are npm workspace packages, so nothing here aliases
 // them; the dev server may serve their files because Vite's default
 // `server.fs.allow` is the workspace root — the repo root.
+
+// Where the build is mounted: "/" locally and in the packaged app,
+// "/rep-tiles/" on the shared site.
+const { base } = buildFlags();
 
 const DESCRIPTION =
   "Cover the board, tile by tile: a drag-and-drop puzzle on the uniform and Laves tilings.";
@@ -21,7 +26,7 @@ export default defineConfig(
     configUrl: import.meta.url,
     name: "Rep-tiles",
     // A text-only link card: there is no public/og.png (yet), so no imageAlt.
-    site: { url: "https://rep-tiles.pages.dev/", description: DESCRIPTION },
+    site: { url: "https://tiling-games.pages.dev/rep-tiles/", description: DESCRIPTION },
     pwa: {
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
@@ -52,8 +57,9 @@ export default defineConfig(
         globIgnores: ["**/node_modules/**/*", STAMP_FILE],
         // The privacy policy (public/privacy.html) is a page of its own: the
         // precache answers /privacy with it already (Workbox's `cleanURLs`),
-        // and this keeps the app shell from ever answering it instead.
-        navigateFallbackDenylist: [/^\/privacy(\.html)?$/],
+        // and this keeps the app shell from ever answering it instead. Under
+        // the base the build is mounted at, as the worker sees full paths.
+        navigateFallbackDenylist: [new RegExp(`^${escapeRegExp(base)}privacy(\\.html)?$`)],
       },
     },
     overrides: {
@@ -67,3 +73,7 @@ export default defineConfig(
     },
   }),
 );
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

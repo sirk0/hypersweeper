@@ -2,26 +2,36 @@ name: PR preview
 
 # A live, shareable build of every pull request, so a change can be checked on
 # a phone instead of on a laptop that has the branch checked out. Each PR gets
-# one fixed URL per game — https://pr-<number>.hypersweeper.pages.dev and
-# https://pr-<number>.rep-tiles.pages.dev — that every push to it redeploys,
-# and closing or merging the PR deletes them again. One matrix entry per game, as in
-# deploy-cloudflare.yml, read from the games' packaging.json files; each keeps its
-# own sticky comment.
+# one preview of the whole shared site (site/site.json) — the landing page and
+# every game in its folder — at one fixed URL that every push to it redeploys:
 #
-# It is the production deploy (deploy-cloudflare.yml) with three differences.
-# `--branch` is `pr-<number>` rather than `master`: Cloudflare decides
-# production-versus-preview by comparing that against the project's production
-# branch, and derives the URL above from the same string. `VITE_ANALYTICS` is
-# *not* set, so the bundle carries no play counter at all and preview games stay
-# out of the real numbers (the counter is opt-in per build — see
-# apps/hypersweeper/vite.config.ts). And `VITE_NO_SW=1` leaves the service worker out, because
-# a PR reuses one URL across pushes and a root-scoped precache there is a phone
-# showing the push before last — the one failure mode a preview must not have.
+#   https://pr-<number>.tiling-games.pages.dev/               the landing page
+#   https://pr-<number>.tiling-games.pages.dev/hypersweeper/  Hypersweeper
+#   https://pr-<number>.tiling-games.pages.dev/rep-tiles/     Rep-tiles
 #
-# Everything else is deliberately identical, above all `workingDirectory:
-# apps/<game>`: wrangler's project root is wrangler.toml's directory, so that is
-# what makes it pick the game's project and Hypersweeper's functions/. Run from the repo root and the deploy quietly uploads
-# dist/ alone.
+# The same build is deployed a second time under the branch `alpha`, so
+# https://alpha.tiling-games.pages.dev/ is a constant link that always shows the
+# latest push to any pull request. Closing or merging the PR deletes its
+# pr-<number> deployments; alpha stays, showing whatever was pushed last. One
+# sticky comment carries every link.
+#
+# Every game is built into the preview, Hypersweeper included, even though its
+# production deploy is still a Pages project of its own (deploy-cloudflare.yml):
+# scripts/build-site.mjs's `preview` mode is the shared site with every game in
+# it. Previews used to be one per game, on each game's own project; the
+# teardown and the daily sweep still clean those up (scripts/games.mjs
+# `projects`).
+#
+# It is the production deploy (deploy-cloudflare.yml's `site` job) with three
+# differences. `--branch` is `pr-<number>` (and `alpha`) rather than `master`:
+# Cloudflare decides production-versus-preview by comparing that against the
+# project's production branch, and derives the URL above from the same string.
+# `VITE_ANALYTICS` is *not* set, so the bundle carries no play counter at all
+# and preview games stay out of the real numbers (the counter is opt-in per
+# build — see apps/hypersweeper/vite.config.ts). And `VITE_NO_SW=1` leaves the
+# service worker out, because a PR reuses one URL across pushes and a precache
+# there is a phone showing the push before last — the one failure mode a
+# preview must not have. build-site.mjs adds `X-Robots-Tag: noindex` too.
 #
 # It does not wait for ci.yml. The `web` job there installs Chromium and runs
 # the whole Playwright visual suite; gating on it would put the phone minutes
@@ -34,8 +44,8 @@ name: PR preview
 # fork-authored code*, and the build below runs `npm ci`, which executes
 # lifecycle scripts out of the PR's own package.json — that is a straight
 # handover of the deploy token to anyone who opens a pull request. The same-repo
-# guard on both jobs is the second, independent layer. See "PR previews" in
-# apps/hypersweeper/README.md.
+# guard on every job is the second, independent layer. See "PR previews" in
+# apps/hypersweeper/docs/deploy.md.
 
 on:
   pull_request:
@@ -50,36 +60,20 @@ permissions:
 # cancel a production deploy, and every push to master cancel a preview. Keyed
 # on the PR number, so a burst of pushes leaves one run standing rather than
 # five and the close event cancels that PR's in-flight deploy before tearing the
-# preview down.
+# preview down. Two PRs pushed at once both deploy `alpha`; the later deploy
+# wins, which is what "the latest PR" means.
 concurrency:
   group: pr-preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-jobs:
-  games:
-    # Every game with a site, from its apps/<game>/packaging.json
-    # (scripts/games.mjs): its Pages project, and the sticky comment's title
-    # and marker — Hypersweeper keeps the marker this workflow always used, so
-    # open PRs keep their comment. The deploy job previews the PR's own games
-    # (a game added by this PR included); after a PR closes its merge ref can
-    # be gone, so the teardown reads the list from the base branch instead.
-    # The same guard as the jobs below.
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository
-      && github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    outputs:
-      deploy: ${{ steps.list.outputs.deploy }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.action == 'closed' && github.event.pull_request.base.ref || '' }}
-      - id: list
-        run: node scripts/games.mjs github >> "$GITHUB_OUTPUT"
+env:
+  # The shared site's Pages project and the constant preview link's branch
+  # (site/site.json; the `preview` job checks they still agree).
+  PROJECT: tiling-games
+  ALIAS: alpha
 
-  deploy:
-    name: deploy (${{ matrix.app }})
-    needs: games
+jobs:
+  preview:
     # Same-repo PRs only, for two independent reasons, either sufficient: a fork
     # cannot push a branch here, and a `pull_request` run from a fork is handed
     # no `secrets.*`, so the deploy could not authenticate even with this guard
@@ -93,13 +87,12 @@ jobs:
       && github.event.pull_request.head.repo.full_name == github.repository
       && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(needs.games.outputs.deploy) }}
     permissions:
       contents: read
-      pull-requests: write # the sticky comment carrying the URL
+      pull-requests: write # the sticky comment carrying the URLs
+    env:
+      PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.tiling-games.pages.dev/
+      ALIAS_URL: https://alpha.tiling-games.pages.dev/
     steps:
       # Default ref: the PR merged into its base, which is what ci.yml builds
       # too. The preview should be the thing that would land, not the branch in
@@ -110,81 +103,86 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-      - name: Build ${{ matrix.app }} (preview)
-        working-directory: apps/${{ matrix.app }}
+      - name: Build the shared site (preview)
         env:
           # No VITE_ANALYTICS, and that is the whole of it: `__APP_ANALYTICS__`
           # is false unless the variable is set, and the compiler then drops the
           # transport, the endpoint and the Settings privacy row.
           VITE_NO_SW: "1"
-          # The URL Cloudflare will serve this at — known before the deploy runs,
-          # because the branch alias is derived from `--branch` below. Without
-          # it every preview's og:url and <link rel="canonical"> would point at
-          # the production origin.
-          VITE_SITE_URL: https://pr-${{ github.event.pull_request.number }}.${{ matrix.project }}.pages.dev/
           # On a pull_request event GITHUB_SHA is the throwaway merge commit,
           # which matches nothing a reader can see. The in-app build label
           # (__APP_COMMIT__) wants the PR head.
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # The npm workspace (every app in apps/) installs from the repo root.
-          (cd ../.. && npm ci)
-          npm run build
-          # A preview is a real, reachable page on a real domain; keep it from
-          # competing with the site in search results.
-          #
-          # Inserted *into* the `/*` block that `npm run build` has just copied
-          # from public/_headers, not written as a rule of its own. Neither
-          # obvious alternative works: `>` would throw the security headers
-          # away, and appending a second `/*` block replaces the first one
-          # wholesale rather than adding to it — Cloudflare merges rules with
-          # different patterns, but for one repeated pattern the last rule wins.
-          # (Both failure modes are silent, and the second one shipped a preview
-          # carrying nothing but this line. Hence the grep.)
-          sed -i 's#^/\*$#/*\n  X-Robots-Tag: noindex#' dist/_headers
-          grep -q '^  X-Robots-Tag: noindex$' dist/_headers \
-            || { echo "::error::noindex not inserted into dist/_headers"; exit 1; }
+          node -e '
+            const s = require("./site/site.json");
+            if (s.project !== process.env.PROJECT || s.previewAlias !== process.env.ALIAS) {
+              console.error(`::error::site/site.json names ${s.project}/${s.previewAlias}; update PROJECT/ALIAS in pr-preview.yml`);
+              process.exit(1);
+            }'
+          npm ci
+          # --site-url is the URL Cloudflare will serve this at — known before
+          # the deploy runs, because the branch alias is derived from `--branch`
+          # below. Without it every preview's og:url and <link rel="canonical">
+          # would point at the production origin. (The alpha copy keeps these
+          # pointing at pr-<number>; it is noindex either way.)
+          node scripts/build-site.mjs site --mode preview --site-url "$PREVIEW_URL"
       - name: Publish preview to Cloudflare Pages
         id: deploy
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # From the game's folder, so wrangler resolves its wrangler.toml and —
-          # for Hypersweeper, the reason for this — functions/. See the header.
-          workingDirectory: apps/${{ matrix.app }}
+          # From site/, so wrangler finds its wrangler.toml: the project name
+          # and the folder (dist).
+          workingDirectory: site
           # `pr-<number>` rather than the git branch name: it is already
           # lowercase letters, digits and a dash, so Cloudflare's branch
           # normalisation leaves it alone (a name like
           # `claude/pr-deploy-cloudflare-71qkmu` comes out mangled and
           # truncated); it can never collide with the production branch; and it
-          # gives the destroy job below an exact filter.
+          # gives the teardown below an exact filter.
           command: pages deploy --branch=pr-${{ github.event.pull_request.number }}
-      - name: Comment the preview URL
+      - name: Publish the same build as alpha
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: site
+          # The files are already uploaded, so this is only a new deployment
+          # pointing at them. Never `pr-*`, so neither the teardown nor the
+          # sweep ever deletes it.
+          command: pages deploy --branch=${{ env.ALIAS }}
+      - name: Comment the preview URLs
         uses: actions/github-script@v7
         env:
-          PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.${{ matrix.project }}.pages.dev
           # wrangler-action reports the immutable per-deploy URL. Treated as a
           # nicety: if that output is ever renamed or dropped, the line is
           # omitted rather than the step failing.
           DEPLOY_URL: ${{ steps.deploy.outputs.deployment-url }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          MARKER: ${{ matrix.marker }}
-          TITLE: ${{ matrix.title }}
         with:
           script: |
             // The marker is what makes the comment sticky: every push edits the
-            // one comment rather than adding another to scroll past.
-            const { PREVIEW_URL, DEPLOY_URL, HEAD_SHA, MARKER, TITLE } = process.env;
+            // one comment rather than adding another to scroll past. It is the
+            // marker Hypersweeper's own preview comment always used, so a PR
+            // opened before previews moved keeps its comment.
+            const MARKER = "<!-- pr-preview -->";
+            const { PREVIEW_URL, ALIAS_URL, DEPLOY_URL, HEAD_SHA } = process.env;
+            const { execFileSync } = require("node:child_process");
+            const games = JSON.parse(execFileSync("node", ["scripts/games.mjs", "list"], { encoding: "utf8" }))
+              .filter((g) => g.web);
             const base = context.payload.pull_request.base.ref;
             const body = [
               MARKER,
-              `### 📱 [${TITLE}](${PREVIEW_URL})`,
+              `### 📱 [Play this PR](${PREVIEW_URL})`,
               "",
-              `\`${PREVIEW_URL}\``,
+              ...games.map((g) => `- **${g.productName}**: ${PREVIEW_URL}${g.web.path}/`),
+              "",
+              `Also at ${ALIAS_URL}, which always shows the latest push to any pull request.`,
               "",
               `Built from \`${HEAD_SHA.slice(0, 7)}\` merged into \`${base}\`.`,
-              DEPLOY_URL && !DEPLOY_URL.startsWith(PREVIEW_URL)
+              DEPLOY_URL && !DEPLOY_URL.startsWith(PREVIEW_URL.replace(/\/$/, ""))
                 ? `This exact build: ${DEPLOY_URL}`
                 : null,
               "",
@@ -212,34 +210,46 @@ jobs:
                 body,
               });
             }
-      - name: Preview URL in the run summary
-        env:
-          PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.${{ matrix.project }}.pages.dev
+      - name: Preview URLs in the run summary
         run: |
           {
-            echo "### PR preview (${{ matrix.app }})"
+            echo "### PR preview"
             echo ""
             echo "$PREVIEW_URL"
+            echo ""
+            echo "Also: $ALIAS_URL"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  destroy:
-    # The same guard as `deploy`, for the same two reasons. No checkout: after a
-    # PR closes its merge ref can be gone, and this job needs no files anyway —
-    # which is also why it asks for no `contents` permission. (Its matrix, the
-    # games job's, was read from the base branch.)
+  projects:
+    # Every Pages project a pr-<number> preview may be on (scripts/games.mjs
+    # `projects`): the shared site's, and each game's own or former project,
+    # where previews went before they moved. After a PR closes its merge ref
+    # can be gone, so this reads the list from the base branch.
     if: >-
       github.event.action == 'closed'
       && github.event.pull_request.head.repo.full_name == github.repository
       && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.list.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      - id: list
+        run: node scripts/games.mjs github >> "$GITHUB_OUTPUT"
+
+  destroy:
+    # The same guard as `preview`, for the same two reasons. No checkout: this
+    # job needs no files — which is also why it asks for no `contents`
+    # permission.
     name: destroy (${{ matrix.project }})
-    needs: games
+    needs: projects
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.games.outputs.deploy) }}
-    permissions:
-      pull-requests: write # to edit the comment the deploy job left
+        project: ${{ fromJSON(needs.projects.outputs.projects) }}
     steps:
       - name: Delete this PR's preview deployments
         env:
@@ -287,11 +297,11 @@ jobs:
           done
 
           if [ "${#ids[@]}" -eq 0 ]; then
-            echo "No preview deployments found for $PR_BRANCH."
+            echo "No preview deployments found for $PR_BRANCH on $PROJECT."
             exit 0
           fi
 
-          echo "Deleting ${#ids[@]} preview deployment(s) for $PR_BRANCH."
+          echo "Deleting ${#ids[@]} preview deployment(s) for $PR_BRANCH on $PROJECT."
           for id in "${ids[@]}"; do
             resp=$(curl -sS -X DELETE -H "Authorization: Bearer $CF_API_TOKEN" "$api/$id?force=true")
             if [ "$(jq -r '.success' <<<"$resp")" != "true" ]; then
@@ -301,24 +311,34 @@ jobs:
             fi
             echo "  deleted $id"
           done
+
+  note:
+    # Once, after every project's teardown, rather than once per project.
+    if: always() && needs.projects.result == 'success'
+    needs: [projects, destroy]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # to edit the comment the preview job left
+    steps:
       - name: Note the teardown on the pull request
         # Only ever edits: a PR that never had a preview gets no comment now.
-        if: always()
+        # Every preview comment is edited — the shared one, and the per-game
+        # ones (`<!-- pr-preview:<project> -->`) PRs from before kept.
         uses: actions/github-script@v7
-        env:
-          MARKER: ${{ matrix.marker }}
         with:
           script: |
-            const { MARKER } = process.env;
             const comments = await github.paginate(github.rest.issues.listComments, {
               ...context.repo,
               issue_number: context.issue.number,
               per_page: 100,
             });
-            const existing = comments.find((c) => (c.body ?? "").includes(MARKER));
-            if (!existing) return;
-            await github.rest.issues.updateComment({
-              ...context.repo,
-              comment_id: existing.id,
-              body: `${MARKER}\n### 🧹 Preview deleted\n\nThe preview for this pull request was torn down when it closed.`,
-            });
+            const markers = /<!-- pr-preview(:[a-z0-9-]+)? -->/;
+            for (const c of comments) {
+              const marker = (c.body ?? "").match(markers);
+              if (!marker) continue;
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: c.id,
+                body: `${marker[0]}\n### 🧹 Preview deleted\n\nThe preview for this pull request was torn down when it closed.`,
+              });
+            }

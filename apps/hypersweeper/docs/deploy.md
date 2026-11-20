@@ -116,18 +116,34 @@ Cloudflare Pages on every push to `master` — **it is the deployed game**; the
 pygbag build of the pygame version is no longer published (it is still
 buildable locally with `make web-package`).
 
-The workflow is a matrix with one entry per game. Rep-tiles is the other one:
-`apps/reptiles` goes to the `rep-tiles` project at <https://rep-tiles.pages.dev/>
-(see "Deploy" in `apps/reptiles/AGENTS.md`). The same holds for the PR
-previews below. A new game is a new entry in both workflows, plus a Pages
-project created once — like `hypersweeper`'s, with `master` as its production
-branch, or its deploys land as previews.
+Hypersweeper is the one game with a Pages project of its own
+(`packaging.json` `web.project`), so it is the one entry in the workflow's
+`deploy` matrix. Every other game lives on the shared site,
+<https://tiling-games.pages.dev/> (`site/`, built by `scripts/build-site.mjs`,
+published by the same workflow's `site` job): a landing page linking every
+game, and each game in a folder of its own — Rep-tiles at
+[`/rep-tiles/`](https://tiling-games.pages.dev/rep-tiles/), with
+`rep-tiles.pages.dev` republished by the `moved` job as a 301 to it. The shared
+site's `/hypersweeper` is, for now, a **302** to <https://hypersweeper.pages.dev/>
+(deep links and the query string carried over) — a 302 because Hypersweeper is
+meant to move there too, and a browser would hold on to a 301.
+
+Moving it is an edit to `packaging.json`: drop `web.project`, set `web.url` to
+`https://tiling-games.pages.dev/hypersweeper/` and add
+`"movedFrom": "hypersweeper"`. Two things go with it. `functions/` (the
+`/api/tally` collector) and the `GAME_EVENTS` binding move to the shared site's
+`site/functions/hypersweeper/` and `site/wrangler.toml`, since a Function only
+runs from the deployed project's root. And `public/404.html`'s absolute links
+go relative to the folder.
 
 It is served from the domain root, so the job sets no `VITE_BASE` and takes
 `vite.config.ts`'s default `"/"`. That path is baked into the bundle at build
 time — asset URLs, the PWA manifest, the service worker scope all derive from
-it — so a host serving the app from a subdirectory would need a build of its
-own rather than a copy of this one.
+it — so the shared site's copy (in a PR preview, below) is a build of its own,
+with `VITE_BASE=/hypersweeper/`, rather than a copy of this one. The app is
+subpath-clean for it: the code reads `import.meta.env.BASE_URL`, Vite rewrites
+the fonts' `url("/fonts/…")`, `privacy.html` links relatively, and the
+worker's `navigateFallbackDenylist` is built from the base.
 
 The job needs two repository secrets, `CLOUDFLARE_API_TOKEN` (a token with the
 *Cloudflare Pages: Edit* permission) and `CLOUDFLARE_ACCOUNT_ID`, and a Pages
@@ -232,16 +248,25 @@ the mitigation, and it lives in the dashboard rather than here.
 
 ### PR previews
 
-Every pull request gets its own live build, at a URL that does not change as the
-branch does:
+Every pull request gets its own live build of the whole shared site — the
+landing page and every game, Hypersweeper included — at a URL that does not
+change as the branch does:
 
 ```
-https://pr-<number>.hypersweeper.pages.dev
+https://pr-<number>.tiling-games.pages.dev/hypersweeper/
+https://pr-<number>.tiling-games.pages.dev/rep-tiles/
 ```
+
+The same build is also deployed under the branch `alpha`, so
+<https://alpha.tiling-games.pages.dev/> is a constant link to the latest push to
+any pull request (`site/site.json` `previewAlias`; the teardown never touches
+it). Previews used to be one per game, on each game's own project
+(`pr-<number>.hypersweeper.pages.dev`); the teardown and the sweep still clean
+those projects too.
 
 `pr-preview.yml` publishes it on every push to the PR and edits one sticky
-comment with the link, so the change can be checked on a phone rather than on a
-laptop with the branch checked out; `pr-<number>` is also the Cloudflare
+comment with the links, so the change can be checked on a phone rather than on
+a laptop with the branch checked out; `pr-<number>` is also the Cloudflare
 `--branch`, which is both what classifies the deploy as a preview rather than
 production and what the alias above is derived from. The git branch name is
 deliberately *not* used: Cloudflare lowercases, substitutes and truncates a
@@ -261,13 +286,15 @@ with it, which is the offline-app build, not this. A preview still emits its
 `version.json`, so Settings › Check for updates answers there too — commit
 against commit, which is the only comparison that says anything on a URL that
 serves many builds under one version number — and with no worker registered the
-reload it then performs is the whole update. The job also adds
-`X-Robots-Tag: noindex` to the `/*` block of `dist/_headers` — *into* the block
-the build copied from `public/_headers`, not as a rule of its own, for the
-reason given under "Response headers" above — so a preview stays out of search
-results while production stays indexable. It passes the preview's own origin as
-`VITE_SITE_URL` too, or every preview's `og:url` and `<link rel="canonical">`
-would point at production.
+reload it then performs is the whole update. `scripts/build-site.mjs` also adds
+`X-Robots-Tag: noindex`, so a preview stays out of search results while
+production stays indexable. On the shared site that *is* a rule of its own, a
+`/*` block: Cloudflare reads only the root `_headers`, and the script moves
+each game's rules under its folder (`/*` becomes `/hypersweeper/*`), so no
+other `/*` rule is left for the noindex one to replace. It passes the preview's
+own address as `VITE_SITE_URL` too
+(`https://pr-<number>.tiling-games.pages.dev/hypersweeper/`), or every
+preview's `og:url` and `<link rel="canonical">` would point at production.
 
 Closing or merging the PR deletes every deployment made under `pr-<number>`,
 which is what takes the alias with it. wrangler has no

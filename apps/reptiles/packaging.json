@@ -1,11 +1,13 @@
 {
-  "$comment": "How this game is shipped: its site (web: the Cloudflare Pages project the deploy and PR-preview workflows publish to), the files its packaged bundle must carry (bundledAssets, checked by scripts/check-offline-assets.mjs) and its desktop app (desktop, staged by scripts/stage-desktop.sh). The workflows list the games from these files (scripts/games.mjs). sharedVersion: its version is Hypersweeper's, bumped with it (scripts/bump_version.py). See docs/agents/new-game.md.",
+  "$comment": "How this game is shipped: its site (web: its folder on the shared site, tiling-games.pages.dev/<path>/; the Cloudflare Pages project of its own, if it still has one; where it is played; and movedFrom, a project it left that now redirects to it — see scripts/lib/games.mjs), its landing-page card (description, appStore), the files its packaged bundle must carry (bundledAssets, checked by scripts/check-offline-assets.mjs) and its desktop app (desktop, staged by scripts/stage-desktop.sh). The workflows list the games from these files (scripts/games.mjs). sharedVersion: its version is Hypersweeper's, bumped with it (scripts/bump_version.py). See docs/agents/new-game.md.",
   "productName": "Rep-tiles",
+  "description": "Cover the board, tile by tile: a drag-and-drop puzzle on the uniform and Laves tilings.",
   "sharedVersion": true,
   "bundledAssets": ["fonts/SpaceGrotesk-Variable.ttf", "fonts/Caprasimo-Regular.ttf"],
   "web": {
-    "project": "rep-tiles",
-    "url": "https://rep-tiles.pages.dev/"
+    "path": "rep-tiles",
+    "url": "https://tiling-games.pages.dev/rep-tiles/",
+    "movedFrom": "rep-tiles"
   },
   "desktop": {
     "appId": "com.sirk0.reptiles",

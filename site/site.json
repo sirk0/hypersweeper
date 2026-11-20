@@ -1,0 +1,6 @@
+{
+  "$comment": "The shared site every game is served from (scripts/build-site.mjs, read through scripts/lib/games.mjs). project: its Cloudflare Pages project, production branch master; site/wrangler.toml names the same. url: its production origin; a game without a Pages project of its own is at <url><path>/. previewAlias: the branch every PR preview is also deployed under, so <previewAlias>.<project>.pages.dev always shows the latest PR push.",
+  "project": "tiling-games",
+  "url": "https://tiling-games.pages.dev/",
+  "previewAlias": "alpha"
+}
