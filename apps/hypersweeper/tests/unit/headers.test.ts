@@ -2,9 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // public/_headers is applied by Cloudflare and by the `securityHeaders` plugin
-// (packages/vite-preset), and edited by the PR preview job on its way out. Nothing
-// typechecks it and a mistake in it is silent — the deployment serves fewer
-// headers and says nothing — so the invariants the other two pieces rely on are
+// (packages/vite-preset), and carried into the shared site by the PR preview
+// (scripts/build-site.mjs). Nothing typechecks it and a mistake in it is
+// silent — the deployment serves fewer headers and says nothing — so the
+// invariants the other two pieces rely on are
 // asserted here, in the spirit of dockerE2e.test.ts pinning the Dockerfile
 // against package.json.
 //
@@ -59,15 +60,13 @@ describe("public/_headers", () => {
     expect(/script-src[^;]*'unsafe-inline'/.test(csp)).toBe(false);
   });
 
-  it("stays editable by the PR preview job", () => {
-    // The preview inserts its noindex rule into the block below with a sed
-    // address. If this file's first pattern line ever stops looking like what
-    // that sed matches, the preview silently ships without the noindex — or,
-    // in the version of this that actually happened, without the policy. The
-    // job greps to catch it; this catches it a good deal earlier.
-    expect(previewWorkflow).toContain(
-      "sed -i 's#^/\\*$#/*\\n  X-Robots-Tag: noindex#' dist/_headers",
-    );
-    expect(headers).toMatch(/^\/\*$/m);
+  it("leaves the PR preview's noindex rule to the preview", () => {
+    // The preview builds this game into a folder of the shared site
+    // (scripts/build-site.mjs), moving this file's `/*` under the folder and
+    // adding `X-Robots-Tag: noindex` as a `/*` rule of its own — two different
+    // patterns, so Cloudflare sends both. Set here as well, the header would
+    // be sent twice. (scripts/test/site.test.mjs checks the moving.)
+    expect(previewWorkflow).toContain("node scripts/build-site.mjs site --mode preview");
+    expect(headers).not.toMatch(/^\s*X-Robots-Tag:/m);
   });
 });
