@@ -234,15 +234,24 @@ features.
 ### More games, and the App Store
 
 A web build points the player at the rest: under the phone home page's rows (and
-the Favourites, if any) an **App Store banner** — a slim card with the app's
-icon, "Get the app · On the App Store" — and a quiet **More games** link under
-it, to the shared site with every game on it,
-<https://tiling-games.pages.dev/>. On a desktop both sit at the top of the
-sidebar's footer, above How to play and Settings: the banner a card, More games
-a nav row with a glyph of its own (`Menu.promoLinks`). The rows above them keep
-their auto margins, so they stay centred in the room left; a phone too short
-for it all scrolls the page, as it does for the favourites. Both open in a new
-tab, so the game stays where it was.
+the Favourites, if any) **Apple's App Store badge** — the official black
+"Download on the App Store" artwork — and a quiet **More games** link under it,
+to the shared site with every game on it, <https://tiling-games.pages.dev/>.
+On a desktop, More games is a nav row with a glyph of its own at the head of
+the sidebar's footer, above How to play, and the badge is the footer's last
+thing, under Settings (`appStoreBadge`, `moreGamesLink` in `menu.ts`).
+`placeHeaderButtons` appends How to play and Settings again at every crossing
+of the breakpoint, so the badge keeps its place under them by CSS `order`.
+The rows above keep their auto margins, so they stay centred in the room left;
+a phone too short for it all scrolls the page, as it does for the favourites.
+Both open in a new tab, so the game stays where it was.
+
+**The badge is Apple's file, unaltered**: `site/app-store-badge.svg`, from
+Apple's marketing resources, the one copy the landing page shows too —
+Hypersweeper imports it (`?url`), so it is served from this origin, as the CSP
+requires. Apple's terms: never recoloured, cropped or framed, at least 40px
+tall, a quarter of its height clear round it. Replace it only with a newer
+download from Apple.
 
 Neither address is written here. The shared Vite preset reads them from the
 files that already hold them — the site's `url` in `site/site.json`, the App
@@ -255,7 +264,9 @@ was. The preset also gives the web build Safari's own **Smart App Banner**
 across the top of the page on an iPhone or iPad, which offers the app — or
 opens it, where it is installed — and is never shown in a page launched from
 the Home Screen. See `packages/vite-preset/AGENTS.md`.
-`tests/e2e/promo.spec.ts` pins the links, where they sit, and the meta tag.
+`tests/e2e/promo.spec.ts` pins the links, where they sit (the badge under
+Settings across a breakpoint crossing too), that the badge loads at 40px, and
+the meta tag.
 
 ## Telling the player where they are
 

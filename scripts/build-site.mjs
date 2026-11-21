@@ -116,7 +116,7 @@ if (command === "site") {
 
   const template = readFileSync(join(ROOT, "site/index.html"), "utf8");
   writeFileSync(join(out, "index.html"), renderLanding(template, games, icons));
-  for (const file of ["404.html", "favicon.svg", "fonts"]) {
+  for (const file of ["404.html", "favicon.svg", "fonts", "app-store-badge.svg"]) {
     cpSync(join(ROOT, "site", file), join(out, file), { recursive: true });
   }
   console.log(`wrote ${out} (${mode}, ${siteUrl})`);
