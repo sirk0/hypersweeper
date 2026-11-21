@@ -1,3 +1,4 @@
+import APP_STORE_BADGE from "../../../../site/app-store-badge.svg?url";
 import { screens } from "../config/screens";
 import { MENU_FAMILY_HINTS, MODE_LABELS, surfaceCaution, surfaceOf } from "../modes/catalog";
 import { blockedExplanation, fairnessHint, modeFairness, type Fairness } from "../modes/fairness";
@@ -144,6 +145,76 @@ function textBlock(label: string, hint?: string): HTMLElement {
     hintEl.textContent = hint;
     box.append(hintEl);
   }
+  return box;
+}
+
+/** More games: a 2×2 of tiles, drawn like the How to play and Settings glyphs
+ * beside it in the sidebar. */
+const GAMES_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+    <rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/>
+    <rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/>
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/>
+    <rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>
+  </g>
+</svg>`;
+
+/** An outward link: a new tab, so the game stays where it was. */
+function outwardLink(href: string, action: string): HTMLAnchorElement {
+  const a = document.createElement("a");
+  a.href = href;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.dataset["action"] = action;
+  return a;
+}
+
+/** Apple's own "Download on the App Store" badge, black, linking to the App
+ * Store app (on an iPhone the link opens the App Store). The artwork is Apple's
+ * file as published, unaltered (site/app-store-badge.svg, which the landing
+ * page shows too), served from this origin: the CSP allows no other. Apple asks
+ * for it at 40px tall or more with clear space round it (styles.css). Only a
+ * web build has it — `__APP_STORE_URL__` is null in a packaged one, and the App
+ * Store app does not advertise itself. Under the home page's rows on a phone,
+ * under Settings at the foot of the sidebar on a desktop. */
+function appStoreBadge(): HTMLElement | null {
+  if (!__APP_STORE_URL__) return null;
+  const link = outwardLink(__APP_STORE_URL__, "app-store");
+  link.className = "menu-promo-badge";
+  const img = document.createElement("img");
+  img.src = APP_STORE_BADGE;
+  img.alt = "Download on the App Store";
+  img.width = 120;
+  img.height = 40;
+  link.append(img);
+  return link;
+}
+
+/** More games: the site with every game on it, a quiet link under the badge on
+ * a phone and a row above How to play in the sidebar. Web builds only, as the
+ * badge (`__GAMES_SITE_URL__`). */
+function moreGamesLink(): HTMLElement | null {
+  if (!__GAMES_SITE_URL__) return null;
+  const games = outwardLink(__GAMES_SITE_URL__, "more-games");
+  games.className = "menu-entry menu-promo-games";
+  games.title = "Every game, on tiling-games.pages.dev";
+  // The glyph is the sidebar's, where it lines the row up with How to play
+  // and Settings under it; the phone shows the label alone, as a link.
+  const icon = document.createElement("span");
+  icon.className = "menu-promo-games-icon";
+  icon.innerHTML = GAMES_ICON;
+  games.append(icon, textBlock("More games"));
+  return games;
+}
+
+/** The phone home page's foot, one row: More games at the left, the badge at
+ * the right — or null where there is neither (a packaged build). */
+function promoLinks(): HTMLElement | null {
+  const links = [moreGamesLink(), appStoreBadge()].filter((el) => el !== null);
+  if (links.length === 0) return null;
+  const box = document.createElement("div");
+  box.className = "menu-promo";
+  box.append(...links);
   return box;
 }
 
@@ -840,9 +911,13 @@ export class Menu {
       list.append(li);
     }
     this.favouritesOnScreen = true;
+    // At the foot of the page, under the rows (and their favourites), which
+    // stay centred in the room above it.
+    const promo = promoLinks();
+    const tail = promo ? [promo] : [];
     const faves = this.favouriteRows();
     if (faves.length === 0) {
-      this.body.replaceChildren(list);
+      this.body.replaceChildren(list, ...tail);
       return;
     }
     // The two lists are centred as one block: the first gives up its bottom
@@ -851,7 +926,7 @@ export class Menu {
     const favList = document.createElement("ul");
     favList.className = "menu-list menu-fav-list";
     favList.append(...faves);
-    this.body.replaceChildren(list, this.sectionHeading("Favourites"), favList);
+    this.body.replaceChildren(list, this.sectionHeading("Favourites"), favList, ...tail);
   }
 
   private showCustom(): void {
@@ -1064,6 +1139,13 @@ export class Menu {
 
     this.sidebarFooterEl = document.createElement("div");
     this.sidebarFooterEl.className = "menu-sidebar-footer";
+    // More games above How to play and Settings, which `placeHeaderButtons`
+    // appends; the badge under them — kept last by its `order` (styles.css),
+    // since every crossing of the breakpoint appends the two buttons again.
+    const games = moreGamesLink();
+    const badge = appStoreBadge();
+    if (games) this.sidebarFooterEl.append(games);
+    if (badge) this.sidebarFooterEl.append(badge);
     sidebar.append(this.sidebarFooterEl);
 
     return sidebar;

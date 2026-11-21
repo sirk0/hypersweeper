@@ -1035,6 +1035,76 @@ body {
   margin-top: 0;
 }
 
+/* The way out to the other games (menu.ts `promoLinks`), web builds only: one
+   row at the foot of the phone's home page, More games as a quiet link at the
+   left and Apple's App Store badge at the right, its edge on the rows' edge.
+   The rows above keep their auto margins, so they stay centred in the room
+   left, and a phone too short for it all scrolls the page as it does for the
+   favourites. On a desktop the two are in the sidebar's footer instead
+   (below), not in this row. */
+.menu-promo {
+  flex: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Apple's badge, as Apple draws it: 40px tall (their minimum), never recoloured
+   or framed, with a quarter of its height clear round it. */
+.menu-promo-badge {
+  flex: none;
+  display: block;
+  margin: 10px 0 10px 10px;
+  line-height: 0;
+  border-radius: 7px;
+}
+
+.menu-promo-badge img {
+  display: block;
+  width: auto;
+  height: 40px;
+}
+
+.menu-promo-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A link, not a card, on the phone: one muted line. */
+.menu-promo-games {
+  width: auto;
+  text-decoration: none;
+  /* Its text on the rows' own text inset. */
+  padding: 6px 12px 6px 18px;
+  color: var(--muted);
+  background: none;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+}
+
+.menu-promo-games:hover,
+.menu-promo-games:focus-visible {
+  color: var(--accent);
+}
+
+.menu-promo-games .menu-entry-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.menu-promo-games .menu-entry-label::after {
+  content: " ↗";
+}
+
+.menu-promo-games .menu-entry-hint,
+.menu-promo-games-icon {
+  display: none;
+}
+
 .menu-section-heading {
   margin: 22px 0 10px;
   font-size: 13px;
@@ -1277,6 +1347,41 @@ body {
 
   .menu-sidebar-footer .menu-header-btn-label {
     display: inline;
+  }
+
+  /* In the sidebar More games is a nav row at the head of the footer, its
+     glyph and label lined up with How to play and Settings under it, and the
+     badge comes last, under Settings. `placeHeaderButtons` appends those two
+     again at every crossing of the breakpoint, so the badge holds its place by
+     `order`, not by where it was appended. Its clear space is the rows' own
+     inset at the left. */
+  .menu-sidebar-footer .menu-promo-badge {
+    order: 1;
+    align-self: flex-start;
+    margin: 10px 12px 0;
+  }
+
+  .menu-sidebar-footer .menu-promo-games {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .menu-sidebar-footer .menu-promo-games .menu-entry-label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .menu-sidebar-footer .menu-promo-games-icon {
+    display: block;
+    flex: none;
+    width: 22px;
+    height: 22px;
+  }
+
+  .menu-sidebar-footer .menu-promo-games-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .menu-body {

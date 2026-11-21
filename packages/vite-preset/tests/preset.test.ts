@@ -5,8 +5,10 @@ import { pathToFileURL } from "node:url";
 import type { Plugin, PluginOption } from "vite";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  appStoreBanner,
   buildFlags,
   gameConfig,
+  outwardLinks,
   parseHeadersFile,
   siteUrlFor,
   socialMeta,
@@ -86,6 +88,8 @@ describe("gameConfig", () => {
       __APP_VERSION__: '"1.2.3"',
       __APP_COMMIT__: '"0123456"',
       __APP_PACKAGED__: "false",
+      __GAMES_SITE_URL__: "null",
+      __APP_STORE_URL__: "null",
       __APP_EXTRA__: "true",
     });
   });
@@ -128,6 +132,52 @@ describe("gameConfig", () => {
     const c = config({ VITE_BASE: "/b/" }, { overrides: { server: { port: 1234 } } });
     expect(c.base).toBe("/b/");
     expect(c.server?.port).toBe(1234);
+  });
+});
+
+describe("outwardLinks", () => {
+  /** A game at apps/<key>/ of a throwaway repo with a site/site.json. */
+  function repo(packaging: object): string {
+    const top = mkdtempSync(join(tmpdir(), "vite-preset-repo-"));
+    mkdirSync(join(top, "site"));
+    writeFileSync(join(top, "site/site.json"), JSON.stringify({ url: "https://games.dev/" }));
+    const dir = join(top, "apps/game");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ version: "1.2.3" }));
+    writeFileSync(join(dir, "packaging.json"), JSON.stringify(packaging));
+    return dir;
+  }
+  const store = "https://apps.apple.com/us/app/game/id123456";
+
+  it("reads the games site from site.json and the App Store page from packaging.json", () => {
+    expect(outwardLinks(repo({ appStore: store }), false)).toEqual({
+      gamesSite: "https://games.dev/",
+      appStore: store,
+    });
+    expect(outwardLinks(repo({}), false).appStore).toBeNull();
+  });
+
+  it("links out to nothing from a packaged build", () => {
+    expect(outwardLinks(repo({ appStore: store }), true)).toEqual({
+      gamesSite: null,
+      appStore: null,
+    });
+  });
+
+  it("defines both, and adds Safari's App Store banner, for a game on the App Store", () => {
+    const c = config({}, {}, repo({ appStore: store }));
+    expect(c.define?.["__GAMES_SITE_URL__"]).toBe('"https://games.dev/"');
+    expect(c.define?.["__APP_STORE_URL__"]).toBe(JSON.stringify(store));
+    expect(pluginNames(c.plugins)).toContain("tiling:app-store-banner");
+    const packaged = config({ VITE_PACKAGED: "1" }, {}, repo({ appStore: store }));
+    expect(packaged.define?.["__APP_STORE_URL__"]).toBe("null");
+  });
+
+  it("writes the banner's meta tag from the id in the App Store URL", () => {
+    const plugin = appStoreBanner(store);
+    const out = (plugin.transformIndexHtml as (html: string) => string)("<head></head>");
+    expect(out).toContain('<meta name="apple-itunes-app" content="app-id=123456" />');
+    expect(() => appStoreBanner("https://apps.apple.com/")).toThrow();
   });
 });
 

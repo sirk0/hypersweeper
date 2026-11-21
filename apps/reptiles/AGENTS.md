@@ -341,12 +341,16 @@ default) or Off — and its volume (below), and the tiling past a finished board
 default (below) — then shows the version, checks for updates (the shared check in `@tiling/platform`) and
 links the **privacy policy** (`public/privacy.html`, served as `/privacy`, in
 a new tab); the update row and the policy link are left out of a packaged
-build. The **?** in home's top-right corner (Hypersweeper's, too) opens **How
+build. Under Tilings on home, a quiet **More games ↗** links to the shared
+site, <https://tiling-games.pages.dev/> (on a desktop, a row at the head of
+the sidebar's foot, above How to play); it opens in a new tab, and like the
+update row it is left out of a packaged build — its address is the shared Vite
+preset's `__GAMES_SITE_URL__`, read from `site/site.json` and null there. The **?** in home's top-right corner (Hypersweeper's, too) opens **How
 to play** (`?help`, `src/view/help.ts`): the puzzle, laying, turning,
 flipping and taking off tiles with their keys, marks, the stars and the hint,
 zoom — drawn as the settings are; every line of it is a statement about the
 code, so it changes with the behaviour it describes. On a desktop both are in
-the sidebar's foot. `smoke.spec.ts` pins all three. Levels are picked in
+the sidebar's foot. `smoke.spec.ts` pins all three, and More games. Levels are picked in
 Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
 home and back, then (no clock: the time taken is on the win card) the hint, restart,
 and a die that deals another board of the same difficulty as this one — then

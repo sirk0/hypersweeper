@@ -72,6 +72,20 @@ export function renderHome(
   grid.setAttribute("aria-hidden", "true");
   grid.textContent = "▦";
   more.appendChild(pick("catalog-pick", grid, "Tilings", "Every tiling, by family", catalog));
+  // …and under it the way to the other games, a quiet link: only in a web
+  // build (null in a packaged one), in a new tab so the game stays put. The
+  // desktop's is in the sidebar's foot (main.ts), and this row is hidden there.
+  if (__GAMES_SITE_URL__) {
+    const games = document.createElement("a");
+    games.className = "home-games";
+    games.href = __GAMES_SITE_URL__;
+    games.target = "_blank";
+    games.rel = "noopener";
+    games.dataset["action"] = "more-games";
+    games.title = "Every game, on tiling-games.pages.dev";
+    games.textContent = "More games ↗";
+    more.appendChild(games);
+  }
   host.append(bands, more);
 }
 

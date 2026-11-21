@@ -16,7 +16,10 @@
       is served from. A template: scripts/build-site.mjs replaces the games
       comment below with one card per game, from each apps/<game>/packaging.json
       (productName, description, appStore, web.path), and copies each game's
-      favicon to icons/<game>.svg. So a new game appears here by itself.
+      favicon to icons/<game>.svg. So a new game appears here by itself. A card
+      ends in one row of links: Play, its privacy policy and, for a game on
+      the App Store, Apple's badge at the right (app-store-badge.svg, Apple's
+      file as published, black, shown unaltered at its 40px minimum).
 
       Every link is relative, so a PR preview's landing page leads to that
       preview's own builds. In production a game with a Pages project of its
@@ -119,7 +122,7 @@
         border-radius: 20px;
         box-shadow: var(--shadow);
       }
-      .game img {
+      .game > img {
         grid-row: span 3;
         width: 72px;
         height: 72px;
@@ -143,8 +146,27 @@
       .links {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        align-items: center;
+        gap: 8px 16px;
         margin-top: 10px;
+      }
+      .privacy {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      /* Apple's badge: at the row's right end, wrapping under the rest on a
+         narrow screen and still at the right. A quarter of its height clear
+         round it, as Apple asks. */
+      .store {
+        margin-left: auto;
+        padding: 0 0 0 10px;
+        line-height: 0;
+        border-radius: 7px;
+      }
+      .store img {
+        display: block;
+        width: auto;
+        height: 40px;
       }
       .button {
         display: inline-block;
@@ -177,7 +199,7 @@
           gap: 4px 14px;
           padding: 16px;
         }
-        .game img {
+        .game > img {
           width: 56px;
           height: 56px;
           border-radius: 12px;
@@ -192,9 +214,7 @@
       <ul class="games">
         <!-- games -->
       </ul>
-      <footer>
-        <!-- privacy -->
-      </footer>
+      <footer>© Sergiy Tsymbal</footer>
     </main>
   </body>
 </html>

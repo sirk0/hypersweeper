@@ -3,7 +3,7 @@
 //
 //   node --test scripts/test/
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -60,16 +60,36 @@ test("a game with a project of its own: its folder 302s there, deep links includ
 test("the landing page: a card per game, relative links, the App Store where there is one", () => {
   const template = readFileSync(`${ROOT}/site/index.html`, "utf8");
   const html = renderLanding(template, listGames(ROOT), new Set(["reptiles"]));
-  assert.doesNotMatch(html, /<!-- games -->|<!-- privacy -->/);
+  assert.doesNotMatch(html, /<!-- games -->/);
   assert.match(html, /<h2><a href="hypersweeper\/">Hypersweeper<\/a><\/h2>/);
   assert.match(html, /<h2><a href="rep-tiles\/">Rep-tiles<\/a><\/h2>/);
   assert.match(html, /href="https:\/\/apps\.apple\.com\/us\/app\/hypersweeper\/id6822071409"/);
   assert.equal(html.match(/apps\.apple\.com/g).length, 1);
   assert.match(html, /<img src="icons\/reptiles\.svg"/);
   assert.doesNotMatch(html, /icons\/hypersweeper\.svg/);
-  assert.match(html, /href="rep-tiles\/privacy"/);
   assert.doesNotMatch(html, /href="\/[a-z]/, "links must be relative, for the previews");
   assert.throws(() => renderLanding("<html></html>", []));
+});
+
+test("the landing page's cards: each with its privacy policy, Apple's badge where there is an app", () => {
+  const template = readFileSync(`${ROOT}/site/index.html`, "utf8");
+  const html = renderLanding(template, listGames(ROOT));
+  const card = (path) =>
+    html.match(
+      new RegExp(`<li class="game">((?:(?!</li>)[\\s\\S])*href="${path}/"[\\s\\S]*?)</li>`),
+    )[1];
+  // every game's policy is in its own card, and none is left in the footer
+  assert.match(card("hypersweeper"), /<a class="privacy" href="hypersweeper\/privacy">/);
+  assert.match(card("rep-tiles"), /<a class="privacy" href="rep-tiles\/privacy">/);
+  assert.doesNotMatch(html, /<!--\s*privacy\s*-->/);
+  // the badge: Apple's file, linking to the game's App Store page, last in its card
+  assert.match(
+    card("hypersweeper"),
+    /<a class="store" href="https:\/\/apps\.apple\.com\/[^"]+"><img src="app-store-badge\.svg" alt="Download Hypersweeper on the App Store"[^>]*\/><\/a>\s*<\/div>\s*$/,
+  );
+  assert.doesNotMatch(card("rep-tiles"), /app-store-badge/);
+  assert.ok(existsSync(`${ROOT}/site/app-store-badge.svg`), "the badge the cards show");
+  assert.match(html, /<footer>© Sergiy Tsymbal<\/footer>/);
 });
 
 test("a moved project: explicit 301s (never /sw.js), and a page that redirects too", () => {

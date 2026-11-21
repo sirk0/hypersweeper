@@ -71,10 +71,12 @@ const escapeHtml = (text) =>
   );
 
 /** One landing-page card per game with a site, in the template's
- * `<!-- games -->` slot, and a privacy link per game in `<!-- privacy -->`.
- * Every link is relative to the site root, so a PR preview's page leads to
- * that preview's builds. `icons` is the set of game keys whose favicon was
- * copied to icons/<key>.svg. */
+ * `<!-- games -->` slot: its icon, name and pitch, then one row of links —
+ * Play in the browser, the game's privacy policy, and, for a game on the App
+ * Store, Apple's badge at the row's right end (app-store-badge.svg, the site's
+ * copy of Apple's file). Every link of the site's own is relative to the site
+ * root, so a PR preview's page leads to that preview's builds. `icons` is the
+ * set of game keys whose favicon was copied to icons/<key>.svg. */
 export function renderLanding(template, games, icons = new Set()) {
   const listed = games.filter((g) => g.web);
   const cards = listed.map((g) => {
@@ -87,26 +89,20 @@ export function renderLanding(template, games, icons = new Set()) {
     if (g.description) lines.push(`  <p>${escapeHtml(g.description)}</p>`);
     lines.push(`  <div class="links">`);
     lines.push(`    <a class="button play" href="${href}">Play in the browser</a>`);
+    lines.push(`    <a class="privacy" href="${g.web.path}/privacy">Privacy policy</a>`);
     if (g.appStore) {
       lines.push(
-        `    <a class="button" href="${escapeHtml(g.appStore)}">Get it on the App Store</a>`,
+        `    <a class="store" href="${escapeHtml(g.appStore)}">` +
+          `<img src="app-store-badge.svg" alt="Download ${name} on the App Store" width="120" height="40" /></a>`,
       );
     }
     lines.push(`  </div>`, `</li>`);
     return lines.join("\n");
   });
-  const privacy = listed
-    .map((g) => `<a href="${g.web.path}/privacy">${escapeHtml(g.productName)}</a>`)
-    .join(" · ");
-  const fill = (html, slot, content) => {
-    if (!html.includes(slot)) throw new Error(`the landing template has no ${slot} slot`);
-    return html.replace(slot, content);
-  };
-  return fill(
-    fill(template, "<!-- games -->", cards.join("\n")),
-    "<!-- privacy -->",
-    listed.length ? `Privacy policies: ${privacy}` : "",
-  );
+  if (!template.includes("<!-- games -->")) {
+    throw new Error("the landing template has no <!-- games --> slot");
+  }
+  return template.replace("<!-- games -->", cards.join("\n"));
 }
 
 /** The paths a moved project still answers with a 301 to the game's new home.

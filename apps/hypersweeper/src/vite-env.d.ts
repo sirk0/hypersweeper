@@ -21,3 +21,9 @@ declare const __APP_ANALYTICS__: boolean;
 // preview passes its own). A packaged app's share links point here, because its
 // own address (capacitor://localhost, app://local) opens nothing for anyone else.
 declare const __APP_SITE_URL__: string;
+// Where a player can go from the menu for more (packages/vite-preset,
+// `outwardLinks`): every game, on the shared site (site/site.json), and this
+// game on the App Store (packaging.json `appStore`). Null in a packaged build,
+// which links out to nothing, so the menu leaves the links out there.
+declare const __GAMES_SITE_URL__: string | null;
+declare const __APP_STORE_URL__: string | null;
