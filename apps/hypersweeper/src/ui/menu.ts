@@ -207,10 +207,10 @@ function moreGamesLink(): HTMLElement | null {
   return games;
 }
 
-/** The phone home page's foot: the badge, then More games under it — or null
- * where there is neither (a packaged build). */
+/** The phone home page's foot, one row: More games at the left, the badge at
+ * the right — or null where there is neither (a packaged build). */
 function promoLinks(): HTMLElement | null {
-  const links = [appStoreBadge(), moreGamesLink()].filter((el) => el !== null);
+  const links = [moreGamesLink(), appStoreBadge()].filter((el) => el !== null);
   if (links.length === 0) return null;
   const box = document.createElement("div");
   box.className = "menu-promo";

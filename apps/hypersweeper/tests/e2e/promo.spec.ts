@@ -46,7 +46,9 @@ async function expectLinks(page: Page): Promise<void> {
 }
 
 test.describe("links to the other games", () => {
-  test("the phone home page ends with the badge, More games under it", async ({ page }) => {
+  test("the phone home page ends in one row: More games left, the badge right", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await boot(page);
     await expectLinks(page);
@@ -60,8 +62,13 @@ test.describe("links to the other games", () => {
     const more = await box(games(page));
     const pills = await box(page.locator(".menu-difficulty-block"));
     expect(store.y).toBeGreaterThanOrEqual(custom.y + custom.height);
-    expect(more.y).toBeGreaterThanOrEqual(store.y + store.height);
-    expect(more.y + more.height).toBeLessThanOrEqual(pills.y);
+    expect(more.y).toBeGreaterThanOrEqual(custom.y + custom.height);
+    expect(Math.max(store.y + store.height, more.y + more.height)).toBeLessThanOrEqual(pills.y);
+    // One row: centred on one line, More games first, the badge's edge on the
+    // rows' right edge.
+    expect(Math.abs(more.y + more.height / 2 - (store.y + store.height / 2))).toBeLessThan(2);
+    expect(more.x + more.width).toBeLessThanOrEqual(store.x);
+    expect(Math.abs(store.x + store.width - (custom.x + custom.width))).toBeLessThan(1);
     // Only on the home page: a page it opens has neither.
     await page.locator('.menu-entry[data-group="custom"]').click();
     await expect(page.locator('.menu-body [data-action="back"]').first()).toBeVisible();

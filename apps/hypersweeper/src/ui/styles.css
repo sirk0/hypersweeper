@@ -1035,18 +1035,20 @@ body {
   margin-top: 0;
 }
 
-/* The way out to the other games (menu.ts `promoLinks`), web builds only:
-   Apple's App Store badge, and More games as a quiet link under it, at the
-   foot of the phone's home page — the rows above keep their auto margins, so
-   they stay centred in the room left, and a phone too short for it all scrolls
-   the page as it does for the favourites. On a desktop the two are in the
-   sidebar's footer instead (below). */
+/* The way out to the other games (menu.ts `promoLinks`), web builds only: one
+   row at the foot of the phone's home page, More games as a quiet link at the
+   left and Apple's App Store badge at the right, its edge on the rows' edge.
+   The rows above keep their auto margins, so they stay centred in the room
+   left, and a phone too short for it all scrolls the page as it does for the
+   favourites. On a desktop the two are in the sidebar's footer instead
+   (below), not in this row. */
 .menu-promo {
   flex: none;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: 14px;
 }
 
@@ -1055,8 +1057,7 @@ body {
 .menu-promo-badge {
   flex: none;
   display: block;
-  align-self: center;
-  margin: 10px;
+  margin: 10px 0 10px 10px;
   line-height: 0;
   border-radius: 7px;
 }
@@ -1076,7 +1077,8 @@ body {
 .menu-promo-games {
   width: auto;
   text-decoration: none;
-  padding: 6px 12px;
+  /* Its text on the rows' own text inset. */
+  padding: 6px 12px 6px 18px;
   color: var(--muted);
   background: none;
   backdrop-filter: none;

@@ -234,9 +234,10 @@ features.
 ### More games, and the App Store
 
 A web build points the player at the rest: under the phone home page's rows (and
-the Favourites, if any) **Apple's App Store badge** — the official black
-"Download on the App Store" artwork — and a quiet **More games** link under it,
-to the shared site with every game on it, <https://tiling-games.pages.dev/>.
+the Favourites, if any) one row, a quiet **More games** link at the left — to
+the shared site with every game on it, <https://tiling-games.pages.dev/> — and
+**Apple's App Store badge** at the right, the official black "Download on the
+App Store" artwork, its edge on the rows' right edge.
 On a desktop, More games is a nav row with a glyph of its own at the head of
 the sidebar's footer, above How to play, and the badge is the footer's last
 thing, under Settings (`appStoreBadge`, `moreGamesLink` in `menu.ts`).
