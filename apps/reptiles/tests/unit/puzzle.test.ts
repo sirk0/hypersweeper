@@ -112,11 +112,13 @@ describe("puzzle", () => {
   it.each(BOARDS.map((b) => b.key))("%s: the board it was cut from fills it exactly", (key) => {
     const p = new Puzzle(levelByKey(key)!);
     const { ring, tiles } = p.level;
-    // a cell's kind: the tray tile it is a turn of, or a turn of mirrored —
-    // and which turn, which way round
+    // a cell's kind: the tray tile it is a turn of, or, on a board that
+    // flips, a turn of mirrored — and which turn, which way round (on one
+    // that does not, a mirror image is another kind: a jigsaw's all-S and
+    // all-Z triangles)
     const sitOf = (cell: Piece[]): [kind: number, rot: number, flip: boolean] => {
       for (const [kind, t] of tiles.entries()) {
-        for (const flip of [false, true]) {
+        for (const flip of p.level.mirror ? [false, true] : [false]) {
           const pieces = posed(t, { rot: 0, flip, t: ring.zero });
           const [rot] = turnsOntoPieces({ ring, pieces }, cell);
           if (rot !== undefined) return [kind, rot, flip];
@@ -754,7 +756,15 @@ describe("puzzle", () => {
   it("colours a second kind with as many sides as another apart", () => {
     expect(levelByKey("trihex")!.colours).toEqual(["sides-3", "sides-6"]);
     expect(levelByKey("hexrowsdual")!.colours).toEqual(["sides-4", "sides-4 twin"]);
-    const twins = LEVELS.filter((l) => l.colours.some((c) => c.includes("twin")));
+    // a jigsaw is one colour, its tiles coloured by shape as its plain
+    // board's are: a twin just where that board has one
+    for (const jig of LEVELS.filter((l) => l.decor?.jigsaw)) {
+      const twin = (l: Level): boolean => l.colours.some((c) => c.includes("twin"));
+      expect(twin(jig), jig.key).toBe(twin(levelByKey(jig.decor!.of)!));
+    }
+    const twins = LEVELS.filter(
+      (l) => !l.decor?.jigsaw && l.colours.some((c) => c.includes("twin")),
+    );
     // and the aperiodic tilings of two quadrilaterals: Penrose's two rhombi,
     // his kite and dart, Ammann–Beenker's square and rhombus; and the isogonal
     // tilings of one polygon in two or three sizes — each with its lined

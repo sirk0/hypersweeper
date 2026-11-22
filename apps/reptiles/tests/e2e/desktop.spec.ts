@@ -24,7 +24,7 @@ function watchErrors(page: Page): string[] {
 const TILINGS = (
   JSON.parse(readFileSync("src/levelIndex.json", "utf8")) as { key: string; group: string }[]
 )
-  .filter((l) => l.group !== "rules" && l.group !== "colourings")
+  .filter((l) => l.group !== "rules" && l.group !== "colourings" && l.group !== "jigsaw")
   .map((l) => l.key);
 
 /** A level's measured score (src/difficulty.json, read here as Node cannot
