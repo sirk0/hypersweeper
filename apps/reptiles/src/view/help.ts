@@ -3,9 +3,10 @@
 // `.settings-list` rows, so it gets their look and the desktop pane's header.
 //
 // Everything here is a statement about the code, so keep it true: the rules
-// and the stars are `src/puzzle.ts` (`won`, `stars`), the gestures
+// and the stars are `src/puzzle.ts` (`won`, `stars`, undo and redo), a board
+// kept `src/saved.ts`, the best time `src/progress.ts`, the gestures
 // `src/input/drag.ts`, the keys `onKey` in `src/main.ts`, and the header
-// `index.html`.
+// `index.html`. Its first button opens the tutorial (`src/tutorial.ts`).
 
 interface Section {
   heading: string;
@@ -58,6 +59,11 @@ const SECTIONS: Section[] = [
           "or picking up a tray tile ends it.",
       ],
       [
+        "Undo and redo",
+        "The hooked arrows in the header — [Z], and [Shift]+[Z] or [Y] — take " +
+          "back the last move (a tile laid, moved or taken off) and make it again.",
+      ],
+      [
         "Matching rules and colourings",
         "Some boards mark each tile's edges with lines, arrows or colours. A " +
           "tile lands only where its marks meet its neighbours' as they should, " +
@@ -76,6 +82,11 @@ const SECTIONS: Section[] = [
         "The light bulb — or [H] — shows a tile to lay and where, or one to " +
           "take off. Using it costs the third star.",
       ],
+      [
+        "Time",
+        "The win card tells the time from the first tile down to the last, and " +
+          "your best on that board. The best shows on Play, on its tiling's page.",
+      ],
     ],
   },
   {
@@ -92,6 +103,13 @@ const SECTIONS: Section[] = [
           "same difficulty. Finished, you get Play again and Next level.",
       ],
       [
+        "Leave and come back",
+        "A board left half-covered is kept as it was — its tiles, the time " +
+          "spent on it and the hints shown — and opens that way again: on its " +
+          "tiling's page, Play reads Resume. Restart, Play again or finishing " +
+          "it starts it afresh.",
+      ],
+      [
         "Picking a level",
         "Quick start deals one by difficulty. Tilings lists every tiling: open " +
           "one to pick its board and its tiles — plain, or with a matching rule " +
@@ -101,9 +119,19 @@ const SECTIONS: Section[] = [
   },
 ];
 
-/** Draw How to play into `host`. */
-export function renderHelp(host: HTMLElement): void {
+/** Draw How to play into `host` — and, given `tutorial`, a button that
+ * plays the first-run tutorial again. */
+export function renderHelp(host: HTMLElement, tutorial?: () => void): void {
   host.replaceChildren();
+  if (tutorial) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "primary help-tutorial";
+    button.dataset["action"] = "tutorial";
+    button.textContent = "Play the tutorial";
+    button.addEventListener("click", tutorial);
+    host.append(button);
+  }
   for (const section of SECTIONS) {
     const heading = document.createElement("h2");
     heading.textContent = section.heading;
@@ -131,7 +159,7 @@ export function renderHelp(host: HTMLElement): void {
 }
 
 /** `body` as text, each `[K]` in it a `<kbd>`. */
-function withKeys(body: string): (string | HTMLElement)[] {
+export function withKeys(body: string): (string | HTMLElement)[] {
   return body.split(/\[([^\]]+)\]/).map((part, i) => {
     if (i % 2 === 0) return part;
     const key = document.createElement("kbd");

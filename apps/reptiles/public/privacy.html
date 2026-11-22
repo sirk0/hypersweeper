@@ -6,7 +6,7 @@
     <title>Privacy policy — Rep-tiles</title>
     <meta
       name="description"
-      content="What Rep-tiles collects: nothing. Your stars and settings stay in your browser or on your computer."
+      content="What Rep-tiles collects: nothing. Your stars, best times, boards in play and settings stay in your browser or on your computer."
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="theme-color" content="#f5ead8" media="(prefers-color-scheme: light)" />
@@ -32,7 +32,10 @@
           __APP_ANALYTICS__ collector in this game, and nothing in src/ calls
           fetch but the update check);
         - what is kept on the device: the stars, in localStorage under
-          "rep-tiles.stars" (src/progress.ts), and the settings, under
+          "rep-tiles.stars", and the best times, under "rep-tiles.times"
+          (src/progress.ts), the boards left half-covered, under
+          "rep-tiles.boards" (src/saved.ts), whether the tutorial has been seen,
+          under "rep-tiles.tutorial" (src/tutorial.ts), and the settings, under
           "rep-tiles.settings" (src/preferences.ts) — through
           packages/platform's storage guard, and never sent;
         - Settings › Check for updates fetches the site's own version stamp
@@ -216,8 +219,8 @@
             to any server.
           </li>
           <li>
-            Your stars and settings are kept in your browser, or on your computer in the desktop
-            app, and never leave it.
+            Your stars, best times, boards in play and settings are kept in your browser, or on your
+            computer in the desktop app, and never leave it.
           </li>
           <li>No accounts, no ads, no cookies, and no tracking across other apps or websites.</li>
         </ul>
@@ -226,9 +229,11 @@
       <section aria-labelledby="device">
         <h2 id="device">On your device</h2>
         <p>
-          The stars you have earned on each level and your choices in Settings are saved in your
-          browser's local storage, and the game's files are cached so it works offline. None of that
-          is sent anywhere. Clearing the site's data in your browser deletes it.
+          The stars you have earned on each level, your best time on each, the tiles of a board you
+          left half-covered, whether you have seen the tutorial and your choices in Settings are
+          saved in your browser's local storage, and the game's files are cached so it works
+          offline. None of that is sent anywhere. Clearing the site's data in your browser deletes
+          it.
         </p>
         <p>
           Settings › Check for updates asks the website for its current version number. It sends
@@ -240,7 +245,8 @@
         <h2 id="desktop">The desktop app</h2>
         <p>
           The desktop app is the same game, carried with everything it needs. It contacts no server
-          at all, and keeps your stars and settings in its own folder on your computer.
+          at all, and keeps your stars, best times, boards in play and settings in its own folder on
+          your computer.
         </p>
       </section>
 

@@ -55,7 +55,10 @@ some back off.
     colour, with a line across every edge between two tiles that were one
     colour — a line meets a line, a blank edge a blank one. A line runs from
     edge to edge, square on to each and ending on it, straight across or
-    round the corner two lined edges share. A line never ends in a tile:
+    round the corner two lined edges share; where a tile has three or more
+    lined edges, one line runs between two of them and each other one
+    branches off it, ending inside that line's stroke, so lines meeting in a
+    tile leave no gap. A line never ends in a tile:
     where one would (a tile with one lined edge), it is cut back to a half
     disc each side of that edge, and again from the tile across while that
     leaves a tile one line — so a half disc meets only a half disc, and the
@@ -82,7 +85,7 @@ some back off.
     the middle where it has no way), and a tile's points of one class are
     joined by a line in the class's colour, leaving each edge square on
     there — two by one curve, more paired as they come round the outline,
-    three at a hub — so two tiles meeting as they should run one line on
+    three as one line and a branch off it, as a lined tile's — so two tiles meeting as they should run one line on
     across their edge. A class with one point on a tile is a half disc there
     (two tiles make one disc), and a tile of several pieces, the
     Socolar–Taylor tile, keeps half discs throughout: lines across its
@@ -245,6 +248,31 @@ some back off.
   clock shows while playing: the time from the first tile down to the last
   is told only on the win card, with how many hints were shown (a press
   again while a hint is on show is not another) — there is no time limit.
+  The fastest finish of each level, any number of stars, is kept
+  (`recordTime`, `rep-tiles.times`): the win card says "— a new best!" when
+  one beats it, else "· best m:ss" (a first finish is only its time), and a
+  tiling's page shows it on Play ("best 0:42").
+- **Undo and redo** (the hooked arrows at the head of the header's right
+  cluster; Z, and Shift+Z or Y, with or without Ctrl/⌘) step back and forth
+  through moves: a tile laid, moved or taken off. The drag control marks the
+  end of each (`Puzzle.commit`, called by `done` in `drag.ts`); a tile lifted
+  and put back where it was is no move, and a new move clears what was
+  undone. An undo cancels a tile in hand first (`DragControl.cancel`). A
+  hint shown stays shown — undo is not a way back to the third star — and a
+  finished board undone and redone keeps its first finish's time.
+- **A board left half-covered is kept** (`src/saved.ts`, `rep-tiles.boards`):
+  its tiles, the time spent on it so far and the hints shown, saved at every
+  move, as a hint is shown, and as the level is left — for another screen,
+  another level, or the page hidden (`pagehide`, `visibilitychange`: an
+  iPhone may close the app in the background). Opening the level again lays
+  it back (`Puzzle.resume`, nothing to undo), the time running on from where
+  it was left; on its tiling's page Play reads **Resume**. Each tile is kept
+  exactly — its kind, turn, side and its pieces' vertices, integers — and
+  checked as it is laid back (a translate of its kind held that way
+  (`curveOnto`), allowed and fitting), with a fingerprint of the level's own
+  cells, so a board kept for a level since changed, or unreadable, opens
+  empty. Restart and Play again forget it, as does finishing; at most 30 are
+  kept (`MAX_SAVED`), the one left longest ago dropped first.
 - **The hint** (the bulb in the header, or H) looks at the board as it
   stands and says what to do next, worked out exactly (`src/hint.ts`). First
   it checks the tiles down: can the board still be finished round them — any
@@ -353,7 +381,7 @@ zoom — drawn as the settings are; every line of it is a statement about the
 code, so it changes with the behaviour it describes. On a desktop both are in
 the sidebar's foot. `smoke.spec.ts` pins all three, and More games. Levels are picked in
 Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
-home and back, then (no clock: the time taken is on the win card) the hint, restart,
+home and back, then (no clock: the time taken is on the win card) undo, redo, the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
 the level's name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest
@@ -361,8 +389,32 @@ of the screen, the tray on a strip along the bottom (portrait) or the right
 (landscape). The win card has Play again and Next level (another level of
 the same difficulty, dealt at random as the die deals), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
-outside it). Each move
-is a history entry, so the browser's Back works.
+outside it). Each move between screens
+is a history entry, so the browser's Back works (a tile's move is not: undo
+is the header's).
+
+**The first-run tutorial** (`?tutorial`, `src/tutorial.ts`) — four tiny
+boards, one lesson each: *Drag* (a 2×2 of squares, nothing to turn), *Turn*
+(five triangles in a row, three up as held and two down, a 60° turn), *Flip*
+(an S and a Z tetromino making an arch: the mirror image, no turn) and *Take
+off* (dominoes on an L, opened with one laid across its corner, leaving two
+squares no domino fits). Each is a level made from its exact cells as any
+other is (`tutorialLevel` in `levels.ts`), but never listed, dealt, measured,
+starred, timed, kept or hinted: a coach card between the header and the board
+(`#coach`, which takes its room from the board) says what to do, with Skip
+tutorial, and once the board is covered says so with Next — after the last,
+Play a level (an easy one, dealt as Easy deals) and Home. The hint and the die
+are hidden there; Restart puts a step back as it opened; the steps follow one
+another in place (`?tutorial=<step>`). It opens by itself in place of home for
+a newcomer — never opened before, no stars, no board kept (`firstRun`) — and is
+marked seen the moment it opens (`rep-tiles.tutorial`), so leaving it
+part-way is leaving it for good; How to play's **Play the tutorial** opens it
+again. `tests/unit/tutorial.test.ts` holds each board to its lesson (Drag fits
+every square as held; Turn three of five; Flip one of two, the other only
+flipped; Take off cannot be finished until its domino is off), and
+`smoke.spec.ts` plays it through. Every other e2e test starts with it seen
+(`storageState` in `playwright.config.ts`), so `/` is home; the store
+screenshots set it seen too.
 
 **Sound** — Hypersweeper's synthesiser, shared as `@tiling/sound`
 (`packages/sound`), in its three themes — Chime, Arcade and **Blocks**, the
@@ -617,7 +669,7 @@ its own `Rep-tiles` folder there. It is an **iPhone and iPad app** too,
 `apps/reptiles/ios/` — `make ios-app GAME=reptiles`, uploaded by
 `app-store.yml` with `game: reptiles` — which buzzes as a tile lands and a
 board is finished (Settings › **Haptics**, shown only where something can
-buzz), keeps the stars in iCloud and asks for a rating after the third finished
+buzz), keeps the stars and best times in iCloud and asks for a rating after the third finished
 board: see [`ios/README.md`](ios/README.md), and `tests/e2e/native.spec.ts`,
 which pins all three over Capacitor's real bridge.
 
@@ -1107,8 +1159,8 @@ quick way to see the win state.
   felt, are the package's. Called beside the sounds, from `src/input/drag.ts`
   and `changed` in `src/main.ts`.
 - `src/review.ts`, `src/cloudStars.ts` — the iPhone app's rating prompt, and
-  the stars kept in iCloud (each level's most, merged both ways); both do
-  nothing outside the app (`ios/README.md`).
+  the stars and best times kept in iCloud (each level's most stars and least
+  time, merged both ways); both do nothing outside the app (`ios/README.md`).
 - `src/scheme.ts` — the colour scheme: `applyScheme` sets `data-scheme` on
   `<html>` (none for Auto) and points the `theme-color` metas at the page
   colour. The dark colours are in `styles.css` twice, with the same
@@ -1118,7 +1170,14 @@ quick way to see the win state.
   holds them equal, so a colour changes in both.
 - `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
   the game works without it; the old finished-levels list reads as one star
-  each).
+  each), and the fastest finish per level (`rep-tiles.times`, milliseconds).
+- `src/saved.ts` — the boards in play, kept per level (`saveBoard`,
+  `loadBoard`, `forgetBoard`, `hasBoard`, `keptCount`; `fingerprint`), held by
+  `tests/unit/history.test.ts` with undo and redo.
+- `src/tutorial.ts` — the first-run tutorial's four boards
+  (`tutorialSteps`) and whether it has been seen (`tutorialSeen`,
+  `markTutorialSeen`); the coach and the routing are `main.ts`'s
+  (`openTutorial`, `drawCoach`, `firstRun`).
 - `src/puzzle.ts` — pure game state: `place`, `lift`, `snap` (in the held
   orientation only — `selfTurns` in `shape.ts` says which turns leave a tile
   unchanged — and, on a level with a rule, only edge to edge and where every
@@ -1130,7 +1189,9 @@ quick way to see the win state.
   there first (blind, it gets lost on V[3.4².6; 3.6.3.6]; on the
   Socolar–Taylor board it takes a quarter of a minute, so its test is left
   out), and `layOwn`, which lays every one of the board's own tiles that
-  still fits — what the dev seam's `fill()` does first.
+  still fits — what the dev seam's `fill()` does first. Undo and redo:
+  `commit` marks the end of a move (the layout it leaves is `layout`),
+  `undo`, `redo`, `canUndo`, `canRedo`; `resume` lays a kept board back.
 - `src/view/curve.ts` — drawing a tile: a `Loop` per piece (`loopsOf`),
   drawn as one path with a sub-path each (`loopsPath`), bounded by
   `loopsReach`; and round edges: `outlinePath` (a polygon as an
@@ -1146,7 +1207,13 @@ quick way to see the win state.
   two lined edges share — or, two edges further apart on an octagon or a
   dodecagon, about the point their lines meet, `meet`; on an irregular tile,
   a Laves tile's kite, rhombus or pentagon, a cubic leaving each edge's
-  middle along its inward normal, and spokes to the middle the same way;
+  middle along its inward normal; three or more lined edges as one line
+  between two of them, drawn so, with a branch off it from each other one —
+  straight on along its edge's normal where that meets the line at a fair
+  angle, else curving round to meet it square on at a point clear of its
+  ends — the pair whose line and branches are least ink, branches crossing
+  counted against it (`branched`), so every branch ends inside a line's
+  stroke and leaves no notch;
   butt-capped, so never past the edge), and a line cut back (`END`) as a half disc;
   Penrose's arrows as arcs about the tile's corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —

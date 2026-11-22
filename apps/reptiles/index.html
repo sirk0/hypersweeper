@@ -133,6 +133,26 @@
           <button
             type="button"
             class="hud-btn"
+            id="undo"
+            title="Undo the last move (Z)"
+            aria-label="Undo"
+            disabled
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="undo"></svg>
+          </button>
+          <button
+            type="button"
+            class="hud-btn"
+            id="redo"
+            title="Redo (Shift+Z)"
+            aria-label="Redo"
+            disabled
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="redo"></svg>
+          </button>
+          <button
+            type="button"
+            class="hud-btn"
             id="hint"
             title="Hint: a tile to lay, or one to take off (H) — no third star"
             aria-label="Hint"
@@ -153,6 +173,16 @@
           </button>
         </div>
       </header>
+      <!-- The first-run tutorial's coach (src/tutorial.ts): what to do on this
+           board, Skip, and Next once it is done. Only in ?tutorial. -->
+      <section class="coach" id="coach" aria-live="polite" hidden>
+        <p class="coach-step" id="coach-step"></p>
+        <p class="coach-body" id="coach-body"></p>
+        <div class="coach-actions">
+          <button type="button" id="coach-skip">Skip tutorial</button>
+          <button type="button" id="coach-next" class="primary" hidden>Next</button>
+        </div>
+      </section>
       <main id="stage">
         <p class="board-name">
           <span class="level" id="level"></span>

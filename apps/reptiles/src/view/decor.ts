@@ -14,6 +14,11 @@
 //   point past the tile where their lines meet. On an irregular tile (a
 //   Laves tile's kite, rhombus or pentagon) it is a curve that leaves each
 //   edge along its inward normal: square on all the same.
+//   Three or more lined edges on a tile are one such line between two of
+//   them with a branch off it from each other one (`branched`): straight on
+//   along its edge's normal where that meets the line at a fair angle, else
+//   curving round to meet it square on — every branch ending inside the
+//   line's stroke, so lines meeting in a tile leave no notch.
 //   A line that would end in a tile is cut back to a half disc (`END`, see
 //   src/colourings.ts), with one across it: two such tiles together make one
 //   disc, and a half disc never meets a line.
@@ -30,7 +35,8 @@
 //   its edge where it has no way, and the tile's points of one class joined
 //   by a line in the class's colour, leaving each edge square on there — so
 //   two tiles meeting as they should run one line on across their edge; the
-//   wrong class or the wrong way, two lines apart. A class with one point on
+//   wrong class or the wrong way, two lines apart Three of a class branch as
+//   a lined tile's lines do. A class with one point on
 //   a tile is a half disc there instead: two tiles together make one disc.
 //
 // Each part is a path's `d` and class, in the coordinates `map` gives; the
@@ -38,7 +44,7 @@
 // `pointer-events: none`.
 
 import type { Cyc } from "../geometry/cyclotomic";
-import { centroid, realCorners, type XY } from "../geometry/shape";
+import { realCorners, type XY } from "../geometry/shape";
 import { END, LINE, arrow, colours, label } from "../geometry/marks";
 import { alongEdge, loopsPath, type Loop } from "./curve";
 import { PATCH_MARKED, type Level } from "../levels";
@@ -143,6 +149,144 @@ export function meet(xy: readonly XY[], i: number, j: number): XY | "parallel" |
   const r1 = Math.hypot(x[0] - (a[0] + b[0]) / 2, x[1] - (a[1] + b[1]) / 2);
   const r2 = Math.hypot(x[0] - (c[0] + d[0]) / 2, x[1] - (c[1] + d[1]) / 2);
   return Math.abs(r1 - r2) < 1e-6 * Math.max(1, r1) ? x : null;
+}
+
+const dot = (a: XY, b: XY): number => a[0] * b[0] + a[1] * b[1];
+const lerp = (a: XY, b: XY, t: number): XY => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+const unit = ([x, y]: XY): XY => {
+  const len = Math.hypot(x, y);
+  return [x / len, y / len];
+};
+
+/** A line drawn inside a tile: its path (`d`, mapped, one subpath) and the
+ * point a share `t` along it, unmapped; with `weight`, how much more its
+ * length counts against it as the line others branch off (`branched`). */
+export interface Curve {
+  d: string;
+  at: (t: number) => XY;
+  weight?: number;
+}
+
+/** The cubic p → q with controls c1 and c2, as a `Curve`. */
+function cubic(p: XY, c1: XY, c2: XY, q: XY, map: (p: XY) => XY): Curve {
+  return {
+    d: `M${pt(map(p))}C${pt(map(c1))} ${pt(map(c2))} ${pt(map(q))}`,
+    at: (t) => {
+      const s = 1 - t;
+      const [a, b, c, d] = [s * s * s, 3 * s * s * t, 3 * s * t * t, t * t * t];
+      return [
+        a * p[0] + b * c1[0] + c * c2[0] + d * q[0],
+        a * p[1] + b * c1[1] + c * c2[1] + d * q[1],
+      ];
+    },
+  };
+}
+
+/** How many points a line is read at, to branch onto it (floats: a
+ * drawing). */
+const SAMPLES = 64;
+/** The least angle a straight branch may meet its line at; shallower, it
+ * curves round to meet it square on. */
+const SHALLOW = (35 * Math.PI) / 180;
+/** How far from either end of its line a curved branch may meet it, as a
+ * share of the line: never at an end, which lies on the tile's edge. */
+const INNER = 0.2;
+/** What two branches crossing each other cost, as a share of their line's
+ * length. */
+const CROSSING = 0.5;
+
+/** Whether two polylines cross, away from their ends (floats: a drawing). */
+function crosses(p: readonly XY[], q: readonly XY[]): boolean {
+  for (let i = 1; i < p.length; i++)
+    for (let j = 1; j < q.length; j++) {
+      const [a, b, c, d] = [p[i - 1]!, p[i]!, q[j - 1]!, q[j]!];
+      const [ab, cd] = [sub(b, a), sub(d, c)];
+      const den = cross(ab, cd);
+      if (Math.abs(den) < 1e-12) continue;
+      const t = cross(sub(c, a), cd) / den;
+      const u = cross(sub(c, a), ab) / den;
+      if (t > 1e-6 && t < 1 - 1e-6 && u > 1e-6 && u < 1 - 1e-6) return true;
+    }
+  return false;
+}
+
+/** Three or more arms — points on a tile's edges, each leaving its edge
+ * along `n`, its inward normal — joined as one line between two of them
+ * (`line`, drawn as a lone pair of them would be) with each other arm
+ * branching off it: straight on along its normal where that meets the line
+ * at a fair angle, else a curve meeting the line square on at its nearest
+ * point. Every branch ends inside the line's stroke, so no butt end leaves
+ * a notch, and no two arms run into one point side by side. Of every pair,
+ * the one whose line and branches are least ink (a curved branch counted
+ * half again, and two branches crossing more) is drawn. Subpaths in mapped
+ * coordinates. */
+export function branched(
+  arms: readonly { at: XY; n: XY }[],
+  line: (a: number, b: number) => Curve,
+  map: (p: XY) => XY = (p) => p,
+): string {
+  let best: { cost: number; d: string } | null = null;
+  for (let a = 0; a < arms.length; a++)
+    for (let b = a + 1; b < arms.length; b++) {
+      const main = line(a, b);
+      const along = Array.from({ length: SAMPLES + 1 }, (_, k) => main.at(k / SAMPLES));
+      let length = 0;
+      for (let k = 1; k < along.length; k++) length += Math.hypot(...sub(along[k]!, along[k - 1]!));
+      let cost = length * (main.weight ?? 1);
+      let d = main.d;
+      const branches: XY[][] = [];
+      for (let k = 0; k < arms.length; k++) {
+        if (k === a || k === b) continue;
+        const { at, n } = arms[k]!;
+        // straight on: the nearest crossing of the arm's normal with the line
+        let hit: { s: number; p: XY; dir: XY } | null = null;
+        for (let e = 1; e < along.length; e++) {
+          const [p0, p1] = [along[e - 1]!, along[e]!];
+          const dir = sub(p1, p0);
+          const den = cross(n, dir);
+          if (Math.abs(den) < 1e-12) continue;
+          const w = sub(p0, at);
+          const s = cross(w, dir) / den;
+          const u = cross(w, n) / den;
+          if (s > 1e-9 && u >= 0 && u <= 1 && (!hit || s < hit.s))
+            hit = { s, p: lerp(p0, p1, u), dir };
+        }
+        if (hit && Math.abs(cross(n, unit(hit.dir))) >= Math.sin(SHALLOW)) {
+          cost += hit.s;
+          d += `M${pt(map(at))}L${pt(map(hit.p))}`;
+          branches.push([at, hit.p]);
+          continue;
+        }
+        // else round to the line's nearest point, meeting it square on
+        const [first, last] = [Math.ceil(INNER * SAMPLES), Math.floor((1 - INNER) * SAMPLES)];
+        let near = first;
+        for (let e = first + 1; e <= last; e++)
+          if (Math.hypot(...sub(along[e]!, at)) < Math.hypot(...sub(along[near]!, at))) near = e;
+        const p = along[near]!;
+        const tangent = unit(
+          sub(along[Math.min(near + 1, SAMPLES)]!, along[Math.max(near - 1, 0)]!),
+        );
+        let normal: XY = [-tangent[1], tangent[0]];
+        if (dot(normal, sub(at, p)) < 0) normal = [-normal[0], -normal[1]];
+        const reach = Math.hypot(...sub(p, at));
+        const h = 0.4 * reach;
+        cost += 1.5 * reach;
+        const branch = cubic(
+          at,
+          [at[0] + n[0] * h, at[1] + n[1] * h],
+          [p[0] + normal[0] * h, p[1] + normal[1] * h],
+          p,
+          map,
+        );
+        d += branch.d;
+        branches.push(Array.from({ length: 17 }, (_, k) => branch.at(k / 16)));
+      }
+      for (let i = 0; i < branches.length; i++)
+        for (let j = i + 1; j < branches.length; j++)
+          if (crosses(branches[i]!, branches[j]!)) cost += CROSSING * length;
+      if (!best || cost < best.cost - 1e-9) best = { cost, d };
+    }
+  return best!.d;
 }
 
 /** A half disc of radius `r` centred at `at` on the edge a → b, on its left
@@ -314,25 +458,15 @@ export function decorParts(
       const gap = (p: Mark, q: Mark): number => Math.hypot(...sub(p.at, q.at));
       // square on to each edge: each arm along its inward normal, a share
       // of the gap — a curve between two marks near one corner stays small
-      const between = (p: Mark, q: Mark): string => {
+      const between = (p: Mark, q: Mark): Curve => {
         const h = 0.45 * gap(p, q);
         const c1: XY = [p.at[0] + p.n[0] * h, p.at[1] + p.n[1] * h];
         const c2: XY = [q.at[0] + q.n[0] * h, q.at[1] + q.n[1] * h];
-        return `M${pt(map(p.at))}C${pt(map(c1))} ${pt(map(c2))} ${pt(map(q.at))}`;
+        return cubic(p.at, c1, c2, q.at, map);
       };
-      const hub = (three: Mark[]): string => {
-        const c: XY = [
-          three.reduce((sum, l) => sum + l.at[0], 0) / 3,
-          three.reduce((sum, l) => sum + l.at[1], 0) / 3,
-        ];
-        return three
-          .map((l) => {
-            const h = 0.6 * Math.hypot(...sub(c, l.at));
-            const q: XY = [l.at[0] + l.n[0] * h, l.at[1] + l.n[1] * h];
-            return `M${pt(map(l.at))}Q${pt(map(q))} ${pt(map(c))}`;
-          })
-          .join("");
-      };
+      // three: one line between two, the third branching off it
+      const hub = (three: Mark[]): string =>
+        branched(three, (a, b) => between(three[a]!, three[b]!), map);
       const byCls = new Map<number, Mark[]>();
       for (const l of labelled) byCls.set(l.cls, [...(byCls.get(l.cls) ?? []), l]);
       for (const [cls, list] of byCls) {
@@ -357,7 +491,7 @@ export function decorParts(
           }
           for (; r + 1 < k; r += 2) {
             cost += gap(run[r]!, run[r + 1]!);
-            d += between(run[r]!, run[r + 1]!);
+            d += between(run[r]!, run[r + 1]!).d;
           }
           if (!best || cost < best.cost - 1e-9) best = { cost, d };
         }
@@ -413,19 +547,30 @@ export function decorParts(
       const d = sub(to, mid(i));
       return Math.abs(cross(inward(i), d)) < 1e-6 * Math.max(1, Math.hypot(...d));
     };
-    // (never one: a line that would end here is cut back to a half disc)
-    if (lined.length === 2) {
-      const [i, j] = lined as [number, number];
-      const [p, q] = [map(mid(i)), map(mid(j))];
+    // the line between lined edges i and j, leaving each middle square on
+    const lineBetween = (i: number, j: number): Curve => {
+      const [p, q] = [mid(i), mid(j)];
       const centre = meet(xy, i, j);
-      const gap = Math.hypot(...sub(mid(j), mid(i)));
+      const gap = Math.hypot(...sub(q, p));
       // two parallel edges facing each other: straight across
-      if (centre === "parallel" && squareOn(i, mid(j))) lines.push(`M${pt(p)}L${pt(q)}`);
+      if (centre === "parallel" && squareOn(i, q))
+        return { d: `M${pt(map(p))}L${pt(map(q))}`, at: (t) => lerp(p, q, t) };
       // about the point the two edges' lines meet, where both middles are
       // as far from it: then the arc meets each edge square on — round the
       // corner two neighbouring edges share, or round a point past the
       // tile for two further apart (an octagon's or a dodecagon's)
-      else if (centre && centre !== "parallel") lines.push(`M${pt(p)}${arcTo(map(centre), p, q)}`);
+      if (centre && centre !== "parallel") {
+        const [u, v] = [sub(p, centre), sub(q, centre)];
+        const r = Math.hypot(...u);
+        const [from, turn] = [Math.atan2(u[1], u[0]), Math.atan2(cross(u, v), dot(u, v))];
+        return {
+          d: `M${pt(map(p))}${arcTo(map(centre), map(p), map(q))}`,
+          at: (t) => [
+            centre[0] + r * Math.cos(from + turn * t),
+            centre[1] + r * Math.sin(from + turn * t),
+          ],
+        };
+      }
       // an irregular tile's (a Laves tile's kite, rhombus or pentagon): a
       // curve leaving each middle along the edge's inward normal, so it
       // still meets each edge square on and runs on into the tile across —
@@ -433,32 +578,31 @@ export function decorParts(
       // would, each arm as long as a circle's through that middle (4/3 ·
       // tan(φ/4) of its distance from the corner, φ the turn); between two
       // edges further apart, a share of the gap
-      else {
-        const corner = j === (i + 1) % m ? j : i === (j + 1) % m ? i : null;
-        let [hi, hj] = [gap * 0.4, gap * 0.4];
-        if (corner !== null) {
-          const c = xy[corner]!;
-          const [ni, nj] = [inward(i), inward(j)];
-          const turn = Math.acos(Math.max(-1, Math.min(1, ni[0] * nj[0] + ni[1] * nj[1])));
-          const kappa = (4 / 3) * Math.tan((Math.PI - turn) / 4);
-          hi = kappa * Math.hypot(...sub(mid(i), c));
-          hj = kappa * Math.hypot(...sub(mid(j), c));
-        }
-        lines.push(`M${pt(p)}C${pt(map(off(i, hi)))} ${pt(map(off(j, hj)))} ${pt(q)}`);
+      const corner = j === (i + 1) % m ? j : i === (j + 1) % m ? i : null;
+      let [hi, hj] = [gap * 0.4, gap * 0.4];
+      if (corner !== null) {
+        const c = xy[corner]!;
+        const [ni, nj] = [inward(i), inward(j)];
+        const turn = Math.acos(Math.max(-1, Math.min(1, dot(ni, nj))));
+        const kappa = (4 / 3) * Math.tan((Math.PI - turn) / 4);
+        hi = kappa * Math.hypot(...sub(p, c));
+        hj = kappa * Math.hypot(...sub(q, c));
       }
-    } else if (lined.length > 2) {
-      // spokes to the middle of the tile, each leaving its edge square on
-      const hub = centroid(xy);
-      const c = map(hub);
-      for (const i of lined) {
-        const from = map(mid(i));
-        if (squareOn(i, hub)) lines.push(`M${pt(from)}L${pt(c)}`);
-        else {
-          const reach = Math.hypot(...sub(hub, mid(i)));
-          lines.push(`M${pt(from)}Q${pt(map(off(i, reach * 0.6)))} ${pt(c)}`);
-        }
-      }
-    }
+      // (between two edges further apart, the loosest of these: another
+      // line's to branch off, where there is one)
+      return { ...cubic(p, off(i, hi), off(j, hj), q, map), weight: corner === null ? 1.5 : 1 };
+    };
+    // (never one: a line that would end here is cut back to a half disc)
+    if (lined.length === 2) lines.push(lineBetween(lined[0]!, lined[1]!).d);
+    // more: one line between two of them, the others branching off it
+    else if (lined.length > 2)
+      lines.push(
+        branched(
+          lined.map((i) => ({ at: mid(i), n: inward(i) })),
+          (a, b) => lineBetween(lined[a]!, lined[b]!),
+          map,
+        ),
+      );
   }
   const out: DecorPart[] = [...discs.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))

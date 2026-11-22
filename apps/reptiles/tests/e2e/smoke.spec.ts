@@ -227,9 +227,9 @@ test("the level screen: one header row, no level list, a random level of the sam
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=cairo");
-  // home, back, the hint, restart and the die — and no clock: the time
-  // taken shows only once the board is finished
-  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(5);
+  // home, back, undo, redo, the hint, restart and the die — and no clock:
+  // the time taken shows only once the board is finished
+  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(7);
   await expect(page.locator("#clock")).toHaveCount(0);
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
@@ -856,8 +856,11 @@ test("a tile landing clicks, a turn beeps, and a finished board plays its flouri
   await dropOneSquare(page);
   expect(await oscillators(page)).toBe(1);
 
-  // the rest of the board: a click a tile, then the flourish
+  // the rest of the board, from empty (the one tile is kept: Restart): a
+  // click a tile, then the flourish
   await page.goto("/?level=squares");
+  await page.locator("#restart").click();
+  await expect(page.locator("svg.board [data-tile]")).toHaveCount(0);
   const before = await oscillators(page);
   await finishSquares(page);
   expect((await oscillators(page)) - before).toBeGreaterThan(16);
@@ -928,6 +931,8 @@ test("a tile is heard from the side of the screen it lands on", async ({ page })
   const lastPan = (): Promise<number> => page.evaluate(() => window.__pans!.at(-1)!);
   const dropAt = async (corner: "left" | "right"): Promise<void> => {
     await page.goto("/?level=squares");
+    // from empty: a tile laid before is kept
+    await page.locator("#restart").click();
     const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
     const r = (await page.locator("svg.board path.region").boundingBox())!;
     const x = corner === "left" ? r.x + t.width / 2 : r.x + r.width - t.width / 2;
@@ -941,4 +946,269 @@ test("a tile is heard from the side of the screen it lands on", async ({ page })
   expect(await lastPan()).toBeLessThan(-0.4);
   await dropAt("right");
   expect(await lastPan()).toBeGreaterThan(0.4);
+});
+
+/** Drop the tray square on the squares level's cell in column `col` of the
+ * bottom row. */
+async function dropSquareAt(page: Page, col: number): Promise<void> {
+  const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + ((col + 0.5) * r.width) / 4, r.y + r.height - r.height / 8, {
+    steps: 6,
+  });
+  await page.mouse.up();
+}
+
+test("undo and redo take a move back and make it again, by button and by key", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  const tiles = page.locator("svg.board [data-tile]");
+  const undo = page.locator("#undo");
+  const redo = page.locator("#redo");
+  await expect(undo).toBeDisabled();
+  await expect(redo).toBeDisabled();
+  await dropSquareAt(page, 0);
+  await dropSquareAt(page, 1);
+  await expect(tiles).toHaveCount(2);
+  await expect(undo).toBeEnabled();
+
+  await undo.click();
+  await expect(tiles).toHaveCount(1);
+  await expect(redo).toBeEnabled();
+  await page.keyboard.press("z");
+  await expect(tiles).toHaveCount(0);
+  await expect(page.locator("#count")).toHaveText("0%");
+  await expect(undo).toBeDisabled();
+
+  await page.keyboard.press("Shift+Z");
+  await expect(tiles).toHaveCount(1);
+  await redo.click();
+  await expect(tiles).toHaveCount(2);
+  await expect(redo).toBeDisabled();
+
+  // taking a tile off is a move too; a new move leaves nothing to redo
+  await page.keyboard.press("x");
+  await tiles.first().click();
+  await expect(tiles).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Control+z");
+  await expect(tiles).toHaveCount(2);
+  await dropSquareAt(page, 2);
+  await expect(tiles).toHaveCount(3);
+  await expect(redo).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+test("a board left half-covered opens as it was, and Restart starts it afresh", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  await dropSquareAt(page, 0);
+  await dropSquareAt(page, 3);
+  const tiles = page.locator("svg.board [data-tile]");
+  await expect(tiles).toHaveCount(2);
+  const coverage = await page.locator("#count").textContent();
+
+  // a reload: the same tiles, nothing to undo
+  await page.reload();
+  await expect(tiles).toHaveCount(2);
+  await expect(page.locator("#count")).toHaveText(coverage ?? "");
+  await expect(page.locator("#undo")).toBeDisabled();
+
+  // its tiling's page offers to resume it, and does
+  await page.goto("/?tiling=squares&pick=squares");
+  await expect(page.locator(".pick-play .play")).toContainText("Resume");
+  await page.locator(".pick-play .play").click();
+  await expect(tiles).toHaveCount(2);
+
+  // Restart forgets it
+  await page.locator("#restart").click();
+  await expect(tiles).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator("svg.board .tile.in-tray")).not.toHaveCount(0);
+  await expect(tiles).toHaveCount(0);
+  await page.goto("/?tiling=squares&pick=squares");
+  await expect(page.locator(".pick-play .play")).toContainText("Play");
+  await expect(page.locator(".pick-play .play")).not.toContainText("Resume");
+  expect(errors).toEqual([]);
+});
+
+test("a hint shown is kept with the board: leaving does not win back the third star", async ({
+  page,
+}) => {
+  await page.goto("/?level=squares");
+  await page.locator("#hint").click();
+  await expect(page.locator('svg.board [data-hint="place"]')).toHaveCount(1);
+  await page.reload();
+  await finishSquares(page);
+  await expect(page.locator("#won-stars")).toHaveText("★★☆");
+  await expect(page.locator("#won-detail")).toContainText("1 hint used.");
+});
+
+test("the best time: on the win card, beaten or not, and on Play", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  await finishSquares(page);
+  // a first finish is only its time
+  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d$/);
+  const best = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("rep-tiles.times") ?? "{}") as Record<string, number>,
+  );
+  expect(best["squares"]).toBeGreaterThan(0);
+  // a finished board is not kept: it opens afresh
+  expect(await page.evaluate(() => localStorage.getItem("rep-tiles.boards"))).toBeNull();
+
+  // a slower finish names the best; a faster one says so
+  await page.evaluate((ms) => {
+    localStorage.setItem("rep-tiles.times", JSON.stringify({ squares: ms }));
+  }, 1);
+  await page.reload();
+  await finishSquares(page);
+  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d · best 0:00/);
+  await page.evaluate(() => {
+    localStorage.setItem("rep-tiles.times", JSON.stringify({ squares: 3_600_000 }));
+  });
+  await page.reload();
+  await finishSquares(page);
+  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d — a new best!/);
+
+  await page.goto("/?tiling=squares&pick=squares");
+  await expect(page.locator(".pick-play .play-best")).toHaveText(/^best \d+:\d\d$/);
+  expect(errors).toEqual([]);
+});
+
+/** Drop the tray's first tile with its middle at a share of the region's box:
+ * `fx` across from its left, `fy` down from its top. */
+async function dropInRegion(page: Page, fx: number, fy: number): Promise<void> {
+  const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(r.x + fx * r.width, r.y + fy * r.height, { steps: 6 });
+  await page.mouse.up();
+}
+
+test.describe("the first-run tutorial", () => {
+  // a newcomer: nothing in storage, not even the tutorial seen
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("opens once in place of home, teaches its four boards, then deals a level", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    const errors = watchErrors(page);
+    await page.goto("/");
+    await expect(page).toHaveURL(/\?tutorial$/);
+    const coach = page.locator("#coach");
+    const next = page.locator("#coach-next");
+    const tiles = page.locator("svg.board [data-tile]");
+    await expect(coach).toBeVisible();
+    await expect(page.locator("#coach-step")).toHaveText("1 of 4 · Drag");
+    // no hint and no die in the tutorial
+    await expect(page.locator("#hint")).toBeHidden();
+    await expect(page.locator("#random")).toBeHidden();
+    await expect(next).toBeHidden();
+
+    // Drag: a 2×2 of squares, bottom row first
+    for (const [fx, fy] of [
+      [0.25, 0.75],
+      [0.75, 0.75],
+      [0.25, 0.25],
+      [0.75, 0.25],
+    ] as const)
+      await dropInRegion(page, fx, fy);
+    await expect(tiles).toHaveCount(4);
+    await expect(next).toBeVisible();
+    // finishing a step is no level finished: no win card, nothing starred
+    await expect(page.locator("#won")).toBeHidden();
+    await next.click();
+
+    // Turn: three triangles up as held, then two down, turned
+    await expect(page.locator("#coach-step")).toHaveText("2 of 4 · Turn");
+    await expect(page.locator("#coach-body kbd").first()).toHaveText("R");
+    for (const fx of [1 / 6, 3 / 6, 5 / 6]) await dropInRegion(page, fx, 0.62);
+    await expect(tiles).toHaveCount(3);
+    await page.keyboard.press("r");
+    for (const fx of [1 / 3, 2 / 3]) await dropInRegion(page, fx, 0.38);
+    await expect(tiles).toHaveCount(5);
+    await next.click();
+
+    // Flip: the S as held on the left, flipped into the Z on the right
+    await expect(page.locator("#coach-step")).toHaveText("3 of 4 · Flip");
+    await dropInRegion(page, 0.25, 0.5);
+    await expect(tiles).toHaveCount(1);
+    await dropInRegion(page, 0.75, 0.5);
+    await expect(tiles).toHaveCount(1); // not flipped: it does not land
+    await page.keyboard.press("f");
+    await dropInRegion(page, 0.75, 0.5);
+    await expect(tiles).toHaveCount(2);
+    await next.click();
+
+    // Take off: the domino laid wrong comes off, then two cover the L
+    await expect(page.locator("#coach-step")).toHaveText("4 of 4 · Take off");
+    await expect(tiles).toHaveCount(1);
+    await page.keyboard.press("x");
+    await tiles.first().click();
+    await expect(tiles).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    // Restart puts the step back as it opened
+    await page.locator("#restart").click();
+    await expect(tiles).toHaveCount(1);
+    await page.keyboard.press("x");
+    await tiles.first().click();
+    await page.keyboard.press("Escape");
+    await dropInRegion(page, 2 / 3, 0.75);
+    await page.keyboard.press("r");
+    await dropInRegion(page, 1 / 6, 0.5);
+    await expect(tiles).toHaveCount(2);
+    await expect(page.locator("#coach-body")).toContainText("That's all you need");
+    await expect(next).toHaveText("Play a level");
+    await next.click();
+    await expect(page).toHaveURL(/\?level=/);
+    await expect(coach).toBeHidden();
+    await expect(page.locator("#hint")).toBeVisible();
+    // nothing of the tutorial is kept as stars, times or boards
+    expect(
+      await page.evaluate(() => [
+        localStorage.getItem("rep-tiles.stars"),
+        localStorage.getItem("rep-tiles.times"),
+        localStorage.getItem("rep-tiles.boards"),
+      ]),
+    ).toEqual([null, null, null]);
+
+    // once only: home is home from now on
+    await page.goto("/");
+    await expect(page.locator("#home")).toBeVisible();
+    await expect(page).not.toHaveURL(/tutorial/);
+    expect(errors).toEqual([]);
+  });
+
+  test("Skip leaves it for good; a player with stars never sees it; How to play has it", async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await page.goto("/");
+    await expect(page.locator("#coach")).toBeVisible();
+    await page.locator("#coach-skip").click();
+    await expect(page.locator("#home")).toBeVisible();
+    await page.reload();
+    await expect(page.locator("#home")).toBeVisible();
+
+    // a player who has finished a level is no newcomer
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("rep-tiles.stars", JSON.stringify({ squares: 2 }));
+    });
+    await page.goto("/");
+    await expect(page.locator("#home")).toBeVisible();
+
+    await page.goto("/?help");
+    await page.locator('#help [data-action="tutorial"]').click();
+    await expect(page).toHaveURL(/\?tutorial$/);
+    await expect(page.locator("#coach-step")).toHaveText("1 of 4 · Drag");
+    expect(errors).toEqual([]);
+  });
 });

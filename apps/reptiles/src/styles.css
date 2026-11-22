@@ -393,6 +393,56 @@ button.primary {
   inset: 0;
 }
 
+/* The tutorial's coach (src/tutorial.ts): a card between the header and the
+   board, taking its room from the board, which fits under it. */
+.coach {
+  flex: none;
+  margin: 0 var(--hud-pad) 8px;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.coach[hidden] {
+  display: none;
+}
+
+.coach-step {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.coach-body {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.coach-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.coach-actions [hidden] {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .coach {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* The level's name and coverage: a label on the page behind the board, not a
    row of its own — it takes no room from the board, and a tap on it is a tap
    on the board drawn over it. */
@@ -666,7 +716,9 @@ button.primary {
 }
 
 /* A lined board's line: cut square at each end, which lies on the edge, so
-   it never pokes past the tile and runs on into the next one unbroken. */
+   it never pokes past the tile and runs on into the next one unbroken. A
+   branch off another line ends inside that line's stroke (view/decor.ts,
+   branched), so lines meeting in a tile leave no notch. */
 .decor.line {
   fill: none;
   stroke: var(--decor-line);
@@ -1787,7 +1839,8 @@ a.settings-row:active {
   line-height: 1.45;
 }
 
-.help-list kbd {
+.help-list kbd,
+.coach kbd {
   display: inline-block;
   min-width: 1.6em;
   padding: 0 0.35em;
@@ -2355,4 +2408,11 @@ a.settings-row:active {
   #tiling .family h2 {
     margin: 0 16px 2px;
   }
+}
+
+/* How to play's way back into the first-run tutorial (view/help.ts). */
+.help-tutorial {
+  display: block;
+  width: 100%;
+  margin: 12px 0 4px;
 }
