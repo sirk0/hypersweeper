@@ -16,8 +16,9 @@ const started = performance.now();
 const boards: Record<string, number[]> = {};
 let kept = 0;
 let dropped = 0;
-// a jigsaw is on the boards its colouring is (`boardNumbers` in src/levels.ts)
-for (const marked of LEVELS.filter((l) => l.decor && !l.decor.jigsaw)) {
+// a jigsaw is on the boards its colouring is, a vertex rule on every board
+// (`boardNumbers` in src/levels.ts)
+for (const marked of LEVELS.filter((l) => l.decor && !l.decor.jigsaw && !l.decor.vertex)) {
   const first = levelByKey(marked.key)!;
   const on: number[] = [];
   for (let n = 2; n <= marked.boards; n++) {

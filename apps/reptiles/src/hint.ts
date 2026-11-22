@@ -20,6 +20,12 @@
 // worker (hint.worker.ts) can run it in slices and drop it when the board
 // changes under it; the tests just run it through.
 //
+// On a level held to a vertex rule (`Level.rule`), a tile lands only where
+// the rule lets it, as in play: each frontier the search reaches carries the
+// rule's corners as the tiles round it leave them (`rulesOf`), and a frontier
+// is remembered dead together with those corners — two layouts that leave one
+// frontier can differ in what the rule still lets in.
+//
 // Pure — no DOM — and no float decides anything: corners are convex by an
 // exact cross product (on a round edge, of its chord), placements come from
 // the frontier's exact `placements`.
@@ -37,6 +43,7 @@ import {
   type Shape,
   type XY,
 } from "./geometry/shape";
+import { RuleState } from "./geometry/vertexRule";
 import type { Level } from "./levels";
 
 /** A tile down on the board, as the game holds it — its id, kind and pieces;
@@ -124,6 +131,9 @@ export class HintSolver {
   private readonly held: { shape: Shape; turns: number[] }[][];
   private readonly dead = new Set<string>();
   private deadChars = 0;
+  /** On a level with a vertex rule, the rule's corners that go with each
+   * frontier the solver made (`frontierOf`, `lay`, `parts`). */
+  private readonly rules = new WeakMap<Frontier, RuleState>();
 
   constructor(readonly level: Level) {
     const { ring, tiles } = level;
@@ -150,10 +160,43 @@ export class HintSolver {
 
   /** The frontier with `laid` down — those tiles' pieces covered. */
   frontierOf(laid: readonly Laid[]): Frontier {
-    const { ring, region, regionCurves, regionMarks } = this.level;
+    const { ring, region, regionCurves, regionMarks, rule } = this.level;
     let f = Frontier.ofRegion(ring, region, regionCurves, regionMarks);
     for (const t of laid) f = f.cover(t.pieces);
+    if (rule)
+      this.rules.set(
+        f,
+        RuleState.of(
+          ring,
+          rule,
+          laid.map((t) => t.pieces),
+        ),
+      );
     return f;
+  }
+
+  /** The vertex rule's corners as the tiles round `f` leave them — null on a
+   * level without a rule. `f` must be one this solver made. */
+  private rulesOf(f: Frontier): RuleState | null {
+    if (!this.level.rule) return null;
+    const r = this.rules.get(f);
+    if (!r) throw new Error("hint: a frontier the solver did not make, on a level with a rule");
+    return r;
+  }
+
+  /** Whether `spot` (which fits `f`) lands there by the vertex rule — always,
+   * on a level without one. */
+  private allowed(f: Frontier, spot: readonly Piece[]): boolean {
+    const r = this.rulesOf(f);
+    return !r || r.allows(f, spot);
+  }
+
+  /** `f` with `spot` covered, its rule's corners carried along. */
+  lay(f: Frontier, spot: Piece[]): Frontier {
+    const next = f.cover(spot);
+    const r = this.rulesOf(f);
+    if (r) this.rules.set(next, r.with(spot));
+    return next;
   }
 
   /** Whether a tile down is one of the board's own. */
@@ -168,9 +211,11 @@ export class HintSolver {
     const xy = ring.toXY(at);
     const seen = new Set<string>();
     const out: Option[] = [];
+    const r = this.rulesOf(f);
+    const accept = r ? (spot: Piece[]) => r.allows(f, spot) : undefined;
     for (let kind = this.held.length - 1; kind >= 0; kind--) {
       for (const { shape, turns } of this.held[kind]!) {
-        for (const spot of f.placements(shape, xy, 1e-6, false, turns)) {
+        for (const spot of f.placements(shape, xy, 1e-6, false, turns, accept)) {
           const key = spotKey(ring, spot);
           if (seen.has(key)) continue;
           seen.add(key);
@@ -249,7 +294,9 @@ export class HintSolver {
     for (const { at, name } of this.corners(f)) {
       const was = name !== null ? before?.known.get(name) : undefined;
       const options = was
-        ? was.filter((o) => apart(o.box, before!.laid.box) || f.fits(o.spot))
+        ? was.filter(
+            (o) => apart(o.box, before!.laid.box) || (f.fits(o.spot) && this.allowed(f, o.spot)),
+          )
         : this.optionsAt(f, at);
       if (name !== null) known.set(name, options);
       if (!best || options.length < best.options.length) best = { at, options, known };
@@ -291,7 +338,13 @@ export class HintSolver {
       for (let next = onward(end); next && next !== e; next = onward(end)) end = next;
       runs.push(`${e.ak}>${end.bk}:${e.bulge}:${e.mark}`);
     }
-    return runs.sort().join("|");
+    const key = runs.sort().join("|");
+    // on a rule level, the corners already round the frontier's points too
+    const r = this.rulesOf(f);
+    if (!r) return key;
+    const points = new Set<string>();
+    for (const e of f.edges) points.add(e.ak);
+    return `${key}#${r.keyAt(points)}`;
   }
 
   /** Whether `f` can be covered exactly; if so, `path` ends holding the
@@ -303,6 +356,8 @@ export class HintSolver {
     // Parts apart are finished apart: one that cannot be is found once, not
     // again for every way of filling the others. The smallest first.
     const parts = f.parts();
+    const r = this.rulesOf(f);
+    if (r) for (const part of parts) this.rules.set(part, r);
     if (parts.length > 1) {
       parts.sort((a, b) => a.edges.length - b.edges.length);
       const mark = path.length;
@@ -320,7 +375,7 @@ export class HintSolver {
     for (const option of step?.options ?? []) {
       path.push(option);
       const next = { known: step!.known, laid: option };
-      if (yield* this.finish(f.cover(option.spot), path, next)) return true;
+      if (yield* this.finish(this.lay(f, option.spot), path, next)) return true;
       path.pop();
     }
     this.remember(key);
@@ -354,7 +409,7 @@ export class HintSolver {
     // the trouble: where the board's own cells laid wherever they fit leave
     // a hole
     let rest = f;
-    for (const cell of fitting) rest = rest.cover(cell);
+    for (const cell of fitting) if (this.allowed(rest, cell)) rest = this.lay(rest, cell);
     const trouble = rest.edges.map((e) => e.axy);
     const centre = (cell: Piece[]): XY =>
       centroidOf(cell.map((p) => p.verts.map((v) => ring.toXY(v))));
@@ -377,11 +432,17 @@ export class HintSolver {
     );
     const step = Math.sqrt(area / Math.max(1, cells.length));
     for (let reach = 0; ; reach += step) {
-      // the own cells left in: those farther than `reach` from the trouble
+      // the own cells left in: those farther than `reach` from the trouble,
+      // each where the vertex rule lets it land round those before it
       // (a float only orders the cells to widen by: any choice is exact)
-      const kept = fitting.filter((_, k) => near[k]! > reach);
+      const farther = fitting.filter((_, k) => near[k]! > reach);
       let open = f;
-      for (const cell of kept) open = open.cover(cell);
+      const kept: Piece[][] = [];
+      for (const cell of farther) {
+        if (!this.allowed(open, cell)) continue;
+        open = this.lay(open, cell);
+        kept.push(cell);
+      }
       const path: Option[] = [];
       if (yield* this.finish(open, path)) return [...kept, ...path.map((o) => o.spot)];
       if (kept.length === 0) return null;

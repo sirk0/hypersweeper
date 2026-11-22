@@ -28,6 +28,7 @@
 // it can run longer than the screen: its scroll bar, a drag on the strip's bare
 // background, or the wheel over it scrolls it along.
 
+import type { Cyc } from "../geometry/cyclotomic";
 import { centroidOf, sides, signedArea, type Piece, type XY } from "../geometry/shape";
 import { haptic } from "../haptics";
 import { playSound } from "../sound";
@@ -143,7 +144,20 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       : puzzle.snap(drag.kind, drag.at, reachFor(drag.kind), drag.rot, drag.flip);
     const ghost = drag.ghost && loopsOf(ring, drag.ghost).map((l) => l.xy);
     const stick = drag.ghost ? puzzle.touching(drag.ghost).map((v) => ring.toXY(v)) : [];
-    board.drawDrag(drag.kind, drag.outline, drag.at, ghost && centroidOf(ghost), stick, discard);
+    // on a vertex-rule level, where it would fit but the rule says no: why
+    const breaks =
+      discard || drag.ghost
+        ? null
+        : puzzle.ruleBreak(drag.kind, drag.at, reachFor(drag.kind), drag.rot, drag.flip);
+    board.drawDrag(
+      drag.kind,
+      drag.outline,
+      drag.at,
+      ghost && centroidOf(ghost),
+      stick,
+      discard,
+      breaks && ring.toXY(breaks),
+    );
   };
 
   // One turn for everything: every tray tile, and the one in hand.
@@ -332,17 +346,14 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     drag = null;
     board.clearDrag();
     let ghost: Piece[] | null = null;
+    let breaks: Cyc | null = null;
     // Judged at the release point itself, not the last frame's.
     const p = board.toBoard(ev.clientX, ev.clientY);
     const discard = drop && board.overTray(ev.clientX, ev.clientY);
     if (drop && !discard) {
-      ghost = puzzle.snap(
-        d.kind,
-        [p[0] + d.offset[0], p[1] + d.offset[1]],
-        reachFor(d.kind),
-        d.rot,
-        d.flip,
-      );
+      const at: XY = [p[0] + d.offset[0], p[1] + d.offset[1]];
+      ghost = puzzle.snap(d.kind, at, reachFor(d.kind), d.rot, d.flip);
+      if (!ghost) breaks = puzzle.ruleBreak(d.kind, at, reachFor(d.kind), d.rot, d.flip);
     }
     if (ghost) {
       puzzle.place(d.kind, ghost, d.rot, d.flip);
@@ -357,6 +368,8 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
     }
     done();
+    // the vertex rule said no: where, a moment longer
+    if (breaks) board.flashRuleBreak(ring.toXY(breaks));
   };
   svg.addEventListener("pointerup", (ev) => finish(ev, true));
   svg.addEventListener("pointercancel", (ev) => finish(ev, false));

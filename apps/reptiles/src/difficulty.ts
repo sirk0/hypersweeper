@@ -30,6 +30,7 @@
 
 import measured from "./difficulty.json";
 import type { Frontier } from "./geometry/frontier";
+import type { RuleState } from "./geometry/vertexRule";
 import {
   centroidOf,
   posed,
@@ -78,8 +79,10 @@ export type Band = "easy" | "medium" | "hard";
  * fit of which were wrong would score as much as `TRAPS` presses of 90° a
  * tile. Set so that, by their medians, periodic tilings measure easier than
  * the spirals and the spirals than the aperiodic ones (whose turning alone
- * put them the other way round). */
-export const TRAPS = 1.25;
+ * put them the other way round) — 1.35 since the measure flips as the flip
+ * control does, which made the hat's and the Socolar–Taylor tile's turning
+ * cheaper. */
+export const TRAPS = 1.35;
 
 /** Where the bands split: below `MEDIUM` is easy, from `HARD` on is hard. Set
  * from the anchors the game was designed around — every flag-transitive level,
@@ -194,27 +197,27 @@ function play(level: Level): Turning & { order: Cell[] } {
   let last: XY | null = null;
   const order: Cell[] = [];
   while (left.length > 0) {
-    let best: { i: number; cost: number; dist: number; k: number } | null = null;
+    let best: { i: number; cost: number; dist: number; k: number; from: number } | null = null;
     left.forEach((c, i) => {
-      const k = pressesTo(t, c.kind, c.rot);
+      // a flip mirrors the tray across the upright line, which turns it too
+      // (`Puzzle.flipTurn`): the presses count on from there — flipping first
+      // or turning first comes to the same presses
+      const from = c.flip !== flip ? puzzle.flipTurn(t) : t;
+      const k = pressesTo(from, c.kind, c.rot);
       if (k === null) return;
       const cost = Math.abs(k) + (c.flip !== flip ? 1 : 0);
       const dist = last ? Math.hypot(c.at[0] - last[0], c.at[1] - last[1]) : c.at[0] + c.at[1];
       if (best && (cost > best.cost || (cost === best.cost && dist >= best.dist))) return;
       // can it be snapped down there now, held that way?
-      const spot = puzzle.snap(c.kind, c.at, reach, t + k * turn, c.flip);
-      if (spot && spotKey(ring, spot) === c.key) best = { i, cost, dist, k };
+      const spot = puzzle.snap(c.kind, c.at, reach, from + k * turn, c.flip);
+      if (spot && spotKey(ring, spot) === c.key) best = { i, cost, dist, k, from };
     });
     if (!best) throw new Error(`${level.key}: the simulated player got stuck`);
-    const { i, k } = best as { i: number; k: number };
+    const { i, k, from } = best as { i: number; k: number; from: number };
     const c = left[i]!;
     presses += Math.abs(k);
-    // A flip is counted as keeping the turn, as the flip control did before it
-    // mirrored across the upright line (`Puzzle.flipTurn`, which turns the
-    // tray too): kept so, the measure and the files written from it
-    // (difficulty, colourings) stay as they were.
     if (c.flip !== flip) flips++;
-    t = (((t + k * turn) % ring.n) + ring.n) % ring.n;
+    t = (((from + k * turn) % ring.n) + ring.n) % ring.n;
     flip = c.flip;
     puzzle.place(c.kind, c.pieces, c.rot, c.flip);
     last = c.at;
@@ -267,17 +270,18 @@ export function measureTraps(level: Level, order: readonly Cell[] = play(level).
   const out: Traps = { corners: 0, fits: 0, fine: 0, seen: 0, hidden: 0 };
 
   /** Whether `f` fills, within `left.n` tiles: the corner with the fewest
-   * fits first, so one nothing fits ends it at once. */
-  const fill = (f: Frontier, left: { n: number }): boolean => {
+   * fits first, so one nothing fits ends it at once. `rules` is the vertex
+   * rule as the tiles round `f` leave it (null on a level without one). */
+  const fill = (f: Frontier, rules: RuleState | null, left: { n: number }): boolean => {
     if (f.empty) return true;
     if (left.n-- <= 0) return false;
     let best: Fit[] | null = null;
     for (const c of f.corners.values()) {
-      const here = puzzle.fitsAt(ring.toXY(c), f);
+      const here = puzzle.fitsAt(ring.toXY(c), f, rules);
       if (!best || here.length < best.length) best = here;
       if (best.length === 0) return false;
     }
-    return best!.some((fit) => fill(f.cover(fit.spot), left));
+    return best!.some((fit) => fill(f.cover(fit.spot), rules?.with(fit.spot) ?? null, left));
   };
 
   const look = (): void => {
@@ -293,17 +297,23 @@ export function measureTraps(level: Level, order: readonly Cell[] = play(level).
       for (const fit of fits) {
         if (own.has(spotKey(ring, fit.spot))) continue;
         const after = f.cover(fit.spot);
+        const afterRules = puzzle.ruleState?.with(fit.spot) ?? null;
         const opened = fit.spot
           .flatMap((p) => p.verts)
           .filter((v) => after.corners.has(ring.key(v)));
-        if (opened.some((v) => puzzle.fitsAt(ring.toXY(v), after).length === 0)) {
+        if (opened.some((v) => puzzle.fitsAt(ring.toXY(v), after, afterRules).length === 0)) {
           out.seen++;
           continue;
         }
         let rest = after;
-        for (const c of order)
-          if (!down.has(c.key) && rest.fits(c.pieces)) rest = rest.cover(c.pieces);
-        if (fill(rest, { n: FILL_BUDGET })) out.fine++;
+        let restRules = afterRules;
+        for (const c of order) {
+          if (down.has(c.key) || !rest.fits(c.pieces)) continue;
+          if (restRules && !restRules.allows(rest, c.pieces)) continue;
+          rest = rest.cover(c.pieces);
+          restRules = restRules?.with(c.pieces) ?? null;
+        }
+        if (fill(rest, restRules, { n: FILL_BUDGET })) out.fine++;
         else out.hidden++;
       }
     }

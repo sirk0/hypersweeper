@@ -214,6 +214,65 @@ export function trayIcon(level: Level): SVGSVGElement {
   return svg;
 }
 
+/** A vertex-rule level's sign (`Level.rule`): its configuration drawn round
+ * one point — the regular polygons that meet there, in order, each in its
+ * tray tile's colour, seen through a disc round the point, which is marked.
+ * What the tiling page shows for the marking (its tray is the plain one) and
+ * what stands beside the level's name in play. */
+export function vertexFigure(level: Level): SVGSVGElement {
+  const config = level.rule ?? level.decor?.vertex ?? level.configs[0] ?? [];
+  const R = 1.45; // the disc's radius, in edges
+  // room round the disc, as a tray card leaves round its tiles
+  const M = R * 1.18;
+  const svg = svgIn("vertex-figure", [-M, -M, 2 * M, 2 * M]);
+  const sidesOf = (kind: number): number =>
+    level.tiles[kind]!.pieces.reduce((sum, p) => sum + p.verts.length, 0);
+  const clip = document.createElementNS(NS, "clipPath");
+  const id = `vf-${level.key.replace(/[^a-z0-9]/gi, "-")}`;
+  clip.setAttribute("id", id);
+  const disc = document.createElementNS(NS, "circle");
+  disc.setAttribute("r", String(R * 0.97));
+  clip.appendChild(disc);
+  svg.appendChild(clip);
+  const g = document.createElementNS(NS, "g");
+  g.setAttribute("clip-path", `url(#${id})`);
+  // the first polygon's first edge straight up the page; each next one
+  // starts where the last one's corner ends, counter-clockwise (y up, as the
+  // board draws, flipped here as every picture is)
+  let at = Math.PI / 2;
+  for (const p of config) {
+    const kind = level.tiles.findIndex((_, k) => sidesOf(k) === p);
+    const pts: XY[] = [[0, 0]];
+    let dir = at;
+    for (let i = 1; i < p; i++) {
+      const [x, y] = pts[i - 1]!;
+      pts.push([x + Math.cos(dir), y + Math.sin(dir)]);
+      dir += (2 * Math.PI) / p;
+    }
+    const poly = document.createElementNS(NS, "path");
+    poly.setAttribute(
+      "d",
+      `M${pts.map(([x, y]) => `${x.toFixed(4)},${(-y).toFixed(4)}`).join("L")}Z`,
+    );
+    poly.setAttribute("class", `tile ${kind >= 0 ? level.colours[kind] : ""}`);
+    poly.setAttribute("stroke-width", "0.06");
+    poly.setAttribute("stroke-linejoin", "round");
+    g.appendChild(poly);
+    at += (Math.PI * (p - 2)) / p;
+  }
+  svg.appendChild(g);
+  const rim = document.createElementNS(NS, "circle");
+  rim.setAttribute("r", String(R * 0.97));
+  rim.setAttribute("class", "vertex-rim");
+  rim.setAttribute("stroke-width", "0.06");
+  svg.appendChild(rim);
+  const dot = document.createElementNS(NS, "circle");
+  dot.setAttribute("r", "0.14");
+  dot.setAttribute("class", "vertex-dot");
+  svg.appendChild(dot);
+  return svg;
+}
+
 /** The difficulty ladder: three bars rising left to right, `filled` of them
  * solid — Hypersweeper's own icon. All three are always drawn: one bar alone
  * says nothing about which rung of what. */

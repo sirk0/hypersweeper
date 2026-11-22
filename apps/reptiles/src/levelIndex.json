@@ -1362,6 +1362,19 @@
     "painting": 2
   },
   {
+    "key": "snubelongated.2byshape",
+    "label": "Zigzag snub square, 2 colours, by shape",
+    "name": "[3³.4²; 3².4.3.4]₂ · 2 colours, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "snubelongated",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, by shape"
+    },
+    "painting": 3
+  },
+  {
     "key": "snubelongated.2oneinthree",
     "label": "Zigzag snub square, 2 colours, one in three",
     "name": "[3³.4²; 3².4.3.4]₂ · 2 colours, one in three",
@@ -1371,19 +1384,6 @@
       "colours": 2,
       "rules": false,
       "label": "2 colours, one in three"
-    },
-    "painting": 3
-  },
-  {
-    "key": "snubelongated.3byshape",
-    "label": "Zigzag snub square, 3 colours, by shape",
-    "name": "[3³.4²; 3².4.3.4]₂ · 3 colours, by shape",
-    "group": "colourings",
-    "decor": {
-      "of": "snubelongated",
-      "colours": 3,
-      "rules": false,
-      "label": "3 colours, by shape"
     },
     "painting": 4
   },
@@ -2552,14 +2552,6 @@
     "painting": 1
   },
   {
-    "key": "dissectedtrunchex2dual.2colours",
-    "label": "Turned dissected truncated hexagonal dual, 2 colours",
-    "name": "V[3³.4²; 3.4.6.4] · 2 colours",
-    "group": "colourings",
-    "decor": { "of": "dissectedtrunchex2dual", "colours": 2, "rules": false, "label": "2 colours" },
-    "painting": 2
-  },
-  {
     "key": "dissectedtrunchex2dual.2oneinthree",
     "label": "Turned dissected truncated hexagonal dual, 2 colours, one in three",
     "name": "V[3³.4²; 3.4.6.4] · 2 colours, one in three",
@@ -2570,6 +2562,14 @@
       "rules": false,
       "label": "2 colours, one in three"
     },
+    "painting": 2
+  },
+  {
+    "key": "dissectedtrunchex2dual.2colours",
+    "label": "Turned dissected truncated hexagonal dual, 2 colours",
+    "name": "V[3³.4²; 3.4.6.4] · 2 colours",
+    "group": "colourings",
+    "decor": { "of": "dissectedtrunchex2dual", "colours": 2, "rules": false, "label": "2 colours" },
     "painting": 3
   },
   {
@@ -2712,6 +2712,14 @@
     "painting": 1
   },
   {
+    "key": "dissectedtrunchexdual.2colours",
+    "label": "Dissected truncated hexagonal dual, 2 colours",
+    "name": "V[3².4.3.4; 3.4.6.4] · 2 colours",
+    "group": "colourings",
+    "decor": { "of": "dissectedtrunchexdual", "colours": 2, "rules": false, "label": "2 colours" },
+    "painting": 2
+  },
+  {
     "key": "dissectedtrunchexdual.2oneinthree",
     "label": "Dissected truncated hexagonal dual, 2 colours, one in three",
     "name": "V[3².4.3.4; 3.4.6.4] · 2 colours, one in three",
@@ -2722,14 +2730,6 @@
       "rules": false,
       "label": "2 colours, one in three"
     },
-    "painting": 2
-  },
-  {
-    "key": "dissectedtrunchexdual.2colours",
-    "label": "Dissected truncated hexagonal dual, 2 colours",
-    "name": "V[3².4.3.4; 3.4.6.4] · 2 colours",
-    "group": "colourings",
-    "decor": { "of": "dissectedtrunchexdual", "colours": 2, "rules": false, "label": "2 colours" },
     "painting": 3
   },
   {
@@ -4520,6 +4520,20 @@
     }
   },
   {
+    "key": "snubelongated.2byshape.jigsaw",
+    "label": "Zigzag snub square, jigsaw, 2 colours, by shape",
+    "name": "[3³.4²; 3².4.3.4]₂ · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "snubelongated.2byshape",
+      "size": 0
+    }
+  },
+  {
     "key": "snubelongated.2oneinthree.jigsaw",
     "label": "Zigzag snub square, jigsaw, 2 colours, one in three",
     "name": "[3³.4²; 3².4.3.4]₂ · jigsaw, 2 colours, one in three",
@@ -5679,6 +5693,97 @@
       "label": "jigsaw, 3 colours, apart",
       "jigsaw": "kissingtriangles.3apart",
       "size": 1
+    }
+  },
+  {
+    "key": "trihex.vertex",
+    "label": "Trihexagonal, every point",
+    "name": "3.6.3.6 · every point",
+    "group": "vertex",
+    "decor": {
+      "of": "trihex",
+      "colours": 0,
+      "rules": false,
+      "label": "every point",
+      "vertex": [3, 6, 3, 6]
+    }
+  },
+  {
+    "key": "trunchex.vertex",
+    "label": "Truncated hexagonal, every point",
+    "name": "3.12² · every point",
+    "group": "vertex",
+    "decor": {
+      "of": "trunchex",
+      "colours": 0,
+      "rules": false,
+      "label": "every point",
+      "vertex": [3, 12, 12]
+    }
+  },
+  {
+    "key": "elongated.vertex",
+    "label": "Elongated triangular, every point",
+    "name": "3³.4² · every point",
+    "group": "vertex",
+    "decor": {
+      "of": "elongated",
+      "colours": 0,
+      "rules": false,
+      "label": "every point",
+      "vertex": [3, 3, 3, 4, 4]
+    }
+  },
+  {
+    "key": "snubsquare.vertex",
+    "label": "Snub square, every point",
+    "name": "3².4.3.4 · every point",
+    "group": "vertex",
+    "decor": {
+      "of": "snubsquare",
+      "colours": 0,
+      "rules": false,
+      "label": "every point",
+      "vertex": [3, 3, 4, 3, 4]
+    }
+  },
+  {
+    "key": "snubhex.vertex",
+    "label": "Snub hexagonal, every point",
+    "name": "3⁴.6 · every point",
+    "group": "vertex",
+    "decor": {
+      "of": "snubhex",
+      "colours": 0,
+      "rules": false,
+      "label": "every point",
+      "vertex": [3, 3, 3, 3, 6]
+    }
+  },
+  {
+    "key": "rhombitrihex.vertex",
+    "label": "Rhombitrihexagonal, every point",
+    "name": "3.4.6.4 · every point",
+    "group": "vertex",
+    "decor": {
+      "of": "rhombitrihex",
+      "colours": 0,
+      "rules": false,
+      "label": "every point",
+      "vertex": [3, 4, 6, 4]
+    }
+  },
+  {
+    "key": "trunctrihex.vertex",
+    "label": "Truncated trihexagonal, every point",
+    "name": "4.6.12 · every point",
+    "group": "vertex",
+    "decor": {
+      "of": "trunctrihex",
+      "colours": 0,
+      "rules": false,
+      "label": "every point",
+      "vertex": [4, 6, 12]
     }
   }
 ]

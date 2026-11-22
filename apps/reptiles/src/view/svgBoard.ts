@@ -1099,7 +1099,9 @@ export class SvgBoard {
   /** The dragged tile — `outline` about its centroid, moved to `at` — and,
    * when it would snap, a ✓ where it would land (`fitsAt`, that spot's
    * centroid) and a dot on each of its corners that would meet the edge.
-   * `discard`: it is over the tray, and letting go takes it off the board. */
+   * `discard`: it is over the tray, and letting go takes it off the board.
+   * `breaks`: on a vertex-rule level, where it would fit but for the rule —
+   * the point it would break it at, ringed. */
   drawDrag(
     kind: number,
     outline: readonly Loop[],
@@ -1107,6 +1109,7 @@ export class SvgBoard {
     fitsAt: XY | null,
     stick: XY[],
     discard = false,
+    breaks: XY | null = null,
   ): void {
     this.moving.replaceChildren();
     this.svg.classList.toggle("discarding", discard);
@@ -1139,11 +1142,27 @@ export class SvgBoard {
       ];
       el("polyline", { points: points(tick) }, badge);
     }
+    if (breaks) this.ruleRing(breaks, false);
   }
 
   clearDrag(): void {
     this.moving.replaceChildren();
     this.svg.classList.remove("discarding");
+  }
+
+  /** A tile let go where the vertex rule refuses it: the ring at the point it
+   * would break the rule at, shown a moment and faded. */
+  flashRuleBreak(at: XY): void {
+    this.ruleRing(at, true);
+  }
+
+  private ruleRing([cx, cy]: XY, flash: boolean): void {
+    const ring = el(
+      "circle",
+      { cx, cy, r: 0.24, "stroke-width": 0.07, class: `rule-break${flash ? " flash" : ""}` },
+      this.moving,
+    );
+    if (flash) ring.addEventListener("animationend", () => ring.remove());
   }
 
   /** Where a board point is across the screen, -1 (the left edge) to +1

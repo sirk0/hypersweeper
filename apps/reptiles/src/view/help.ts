@@ -76,6 +76,13 @@ const SECTIONS: Section[] = [
           "so the tiles along it show where they go — and a tile sticks to a knob " +
           "or a socket anywhere along the edge, not only in a corner.",
       ],
+      [
+        "Every point",
+        "Some boards hold every point to one way round it, drawn beside the " +
+          "level's name — 3.4.6.4 is a triangle, a square, a hexagon and a " +
+          "square. A tile lands only where every point it touches can still be " +
+          "that; where one cannot, a red ring shows which.",
+      ],
     ],
   },
   {
@@ -119,8 +126,8 @@ const SECTIONS: Section[] = [
       [
         "Picking a level",
         "Quick start deals one by difficulty. Tilings lists every tiling: open " +
-          "one to pick its board and its tiles — plain, or with a matching rule " +
-          "or a colouring.",
+          "one to pick its board and its tiles — plain, with a matching rule, " +
+          "a colouring or a jigsaw, or held to a vertex rule.",
       ],
     ],
   },

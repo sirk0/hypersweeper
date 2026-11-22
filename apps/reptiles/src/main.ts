@@ -33,7 +33,7 @@ import {
 import { renderHelp, withKeys } from "./view/help";
 import { markTutorialSeen, tutorialSeen, tutorialSteps } from "./tutorial";
 import { renderHome } from "./view/home";
-import { barsIcon, fillGlyphs, trayIcon } from "./view/icons";
+import { barsIcon, fillGlyphs, trayIcon, vertexFigure } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
 import { renderSettings } from "./view/settings";
 import { SvgBoard } from "./view/svgBoard";
@@ -531,6 +531,10 @@ function open(level: Level, push = true, fresh = false, tutorial: number | null 
   const name = byId("level");
   name.textContent = level.name;
   name.title = level.label;
+  // a vertex rule's sign: its tray is the plain one, so the name says it
+  const rule = byId("level-rule");
+  rule.replaceChildren(...(level.rule ? [vertexFigure(level)] : []));
+  rule.hidden = !level.rule;
   const boardOf = byId("board-of");
   boardOf.hidden = level.boards < 2;
   boardOf.textContent = `board ${level.board}/${level.boards}`;

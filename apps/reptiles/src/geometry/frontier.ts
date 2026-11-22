@@ -523,19 +523,30 @@ export class Frontier {
    * part-way along a frontier edge, and no frontier vertex part-way along one
    * of its sides. */
   edgeToEdge(pieces: readonly Piece[]): boolean {
-    return pieces.every((p) => this.edgeToEdgeOne(p.verts));
+    return this.tJunction(pieces) === null;
   }
 
-  private edgeToEdgeOne(verts: Cyc[]): boolean {
+  /** Where `pieces` would meet what is down other than edge to edge: a corner
+   * of theirs part-way along an open edge, or an open edge's corner part-way
+   * along one of their sides — that point, or null if there is none. */
+  tJunction(pieces: readonly Piece[]): Cyc | null {
+    for (const p of pieces) {
+      const at = this.tJunctionOne(p.verts);
+      if (at) return at;
+    }
+    return null;
+  }
+
+  private tJunctionOne(verts: Cyc[]): Cyc | null {
     const { ring } = this;
     const sides = loopToEdges(ring, verts);
     const box = boxOf(verts.map((v) => ring.toXY(v)));
     const near = this.edgesNear(box);
     for (const e of near) {
-      for (const v of verts) if (strictlyBetween(ring, e.a, e.b, v)) return false;
-      for (const s of sides) if (strictlyBetween(ring, s.a, s.b, e.a)) return false;
+      for (const v of verts) if (strictlyBetween(ring, e.a, e.b, v)) return v;
+      for (const s of sides) if (strictlyBetween(ring, s.a, s.b, e.a)) return e.a;
     }
-    return true;
+    return null;
   }
 
   /** Every one of `pieces` (each counter-clockwise, with its round edges'

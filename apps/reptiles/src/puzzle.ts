@@ -16,7 +16,7 @@ import {
   type Shape,
   type XY,
 } from "./geometry/shape";
-import { cornersOf, fitsConfig, type Corner } from "./geometry/vertexRule";
+import { RuleState } from "./geometry/vertexRule";
 import type { Level } from "./levels";
 
 export interface Placed {
@@ -46,8 +46,9 @@ export interface Fit {
 export class Puzzle {
   private placed = new Map<number, Placed>();
   private frontier: Frontier;
-  /** The corners round each vertex, for the vertex rule. */
-  private corners = new Map<string, Corner[]>();
+  /** The corners round each vertex, for the vertex rule — null on a level
+   * without one. */
+  private rules: RuleState | null;
   private nextId = 1;
   /** Per kind, the turns that leave its shape looking the same. */
   private same: number[][];
@@ -59,6 +60,7 @@ export class Puzzle {
 
   constructor(readonly level: Level) {
     this.frontier = this.untouched();
+    this.rules = level.rule ? RuleState.empty(level.ring, level.rule) : null;
     this.same = level.tiles.map(selfTurns);
   }
 
@@ -162,14 +164,34 @@ export class Puzzle {
    * without one.
    */
   allows(pieces: readonly Piece[]): boolean {
-    const { rule, ring } = this.level;
-    if (!rule) return true;
-    if (!this.frontier.edgeToEdge(pieces)) return false;
-    const added = new Map<string, Corner[]>();
-    for (const p of pieces)
-      for (const [key, corner] of cornersOf(ring, p.verts))
-        added.set(key, [...(added.get(key) ?? this.corners.get(key) ?? []), corner]);
-    return [...added.values()].every((corners) => fitsConfig(ring.n, rule, corners));
+    return !this.rules || this.rules.allows(this.frontier, pieces);
+  }
+
+  /** The vertex rule as the tiles down leave it — what goes with `uncovered`,
+   * for a caller trying tiles on a frontier of its own (`fitsAt`'s `rules`);
+   * null on a level without one. */
+  get ruleState(): RuleState | null {
+    return this.rules;
+  }
+
+  /**
+   * Where a tile held as given and dragged to `centre` would fit but for the
+   * vertex rule: the point it would break it at — a vertex round which its
+   * corner leaves something the rule never has, or where it would meet a
+   * side part-way — so the board can show why it will not land. Null where
+   * it lands (`snap`), fits nowhere near, or the level has no rule.
+   */
+  ruleBreak(kind: number, centre: XY, reach: number, rot: number, flip = false): Cyc | null {
+    const rules = this.rules;
+    if (!rules || this.snap(kind, centre, reach, rot, flip)) return null;
+    const spot = this.frontier.nearest(
+      this.shapeAt(kind, rot, flip),
+      centre,
+      reach,
+      false,
+      this.same[kind],
+    );
+    return spot ? rules.breaks(this.frontier, spot) : null;
   }
 
   /** Whether the level has a flip control: its board uses some kind both ways
@@ -216,7 +238,7 @@ export class Puzzle {
     const tile: Placed = { id: this.nextId++, kind, rot, flip, pieces };
     this.placed.set(tile.id, tile);
     this.frontier = this.frontier.cover(pieces);
-    this.addCorners(pieces);
+    if (this.rules) this.rules = this.rules.with(pieces);
     return tile;
   }
 
@@ -226,26 +248,18 @@ export class Puzzle {
     if (!tile) return undefined;
     this.placed.delete(id);
     let f = this.untouched();
-    this.corners.clear();
-    for (const t of this.placed.values()) {
-      f = f.cover(t.pieces);
-      this.addCorners(t.pieces);
-    }
+    for (const t of this.placed.values()) f = f.cover(t.pieces);
     this.frontier = f;
+    const { ring, rule } = this.level;
+    // only a level with a rule reads the corners, and only its regular
+    // polygons have the unit sides they are measured off
+    if (rule)
+      this.rules = RuleState.of(
+        ring,
+        rule,
+        [...this.placed.values()].map((t) => t.pieces),
+      );
     return tile;
-  }
-
-  private addCorners(pieces: readonly Piece[]): void {
-    // only a level with a rule reads them, and only its regular polygons have
-    // the unit sides they are measured off
-    if (!this.level.rule) return;
-    for (const p of pieces) {
-      for (const [key, corner] of cornersOf(this.level.ring, p.verts)) {
-        const list = this.corners.get(key);
-        if (list) list.push(corner);
-        else this.corners.set(key, [corner]);
-      }
-    }
   }
 
   /** The frontier as it stands: what is still uncovered. Immutable — a
@@ -256,8 +270,9 @@ export class Puzzle {
   }
 
   /** Every placement that lands with a corner on frontier corner `at` — of
-   * `on`, the puzzle's own frontier unless given. */
-  fitsAt(at: XY, on: Frontier = this.frontier): Fit[] {
+   * `on`, the puzzle's own frontier unless given, held to the vertex rule as
+   * `rules` has it (what goes with `on`: the puzzle's own unless given). */
+  fitsAt(at: XY, on: Frontier = this.frontier, rules: RuleState | null = this.rules): Fit[] {
     const out: Fit[] = [];
     const flips = this.canFlip() ? [false, true] : [false];
     // biggest first: one big tile settles more than several small ones
@@ -270,7 +285,7 @@ export class Puzzle {
             1e-6,
             false,
             this.same[kind],
-            (v) => this.allows(v),
+            rules ? (v) => rules.allows(on, v) : undefined,
           );
           for (const spot of spots) out.push({ kind, rot, flip, spot });
         }
@@ -438,8 +453,8 @@ export class Puzzle {
 
   reset(): void {
     this.placed.clear();
-    this.corners.clear();
     this.frontier = this.untouched();
+    this.rules = this.level.rule ? RuleState.empty(this.level.ring, this.level.rule) : null;
   }
 
   /** The frontier with nothing down: the region's rim, round where it is. */
