@@ -99,10 +99,12 @@ for (const [n, run] of runs(WITH_MARKED, 20).entries()) {
       await go(page, `?tiling=${key}`);
       await expect(page.locator("#tiling"), key).toBeVisible();
       await expect(page.locator("#tiling-list .marking-card"), key).toHaveCount(1 + marked.length);
-      // every tray drawn (each marked level built), with no error
-      await expect(page.locator("#tiling-list .marking-card .tray-icon"), key).toHaveCount(
-        1 + marked.length,
-      );
+      // every card drawn (each marked level built), with no error: a tray,
+      // or for a vertex rule the configuration round one point
+      await expect(
+        page.locator("#tiling-list .marking-card :is(.tray-icon, .vertex-figure)"),
+        key,
+      ).toHaveCount(1 + marked.length);
       expect(errors, key).toEqual([]);
     }
   });
