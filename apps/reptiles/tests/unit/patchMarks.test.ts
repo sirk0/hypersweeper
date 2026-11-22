@@ -114,8 +114,19 @@ describe("labels", () => {
       loopsOf(Z4, sq([labelMark(2, null), labelMark(2, null), labelMark(2, null), 0])),
     );
     expect(three.map((p) => p.class)).toEqual(["decor label-line label-2"]);
-    expect(three[0]!.d.match(/M/g)).toHaveLength(3);
-    expect(three[0]!.d.match(/Q/g)).toHaveLength(3);
+    // one line between two of them, the third branching off it — ending
+    // on that line, inside the tile, never on an edge (where a lone end
+    // would read as a label of its own)
+    const paths = three[0]!.d.split("M").filter((s) => s);
+    expect(paths).toHaveLength(2);
+    const [x, y] = (paths[1]!.match(/-?\d+(\.\d+)?/g) ?? []).map(Number).slice(-2) as [
+      number,
+      number,
+    ];
+    expect(x).toBeGreaterThan(1e-3);
+    expect(x).toBeLessThan(1 - 1e-3);
+    expect(y).toBeGreaterThan(1e-3);
+    expect(y).toBeLessThan(1 - 1e-3);
     const four = decorParts(loopsOf(Z4, sq([1, 1, 1, 1].map(() => labelMark(0, null)))));
     expect(four[0]!.d.match(/C/g)).toHaveLength(2);
   });
