@@ -1,7 +1,7 @@
 {
   "name": "hypersweeper-web",
   "private": true,
-  "version": "0.4.55",
+  "version": "0.4.56",
   "license": "MIT",
   "type": "module",
   "description": "TypeScript + Three.js rewrite of the Hypersweeper game (M0 scaffold).",
