@@ -61,7 +61,9 @@ import { loopsOf } from "../../src/view/curve";
 
 const Z4 = cyclotomic(4);
 const APERIODIC_COLOURINGS = aperiodicColourings as Record<string, { tiles: number }>;
-const COLOURED = LEVELS.filter((l) => l.decor);
+// the lined and coloured levels — not the jigsaws drawn from them, which
+// tests/unit/jigsaw.test.ts holds to their colourings
+const COLOURED = LEVELS.filter((l) => l.decor && !l.decor.jigsaw);
 /** The tilings whose full colouring choice is too slow for a unit test. */
 const SLOW_CHOICE = [
   "studdedtri2",

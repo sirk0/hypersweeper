@@ -27,12 +27,13 @@ export function outlineFrame(level: Level): {
   d: string;
   stroke: number;
 } {
-  const { ring, region, regionCurves } = level;
+  const { ring, region, regionCurves, regionMarks } = level;
   const flipY = ([x, y]: XY): XY => [x, -y];
   const loops = region.map((loop, i) =>
     reachPoints(
       loop.map((v) => ring.toXY(v)),
       regionCurves?.[i],
+      regionMarks?.[i],
     ).map(flipY),
   );
   const all = loops.flat();
@@ -50,6 +51,7 @@ export function outlineFrame(level: Level): {
         loop.map((v) => ring.toXY(v)),
         regionCurves?.[i],
         flipY,
+        regionMarks?.[i],
       ),
     )
     .join("");

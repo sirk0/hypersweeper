@@ -35,6 +35,14 @@
 //   arrow does (its partner the same class pointing the other way round the
 //   other tile, a mirror turning it round), the rest without a way (`null`:
 //   its own partner).
+// - a jigsaw edge, `knobMark(shape, out)`: a colouring's marks drawn as the
+//   edge's own outline instead of in colour (`jigsawOf` in src/levels.ts) —
+//   a knob of one of `KNOBS` shapes standing out of the tile (`out`), or the
+//   socket it fits, which is its partner; or a seam, `seamMark`, its own
+//   partner: `SEAM_FLAT` (a straight edge that, unlike `NONE`, meets only its
+//   like), `SEAM_S` (a knob on the edge's first half, a socket on its
+//   second) and `SEAM_Z`, the S seen in a mirror. A knob is symmetric along
+//   its edge, so a mirror leaves it as it is.
 //
 // Like a round edge's bulge (`Bulge` in shape.ts), a mark is a label on an
 // exact straight edge, and an edge carrying one is never cut part-way.
@@ -54,6 +62,56 @@ const ARROWS = 128;
 const LABELS = 256;
 /** The most classes a label runs to. */
 export const MAX_LABELS = 64;
+const EDGES = 512;
+/** How many shapes of knob a jigsaw edge comes in (view/curve.ts draws
+ * them): one per pair of colours, six for four colours. */
+export const KNOBS = 6;
+/** The sizes a level's knobs are drawn at, as a share of the full size: the
+ * largest that keeps every tray tile's outline clear of itself
+ * (`jigsawOf`). Every mark of a level is one size, so a size is no part of
+ * what meets what — it rides in the mark only so a tile is drawn from its
+ * marks alone. */
+export const KNOB_SIZES = [1, 0.8, 0.64, 0.5] as const;
+/** The jigsaw seams, each its own partner (see above). */
+export const SEAM_FLAT = 0;
+export const SEAM_S = 1;
+export const SEAM_Z = 2;
+const PER_SIZE = 2 * KNOBS + 3;
+const EDGES_END = EDGES + KNOB_SIZES.length * PER_SIZE;
+
+function jigsawSize(size: number): number {
+  if (!Number.isInteger(size) || size < 0 || size >= KNOB_SIZES.length)
+    throw new Error(`a knob's size runs 0 to ${KNOB_SIZES.length - 1}`);
+  return size;
+}
+
+/** A jigsaw edge's knob of `shape`, standing out of the tile if `out`, else
+ * the socket it fits, drawn at `KNOB_SIZES[size]`. */
+export function knobMark(shape: number, out: boolean, size = 0): number {
+  if (!Number.isInteger(shape) || shape < 0 || shape >= KNOBS)
+    throw new Error(`knobMark: a knob's shape runs 0 to ${KNOBS - 1}`);
+  return EDGES + jigsawSize(size) * PER_SIZE + shape * 2 + (out ? 1 : 0);
+}
+
+/** A jigsaw seam (`SEAM_FLAT`, `SEAM_S` or `SEAM_Z`) at `KNOB_SIZES[size]`. */
+export function seamMark(seam: number, size = 0): number {
+  if (seam !== SEAM_FLAT && seam !== SEAM_S && seam !== SEAM_Z)
+    throw new Error("seamMark: a seam is flat, S or Z");
+  return EDGES + jigsawSize(size) * PER_SIZE + 2 * KNOBS + seam;
+}
+
+/** A jigsaw edge as drawn — a knob's shape and whether it stands out, or a
+ * seam — and its size (an index into `KNOB_SIZES`); null for any other
+ * mark. */
+export function jigsaw(
+  mark: number,
+): (({ knob: number; out: boolean } | { seam: number }) & { size: number }) | null {
+  if (mark < EDGES || mark >= EDGES_END) return null;
+  const size = Math.floor((mark - EDGES) / PER_SIZE);
+  const m = (mark - EDGES) % PER_SIZE;
+  if (m >= 2 * KNOBS) return { seam: m - 2 * KNOBS, size };
+  return { knob: Math.floor(m / 2), out: m % 2 === 1, size };
+}
 
 /** The mark of an edge of a tile of colour `own` with a tile of colour
  * `other` across it. */
@@ -107,7 +165,7 @@ export function labelMark(cls: number, forward: boolean | null): number {
 
 /** A label's class and way (`null` for none); null for any other mark. */
 export function label(mark: number): { cls: number; forward: boolean | null } | null {
-  if (mark < LABELS) return null;
+  if (mark < LABELS || mark >= EDGES) return null;
   const m = mark - LABELS;
   const way = m % 3;
   return { cls: Math.floor(m / 3), forward: way === 2 ? null : way === 1 };
@@ -122,6 +180,8 @@ function turnedLabel(mark: number): number | null {
 
 /** The mark the tile across an edge must have there. */
 export function partner(mark: number): number {
+  const jig = jigsaw(mark);
+  if (jig) return "knob" in jig ? knobMark(jig.knob, !jig.out, jig.size) : mark;
   const turned = turnedLabel(mark);
   if (turned !== null) return turned;
   const way = arrow(mark);
@@ -138,9 +198,13 @@ export function colours(mark: number): { own: number; other: number } | null {
   return { own: Math.floor(m / MAX_COLOURS), other: m % MAX_COLOURS };
 }
 
-/** A mark seen in a mirror: an arrow or a label points the other way round the tile
- * (the outline runs backwards along it); any other mark has no handedness. */
+/** A mark seen in a mirror: an arrow or a label points the other way round
+ * the tile (the outline runs backwards along it), and an S seam is a Z; any
+ * other mark has no handedness. */
 export function mirrored(mark: number): number {
+  const jig = jigsaw(mark);
+  if (jig && "seam" in jig && jig.seam !== SEAM_FLAT)
+    return seamMark(jig.seam === SEAM_S ? SEAM_Z : SEAM_S, jig.size);
   const turned = turnedLabel(mark);
   if (turned !== null) return turned;
   const way = arrow(mark);

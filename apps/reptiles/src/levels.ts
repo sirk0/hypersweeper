@@ -16,7 +16,22 @@ import {
   kiteDartLegs,
   penroseLegs,
 } from "@tiling/geometry";
-import { LINE, arrowMark, colourMark, labelMark } from "./geometry/marks";
+import {
+  KNOBS,
+  KNOB_SIZES,
+  LINE,
+  MAX_COLOURS,
+  SEAM_FLAT,
+  SEAM_S,
+  SEAM_Z,
+  arrowMark,
+  colourMark,
+  colours as colourPair,
+  knobMark,
+  labelMark,
+  seamMark,
+} from "./geometry/marks";
+import { jigsawPoints } from "./view/curve";
 import { cyclotomic, type Cyc, type Ring } from "./geometry/cyclotomic";
 import { templateWindow, type XY } from "./geometry/fromTemplate";
 import { lavesWindow } from "./geometry/laves";
@@ -86,6 +101,11 @@ export interface Level {
   /** On a level of round tiles, each region loop's curve, edge by edge (see
    * `Shape.curve`): the curve of the tile of `cells` that lies along it. */
   regionCurves?: Bulge[][];
+  /** On a jigsaw level (`jigsawOf`), each region loop's marks, edge by edge:
+   * the mark of the tile of `cells` that lies along it, which the tile laid
+   * there must have — so the rim is cut as the tiles along it are. Every
+   * other level's rim takes any mark. */
+  regionMarks?: number[][];
   /** The tray: one shape per tile kind, fewest sides first, each always in
    * supply — regular, but for the Laves and 2-isohedral levels; one polygon,
    * but for a tile of several pieces (the fish) — and, for a round tile (the
@@ -187,8 +207,21 @@ export interface Level {
    * rule in one colour — lines across the tiles, made from a colouring by
    * drawing a line across every edge between two tiles that would be one
    * colour (src/colourings.ts), or the Penrose rhombi's arrows), and what it
-   * is called after the plain level's name — "2 colours, striped". */
-  decor?: { of: string; colours: number; rules: boolean; label: string };
+   * is called after the plain level's name — "2 colours, striped". A
+   * jigsaw level (`jigsawOf`) names the colouring it is drawn from
+   * (`jigsaw`), and the size its knobs are drawn at (`size`, an index into
+   * `KNOB_SIZES`). */
+  decor?: Decor;
+}
+
+/** What a marked level marks its tiles with (`Level.decor`). */
+export interface Decor {
+  of: string;
+  colours: number;
+  rules: boolean;
+  label: string;
+  jigsaw?: string;
+  size?: number;
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -455,23 +488,7 @@ function makeLevel(
       ? curveOnto({ ring, pieces: posed(kind.shape, { rot, flip, t: ring.zero }) }, cell)
       : cell.map((verts, q) => piece(verts, undefined, marks?.[i]?.[q])),
   );
-  if (round) {
-    const bulges = new Map<string, Bulge>();
-    for (const { verts, curve } of laid.flat()) {
-      verts.forEach((a, i) => {
-        const b = verts[(i + 1) % verts.length]!;
-        bulges.set(`${ring.key(a)}>${ring.key(b)}`, curve![i]!);
-      });
-    }
-    regionCurves = region.map((loop) =>
-      loop.map((a, i) => {
-        const b = loop[(i + 1) % loop.length]!;
-        const bulge = bulges.get(`${ring.key(a)}>${ring.key(b)}`);
-        if (bulge === undefined) throw new Error(`${key}: a rim edge is no cell's whole edge`);
-        return bulge;
-      }),
-    );
-  }
+  if (round) regionCurves = rimOf(key, ring, region, laid, (p, i) => p.curve![i]!);
   // A kind's rotate step: the largest that reaches, from resting flat, every
   // way the board turns it (`period` turns it back to itself).
   const turns = kinds.map(({ shape, ks }) => {
@@ -502,6 +519,33 @@ function makeLevel(
     name,
     group,
   };
+}
+
+/** Along each edge of `region`'s loops, what `get` reads off the edge of
+ * `cells` that runs along it, the same way round (a cell's curve or mark
+ * there); throws where a rim edge is no cell's whole edge. */
+function rimOf<T>(
+  key: string,
+  ring: Ring,
+  region: readonly Cyc[][],
+  cells: readonly (readonly Piece[])[],
+  get: (p: Piece, edge: number) => T,
+): T[][] {
+  const along = new Map<string, T>();
+  for (const cell of cells)
+    for (const p of cell)
+      p.verts.forEach((a, i) => {
+        const b = p.verts[(i + 1) % p.verts.length]!;
+        along.set(`${ring.key(a)}>${ring.key(b)}`, get(p, i));
+      });
+  return region.map((loop) =>
+    loop.map((a, i) => {
+      const b = loop[(i + 1) % loop.length]!;
+      const k = `${ring.key(a)}>${ring.key(b)}`;
+      if (!along.has(k)) throw new Error(`${key}: a rim edge is no cell's whole edge`);
+      return along.get(k)!;
+    }),
+  );
 }
 
 /** A board of the first-run tutorial (src/tutorial.ts): a level made from
@@ -743,7 +787,7 @@ export const GROUPS = [
 /** A level's family: one of `GROUPS`, or for a level of marked tiles (its
  * `decor`) what it marks them with — listed with the tiling it marks, not as
  * a family of its own (`markedOf`). */
-export type GroupKey = (typeof GROUPS)[number]["key"] | "rules" | "colourings";
+export type GroupKey = (typeof GROUPS)[number]["key"] | "rules" | "colourings" | "jigsaw";
 
 const NOTATIONS = catalog.tilingNotations as Record<string, string>;
 
@@ -1544,6 +1588,150 @@ function keyed(plain: Level, made: readonly Level[]): Level[] {
   });
 }
 
+/** The jigsaw seams, as a level's colours that meet their own colour take
+ * them: straight for the first, then an S and a Z. */
+const SEAMS = [SEAM_FLAT, SEAM_S, SEAM_Z];
+
+/** Whether `tile`'s outline as drawn — its jigsaw edges' knobs and sockets
+ * (`jigsawPoints`) — stays clear of itself: no two segments of different
+ * edges that do not meet end to end (at the corner two edges share) come
+ * within a fiftieth of its middle edge length, so no knob or socket runs
+ * into another edge's near a sharp corner. One edge's knob is drawn clear of
+ * itself by design. Floats, but only
+ * ever asked when the level index is written (`buildFirstBoards`), which
+ * keeps the size it chose. */
+function knobsClear(tile: Shape): boolean {
+  const { ring } = tile;
+  // each segment, and which edge of the tile it is on
+  const segments: [XY, XY, number][] = [];
+  const lengths: number[] = [];
+  for (const p of tile.pieces) {
+    const xy = p.verts.map((v) => ring.toXY(v));
+    xy.forEach((a, i) => {
+      const b = xy[(i + 1) % xy.length]!;
+      const edge = lengths.push(Math.hypot(b[0] - a[0], b[1] - a[1]));
+      const pts = [a, ...(jigsawPoints(a, b, p.marks?.[i], 4) ?? [b])];
+      for (let k = 1; k < pts.length; k++) segments.push([pts[k - 1]!, pts[k]!, edge]);
+    });
+  }
+  lengths.sort((a, b) => a - b);
+  const margin = lengths[lengths.length >> 1]! / 50;
+  const near = (p: XY, q: XY): boolean => Math.hypot(p[0] - q[0], p[1] - q[1]) < 1e-9;
+  const cross = (o: XY, a: XY, b: XY): number =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const toSegment = (p: XY, [a, b]: [XY, XY]): number => {
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len2 = dx * dx + dy * dy;
+    const t = len2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2)) : 0;
+    return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+  };
+  for (let i = 0; i < segments.length; i++)
+    for (let j = i + 1; j < segments.length; j++) {
+      const [a, b, e] = segments[i]!;
+      const [c, d, f] = segments[j]!;
+      if (e === f || near(a, c) || near(a, d) || near(b, c) || near(b, d)) continue;
+      const crossing = cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0;
+      if (
+        crossing ||
+        Math.min(
+          toSegment(a, [c, d]),
+          toSegment(b, [c, d]),
+          toSegment(c, [a, b]),
+          toSegment(d, [a, b]),
+        ) < margin
+      )
+        return false;
+    }
+  return true;
+}
+
+/**
+ * The jigsaw level drawn from the coloured level `coloured`: the same board
+ * and tray, every tile in one colour, and each colour mark turned into a
+ * jigsaw edge (geometry/marks.ts) that meets exactly what the colour mark
+ * met — a pair of colours a knob shape of its own, standing out of the tile
+ * of the lower colour and a socket in the other's; an edge between two tiles
+ * of one colour a seam, straight for the first such colour, an S and a Z for
+ * the next two. So it plays as the colouring does, but that its rim is cut as
+ * the tiles along it are (`regionMarks`), where a coloured board's takes any
+ * tile: the rim shows where tiles go. The shapes follow from which marks the
+ * tray holds, and every board the colouring is laid on holds the same
+ * (`sameTray`), so every board of it is cut alike.
+ *
+ * Null where the colouring cannot be drawn so: more pairs of colours than
+ * knob shapes, more colours meeting their own than seams — or two that do
+ * on a level that flips, which would turn an S into a Z where a colour stays
+ * the same — or, choosing a `size` (none given), knobs too big at every size
+ * for some tray tile (`knobsClear`).
+ */
+export function jigsawOf(coloured: Level, size?: number): Level | null {
+  const { ring } = coloured;
+  const pairs = new Set<number>();
+  const selves = new Set<number>();
+  for (const t of coloured.tiles)
+    for (const p of t.pieces)
+      for (const m of p.marks ?? []) {
+        const c = colourPair(m);
+        if (!c) throw new Error(`${coloured.key}: a jigsaw is drawn from colour marks only`);
+        if (c.own === c.other) selves.add(c.own);
+        else pairs.add(Math.min(c.own, c.other) * MAX_COLOURS + Math.max(c.own, c.other));
+      }
+  if (pairs.size > KNOBS || selves.size > SEAMS.length || (coloured.mirror && selves.size > 1))
+    return null;
+  const knobOf = new Map([...pairs].sort((a, b) => a - b).map((c, i) => [c, i]));
+  const seamOf = new Map([...selves].sort((a, b) => a - b).map((c, i) => [c, SEAMS[i]!]));
+  const cut =
+    (sz: number) =>
+    (pieces: readonly Piece[]): Piece[] =>
+      pieces.map((p) => ({
+        ...p,
+        marks: p.marks!.map((m) => {
+          const { own, other } = colourPair(m)!;
+          if (own === other) return seamMark(seamOf.get(own)!, sz);
+          const lo = Math.min(own, other);
+          return knobMark(knobOf.get(lo * MAX_COLOURS + Math.max(own, other))!, own === lo, sz);
+        }),
+      }));
+  const tilesAt = (sz: number): Shape[] =>
+    coloured.tiles.map((t) => ({ ring: t.ring, pieces: cut(sz)(t.pieces) }));
+  const sz = size ?? KNOB_SIZES.findIndex((_, k) => tilesAt(k).every(knobsClear));
+  if (sz < 0) return null;
+  const tiles = tilesAt(sz);
+  const cells = coloured.cells.map(cut(sz));
+  // one colour: each kind coloured by its shape, as on the plain board — a
+  // second shape of as many sides as one before it `twin`
+  const shapes: { shape: Shape; cls: string }[] = [];
+  const colours = tiles.map((t, i) => {
+    const cls = coloured.colours[i]!.split(" ")[0]!;
+    const bare: Shape = { ring, pieces: t.pieces.map((p) => piece(p.verts, p.curve)) };
+    const mirrored: Shape = { ring, pieces: posed(bare, { rot: 0, flip: true, t: ring.zero }) };
+    let at = shapes.findIndex(
+      ({ shape }) =>
+        turnsOntoPieces(shape, bare.pieces).length > 0 ||
+        turnsOntoPieces(shape, mirrored.pieces).length > 0,
+    );
+    if (at < 0) at = shapes.push({ shape: bare, cls }) - 1;
+    return shapes.slice(0, at).some((s) => s.cls === cls) ? `${cls} twin` : cls;
+  });
+  const decor = coloured.decor!;
+  const label = `jigsaw, ${decor.label}`;
+  const key = `${coloured.key}.jigsaw`;
+  return {
+    ...coloured,
+    key,
+    base: key,
+    label: `${coloured.label.slice(0, coloured.label.length - decor.label.length)}${label}`,
+    name: `${coloured.name.slice(0, coloured.name.length - decor.label.length)}${label}`,
+    group: "jigsaw",
+    tiles,
+    cells,
+    colours,
+    regionMarks: rimOf(key, ring, coloured.region, cells, (p, i) => p.marks![i]!),
+    decor: { ...decor, label, jigsaw: coloured.key, size: sz },
+  };
+}
+
 /** The board a painting of `plain` is laid on: `plain` itself, but for a
  * congruent-rectangle bond with T-vertices, whose bricks are cut there into
  * steps of the ring's unit (`Window.steps`: a half brick, a third in the 3×3
@@ -2219,8 +2407,7 @@ export function buildFirstBoards(): Level[] {
     return sorted ? built.sort(byEase) : built;
   });
   const find = (key: string): Level => plain.find((l) => l.key === key)!;
-  return [
-    ...plain,
+  const marked = [
     ...PAINTED.flatMap((key) => {
       const of = find(key);
       return keyed(
@@ -2234,6 +2421,13 @@ export function buildFirstBoards(): Level[] {
       return level;
     }),
   ];
+  // and each colouring again as a jigsaw, where it can be drawn as one
+  const jigsaws = marked.flatMap((level) => {
+    if (level.group !== "colourings") return [];
+    const made = jigsawOf(level);
+    return made ? [made] : [];
+  });
+  return [...plain, ...marked, ...jigsaws];
 }
 
 /** What the game knows of a first board before it is built: enough to list
@@ -2244,7 +2438,7 @@ export interface IndexEntry {
   label: string;
   name: string;
   group: GroupKey;
-  decor?: { of: string; colours: number; rules: boolean; label: string };
+  decor?: Decor;
   painting?: number;
 }
 
@@ -2255,7 +2449,7 @@ export function indexOf(levels: readonly Level[]): IndexEntry[] {
   const count = new Map<string, number>();
   return levels.map(({ key, label, name, group, decor }) => {
     if (!decor) return { key, label, name, group };
-    if (arrows.has(key)) return { key, label, name, group, decor };
+    if (arrows.has(key) || decor.jigsaw) return { key, label, name, group, decor };
     const painting = count.get(decor.of) ?? 0;
     count.set(decor.of, painting + 1);
     return { key, label, name, group, decor, painting };
@@ -2275,12 +2469,21 @@ export function makeFirstBoard(key: string): Level {
 function buildEntry(entry: IndexEntry): Level {
   const make = MAKERS.get(entry.key);
   if (make) return make();
+  if (entry.decor?.jigsaw) return jigsawLevel(entry.decor, levelByKey(entry.decor.jigsaw));
   const of = entry.decor && levelByKey(entry.decor.of);
   if (!of) throw new Error(`no way to build ${entry.key}`);
   if (entry.painting !== undefined) return paintedLevel(of, entry.painting);
   const byHand = MARKED_BY_HAND.find(([key]) => key === entry.key);
   if (!byHand) throw new Error(`no way to build ${entry.key}`);
   return byHand[2](of);
+}
+
+/** The jigsaw level `decor` names, drawn from `coloured` (its colouring, on
+ * whichever board) at the size the index chose. */
+function jigsawLevel(decor: Decor, coloured: Level | undefined): Level {
+  const made = coloured && jigsawOf(coloured, decor.size);
+  if (!made) throw new Error(`no jigsaw of ${decor.jigsaw}`);
+  return made;
 }
 
 /** The fields a level stub answers without building the level. */
@@ -2359,7 +2562,8 @@ export interface BoardRef {
  * for a plain level, those `markedBoards.json` lists for a marked one. */
 function boardNumbers(level: Pick<Level, "key" | "boards" | "decor">): number[] {
   if (!level.decor) return Array.from({ length: level.boards }, (_, i) => i + 1);
-  return [1, ...(MARKED_BOARDS[level.key] ?? [])];
+  // a jigsaw is on every board its colouring is
+  return [1, ...(MARKED_BOARDS[level.decor.jigsaw ?? level.key] ?? [])];
 }
 
 /** Every board of every tiling: each tiling's in turn, first board first —
@@ -2425,7 +2629,8 @@ export function markedOn(key: string, n: number): Level {
   const at = variantsOf(of)[n - 2];
   if (!board || at === undefined) throw new Error(`${of} has no board ${n}`);
   let made: Level;
-  if (entry.painting !== undefined) made = paintedBoard(plain, board, at, entry.painting);
+  if (entry.decor.jigsaw) made = jigsawLevel(entry.decor, markedOn(entry.decor.jigsaw, n));
+  else if (entry.painting !== undefined) made = paintedBoard(plain, board, at, entry.painting);
   else {
     const byHand = MARKED_BY_HAND.find(([k]) => k === key);
     if (!byHand) throw new Error(`no way to build ${key}`);

@@ -183,7 +183,8 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       groups.append(group);
     }
 
-    // the tiling's markings: plain, its matching rules, its colourings
+    // the tiling's markings: plain, its matching rules, its colourings, its
+    // jigsaws
     const tiles = section("pick-tiles", "Tiles", "Plain, or marked: edges that must match");
     const row = document.createElement("div");
     row.className = "family-row marking-row";
@@ -198,7 +199,9 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       button.setAttribute("aria-pressed", String(m.key === marking));
       if (!here) button.classList.add("off");
       button.title = m.decor
-        ? `${m.decor.rules ? "Matching rule" : "Colouring"}: ${m.decor.label}`
+        ? m.decor.jigsaw
+          ? `Jigsaw: ${m.decor.label.replace(/^jigsaw, /, "")}`
+          : `${m.decor.rules ? "Matching rule" : "Colouring"}: ${m.decor.label}`
         : "Plain tiles";
       const slot = document.createElement("span");
       slot.className = "tray-slot";

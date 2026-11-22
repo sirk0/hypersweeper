@@ -16,7 +16,7 @@
 import type { Bulge, XY } from "../geometry/shape";
 import { centroidOf, loopEdges, signedArea } from "../geometry/shape";
 import type { Level } from "../levels";
-import { alongEdge, loopsOf, loopsPath, type Loop } from "./curve";
+import { alongEdge, jigsawPoints, loopsOf, loopsPath, type Loop } from "./curve";
 import { decorParts, markUnit } from "./decor";
 import { boardFit, outlineFrame } from "./icons";
 
@@ -42,11 +42,17 @@ function matrixOf(f: (p: XY) => XY): Matrix {
 /** How a map scales lengths (a similarity's ratio). */
 const ratioOf = ([a, b, c, d]: Matrix): number => Math.sqrt(Math.abs(a * d - b * c));
 
-/** A closed loop's corners and, along each round edge, points on its arc. */
-function flatten(xy: readonly XY[], curve?: readonly Bulge[]): XY[] {
+/** A closed loop's corners and, along each round edge, points on its arc —
+ * or along each jigsaw edge, on its knob or socket. */
+function flatten(xy: readonly XY[], curve?: readonly Bulge[], marks?: readonly number[]): XY[] {
   const out: XY[] = [];
   xy.forEach((a, i) => {
     out.push(a);
+    const jig = jigsawPoints(a, xy[(i + 1) % xy.length]!, marks?.[i]);
+    if (jig) {
+      out.push(...jig.slice(0, -1));
+      return;
+    }
     const bulge = curve?.[i] ?? 0;
     if (!bulge) return;
     const b = xy[(i + 1) % xy.length]!;
@@ -179,6 +185,7 @@ export function cardLayout(level: Level): CardLayout {
     flatten(
       loop.map((v) => ring.toXY(v)),
       level.regionCurves?.[i],
+      level.regionMarks?.[i],
     ).map(flipY),
   );
   const tileStroke = frame.stroke * 0.6;

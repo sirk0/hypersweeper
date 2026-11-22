@@ -63,6 +63,49 @@ test("a pick from home deals a level, and Tilings lists every family", async ({ 
   expect(errors).toEqual([]);
 });
 
+test("a jigsaw board: one colour, knobs on the edges and the rim, the rim picks the corner tile", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  // the squares' checkerboard as a jigsaw: a tile of knobs and a tile of
+  // sockets, in the squares' own colour, and the rim cut as its tiles are
+  const landed: number[] = [];
+  for (const which of [0, 1]) {
+    await page.goto("/?level=squares.2apart.jigsaw");
+    const trayTiles = page.locator("svg.board .tile.in-tray");
+    await expect(trayTiles).toHaveCount(2);
+    await expect(page.locator("svg.board .tile.in-tray.paint")).toHaveCount(0);
+    await expect(page.locator("svg.board .tray-layer .decor")).toHaveCount(0);
+    expect(await trayTiles.nth(which).getAttribute("d")).toContain("C");
+    expect(await page.locator("svg.board path.region").getAttribute("d")).toContain("C");
+    // each tray tile dropped into the bottom-left corner: only the one whose
+    // edges fit the rim there lands there — the other snaps to a corner it
+    // does fit, or nowhere
+    const t = (await trayTiles.nth(which).boundingBox())!;
+    const r = (await page.locator("svg.board path.region").boundingBox())!;
+    const side = Math.min(t.width, t.height) * 0.75;
+    const drop = {
+      x: r.x + side / 2 + r.width * 0.03,
+      y: r.y + r.height - side / 2 - r.height * 0.03,
+    };
+    await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(drop.x, drop.y, { steps: 12 });
+    await page.mouse.up();
+    const placed = page.locator("svg.board [data-tile]");
+    const box = (await placed.count()) ? await placed.first().boundingBox() : null;
+    const there =
+      box !== null &&
+      Math.hypot(box.x + box.width / 2 - drop.x, box.y + box.height / 2 - drop.y) < side / 2;
+    landed.push(there ? 1 : 0);
+    // the board in play is kept: start the next try afresh
+    await page.locator("#restart").click();
+    await expect(placed).toHaveCount(0);
+  }
+  expect(landed.sort(), JSON.stringify(landed)).toEqual([0, 1]);
+  expect(errors).toEqual([]);
+});
+
 test("a square dragged into the corner of the squares level lands there", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=squares");

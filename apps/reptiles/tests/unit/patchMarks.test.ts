@@ -332,15 +332,15 @@ describe("the rep-tiles' rules", () => {
 describe("colourings read off a patch", () => {
   it("lists an aperiodic colouring only where its tray is small enough to play", () => {
     for (const key of PATCH_MARKED) {
-      const listed = LEVELS.filter((l) => l.decor?.of === key && !l.decor.rules);
+      const listed = LEVELS.filter((l) => l.decor?.of === key && !l.decor.rules && !l.decor.jigsaw);
       expect(listed.length, key).toBe(CHOSEN[key]!.tiles <= MAX_COLOURED_TRAY ? 1 : 0);
     }
     // so far Ammann–Beenker's, at five tray tiles, Klaassen's spiral's, and
     // six rep-tiles', at four each
     expect(
-      LEVELS.filter((l) => l.decor && PATCH_MARKED.includes(l.decor.of) && !l.decor.rules).map(
-        (l) => l.key,
-      ),
+      LEVELS.filter(
+        (l) => l.decor && PATCH_MARKED.includes(l.decor.of) && !l.decor.rules && !l.decor.jigsaw,
+      ).map((l) => l.key),
     ).toEqual([
       "ammannbeenker.3apart",
       "klaassen.3apart",

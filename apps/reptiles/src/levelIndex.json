@@ -3762,5 +3762,1923 @@
     "name": "Kissing square chain · matching rules",
     "group": "rules",
     "decor": { "of": "kissingchain", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "squares.2apart.jigsaw",
+    "label": "Squares, jigsaw, 2 colours, apart",
+    "name": "4⁴ · jigsaw, 2 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squares",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, apart",
+      "jigsaw": "squares.2apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "squares.2oneinthree.jigsaw",
+    "label": "Squares, jigsaw, 2 colours, one in three",
+    "name": "4⁴ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squares",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "squares.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "squares.2oneinthree2.jigsaw",
+    "label": "Squares, jigsaw, 2 colours, one in three II",
+    "name": "4⁴ · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squares",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "squares.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "squares.3striped.jigsaw",
+    "label": "Squares, jigsaw, 3 colours, striped",
+    "name": "4⁴ · jigsaw, 3 colours, striped",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squares",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, striped",
+      "jigsaw": "squares.3striped",
+      "size": 0
+    }
+  },
+  {
+    "key": "squares.3apart.jigsaw",
+    "label": "Squares, jigsaw, 3 colours, apart",
+    "name": "4⁴ · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squares",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "squares.3apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "triangles.2apart.jigsaw",
+    "label": "Triangles, jigsaw, 2 colours, apart",
+    "name": "3⁶ · jigsaw, 2 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "triangles",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, apart",
+      "jigsaw": "triangles.2apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "triangles.2oneinthree.jigsaw",
+    "label": "Triangles, jigsaw, 2 colours, one in three",
+    "name": "3⁶ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "triangles",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "triangles.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexagons.2oneinthree.jigsaw",
+    "label": "Hexagons, jigsaw, 2 colours, one in three",
+    "name": "6³ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexagons",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "hexagons.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexagons.2oneinthree2.jigsaw",
+    "label": "Hexagons, jigsaw, 2 colours, one in three II",
+    "name": "6³ · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexagons",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "hexagons.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexagons.3striped.jigsaw",
+    "label": "Hexagons, jigsaw, 3 colours, striped",
+    "name": "6³ · jigsaw, 3 colours, striped",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexagons",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, striped",
+      "jigsaw": "hexagons.3striped",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexagons.3apart.jigsaw",
+    "label": "Hexagons, jigsaw, 3 colours, apart",
+    "name": "6³ · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexagons",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "hexagons.3apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "trihex.2oneinthreebyshape.jigsaw",
+    "label": "Trihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.6.3.6 · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "trihex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "trihex.2oneinthree.jigsaw",
+    "label": "Trihexagonal, jigsaw, 2 colours, one in three",
+    "name": "3.6.3.6 · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "trihex.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "trihex.3byshape.jigsaw",
+    "label": "Trihexagonal, jigsaw, 3 colours, by shape",
+    "name": "3.6.3.6 · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trihex",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "trihex.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "truncsquare.2oneinthree.jigsaw",
+    "label": "Truncated square, jigsaw, 2 colours, one in three",
+    "name": "4.8² · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "truncsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "truncsquare.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "truncsquare.2oneinthree2.jigsaw",
+    "label": "Truncated square, jigsaw, 2 colours, one in three II",
+    "name": "4.8² · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "truncsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "truncsquare.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "truncsquare.3colours.jigsaw",
+    "label": "Truncated square, jigsaw, 3 colours",
+    "name": "4.8² · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "truncsquare",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "truncsquare.3colours",
+      "size": 0
+    }
+  },
+  {
+    "key": "trunchex.2oneinthreebyshape.jigsaw",
+    "label": "Truncated hexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.12² · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "trunchex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "trunchex.2oneinthree.jigsaw",
+    "label": "Truncated hexagonal, jigsaw, 2 colours, one in three",
+    "name": "3.12² · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "trunchex.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "trunchex.3byshape.jigsaw",
+    "label": "Truncated hexagonal, jigsaw, 3 colours, by shape",
+    "name": "3.12² · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trunchex",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "trunchex.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated.2oneinthreebyshape.jigsaw",
+    "label": "Elongated triangular, jigsaw, 2 colours, one in three, by shape",
+    "name": "3³.4² · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "elongated.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated.2oneinthree.jigsaw",
+    "label": "Elongated triangular, jigsaw, 2 colours, one in three",
+    "name": "3³.4² · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "elongated.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated.3byshape.jigsaw",
+    "label": "Elongated triangular, jigsaw, 3 colours, by shape",
+    "name": "3³.4² · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "elongated.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubsquare.2oneinthreebyshape.jigsaw",
+    "label": "Snub square, jigsaw, 2 colours, one in three, by shape",
+    "name": "3².4.3.4 · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "snubsquare.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubsquare.2oneinthree.jigsaw",
+    "label": "Snub square, jigsaw, 2 colours, one in three",
+    "name": "3².4.3.4 · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "snubsquare.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubsquare.3byshape.jigsaw",
+    "label": "Snub square, jigsaw, 3 colours, by shape",
+    "name": "3².4.3.4 · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubsquare",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "snubsquare.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubhex.2oneinthreebyshape.jigsaw",
+    "label": "Snub hexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "3⁴.6 · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubhex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "snubhex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubhex.2oneinthreebyshape2.jigsaw",
+    "label": "Snub hexagonal, jigsaw, 2 colours, one in three, by shape II",
+    "name": "3⁴.6 · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubhex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "snubhex.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubhex.2oneinthreebyshape3.jigsaw",
+    "label": "Snub hexagonal, jigsaw, 2 colours, one in three, by shape III",
+    "name": "3⁴.6 · jigsaw, 2 colours, one in three, by shape III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubhex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape III",
+      "jigsaw": "snubhex.2oneinthreebyshape3",
+      "size": 0
+    }
+  },
+  {
+    "key": "rhombitrihex.2oneinthreebyshape.jigsaw",
+    "label": "Rhombitrihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.4.6.4 · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rhombitrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "rhombitrihex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "rhombitrihex.2oneinthreebyshape2.jigsaw",
+    "label": "Rhombitrihexagonal, jigsaw, 2 colours, one in three, by shape II",
+    "name": "3.4.6.4 · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rhombitrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "rhombitrihex.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "rhombitrihex.3byshape.jigsaw",
+    "label": "Rhombitrihexagonal, jigsaw, 3 colours, by shape",
+    "name": "3.4.6.4 · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rhombitrihex",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "rhombitrihex.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "trunctrihex.2oneinthreebyshape.jigsaw",
+    "label": "Truncated trihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "4.6.12 · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "trunctrihex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "trunctrihex.2byshape.jigsaw",
+    "label": "Truncated trihexagonal, jigsaw, 2 colours, by shape",
+    "name": "4.6.12 · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "trunctrihex.2byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "trunctrihex.3byshape.jigsaw",
+    "label": "Truncated trihexagonal, jigsaw, 3 colours, by shape",
+    "name": "4.6.12 · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trunctrihex",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "trunctrihex.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "studdedtri.2oneinthreebyshape.jigsaw",
+    "label": "Studded triangular, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3⁴.6]₁ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "studdedtri",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "studdedtri.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "studdedtri.2oneinthreebyshape2.jigsaw",
+    "label": "Studded triangular, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3⁶; 3⁴.6]₁ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "studdedtri",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "studdedtri.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated2.2oneinthreebyshape.jigsaw",
+    "label": "Half-elongated triangular, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3³.4²]₁ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "elongated2.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated2.2oneinthree.jigsaw",
+    "label": "Half-elongated triangular, jigsaw, 2 colours, one in three",
+    "name": "[3⁶; 3³.4²]₁ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "elongated2.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated2.2oneinthree2.jigsaw",
+    "label": "Half-elongated triangular, jigsaw, 2 colours, one in three II",
+    "name": "[3⁶; 3³.4²]₁ · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "elongated2.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated3.2oneinthreebyshape.jigsaw",
+    "label": "Third-elongated triangular, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3³.4²]₂ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated3",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "elongated3.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated3.2oneinthree.jigsaw",
+    "label": "Third-elongated triangular, jigsaw, 2 colours, one in three",
+    "name": "[3⁶; 3³.4²]₂ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated3",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "elongated3.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated3.2oneinthree2.jigsaw",
+    "label": "Third-elongated triangular, jigsaw, 2 colours, one in three II",
+    "name": "[3⁶; 3³.4²]₂ · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated3",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "elongated3.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "tritrunctrihex.2oneinthreebyshape.jigsaw",
+    "label": "Fanned truncated trihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3⁶; 3².4.12] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "tritrunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "tritrunctrihex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "tritrunctrihex.2oneinthreebyshape2.jigsaw",
+    "label": "Fanned truncated trihexagonal, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3⁶; 3².4.12] · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "tritrunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "tritrunctrihex.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "tritrunctrihex.2oneinthreebyshape3.jigsaw",
+    "label": "Fanned truncated trihexagonal, jigsaw, 2 colours, one in three, by shape III",
+    "name": "[3⁶; 3².4.12] · jigsaw, 2 colours, one in three, by shape III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "tritrunctrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape III",
+      "jigsaw": "tritrunctrihex.2oneinthreebyshape3",
+      "size": 0
+    }
+  },
+  {
+    "key": "fannedhex.2oneinthree.jigsaw",
+    "label": "Fanned hexagonal, jigsaw, 2 colours, one in three",
+    "name": "[3⁶; 3².6²] · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "fannedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "fannedhex.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "fannedhex.2oneinthree3.jigsaw",
+    "label": "Fanned hexagonal, jigsaw, 2 colours, one in three III",
+    "name": "[3⁶; 3².6²] · jigsaw, 2 colours, one in three III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "fannedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three III",
+      "jigsaw": "fannedhex.2oneinthree3",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexbands.2oneinthree.jigsaw",
+    "label": "Banded hexagonal, jigsaw, 2 colours, one in three",
+    "name": "[3⁴.6; 3².6²] · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexbands",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "hexbands.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexbands.2oneinthree2.jigsaw",
+    "label": "Banded hexagonal, jigsaw, 2 colours, one in three II",
+    "name": "[3⁴.6; 3².6²] · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexbands",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "hexbands.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated2.2oneinthree.jigsaw",
+    "label": "Pinwheel snub square, jigsaw, 2 colours, one in three",
+    "name": "[3³.4²; 3².4.3.4]₁ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "snubelongated2.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated2.2oneinthree2.jigsaw",
+    "label": "Pinwheel snub square, jigsaw, 2 colours, one in three II",
+    "name": "[3³.4²; 3².4.3.4]₁ · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "snubelongated2.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated2.2oneinthree3.jigsaw",
+    "label": "Pinwheel snub square, jigsaw, 2 colours, one in three III",
+    "name": "[3³.4²; 3².4.3.4]₁ · jigsaw, 2 colours, one in three III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three III",
+      "jigsaw": "snubelongated2.2oneinthree3",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated.2oneinthreebyshape.jigsaw",
+    "label": "Zigzag snub square, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 3².4.3.4]₂ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "snubelongated.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated.2oneinthree.jigsaw",
+    "label": "Zigzag snub square, jigsaw, 2 colours, one in three",
+    "name": "[3³.4²; 3².4.3.4]₂ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "snubelongated.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "dissectedtrunchex2.2oneinthreebyshape.jigsaw",
+    "label": "Turned dissected truncated hexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 3.4.6.4] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dissectedtrunchex2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "dissectedtrunchex2.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "dissectedtrunchex2.2oneinthreebyshape2.jigsaw",
+    "label": "Turned dissected truncated hexagonal, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3³.4²; 3.4.6.4] · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dissectedtrunchex2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "dissectedtrunchex2.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "dissectedtrunchex2.2oneinthreebyshape3.jigsaw",
+    "label": "Turned dissected truncated hexagonal, jigsaw, 2 colours, one in three, by shape III",
+    "name": "[3³.4²; 3.4.6.4] · jigsaw, 2 colours, one in three, by shape III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dissectedtrunchex2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape III",
+      "jigsaw": "dissectedtrunchex2.2oneinthreebyshape3",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows2.2oneinthreebyshape.jigsaw",
+    "label": "Doubly elongated triangular, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 4⁴]₁ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "squarerows2.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows2.2oneinthreebyshape2.jigsaw",
+    "label": "Doubly elongated triangular, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3³.4²; 4⁴]₁ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "squarerows2.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows2.2oneinthree.jigsaw",
+    "label": "Doubly elongated triangular, jigsaw, 2 colours, one in three",
+    "name": "[3³.4²; 4⁴]₁ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "squarerows2.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows3.2oneinthreebyshape.jigsaw",
+    "label": "Triply elongated triangular, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3³.4²; 4⁴]₂ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows3",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "squarerows3.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows3.2oneinthreebyshape2.jigsaw",
+    "label": "Triply elongated triangular, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3³.4²; 4⁴]₂ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows3",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "squarerows3.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows3.2oneinthree.jigsaw",
+    "label": "Triply elongated triangular, jigsaw, 2 colours, one in three",
+    "name": "[3³.4²; 4⁴]₂ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows3",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "squarerows3.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "dissectedtrunchex.2oneinthreebyshape.jigsaw",
+    "label": "Dissected truncated hexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3².4.3.4; 3.4.6.4] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dissectedtrunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "dissectedtrunchex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "dissectedtrunchex.2oneinthreebyshape2.jigsaw",
+    "label": "Dissected truncated hexagonal, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3².4.3.4; 3.4.6.4] · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dissectedtrunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "dissectedtrunchex.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "dissectedtrunchex.2oneinthreebyshape3.jigsaw",
+    "label": "Dissected truncated hexagonal, jigsaw, 2 colours, one in three, by shape III",
+    "name": "[3².4.3.4; 3.4.6.4] · jigsaw, 2 colours, one in three, by shape III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dissectedtrunchex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape III",
+      "jigsaw": "dissectedtrunchex.2oneinthreebyshape3",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexrows.2oneinthreebyshape.jigsaw",
+    "label": "Bow-tie hexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3².6²; 3.6.3.6] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexrows",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "hexrows.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexrows.2oneinthree.jigsaw",
+    "label": "Bow-tie hexagonal, jigsaw, 2 colours, one in three",
+    "name": "[3².6²; 3.6.3.6] · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexrows",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "hexrows.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexrows.3byshape.jigsaw",
+    "label": "Bow-tie hexagonal, jigsaw, 3 colours, by shape",
+    "name": "[3².6²; 3.6.3.6] · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexrows",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "hexrows.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "dodecasquare.2byshape.jigsaw",
+    "label": "Square dodecagonal, jigsaw, 2 colours, by shape",
+    "name": "[3.4.3.12; 3.12²] · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dodecasquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "dodecasquare.2byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "dodecasquare.2oneinthreebyshape.jigsaw",
+    "label": "Square dodecagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3.4.3.12; 3.12²] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dodecasquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "dodecasquare.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "dodecasquare.2byshape2.jigsaw",
+    "label": "Square dodecagonal, jigsaw, 2 colours, by shape II",
+    "name": "[3.4.3.12; 3.12²] · jigsaw, 2 colours, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dodecasquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape II",
+      "jigsaw": "dodecasquare.2byshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexrings.2oneinthreebyshape.jigsaw",
+    "label": "Dissected truncated trihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3.4².6; 3.4.6.4] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexrings",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "hexrings.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squaretrihex.2oneinthreebyshape.jigsaw",
+    "label": "Elongated trihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3.4².6; 3.6.3.6]₁ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squaretrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "squaretrihex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squaretrihex.2oneinthreebyshape2.jigsaw",
+    "label": "Elongated trihexagonal, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3.4².6; 3.6.3.6]₁ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squaretrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "squaretrihex.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "squaretrihex.2oneinthree.jigsaw",
+    "label": "Elongated trihexagonal, jigsaw, 2 colours, one in three",
+    "name": "[3.4².6; 3.6.3.6]₁ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squaretrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "squaretrihex.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "squaretrihex2.2oneinthreebyshape.jigsaw",
+    "label": "Staggered elongated trihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3.4².6; 3.6.3.6]₂ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squaretrihex2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "squaretrihex2.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squaretrihex2.2oneinthreebyshape2.jigsaw",
+    "label": "Staggered elongated trihexagonal, jigsaw, 2 colours, one in three, by shape II",
+    "name": "[3.4².6; 3.6.3.6]₂ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squaretrihex2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "squaretrihex2.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "squaretrihex2.2oneinthree.jigsaw",
+    "label": "Staggered elongated trihexagonal, jigsaw, 2 colours, one in three",
+    "name": "[3.4².6; 3.6.3.6]₂ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squaretrihex2",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "squaretrihex2.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "dodecarhombitrihex.2oneinthreebyshape.jigsaw",
+    "label": "Studded rhombitrihexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "[3.4.6.4; 4.6.12] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dodecarhombitrihex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "dodecarhombitrihex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "dodecarhombitrihex.3byshape.jigsaw",
+    "label": "Studded rhombitrihexagonal, jigsaw, 3 colours, by shape",
+    "name": "[3.4.6.4; 4.6.12] · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dodecarhombitrihex",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "dodecarhombitrihex.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "dodecarhombitrihex.3byshape2.jigsaw",
+    "label": "Studded rhombitrihexagonal, jigsaw, 3 colours, by shape II",
+    "name": "[3.4.6.4; 4.6.12] · jigsaw, 3 colours, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "dodecarhombitrihex",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape II",
+      "jigsaw": "dodecarhombitrihex.3byshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "tetrakis.2apart.jigsaw",
+    "label": "Tetrakis square, jigsaw, 2 colours, apart",
+    "name": "V4.8² · jigsaw, 2 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "tetrakis",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, apart",
+      "jigsaw": "tetrakis.2apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "rhombille.2oneinthree2.jigsaw",
+    "label": "Rhombille, jigsaw, 2 colours, one in three II",
+    "name": "V3.6.3.6 · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rhombille",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "rhombille.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "rhombille.2oneinthree3.jigsaw",
+    "label": "Rhombille, jigsaw, 2 colours, one in three III",
+    "name": "V3.6.3.6 · jigsaw, 2 colours, one in three III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rhombille",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three III",
+      "jigsaw": "rhombille.2oneinthree3",
+      "size": 0
+    }
+  },
+  {
+    "key": "triakis.3mixed.jigsaw",
+    "label": "Triakis triangular, jigsaw, 3 colours, mixed",
+    "name": "V3.12² · jigsaw, 3 colours, mixed",
+    "group": "jigsaw",
+    "decor": {
+      "of": "triakis",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, mixed",
+      "jigsaw": "triakis.3mixed",
+      "size": 1
+    }
+  },
+  {
+    "key": "triakis.3paired.jigsaw",
+    "label": "Triakis triangular, jigsaw, 3 colours, paired",
+    "name": "V3.12² · jigsaw, 3 colours, paired",
+    "group": "jigsaw",
+    "decor": {
+      "of": "triakis",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, paired",
+      "jigsaw": "triakis.3paired",
+      "size": 2
+    }
+  },
+  {
+    "key": "floret.3paired.jigsaw",
+    "label": "Floret pentagonal, jigsaw, 3 colours, paired",
+    "name": "V3⁴.6 · jigsaw, 3 colours, paired",
+    "group": "jigsaw",
+    "decor": {
+      "of": "floret",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, paired",
+      "jigsaw": "floret.3paired",
+      "size": 0
+    }
+  },
+  {
+    "key": "deltoidal.2oneinthree2.jigsaw",
+    "label": "Deltoidal trihexagonal, jigsaw, 2 colours, one in three II",
+    "name": "V3.4.6.4 · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "deltoidal",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "deltoidal.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "kisrhombille.2apart.jigsaw",
+    "label": "Kisrhombille, jigsaw, 2 colours, apart",
+    "name": "V4.6.12 · jigsaw, 2 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "kisrhombille",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, apart",
+      "jigsaw": "kisrhombille.2apart",
+      "size": 2
+    }
+  },
+  {
+    "key": "elongated2dual.2oneinthreebyshape.jigsaw",
+    "label": "Half-elongated triangular dual, jigsaw, 2 colours, one in three, by shape",
+    "name": "V[3⁶; 3³.4²]₁ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "elongated2dual.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated2dual.3byshape.jigsaw",
+    "label": "Half-elongated triangular dual, jigsaw, 3 colours, by shape",
+    "name": "V[3⁶; 3³.4²]₁ · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated2dual",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "elongated2dual.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated3dual.2oneinthreebyshape.jigsaw",
+    "label": "Third-elongated triangular dual, jigsaw, 2 colours, one in three, by shape",
+    "name": "V[3⁶; 3³.4²]₂ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "elongated3dual.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "elongated3dual.2oneinthreebyshape2.jigsaw",
+    "label": "Third-elongated triangular dual, jigsaw, 2 colours, one in three, by shape II",
+    "name": "V[3⁶; 3³.4²]₂ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "elongated3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "elongated3dual.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated2dual.2oneinthreebyshape.jigsaw",
+    "label": "Pinwheel snub square dual, jigsaw, 2 colours, one in three, by shape",
+    "name": "V[3³.4²; 3².4.3.4]₁ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "snubelongated2dual.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated2dual.2oneinthreebyshape2.jigsaw",
+    "label": "Pinwheel snub square dual, jigsaw, 2 colours, one in three, by shape II",
+    "name": "V[3³.4²; 3².4.3.4]₁ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "snubelongated2dual.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "snubelongated2dual.3byshape.jigsaw",
+    "label": "Pinwheel snub square dual, jigsaw, 3 colours, by shape",
+    "name": "V[3³.4²; 3².4.3.4]₁ · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "snubelongated2dual",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "snubelongated2dual.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows2dual.2oneinthreebyshape.jigsaw",
+    "label": "Doubly elongated triangular dual, jigsaw, 2 colours, one in three, by shape",
+    "name": "V[3³.4²; 4⁴]₁ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows2dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "squarerows2dual.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows2dual.3byshape.jigsaw",
+    "label": "Doubly elongated triangular dual, jigsaw, 3 colours, by shape",
+    "name": "V[3³.4²; 4⁴]₁ · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows2dual",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "squarerows2dual.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows3dual.2oneinthreebyshape.jigsaw",
+    "label": "Triply elongated triangular dual, jigsaw, 2 colours, one in three, by shape",
+    "name": "V[3³.4²; 4⁴]₂ · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "squarerows3dual.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "squarerows3dual.2oneinthreebyshape2.jigsaw",
+    "label": "Triply elongated triangular dual, jigsaw, 2 colours, one in three, by shape II",
+    "name": "V[3³.4²; 4⁴]₂ · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "squarerows3dual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "squarerows3dual.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexrowsdual.2oneinthreebyshape.jigsaw",
+    "label": "Bow-tie hexagonal dual, jigsaw, 2 colours, one in three, by shape",
+    "name": "V[3².6²; 3.6.3.6] · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexrowsdual",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "hexrowsdual.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "hexrowsdual.3byshape.jigsaw",
+    "label": "Bow-tie hexagonal dual, jigsaw, 3 colours, by shape",
+    "name": "V[3².6²; 3.6.3.6] · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "hexrowsdual",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "hexrowsdual.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "stackedbond.2oneinthree.jigsaw",
+    "label": "Stacked bond, jigsaw, 2 colours, one in three",
+    "name": "Stacked bond · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "stackedbond",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "stackedbond.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "stackedbond.2oneinthree2.jigsaw",
+    "label": "Stacked bond, jigsaw, 2 colours, one in three II",
+    "name": "Stacked bond · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "stackedbond",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "stackedbond.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "stackedbond.2oneinthree3.jigsaw",
+    "label": "Stacked bond, jigsaw, 2 colours, one in three III",
+    "name": "Stacked bond · jigsaw, 2 colours, one in three III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "stackedbond",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three III",
+      "jigsaw": "stackedbond.2oneinthree3",
+      "size": 0
+    }
+  },
+  {
+    "key": "runningbond.2oneinthree.jigsaw",
+    "label": "Running bond, jigsaw, 2 colours, one in three",
+    "name": "Running bond · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "runningbond",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "runningbond.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "runningbond.2oneinthree2.jigsaw",
+    "label": "Running bond, jigsaw, 2 colours, one in three II",
+    "name": "Running bond · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "runningbond",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "runningbond.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "runningbond.2oneinthree3.jigsaw",
+    "label": "Running bond, jigsaw, 2 colours, one in three III",
+    "name": "Running bond · jigsaw, 2 colours, one in three III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "runningbond",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three III",
+      "jigsaw": "runningbond.2oneinthree3",
+      "size": 0
+    }
+  },
+  {
+    "key": "basketweave3.2oneinthree.jigsaw",
+    "label": "Basket weave 3x3, jigsaw, 2 colours, one in three",
+    "name": "Basket weave 3x3 · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "basketweave3",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "basketweave3.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "herringbone.2oneinthree2.jigsaw",
+    "label": "Herringbone, jigsaw, 2 colours, one in three II",
+    "name": "Herringbone · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "herringbone",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "herringbone.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "pentagon10.3mixed.jigsaw",
+    "label": "Type 10 (James, 1975), jigsaw, 3 colours, mixed",
+    "name": "Type 10 (James, 1975) · jigsaw, 3 colours, mixed",
+    "group": "jigsaw",
+    "decor": {
+      "of": "pentagon10",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, mixed",
+      "jigsaw": "pentagon10.3mixed",
+      "size": 0
+    }
+  },
+  {
+    "key": "offsetsquare.2oneinthree.jigsaw",
+    "label": "Offset square, jigsaw, 2 colours, one in three",
+    "name": "Offset square · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "offsetsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "offsetsquare.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "offsetsquare.2oneinthree2.jigsaw",
+    "label": "Offset square, jigsaw, 2 colours, one in three II",
+    "name": "Offset square · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "offsetsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "offsetsquare.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "offsetsquare.2oneinthree3.jigsaw",
+    "label": "Offset square, jigsaw, 2 colours, one in three III",
+    "name": "Offset square · jigsaw, 2 colours, one in three III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "offsetsquare",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three III",
+      "jigsaw": "offsetsquare.2oneinthree3",
+      "size": 0
+    }
+  },
+  {
+    "key": "staggeredtri.2oneinthree.jigsaw",
+    "label": "Staggered triangular, jigsaw, 2 colours, one in three",
+    "name": "Staggered triangular · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "staggeredtri",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "staggeredtri.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "staggeredtri.2apart.jigsaw",
+    "label": "Staggered triangular, jigsaw, 2 colours, apart",
+    "name": "Staggered triangular · jigsaw, 2 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "staggeredtri",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, apart",
+      "jigsaw": "staggeredtri.2apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "staggeredtri.3apart.jigsaw",
+    "label": "Staggered triangular, jigsaw, 3 colours, apart",
+    "name": "Staggered triangular · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "staggeredtri",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "staggeredtri.3apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "pythagorean.2oneinthree.jigsaw",
+    "label": "Pythagorean, jigsaw, 2 colours, one in three",
+    "name": "Pythagorean · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "pythagorean",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "pythagorean.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "pythagorean.2oneinthree2.jigsaw",
+    "label": "Pythagorean, jigsaw, 2 colours, one in three II",
+    "name": "Pythagorean · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "pythagorean",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "pythagorean.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "pythagorean.3colours.jigsaw",
+    "label": "Pythagorean, jigsaw, 3 colours",
+    "name": "Pythagorean · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "pythagorean",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "pythagorean.3colours",
+      "size": 0
+    }
+  },
+  {
+    "key": "rotatedhex.2oneinthreebyshape.jigsaw",
+    "label": "Rotated hexagonal, jigsaw, 2 colours, one in three, by shape",
+    "name": "Rotated hexagonal · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rotatedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "rotatedhex.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "rotatedhex.2oneinthree.jigsaw",
+    "label": "Rotated hexagonal, jigsaw, 2 colours, one in three",
+    "name": "Rotated hexagonal · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rotatedhex",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "rotatedhex.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "rotatedhex.3byshape.jigsaw",
+    "label": "Rotated hexagonal, jigsaw, 3 colours, by shape",
+    "name": "Rotated hexagonal · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rotatedhex",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "rotatedhex.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "rotatedtri.2oneinthreebyshape.jigsaw",
+    "label": "Rotated triangular, jigsaw, 2 colours, one in three, by shape",
+    "name": "Rotated triangular · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rotatedtri",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "rotatedtri.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "rotatedtri.3byshape.jigsaw",
+    "label": "Rotated triangular, jigsaw, 3 colours, by shape",
+    "name": "Rotated triangular · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rotatedtri",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "rotatedtri.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "threescaletri.3colours.jigsaw",
+    "label": "Three-scale triangular, jigsaw, 3 colours",
+    "name": "Three-scale triangular · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "threescaletri",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "threescaletri.3colours",
+      "size": 0
+    }
+  },
+  {
+    "key": "threescaletri.3colours2.jigsaw",
+    "label": "Three-scale triangular, jigsaw, 3 colours II",
+    "name": "Three-scale triangular · jigsaw, 3 colours II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "threescaletri",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours II",
+      "jigsaw": "threescaletri.3colours2",
+      "size": 0
+    }
+  },
+  {
+    "key": "threescaletri.3colours3.jigsaw",
+    "label": "Three-scale triangular, jigsaw, 3 colours III",
+    "name": "Three-scale triangular · jigsaw, 3 colours III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "threescaletri",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours III",
+      "jigsaw": "threescaletri.3colours3",
+      "size": 0
+    }
+  },
+  {
+    "key": "ammannbeenker.3apart.jigsaw",
+    "label": "Ammann–Beenker, jigsaw, 3 colours, apart",
+    "name": "Ammann–Beenker · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "ammannbeenker",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "ammannbeenker.3apart",
+      "size": 1
+    }
+  },
+  {
+    "key": "trapezoid.3apart.jigsaw",
+    "label": "Trapezoid, jigsaw, 3 colours, apart",
+    "name": "Trapezoid · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "trapezoid",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "trapezoid.3apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "rightisosceles.3apart.jigsaw",
+    "label": "Isosceles right triangle, jigsaw, 3 colours, apart",
+    "name": "Isosceles right triangle · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "rightisosceles",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "rightisosceles.3apart",
+      "size": 1
+    }
+  },
+  {
+    "key": "drafter.3apart.jigsaw",
+    "label": "30-60-90 triangle, jigsaw, 3 colours, apart",
+    "name": "30-60-90 triangle · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "drafter",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "drafter.3apart",
+      "size": 3
+    }
+  },
+  {
+    "key": "fish.3apart.jigsaw",
+    "label": "Right-angled fish, jigsaw, 3 colours, apart",
+    "name": "Right-angled fish · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "fish",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "fish.3apart",
+      "size": 1
+    }
+  },
+  {
+    "key": "kissingsquares.3apart.jigsaw",
+    "label": "Kissing squares, jigsaw, 3 colours, apart",
+    "name": "Kissing squares · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "kissingsquares",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "kissingsquares.3apart",
+      "size": 0
+    }
+  },
+  {
+    "key": "kissingtriangles.3apart.jigsaw",
+    "label": "Kissing triangles, jigsaw, 3 colours, apart",
+    "name": "Kissing triangles · jigsaw, 3 colours, apart",
+    "group": "jigsaw",
+    "decor": {
+      "of": "kissingtriangles",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, apart",
+      "jigsaw": "kissingtriangles.3apart",
+      "size": 1
+    }
   }
 ]

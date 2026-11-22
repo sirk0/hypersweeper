@@ -2,7 +2,9 @@
 // the uncovered side on their left. It is what "a tile sticks to the points and
 // edges already there" means — every snap anchors a tile vertex on a frontier
 // vertex — and the whole win condition: the region is tiled exactly when the
-// frontier is empty.
+// frontier is empty. On a jigsaw, a tile also sticks along an open edge that
+// carries a knob, a socket or an S seam (`sawOn`): the edge, cut so, holds it
+// as a corner does.
 //
 // Start: the region's own loops (outer counter-clockwise, holes clockwise).
 // Covering a polygon adds its edges reversed; an edge a→b and an edge b→a
@@ -20,7 +22,8 @@
 // a covered tile leaves each of its edges open carrying the mark the tile
 // across must have there (its own mark's partner), a tile lies along a marked
 // edge only with that very mark, end to end, and the rim carries none, so it
-// takes any.
+// takes any — but a jigsaw level's (`Level.regionMarks`), whose rim carries
+// the mark of the tile along it, as a tile's edge does.
 //
 // A tile of several pieces (the fish, the kissing squares) fits where each
 // of its pieces does, and covering it covers each in turn; it snaps on by any
@@ -53,7 +56,7 @@ import {
   type Shape,
   type XY,
 } from "./shape";
-import { NONE, partner } from "./marks";
+import { NONE, SEAM_FLAT, jigsaw, partner } from "./marks";
 
 export interface Edge {
   a: Cyc;
@@ -234,6 +237,14 @@ function distToSegment(p: XY, a: XY, b: XY): number {
   return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
 }
 
+/** Whether an edge marked `mark` holds a tile laid along it, as a corner
+ * does: a jigsaw edge cut as a knob, a socket or an S seam — not a straight
+ * one, which looks like any other straight edge. */
+function sawOn(mark: number): boolean {
+  const jig = jigsaw(mark);
+  return jig !== null && !("seam" in jig && jig.seam === SEAM_FLAT);
+}
+
 function midpoint(e: Edge): XY {
   return [(e.axy[0] + e.bxy[0]) / 2, (e.axy[1] + e.bxy[1]) / 2];
 }
@@ -246,6 +257,11 @@ function midpoint(e: Edge): XY {
 interface Sides {
   flip: boolean;
   base: Piece[];
+  /** The resting shape's centroid. */
+  centre: XY;
+  /** Its edges cut as a jigsaw's knob, socket or S seam (`sawOn`): where
+   * each starts, which way it runs (and its float angle), and its mark. */
+  saws: { u: Cyc; along: Cyc; angle: number; mark: number }[];
   at: {
     u: Cyc;
     leaving: Cyc;
@@ -291,7 +307,15 @@ function sidesOf(shape: Shape, flip: boolean): Sides {
     });
   });
   const inner = base.map((p) => interiorPoint(p.verts.map((u) => ring.toXY(u))));
-  const sides = { flip, base, at, inner };
+  const saws = base.flatMap(({ verts, marks }) =>
+    verts.flatMap((u, i) => {
+      const mark = marks?.[i];
+      if (mark === undefined || !sawOn(mark)) return [];
+      const along = ring.sub(verts[(i + 1) % verts.length]!, u);
+      return [{ u, along, angle: angle(along), mark }];
+    }),
+  );
+  const sides = { flip, base, centre: c, saws, at, inner };
   const byFlip = SIDES.get(shape) ?? new Map<boolean, Sides>();
   byFlip.set(flip, sides);
   SIDES.set(shape, byFlip);
@@ -305,11 +329,17 @@ export class Frontier {
   ) {}
 
   /** The frontier of an untouched region: its loops, interior on the left,
-   * with each loop's round edges, if it has any. */
-  static ofRegion(ring: Ring, loops: Cyc[][], curves?: readonly (readonly Bulge[])[]): Frontier {
+   * with each loop's round edges, if it has any, and its marks — the mark a
+   * tile laid along each edge must have — if it has any. */
+  static ofRegion(
+    ring: Ring,
+    loops: Cyc[][],
+    curves?: readonly (readonly Bulge[] | undefined)[],
+    marks?: readonly (readonly number[])[],
+  ): Frontier {
     return new Frontier(
       ring,
-      loops.flatMap((loop, i) => loopToEdges(ring, loop, curves?.[i])),
+      loops.flatMap((loop, i) => loopToEdges(ring, loop, curves?.[i], marks?.[i])),
     );
   }
 
@@ -573,7 +603,10 @@ export class Frontier {
    * it. A tile never sticks part-way along a straight run: the first square
    * goes into a corner of the region, the next into a corner the first one
    * made. Every tiling can still be laid that way — whatever is left uncovered
-   * always has a convex corner, and some tile of the tiling fills it. A tile
+   * always has a convex corner, and some tile of the tiling fills it. But on
+   * a jigsaw an open edge cut as a knob, a socket or an S seam holds a tile
+   * too, wherever along the frontier it lies: a tile laid along it whole, its
+   * own edge there marked the same (`sawOn`). A tile
    * corner meeting a side part-way (a T-junction) still fits; it just has to be
    * reached from one of the tile's other vertices. A tile of several pieces
    * may snap by any corner of any of them. Placements are returned as posed
@@ -618,6 +651,41 @@ export class Frontier {
       x1: near[0] + reach,
       y1: near[1] + reach,
     };
+    // the shape `base` turned by ζᵏ and moved by `t`, which lays its vertex
+    // `u` on the frontier point at `vxy`: tried, unless reached already from
+    // another of its corners or edges, or plainly on covered ground
+    const tryAt = (
+      flip: boolean,
+      base: Piece[],
+      inner: readonly (XY | null)[],
+      k: number,
+      t: Cyc,
+      vxy: XY,
+      u: Cyc,
+    ): void => {
+      // a placement is its way up, turn and move: one reached already from
+      // another of its corners is not built again
+      const pose = `${flip}|${((k % ring.n) + ring.n) % ring.n}|${ring.key(t)}`;
+      if (poses.has(pose)) return;
+      poses.add(pose);
+      // a quick no: some piece's inner point lands on covered ground (or off
+      // the region) — where a tile fits, each lies in the open uncovered
+      // area, well clear of the frontier
+      const a = (tau * k) / ring.n;
+      const [cos, sin] = [Math.cos(a), Math.sin(a)];
+      const [ox, oy] = ring.toXY(u);
+      const tx = vxy[0] - (ox * cos - oy * sin);
+      const ty = vxy[1] - (ox * sin + oy * cos);
+      if (
+        inner.some(
+          (q) =>
+            q !== null &&
+            this.windingAt([q[0] * cos - q[1] * sin + tx, q[0] * sin + q[1] * cos + ty]) !== 1,
+        )
+      )
+        return;
+      tryPose(moved(ring, base, k, t));
+    };
     for (const f of this.edgesNear(square)) {
       const d = ring.sub(f.b, f.a);
       const [dx0, dy0] = ring.toXY(d);
@@ -646,35 +714,32 @@ export class Frontier {
             }
             const z = ring.zeta(k);
             if (!sameDirection(ring, d, ring.mul(z, along))) continue;
-            // a placement is its way up, turn and move: one reached already
-            // from another of its corners is not built again
-            const t = ring.sub(v, ring.mul(z, o.u));
-            const pose = `${flip}|${((k % ring.n) + ring.n) % ring.n}|${ring.key(t)}`;
-            if (poses.has(pose)) continue;
-            poses.add(pose);
-            // a quick no: some piece's inner point lands on covered ground (or
-            // off the region) — where a tile fits, each lies in the open
-            // uncovered area, well clear of the frontier
-            {
-              const a = (tau * k) / ring.n;
-              const [cos, sin] = [Math.cos(a), Math.sin(a)];
-              const [ox, oy] = ring.toXY(o.u);
-              const tx = vxy[0] - (ox * cos - oy * sin);
-              const ty = vxy[1] - (ox * sin + oy * cos);
-              if (
-                inner.some(
-                  (q) =>
-                    q !== null &&
-                    this.windingAt([q[0] * cos - q[1] * sin + tx, q[0] * sin + q[1] * cos + ty]) !==
-                      1,
-                )
-              )
-                continue;
-            }
-            tryPose(moved(ring, base, k, t));
+            tryAt(flip, base, inner, k, ring.sub(v, ring.mul(z, o.u)), vxy, o.u);
           }
         }
       }
+      // a jigsaw edge holds a tile laid along it whole, its own edge there
+      // marked the same, wherever along the frontier it lies
+      if (!sawOn(f.mark)) continue;
+      const mid = midpoint(f);
+      if ((mid[0] - near[0]) ** 2 + (mid[1] - near[1]) ** 2 > r2) continue;
+      for (const { flip, base, centre, inner, saws } of sides)
+        for (const saw of saws) {
+          if (saw.mark !== f.mark) continue;
+          const k = Math.round(((dAngle - saw.angle) * ring.n) / tau);
+          if (turns && !turns.includes(((k % ring.n) + ring.n) % ring.n)) continue;
+          const z = ring.zeta(k);
+          if (!ring.eq(ring.mul(z, saw.along), d)) continue;
+          if (aim) {
+            const a = (tau * k) / ring.n;
+            const [ux, uy] = ring.toXY(saw.u);
+            const [dx, dy] = [centre[0] - ux, centre[1] - uy];
+            const x = f.axy[0] + dx * Math.cos(a) - dy * Math.sin(a);
+            const y = f.axy[1] + dx * Math.sin(a) + dy * Math.cos(a);
+            if (Math.hypot(x - aim.centre[0], y - aim.centre[1]) > aim.reach + 1e-6) continue;
+          }
+          tryAt(flip, base, inner, k, ring.sub(f.a, ring.mul(z, saw.u)), f.axy, saw.u);
+        }
     }
     return [...found.values()].filter((pieces) => pieces !== null);
   }

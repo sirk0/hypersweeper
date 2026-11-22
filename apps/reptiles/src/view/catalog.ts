@@ -104,7 +104,7 @@ export function levelCard(
       const r = document.createElement("span");
       r.className = "card-sets";
       r.textContent = `${sets} tile sets`;
-      r.title = "Plain tiles, matching rules and colourings";
+      r.title = "Plain tiles, matching rules, colourings and jigsaws";
       counts.append(r);
     }
     button.append(counts);

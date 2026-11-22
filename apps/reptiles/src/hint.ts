@@ -150,8 +150,8 @@ export class HintSolver {
 
   /** The frontier with `laid` down — those tiles' pieces covered. */
   frontierOf(laid: readonly Laid[]): Frontier {
-    const { ring, region, regionCurves } = this.level;
-    let f = Frontier.ofRegion(ring, region, regionCurves);
+    const { ring, region, regionCurves, regionMarks } = this.level;
+    let f = Frontier.ofRegion(ring, region, regionCurves, regionMarks);
     for (const t of laid) f = f.cover(t.pieces);
     return f;
   }
