@@ -40,11 +40,12 @@ some back off.
   the way), or turn on ✕ remove, the control after rotate (or X), and tap
   tiles — Escape, the control again, or picking up a tray tile ends that mode.
   A lifted tile dropped anywhere else it cannot land goes back where it was.
-- **Matching rules and colourings** — listed with the tiling they mark,
-  not as families of their own (`markedOf` in `levels.ts`; their `group` is
-  `rules` or `colourings`, not one of `GROUPS`), and laid on **every board**
-  of it that they make the same tray on (Boards, below): a level is a board
-  by a marking — plain, a matching rule or a colouring — so a tiling's page
+- **Matching rules, colourings and jigsaws** — listed with the tiling they
+  mark, not as families of their own (`markedOf` in `levels.ts`; their
+  `group` is `rules`, `colourings` or `jigsaw`, not one of `GROUPS`), and laid
+  on **every board** of it that they make the same tray on (Boards, below): a
+  level is a board by a marking — plain, a matching rule, a colouring or a
+  jigsaw — so a tiling's page
   picks the two apart (Screens, below). Each tile carries a **mark** on each edge, and a tile lands only
   where its marks meet their partners (the rim takes any), so a pattern no one
   tile can check is checked edge by edge. Every mark is drawn so that two
@@ -232,6 +233,34 @@ some back off.
     boards and two or three coloured, 29 in all, from 0.16 (the offset
     square's lines) to 1.55 (the three-scale triangular in three colours)
     measured.
+  - *Jigsaws* (`?level=squares.2apart.jigsaw`, `?level=hexagons.3apart.jigsaw`,
+    `?level=ammannbeenker.3apart.jigsaw`): a colouring again, in one colour
+    — each tile coloured by its shape, as on the plain board — with every
+    colour mark drawn as the edge's own outline instead (`jigsawOf` in
+    `levels.ts`, `knobMark`/`seamMark` in `marks.ts`). Each pair of colours
+    that meet is a knob shape of its own (a round head, a square one, an
+    arrowhead, two small heads, a dovetail, a wide flat head: six, for four
+    colours), standing out of the lower colour's tile and a socket in the
+    other's; an edge between two tiles of one colour is a seam — straight for
+    the first such colour, an S and a Z for the next two. Every knob is
+    symmetric about its edge's middle, so a mirror keeps it, and one tile's
+    knob is the very line of its neighbour's socket (`src/view/curve.ts`).
+    So it is the same rule, mark for mark, as the colouring — the same tray,
+    piles and turns — but for the **rim**, which is cut as the tiles along it
+    are (`Level.regionMarks`) where a coloured board's takes any: the rim
+    shows where the tiles along it go, and every jigsaw measures easier than
+    its colouring (403 of 403 boards; medians 1.97 and 1.57). A colouring
+    has no jigsaw where it cannot be drawn so: two colours that meet their
+    own on a level that flips (a mirror turns an S into a Z, but leaves a
+    colour as it is; 46 of them), or knobs that crowd an edge's at every
+    size (one, Klaassen's). A level's knobs are drawn at the largest of four
+    sizes (`KNOB_SIZES`) that keeps every tray tile's outline clear of
+    itself (`knobsClear`: no two edges' strokes within a fiftieth of an
+    edge), chosen as `npm run levels` writes the index and kept there
+    (`decor.size`), so no float decides it as the game builds a level; 129
+    of the 137 are full size, the kisrhombille's at 0.64. Each is on every
+    board its colouring is (`boardNumbers`), keyed `<colouring>.jigsaw` and
+    listed after the colourings on a tiling's page.
   A marked level is measured as any other (Difficulty, below), with no
   floor at its plain board's score: marks can make a board easier as well as
   harder.
@@ -347,12 +376,12 @@ its middle as fits clear of the rim — smaller, or off the middle, where it
 must (the kissing square chain, whose three touching points no one
 shrink keeps, too). Then the name, difficulty as Hypersweeper's
 three bars, how many boards and tile sets it has (a tile set is a card of its
-page's Tiles row: plain, a matching rule or a colouring), and the
+page's Tiles row: plain, a matching rule, a colouring or a jigsaw), and the
 stars earned of its levels; a tiling of one level (the P-pentomino) opens it, any
 other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
 top, as their outlines in a grid, one dealt at random; under them its
 markings in one row scrolling sideways — Plain first and picked, then its
-matching rules, then its colourings — each card the tray's tiles drawn big
+matching rules, then its colourings, then its jigsaws — each card the tray's tiles drawn big
 in a grid that fits them all (`trayIcon`), three cards to a row, no wider
 than leaves a row of them on screen under the boards on a short desktop
 window, never the board's outline, which is up top, with the level's difficulty and stars on the picked board; then
@@ -553,7 +582,8 @@ every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
 colouring's tiles in more ways or fewer: 104 of a thousand do): 891 boards
-past the first, 1628 levels in all. Run it after `npm run boards`,
+past the first, 1628 levels in all — and the jigsaws, on the boards their
+colourings are, 403 more: 2031. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -594,7 +624,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones. A level can also hold every vertex to a configuration
 (`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
 
-**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, every marking on every board of its tiling that it makes the same tray on, 1628 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 137 of those colourings again as jigsaws, every marking on every board of its tiling that it makes the same tray on, 2031 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -732,7 +762,7 @@ npm run boards       # find every tiling's boards past its first into src/boards
 npm run marked-boards # lay every matching rule and colouring on every board into src/markedBoards.json (half a minute)
 npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's, spiral's and rep-tile's colouring into src/aperiodicColourings.json (a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
-npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core)
+npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core; ONLY=missing measures only boards it does not list yet)
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
 ```
 
@@ -913,7 +943,12 @@ quick way to see the win state.
   short edges' — pointing along the tile's outline or against it: its
   partner points the other way, and a mirror (`mirrored`) turns it round;
   and a rule read off an aperiodic patch, `labelMark(cls, forward)`, an
-  arrow of any class, or with no way (`null`, its own partner). A
+  arrow of any class, or with no way (`null`, its own partner); and a
+  jigsaw's edges, `knobMark(shape, out, size)` — a knob or its socket, each
+  the other's partner — and `seamMark(seam, size)`, flat, S or Z, each its
+  own (a mirror turns an S into a Z). A jigsaw mark carries its level's knob
+  size only so a tile is drawn from its marks alone: every mark of a level is
+  one size. A
   `Piece` carries
   them as `marks`, edge for edge as it carries `curve`; `posed`, `moved`,
   `curveOnto` and `restFlat` keep them, `turnsOnto` (given the cell's marks)
@@ -922,6 +957,8 @@ quick way to see the win state.
   placements. The frontier treats a marked edge as a round one: each open edge
   holds the mark the tile across must bring (`partner`), a tile lies along it
   only with that mark, whole, and covering a tile leaves its marks' partners.
+  The rim takes any mark, but a jigsaw's (`Level.regionMarks`, passed to
+  `Frontier.ofRegion`), which asks for the mark of the tile along it.
 - `src/colourings.ts` — **the colourings**: `paintings` tries every linear
   colouring of a periodic board in 2 or 3 colours — a tile of translation
   class t at lattice point (i, j) is colour (a·i + b·j + c[t]) mod k — with
@@ -1198,7 +1235,13 @@ quick way to see the win state.
   SVG path, each round edge a cubic arc, laid out in board space before any
   y flip), `edgePath` for an open edge, and `reachPoints` (corners and points
   along the arcs: what a round tile's bounds and tray circle are taken from).
-  Every tile, the region, the open edges and the icons are paths drawn
+  A jigsaw edge is drawn from its mark, the same way: its knob or socket
+  (`KNOB_HALVES`, each knob's first half, the second its mirror image) or an
+  S seam, laid along the edge and shrunk to the mark's size about its
+  middle, its ends left on the corners; `jigsawPoints` samples it, for the
+  bounds, the card pictures and `knobsClear`. Every tile, the region, the
+  open edges (a frontier edge holds the mark the tile laid there must have,
+  and runs the way that tile's edge does) and the icons are paths drawn
   through it.
 - `src/view/decor.ts` — drawing a tile's marks over it, so that tiles that
   meet as they should make one shape across their edge: a colour as a half

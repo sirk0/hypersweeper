@@ -20,7 +20,8 @@
 // a covered tile leaves each of its edges open carrying the mark the tile
 // across must have there (its own mark's partner), a tile lies along a marked
 // edge only with that very mark, end to end, and the rim carries none, so it
-// takes any.
+// takes any — but a jigsaw level's (`Level.regionMarks`), whose rim carries
+// the mark of the tile along it, as a tile's edge does.
 //
 // A tile of several pieces (the fish, the kissing squares) fits where each
 // of its pieces does, and covering it covers each in turn; it snaps on by any
@@ -305,11 +306,17 @@ export class Frontier {
   ) {}
 
   /** The frontier of an untouched region: its loops, interior on the left,
-   * with each loop's round edges, if it has any. */
-  static ofRegion(ring: Ring, loops: Cyc[][], curves?: readonly (readonly Bulge[])[]): Frontier {
+   * with each loop's round edges, if it has any, and its marks — the mark a
+   * tile laid along each edge must have — if it has any. */
+  static ofRegion(
+    ring: Ring,
+    loops: Cyc[][],
+    curves?: readonly (readonly Bulge[] | undefined)[],
+    marks?: readonly (readonly number[])[],
+  ): Frontier {
     return new Frontier(
       ring,
-      loops.flatMap((loop, i) => loopToEdges(ring, loop, curves?.[i])),
+      loops.flatMap((loop, i) => loopToEdges(ring, loop, curves?.[i], marks?.[i])),
     );
   }
 

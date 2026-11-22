@@ -72,7 +72,7 @@ export class Puzzle {
 
   /** The open edges, for drawing where the next tile can go — each with its
    * bulge, on a level of round tiles. */
-  get openEdges(): readonly { axy: XY; bxy: XY; bulge: Bulge }[] {
+  get openEdges(): readonly { axy: XY; bxy: XY; bulge: Bulge; mark: number }[] {
     return this.frontier.edges;
   }
 
@@ -444,6 +444,7 @@ export class Puzzle {
 
   /** The frontier with nothing down: the region's rim, round where it is. */
   private untouched(): Frontier {
-    return Frontier.ofRegion(this.level.ring, this.level.region, this.level.regionCurves);
+    const { ring, region, regionCurves, regionMarks } = this.level;
+    return Frontier.ofRegion(ring, region, regionCurves, regionMarks);
   }
 }

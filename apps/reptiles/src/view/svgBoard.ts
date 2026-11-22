@@ -355,11 +355,12 @@ export class SvgBoard {
       ];
     });
     this.space = spacingOf(this.reach);
-    const { ring, region, regionCurves } = puzzle.level;
+    const { ring, region, regionCurves, regionMarks } = puzzle.level;
     const xy = region.flatMap((loop, i) =>
       reachPoints(
         loop.map((v) => ring.toXY(v)),
         regionCurves?.[i],
+        regionMarks?.[i],
       ),
     );
     this.regionBox = [
@@ -866,7 +867,7 @@ export class SvgBoard {
 
   /** Redraw the settled picture: region, tiles, open edges, tray. */
   draw(): void {
-    const { ring, region, regionCurves } = this.puzzle.level;
+    const { ring, region, regionCurves, regionMarks } = this.puzzle.level;
     this.still.replaceChildren();
     // the tiling past a finished board, under everything on it
     if (this.beyond) this.still.appendChild(this.beyond.path);
@@ -875,6 +876,8 @@ export class SvgBoard {
         outlinePath(
           loop.map((v) => ring.toXY(v)),
           regionCurves?.[i],
+          undefined,
+          regionMarks?.[i],
         ),
       )
       .join("");
@@ -889,7 +892,7 @@ export class SvgBoard {
       decor(loops, placed, undefined, markUnit(this.puzzle.level), colour);
     }
     for (const e of this.puzzle.openEdges) {
-      el("path", { d: edgePath(e.axy, e.bxy, e.bulge), class: "open" }, this.still);
+      el("path", { d: edgePath(e.axy, e.bxy, e.bulge, e.mark), class: "open" }, this.still);
     }
     // the hint over everything on the board, so it shows whole: a tile to
     // take off ringed, or a tile to lay outlined where it lands
