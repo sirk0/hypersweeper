@@ -10,6 +10,7 @@ import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./l
 import { startCloudStars, syncCloudStars } from "./cloudStars";
 import { haptic, setHapticsEnabled } from "./haptics";
 import {
+  allStars,
   bestTimeFor,
   formatTime,
   onStarsMerged,
@@ -17,7 +18,7 @@ import {
   recordTime,
   starsFor,
 } from "./progress";
-import { forgetBoard, hasBoard, loadBoard, saveBoard } from "./saved";
+import { forgetBoard, hasBoard, keptCount, loadBoard, saveBoard } from "./saved";
 import { noteFinishForReview } from "./review";
 import { Puzzle } from "./puzzle";
 import { renderCatalog, type Tally } from "./view/catalog";
@@ -29,7 +30,8 @@ import {
   WIDE_QUERY,
   type MenuGroup,
 } from "./view/groups";
-import { renderHelp } from "./view/help";
+import { renderHelp, withKeys } from "./view/help";
+import { markTutorialSeen, tutorialSeen, tutorialSteps } from "./tutorial";
 import { renderHome } from "./view/home";
 import { barsIcon, fillGlyphs, trayIcon } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
@@ -47,6 +49,10 @@ const next = byId<HTMLButtonElement>("next");
 const hintButton = byId<HTMLButtonElement>("hint");
 const undoButton = byId<HTMLButtonElement>("undo");
 const redoButton = byId<HTMLButtonElement>("redo");
+const randomButton = byId<HTMLButtonElement>("random");
+const coach = byId("coach");
+const coachNext = byId<HTMLButtonElement>("coach-next");
+const coachSkip = byId<HTMLButtonElement>("coach-skip");
 const thinking = byId("thinking");
 
 /** Works out the hint for the board in play, in the background after every
@@ -184,7 +190,7 @@ function goHome(push = true): void {
 
 function goHelp(push = true): void {
   if (push) history.pushState(null, "", "?help");
-  renderHelp(byId("help-body"));
+  renderHelp(byId("help-body"), () => openTutorial(0));
   show("help", "help");
 }
 
@@ -291,7 +297,13 @@ function route(): void {
   const query = new URLSearchParams(location.search);
   const level = levelByKey(query.get("level") ?? "");
   if (level) open(level, false);
-  else if (["tilings", "catalog", "figures", "figure"].some((q) => query.has(q))) goCatalog(false);
+  else if (query.has("tutorial")) openTutorial(Number(query.get("tutorial")) || 0, false);
+  else if (location.search === "" && firstRun()) {
+    // a player with nothing to show yet: the tutorial, once, in place of home
+    history.replaceState(null, "", "?tutorial");
+    openTutorial(0, false);
+  } else if (["tilings", "catalog", "figures", "figure"].some((q) => query.has(q)))
+    goCatalog(false);
   else if (query.has("group")) goCatalog(false, query.get("group"));
   else if (query.has("tiling")) {
     const tiling = levelByKey(query.get("tiling") ?? "");
@@ -336,6 +348,10 @@ interface Session {
    * it — what the win card says of the time. */
   bestBefore: number | null;
   newBest: boolean;
+  /** The tutorial's step this board is (src/tutorial.ts), or null for a
+   * level: a step is not starred, timed, kept or hinted — finishing it moves
+   * the coach on. */
+  tutorial: number | null;
 }
 
 let session: Session | null = null;
@@ -351,6 +367,7 @@ function elapsed(s: Session): number {
  * finished, it opens afresh. */
 function keep(s: Session): void {
   s.kept = s.puzzle.layout;
+  if (s.tutorial !== null) return;
   if (s.puzzle.won) forgetBoard(s.puzzle.level.key);
   else saveBoard(s.puzzle.level, s.puzzle.layout, elapsed(s), s.hints);
 }
@@ -390,7 +407,7 @@ function changed(): void {
       s.board.hint = null;
       s.board.draw();
     }
-    if (!puzzle.won) hinter.update(puzzle.level, laidOf(s));
+    if (!puzzle.won && s.tutorial === null) hinter.update(puzzle.level, laidOf(s));
   }
   hintButton.disabled = puzzle.won;
   undoButton.disabled = !puzzle.canUndo;
@@ -402,10 +419,14 @@ function changed(): void {
   if (puzzle.won && !s.wasWon) {
     playSound({ kind: "win", pan: s.control.lastPan() });
     haptic("win");
-    noteFinishForReview();
+    if (s.tutorial === null) noteFinishForReview();
   }
   s.wasWon = puzzle.won;
-  won.hidden = !puzzle.won || s.dismissed;
+  won.hidden = !puzzle.won || s.dismissed || s.tutorial !== null;
+  if (s.tutorial !== null) {
+    drawCoach(s.tutorial, puzzle.won);
+    return;
+  }
   if (!puzzle.won) {
     // a tile taken off a finished board: the tiling round it goes with it
     s.extending = false;
@@ -461,15 +482,18 @@ function changed(): void {
 }
 
 /** Open `level`: as it was left, where a board of it is kept (saved.ts),
- * unless `fresh` — else a new puzzle, a new board in the stage. */
-function open(level: Level, push = true, fresh = false): void {
+ * unless `fresh` — else a new puzzle, a new board in the stage. Given
+ * `tutorial`, the level is that step of the tutorial: opened with its own
+ * tiles down, and never kept. */
+function open(level: Level, push = true, fresh = false, tutorial: number | null = null): void {
   if (session) keep(session);
   if (push) history.pushState(null, "", `?level=${level.key}`);
   show("game");
   placeName();
   const puzzle = new Puzzle(level);
-  const saved = fresh ? null : loadBoard(level);
-  if (fresh) forgetBoard(level.key);
+  const saved = fresh || tutorial !== null ? null : loadBoard(level);
+  if (fresh && tutorial === null) forgetBoard(level.key);
+  if (tutorial !== null) puzzle.resume(tutorialSteps()[tutorial]!.laid);
   if (saved) {
     try {
       puzzle.resume(saved.tiles);
@@ -497,7 +521,12 @@ function open(level: Level, push = true, fresh = false): void {
     kept: puzzle.layout,
     bestBefore: null,
     newBest: false,
+    tutorial,
   };
+  // the tutorial has its coach in place of the hint and the die
+  coach.hidden = tutorial === null;
+  hintButton.hidden = tutorial !== null;
+  randomButton.hidden = tutorial !== null;
   setThinking(false);
   const name = byId("level");
   name.textContent = level.name;
@@ -508,10 +537,61 @@ function open(level: Level, push = true, fresh = false): void {
   changed();
 }
 
-/** Start the level again, from an empty board: what was kept of it goes. */
+/** Start the level again, from an empty board: what was kept of it goes. A
+ * tutorial step starts again as it opened. */
 function restart(): void {
-  if (session) open(session.puzzle.level, false, true);
+  if (!session) return;
+  if (session.tutorial !== null) openTutorial(session.tutorial, false);
+  else open(session.puzzle.level, false, true);
 }
+
+// -- the first-run tutorial (src/tutorial.ts) --------------------------------
+
+/** Whether the tutorial should open by itself: never opened before, and the
+ * player has nothing to show yet — no stars, no board in play. */
+function firstRun(): boolean {
+  return !tutorialSeen() && allStars().size === 0 && keptCount() === 0;
+}
+
+/** Open the tutorial at step `step` — a history entry of its own only when
+ * it is first opened; its steps follow each other in place. */
+function openTutorial(step: number, push = true): void {
+  const steps = tutorialSteps();
+  const at = Math.min(Math.max(0, Math.floor(step)), steps.length - 1);
+  markTutorialSeen();
+  const query = at === 0 ? "?tutorial" : `?tutorial=${at}`;
+  if (push) history.pushState(null, "", query);
+  else history.replaceState(null, "", query);
+  open(steps[at]!.level, false, true, at);
+}
+
+/** The coach card for step `step`: what to do, or, the board covered, that it
+ * is done and Next — after the last, a level to play or home. */
+function drawCoach(step: number, done: boolean): void {
+  const steps = tutorialSteps();
+  const { title, body, done: said } = steps[step]!;
+  const last = step === steps.length - 1;
+  byId("coach-step").textContent = `${step + 1} of ${steps.length} · ${title}`;
+  const text =
+    done && last
+      ? `${said} That's all you need. Undo — the hooked arrow, or [Z] — takes back a ` +
+        "move, and the bulb shows a hint when you are stuck."
+      : done
+        ? said
+        : body;
+  byId("coach-body").replaceChildren(...withKeys(text));
+  coachNext.hidden = !done;
+  coachNext.textContent = last ? "Play a level" : "Next";
+  coachSkip.textContent = done && last ? "Home" : "Skip tutorial";
+}
+
+coachNext.addEventListener("click", () => {
+  const s = session;
+  if (!s || s.tutorial === null) return;
+  if (s.tutorial < tutorialSteps().length - 1) openTutorial(s.tutorial + 1, false);
+  else playBand("easy");
+});
+coachSkip.addEventListener("click", () => goHome());
 
 function setThinking(on: boolean): void {
   hintButton.classList.toggle("thinking", on);
@@ -524,7 +604,8 @@ function setThinking(on: boolean): void {
  * and, once shown, no third star on this board. */
 async function showHint(): Promise<void> {
   const s = session;
-  if (!s || s.puzzle.won || hintButton.classList.contains("thinking")) return;
+  if (!s || s.tutorial !== null || s.puzzle.won || hintButton.classList.contains("thinking"))
+    return;
   if (!hinter.ready) setThinking(true);
   const hint = await hinter.hint();
   if (session !== s) return;
@@ -585,7 +666,7 @@ document
   ?.addEventListener("click", () => goSettings());
 document.querySelector("#home [data-action=help]")?.addEventListener("click", () => goHelp());
 // Another level of the same difficulty as this one, however it was picked.
-byId("random").addEventListener("click", () => {
+randomButton.addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));
 });
 byId("again").addEventListener("click", restart);

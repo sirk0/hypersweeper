@@ -34,7 +34,8 @@
         - what is kept on the device: the stars, in localStorage under
           "rep-tiles.stars", and the best times, under "rep-tiles.times"
           (src/progress.ts), the boards left half-covered, under
-          "rep-tiles.boards" (src/saved.ts), and the settings, under
+          "rep-tiles.boards" (src/saved.ts), whether the tutorial has been seen,
+          under "rep-tiles.tutorial" (src/tutorial.ts), and the settings, under
           "rep-tiles.settings" (src/preferences.ts) — through
           packages/platform's storage guard, and never sent;
         - Settings › Check for updates fetches the site's own version stamp
@@ -229,9 +230,10 @@
         <h2 id="device">On your device</h2>
         <p>
           The stars you have earned on each level, your best time on each, the tiles of a board you
-          left half-covered and your choices in Settings are saved in your browser's local storage,
-          and the game's files are cached so it works offline. None of that is sent anywhere.
-          Clearing the site's data in your browser deletes it.
+          left half-covered, whether you have seen the tutorial and your choices in Settings are
+          saved in your browser's local storage, and the game's files are cached so it works
+          offline. None of that is sent anywhere. Clearing the site's data in your browser deletes
+          it.
         </p>
         <p>
           Settings › Check for updates asks the website for its current version number. It sends

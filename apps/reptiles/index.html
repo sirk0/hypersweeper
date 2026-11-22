@@ -173,6 +173,16 @@
           </button>
         </div>
       </header>
+      <!-- The first-run tutorial's coach (src/tutorial.ts): what to do on this
+           board, Skip, and Next once it is done. Only in ?tutorial. -->
+      <section class="coach" id="coach" aria-live="polite" hidden>
+        <p class="coach-step" id="coach-step"></p>
+        <p class="coach-body" id="coach-body"></p>
+        <div class="coach-actions">
+          <button type="button" id="coach-skip">Skip tutorial</button>
+          <button type="button" id="coach-next" class="primary" hidden>Next</button>
+        </div>
+      </section>
       <main id="stage">
         <p class="board-name">
           <span class="level" id="level"></span>

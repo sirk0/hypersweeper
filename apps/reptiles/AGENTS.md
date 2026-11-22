@@ -393,6 +393,29 @@ outside it). Each move between screens
 is a history entry, so the browser's Back works (a tile's move is not: undo
 is the header's).
 
+**The first-run tutorial** (`?tutorial`, `src/tutorial.ts`) — four tiny
+boards, one lesson each: *Drag* (a 2×2 of squares, nothing to turn), *Turn*
+(five triangles in a row, three up as held and two down, a 60° turn), *Flip*
+(an S and a Z tetromino making an arch: the mirror image, no turn) and *Take
+off* (dominoes on an L, opened with one laid across its corner, leaving two
+squares no domino fits). Each is a level made from its exact cells as any
+other is (`tutorialLevel` in `levels.ts`), but never listed, dealt, measured,
+starred, timed, kept or hinted: a coach card between the header and the board
+(`#coach`, which takes its room from the board) says what to do, with Skip
+tutorial, and once the board is covered says so with Next — after the last,
+Play a level (an easy one, dealt as Easy deals) and Home. The hint and the die
+are hidden there; Restart puts a step back as it opened; the steps follow one
+another in place (`?tutorial=<step>`). It opens by itself in place of home for
+a newcomer — never opened before, no stars, no board kept (`firstRun`) — and is
+marked seen the moment it opens (`rep-tiles.tutorial`), so leaving it
+part-way is leaving it for good; How to play's **Play the tutorial** opens it
+again. `tests/unit/tutorial.test.ts` holds each board to its lesson (Drag fits
+every square as held; Turn three of five; Flip one of two, the other only
+flipped; Take off cannot be finished until its domino is off), and
+`smoke.spec.ts` plays it through. Every other e2e test starts with it seen
+(`storageState` in `playwright.config.ts`), so `/` is home; the store
+screenshots set it seen too.
+
 **Sound** — Hypersweeper's synthesiser, shared as `@tiling/sound`
 (`packages/sound`), in its three themes — Chime, Arcade and **Blocks**, the
 default here (`DEFAULT_THEME` in `src/sound.ts`) — or Off, picked in
@@ -1149,8 +1172,12 @@ quick way to see the win state.
   the game works without it; the old finished-levels list reads as one star
   each), and the fastest finish per level (`rep-tiles.times`, milliseconds).
 - `src/saved.ts` — the boards in play, kept per level (`saveBoard`,
-  `loadBoard`, `forgetBoard`, `hasBoard`; `fingerprint`), held by
+  `loadBoard`, `forgetBoard`, `hasBoard`, `keptCount`; `fingerprint`), held by
   `tests/unit/history.test.ts` with undo and redo.
+- `src/tutorial.ts` — the first-run tutorial's four boards
+  (`tutorialSteps`) and whether it has been seen (`tutorialSeen`,
+  `markTutorialSeen`); the coach and the routing are `main.ts`'s
+  (`openTutorial`, `drawCoach`, `firstRun`).
 - `src/puzzle.ts` — pure game state: `place`, `lift`, `snap` (in the held
   orientation only — `selfTurns` in `shape.ts` says which turns leave a tile
   unchanged — and, on a level with a rule, only edge to edge and where every

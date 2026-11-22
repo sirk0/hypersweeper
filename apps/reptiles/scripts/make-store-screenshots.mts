@@ -116,6 +116,8 @@ async function shoot(browser: Browser, device: Device, scene: Scene, out: string
       "rep-tiles.settings",
       JSON.stringify({ scheme: "light", sound: "off" }),
     );
+    // home, not the first-run tutorial that opens in its place for a newcomer
+    window.localStorage.setItem("rep-tiles.tutorial", JSON.stringify({ seen: true }));
     (window as { reptilesDevice?: string }).reptilesDevice = native;
   }, device.native);
   const page = await context.newPage();

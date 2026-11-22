@@ -158,6 +158,12 @@ export function forgetBoard(levelKey: string): void {
   if (all.delete(levelKey)) writeAll(all);
 }
 
+/** How many boards are kept: a player with any is no newcomer (the tutorial
+ * opens by itself only for one with none). */
+export function keptCount(): number {
+  return readAll().size;
+}
+
 /** Whether a board is kept for the level with this key — Play reads Resume. */
 export function hasBoard(levelKey: string): boolean {
   return readAll().has(levelKey);

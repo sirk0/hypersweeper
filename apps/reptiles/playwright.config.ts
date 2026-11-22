@@ -24,6 +24,19 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}/`,
     trace: "retain-on-failure",
+    // The first-run tutorial (src/tutorial.ts) opens in place of home for a
+    // player with nothing yet, which every fresh test context is: each starts
+    // with it seen, so `/` is home. Its own tests clear this
+    // (`test.use({ storageState: … })` in smoke.spec.ts).
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: `http://localhost:${PORT}`,
+          localStorage: [{ name: "rep-tiles.tutorial", value: '{"seen":true}' }],
+        },
+      ],
+    },
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },

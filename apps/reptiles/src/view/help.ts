@@ -6,7 +6,7 @@
 // and the stars are `src/puzzle.ts` (`won`, `stars`, undo and redo), a board
 // kept `src/saved.ts`, the best time `src/progress.ts`, the gestures
 // `src/input/drag.ts`, the keys `onKey` in `src/main.ts`, and the header
-// `index.html`.
+// `index.html`. Its first button opens the tutorial (`src/tutorial.ts`).
 
 interface Section {
   heading: string;
@@ -119,9 +119,19 @@ const SECTIONS: Section[] = [
   },
 ];
 
-/** Draw How to play into `host`. */
-export function renderHelp(host: HTMLElement): void {
+/** Draw How to play into `host` — and, given `tutorial`, a button that
+ * plays the first-run tutorial again. */
+export function renderHelp(host: HTMLElement, tutorial?: () => void): void {
   host.replaceChildren();
+  if (tutorial) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "primary help-tutorial";
+    button.dataset["action"] = "tutorial";
+    button.textContent = "Play the tutorial";
+    button.addEventListener("click", tutorial);
+    host.append(button);
+  }
   for (const section of SECTIONS) {
     const heading = document.createElement("h2");
     heading.textContent = section.heading;
@@ -149,7 +159,7 @@ export function renderHelp(host: HTMLElement): void {
 }
 
 /** `body` as text, each `[K]` in it a `<kbd>`. */
-function withKeys(body: string): (string | HTMLElement)[] {
+export function withKeys(body: string): (string | HTMLElement)[] {
   return body.split(/\[([^\]]+)\]/).map((part, i) => {
     if (i % 2 === 0) return part;
     const key = document.createElement("kbd");
