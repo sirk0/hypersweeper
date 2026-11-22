@@ -1,5 +1,5 @@
 // Rep-tiles' icons: the favicon (SVG), the PNGs the web manifest and iOS ask
-// for, and the desktop app's, all drawn from one picture — a rep-tile. An
+// for, the desktop app's, and the iPhone app's icon and launch image, all drawn from one picture — a rep-tile. An
 // equilateral triangle is four half-size copies of itself, which is what the
 // game's name means; the four pieces take the game's tile colours
 // (src/styles.css), on its page colour.
@@ -17,6 +17,11 @@ import { chromium } from "@playwright/test";
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), "../public");
 const PACKAGING = join(dirname(fileURLToPath(import.meta.url)), "../packaging");
+const ASSETS = join(dirname(fileURLToPath(import.meta.url)), "../ios/App/App/Assets.xcassets");
+/** The page colour (src/styles.css --page, capacitor.config.json's
+ * backgroundColor): what the launch image is drawn on, so the app opens on the
+ * colour the game is. */
+const LAUNCH_PAGE = "#f5ead8";
 
 const PAGE = "#f4f1ea";
 const INK = "#2b2a27";
@@ -91,5 +96,32 @@ await page.setContent(
   ).replace("<svg ", `<svg width="824" height="824" `)}</body></html>`,
 );
 await page.screenshot({ path: join(PACKAGING, "icon.png"), omitBackground: true });
+
+// The iPhone app's icon (ios/App/App/Assets.xcassets/AppIcon.appiconset): one
+// 1024 px universal image, the full-bleed square iOS rounds itself, opaque —
+// App Store Connect refuses an icon with an alpha channel, and a screenshot
+// taken without `omitBackground` has none.
+await page.setViewportSize({ width: 1024, height: 1024 });
+await page.setContent(
+  `<html><body style="margin:0">${svg(true).replace(
+    "<svg ",
+    `<svg width="1024" height="1024" `,
+  )}</body></html>`,
+);
+await page.screenshot({ path: join(ASSETS, "AppIcon.appiconset/AppIcon-512@2x.png") });
+
+// The launch image (Splash.imageset, which LaunchScreen.storyboard shows
+// aspect-filled): the rounded icon small in the middle of the page colour, as
+// Hypersweeper's is, 2732 px square so it covers the largest iPad either way
+// round.
+await page.setViewportSize({ width: 2732, height: 2732 });
+await page.setContent(
+  `<html><body style="margin:0;background:${LAUNCH_PAGE};display:grid;place-items:center;height:2732px">${svg(
+    false,
+  ).replace("<svg ", `<svg width="690" height="690" `)}</body></html>`,
+);
+await page.screenshot({ path: join(ASSETS, "Splash.imageset/splash-2732x2732.png") });
 await browser.close();
-console.log(`wrote favicon.svg and four PNGs to ${PUBLIC}, and the desktop icon to ${PACKAGING}`);
+console.log(
+  `wrote favicon.svg and four PNGs to ${PUBLIC}, the desktop icon to ${PACKAGING}, and the iPhone app's icon and launch image to ${ASSETS}`,
+);

@@ -7,7 +7,10 @@ import { attachDrag, type DragControl } from "./input/drag";
 import type { Laid } from "./hint";
 import { Hinter } from "./hintClient";
 import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./levels";
-import { recordStars, starsFor } from "./progress";
+import { startCloudStars, syncCloudStars } from "./cloudStars";
+import { haptic, setHapticsEnabled } from "./haptics";
+import { onStarsMerged, recordStars, starsFor } from "./progress";
+import { noteFinishForReview } from "./review";
 import { Puzzle } from "./puzzle";
 import { renderCatalog, type Tally } from "./view/catalog";
 import {
@@ -59,6 +62,9 @@ applyScheme(preferences().scheme);
 // (a browser starts no audio without a gesture: `unlockAudio`).
 applySound(preferences().sound, preferences().volume);
 unlockAudio();
+// Haptics as Settings has it (src/haptics.ts: only an iPhone in the App Store
+// app, or an Android browser, has anything to feel).
+setHapticsEnabled(preferences().haptics);
 fillGlyphs(document);
 
 /** The desktop layout (view/groups.ts): a sidebar beside every screen but a
@@ -342,7 +348,11 @@ function changed(): void {
   hintButton.disabled = puzzle.won;
   count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
   if (!puzzle.won) s.dismissed = false;
-  if (puzzle.won && !s.wasWon) playSound({ kind: "win", pan: s.control.lastPan() });
+  if (puzzle.won && !s.wasWon) {
+    playSound({ kind: "win", pan: s.control.lastPan() });
+    haptic("win");
+    noteFinishForReview();
+  }
   s.wasWon = puzzle.won;
   won.hidden = !puzzle.won || s.dismissed;
   if (!puzzle.won) {
@@ -380,7 +390,10 @@ function changed(): void {
       return li;
     }),
   );
-  if (stars > starsFor(puzzle.level.key)) recordStars(puzzle.level.key, stars);
+  if (stars > starsFor(puzzle.level.key)) {
+    recordStars(puzzle.level.key, stars);
+    syncCloudStars();
+  }
 }
 
 /** Start `level` afresh: a new puzzle, a new board in the stage. */
@@ -462,6 +475,7 @@ function extendTiling(s: Session): void {
  * comes or goes with its switch. */
 function settingsChanged(now: Preferences): void {
   applyScheme(now.scheme);
+  setHapticsEnabled(now.haptics);
   const s = session;
   if (!s || !s.puzzle.won) return;
   if (now.tilingPastBoard) extendTiling(s);
@@ -550,6 +564,13 @@ twoColumns.addEventListener("change", () => {
 });
 
 route();
+// The stars in iCloud (the App Store app only): another device's arrive at
+// launch and later, and a screen that counts them is drawn again.
+onStarsMerged(() => {
+  const screen = document.body.dataset["screen"];
+  if (screen === "home" || screen === "catalog" || screen === "tiling") route();
+});
+startCloudStars();
 // The first screen is up: the signal the desktop shell's smoke run waits for
 // (shells/desktop/main.mjs), as Hypersweeper's main.ts sets it.
 requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
@@ -567,6 +588,14 @@ if (import.meta.env.DEV) {
         if (!session) return;
         session.puzzle.layOwn();
         session.puzzle.solve();
+        session.board.draw();
+        changed();
+      },
+      /** Lay `n` of the board's own tiles, from its bottom-left: a board in
+       * play, for the store screenshots (scripts/make-store-screenshots.mts). */
+      lay(n: number): void {
+        if (!session) return;
+        session.puzzle.layOwn(n);
         session.board.draw();
         changed();
       },

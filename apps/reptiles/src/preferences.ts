@@ -24,6 +24,11 @@ export interface Preferences {
   sound: string;
   /** How loud it plays, 0..1. */
   volume: number;
+  /** Whether a tile landing and a finished board are felt (src/haptics.ts).
+   * On unless the player turns it off; Settings offers it only where
+   * something can buzz — an iPhone in the App Store app, or an Android
+   * browser. */
+  haptics: boolean;
 }
 
 const DEFAULTS: Preferences = {
@@ -31,6 +36,7 @@ const DEFAULTS: Preferences = {
   scheme: "auto",
   sound: DEFAULT_THEME,
   volume: DEFAULT_VOLUME,
+  haptics: true,
 };
 
 /** A stored theme, or the default for anything this build does not know. An
@@ -54,6 +60,7 @@ function load(): Preferences {
     sound: soundOf(stored?.["sound"]),
     volume:
       typeof stored?.["volume"] === "number" ? clampVolume(stored["volume"]) : DEFAULTS.volume,
+    haptics: typeof stored?.["haptics"] === "boolean" ? stored["haptics"] : DEFAULTS.haptics,
   };
 }
 

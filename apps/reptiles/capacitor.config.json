@@ -1,0 +1,10 @@
+{
+  "appId": "io.github.sirk0.reptiles",
+  "appName": "Rep-tiles",
+  "webDir": "dist",
+  "backgroundColor": "#f5ead8",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false
+  }
+}

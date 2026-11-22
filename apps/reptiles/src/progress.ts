@@ -44,13 +44,46 @@ export function starsFor(level: string): number {
   return best.get(level) ?? 0;
 }
 
-/** Record a finish; only an improvement is kept. */
-export function recordStars(level: string, stars: number): void {
-  if (stars <= starsFor(level)) return;
-  best.set(level, stars);
+function save(): void {
   try {
     storage()?.setItem(KEY, JSON.stringify(Object.fromEntries(best)));
   } catch {
     // kept in memory only
   }
+}
+
+/** Every level's best — what iCloud is kept in step with (cloudStars.ts). */
+export function allStars(): ReadonlyMap<string, number> {
+  return best;
+}
+
+const listeners: (() => void)[] = [];
+
+/** Hear of stars arriving from elsewhere (another device, through iCloud), so
+ * a screen showing them can be drawn again. A finish here is not told: the
+ * screen it happens on draws its own. */
+export function onStarsMerged(listener: () => void): void {
+  listeners.push(listener);
+}
+
+/** Record a finish; only an improvement is kept. */
+export function recordStars(level: string, stars: number): void {
+  if (stars <= starsFor(level)) return;
+  best.set(level, stars);
+  save();
+}
+
+/** Take in another record's stars — each level's most — and tell the
+ * listeners if anything rose. */
+export function mergeStars(from: ReadonlyMap<string, number>): void {
+  let changed = false;
+  for (const [level, n] of from) {
+    if (n >= 1 && n <= 3 && n > starsFor(level)) {
+      best.set(level, Math.floor(n));
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  save();
+  for (const listener of listeners) listener();
 }

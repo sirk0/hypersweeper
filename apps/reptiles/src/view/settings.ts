@@ -1,5 +1,5 @@
 // The settings screen: the player's choices (src/preferences.ts) — the colour
-// scheme, the sound theme and its volume, then the board — then what this build is, whether a newer one is
+// scheme, the sound theme and its volume, haptics where the device can buzz, then the board — then what this build is, whether a newer one is
 // deployed, and the privacy policy. The check itself is the shared one (`@tiling/platform`'s
 // update.ts, Hypersweeper's too): it asks the server's `version.json`, not the
 // service worker, and only then gets the worker onto the new build. A packaged
@@ -16,6 +16,7 @@ import {
   swatchLevels,
   type SoundPreset,
 } from "@tiling/sound";
+import { hapticsSupported } from "../haptics";
 import { preferences, setPreferences, type Preferences } from "../preferences";
 import { applySound, playSound, THEME_HINTS } from "../sound";
 import { deviceScheme, SCHEME_LABELS, SCHEMES, type SchemePref } from "../scheme";
@@ -49,6 +50,27 @@ export function renderSettings(
   const soundHeading = document.createElement("h2");
   soundHeading.textContent = "Sound";
   host.append(soundHeading, soundList(changed));
+  // Only where something can buzz: a switch for feedback the device cannot
+  // give is a promise the game can't keep.
+  if (hapticsSupported()) {
+    const hapticsList = document.createElement("ul");
+    hapticsList.className = "settings-list";
+    hapticsList.append(
+      item(
+        toggle(
+          "haptics",
+          "Haptics",
+          "Buzzes when a tile lands and when a board is finished.",
+          preferences().haptics,
+          (on) => {
+            setPreferences({ haptics: on });
+            changed(preferences());
+          },
+        ),
+      ),
+    );
+    host.append(hapticsList);
+  }
 
   const boardHeading = document.createElement("h2");
   boardHeading.textContent = "Board";

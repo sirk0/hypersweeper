@@ -12,3 +12,7 @@ src/boards.json
 dev-dist/
 test-results/
 playwright-report/
+
+# The Capacitor iPhone project: Xcode and CocoaPods files, and the synced web
+# build in ios/App/App/public — none of it Prettier's to format.
+ios/

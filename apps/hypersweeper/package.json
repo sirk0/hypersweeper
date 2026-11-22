@@ -30,6 +30,7 @@
     "@capacitor/haptics": "^8.0.2",
     "@tiling/data": "*",
     "@tiling/geometry": "*",
+    "@tiling/native": "*",
     "@tiling/platform": "*",
     "@tiling/sound": "*",
     "three": "^0.171.0"

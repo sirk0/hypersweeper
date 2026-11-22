@@ -1,0 +1,28 @@
+{
+  "name": "@tiling/native",
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "What a game asks of the native shell it may be running in (the Capacitor iPhone app): haptics, the App Store's rating prompt, and iCloud's key-value store. Everywhere else each is absent and does nothing.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@tiling/platform": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -369,6 +369,19 @@ jobs:
           node ../../scripts/check-offline-assets.mjs dist
       - name: Desktop shell unit tests
         run: node --test "../../shells/desktop/test/*.test.mjs"
+      # A game with an iPhone app (a capacitor.config.json and an ios/
+      # project, as Rep-tiles has): the sync web-checks makes for
+      # Hypersweeper's — config resolved, the packaged bundle just built copied
+      # into ios/App, plugin list rebuilt — so a broken config fails on every
+      # push rather than on whoever next opens Xcode.
+      - name: iOS project syncs
+        run: |
+          if [ ! -f capacitor.config.json ]; then
+            echo "no iPhone app"
+            exit 0
+          fi
+          npx cap sync ios
+          test -f ios/App/App/public/index.html
 
   game-e2e:
     # Each of those games' Playwright smoke test against its production bundle

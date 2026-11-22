@@ -26,6 +26,7 @@
 // background, or the wheel over it scrolls it along.
 
 import { centroidOf, sides, signedArea, type Piece, type XY } from "../geometry/shape";
+import { haptic } from "../haptics";
 import { playSound } from "../sound";
 import type { Placed, Puzzle } from "../puzzle";
 import { loopsOf, shiftLoops, type Loop } from "../view/curve";
@@ -337,6 +338,9 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       // putting a lifted tile back is silent.
       lastPan = board.panAt(centroidOf(loopsOf(ring, ghost).map((l) => l.xy)));
       playSound({ kind: "place", sides: sides(puzzle.level.tiles[d.kind]!), pan: lastPan });
+      // The last tile is felt as the finish instead (main.ts), not a tap and
+      // then the finish on top of it.
+      if (!puzzle.won) haptic("place");
     } else if (d.origin && !discard) {
       puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
     }

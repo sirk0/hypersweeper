@@ -84,7 +84,7 @@ before. Until then the new game copies nothing from another game: it imports
 packages by name (`@tiling/geometry`), and
 `packages/geometry/tests/boundaries.test.ts` fails on a deep import or one
 game importing another. When the new game needs something a game already
-has — Rep-tiles' exact geometry, Hypersweeper's update check, haptics or share
+has — Rep-tiles' exact geometry, Hypersweeper's device flags or share
 links — the job is to move it into a package, or a new `packages/<name>/`,
 with both games importing it.
 
@@ -100,8 +100,9 @@ with both games importing it.
 | `bump-version.yml` | bumps its patch version on a push that changes its folder, `packages/` or `data/`. Its first push lands at its own version, 0.1.0. With `"sharedVersion": true` in its `packaging.json` (as Rep-tiles has) it has Hypersweeper's version instead, written into its `package.json` on every Hypersweeper bump (`scripts/bump_version.py`), and set it to Hypersweeper's to start |
 | `make desktop-run GAME=<key>`, `make mac-app GAME=<key>` | the offline desktop app (`shells/desktop/README.md`) |
 
-The game's own iPhone app is a separate recipe ("A second game's iPhone app"
-in `apps/hypersweeper/ios/README.md`).
+The game's own iPhone app is a separate recipe ("Another game's iPhone app"
+in `apps/hypersweeper/ios/README.md`); Rep-tiles' (`apps/reptiles/ios/`) is the
+worked example.
 
 ## Removing a game
 

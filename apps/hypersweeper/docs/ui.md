@@ -973,7 +973,7 @@ class: it comes off again after ~420 ms, so the spec arms a `MutationObserver`
 before the move rather than polling for it.
 
 **Haptics.** A plain boolean, and the one row that is **conditional**:
-`hapticsSupported()` (`src/haptics.ts`) offers it only where something can
+`hapticsSupported()` (`src/haptics.ts`, the mechanism in `@tiling/native`) offers it only where something can
 actually buzz — the native iOS shell, or a *mobile* browser with
 `navigator.vibrate`, which in practice means Android. A desktop browser defines
 `navigator.vibrate` with no hardware behind it, and iOS Safari implements no web
