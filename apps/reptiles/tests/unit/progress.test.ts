@@ -48,4 +48,32 @@ describe("progress", () => {
     });
     expect(p.starsFor("a")).toBe(0);
   });
+
+  it("merges another record's stars in, keeping each level's most, and says so", async () => {
+    const items: Record<string, string> = { "rep-tiles.stars": '{"a": 2, "b": 3}' };
+    const p = await freshProgress(items);
+    let heard = 0;
+    p.onStarsMerged(() => heard++);
+    p.mergeStars(
+      new Map([
+        ["a", 1],
+        ["b", 3],
+      ]),
+    );
+    expect(heard).toBe(0); // nothing rose
+    p.mergeStars(
+      new Map([
+        ["a", 3],
+        ["c", 1],
+        ["d", 7],
+      ]),
+    );
+    expect(heard).toBe(1);
+    expect(JSON.parse(items["rep-tiles.stars"]!)).toEqual({ a: 3, b: 3, c: 1 });
+    expect([...p.allStars()]).toEqual([
+      ["a", 3],
+      ["b", 3],
+      ["c", 1],
+    ]);
+  });
 });

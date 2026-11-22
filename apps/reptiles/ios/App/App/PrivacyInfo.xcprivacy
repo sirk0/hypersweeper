@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The app's privacy manifest. No tracking, no data collected: the packaged
+     game sends nothing to us or anyone else (Rep-tiles has no analytics at
+     all, and scripts/check-offline-assets.mjs fails the build over any remote
+     URL). One thing leaves the device, to Apple: the stars, kept in the
+     player's own iCloud key-value store, which we cannot read — not
+     collection by the app. The app's own Swift code calls no required-reason
+     API; Capacitor's pods ship their own manifests for theirs. Keep this in
+     step with the App Store Connect privacy label ("Data Not Collected"). -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

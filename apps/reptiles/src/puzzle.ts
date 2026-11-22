@@ -284,15 +284,31 @@ export class Puzzle {
   }
 
   /** Lay every one of the board's own tiles (`level.cells`) that still fits
-   * — all of them on an empty board — as the tray holds it, the cheap part
+   * (all of them on an empty board; given a `limit`, at most that many, from
+   * the board's bottom-left) as the tray holds it, the cheap part
    * of finishing a board the player has not wandered off; `solve` does the
    * rest. A dev aid, for a board whose blind search is slow (the
    * Socolar–Taylor tile's, its nineteen pieces at every one of hundreds of
    * corners). */
-  layOwn(): void {
+  layOwn(limit = Infinity): void {
     const { ring, tiles } = this.level;
-    for (const cell of this.level.cells) {
+    let cells = this.level.cells;
+    if (limit < cells.length) {
+      // Part of the board: the tiles nearest its bottom-left corner first, so
+      // what is laid reads as a board being covered from one side (the store
+      // screenshots, scripts/make-store-screenshots.mts). Floats only order
+      // tiles here; nothing is placed or keyed by them.
+      const reach = (cell: Piece[]): number => {
+        const xy = cell.flatMap((p) => p.verts.map((v) => ring.toXY(v)));
+        return xy.reduce((sum, [x, y]) => sum + x + y, 0) / xy.length;
+      };
+      cells = [...cells].sort((a, b) => reach(a) - reach(b));
+    }
+    let laid = 0;
+    for (const cell of cells) {
+      if (laid >= limit) break;
       if (!this.frontier.fits(cell)) continue;
+      laid++;
       sit: for (const [kind, shape] of tiles.entries()) {
         for (const flip of [false, true]) {
           const pieces = posed(shape, { rot: 0, flip, t: ring.zero });

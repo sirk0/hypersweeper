@@ -373,7 +373,7 @@ while working here:
   `__APP_PACKAGED__`, the "Check for updates" row on the settings page. It is
   the *only* build-time thing this app knows about either shell — resist adding
   a second branch; if a shell needs different behaviour, the shell should
-  provide it. (Runtime is a different matter: `haptics.ts` asks Capacitor at
+  provide it. (Runtime is a different matter: `haptics.ts`, through `@tiling/native`, asks Capacitor at
   call time whether it is running natively, because the *same* bundle has to
   work in a browser tab and on a phone. What the page cannot detect, the shell
   tells it: the iOS shell sets `window.hypersweeperDevice` and, on the Mac,

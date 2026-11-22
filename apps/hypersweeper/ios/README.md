@@ -87,7 +87,8 @@ worker and the settings page drops its "Check for updates" row.
 
 ### The haptics, which are the point
 
-`apps/hypersweeper/src/haptics.ts` is the single seam, and it picks its mechanism at call
+`apps/hypersweeper/src/haptics.ts` is the single seam — it names the events and their feel;
+the mechanism, shared with Rep-tiles, is `@tiling/native` (`packages/native/src/haptics.ts`) — and it picks its mechanism at call
 time. Inside this app `Capacitor.isNativePlatform()` is true and, **on an
 iPhone**, the game events become real Taptic calls. The same app on an iPad or
 a Mac has no Taptic Engine. The page can't tell those apart from the user agent
@@ -490,7 +491,8 @@ far inside (a few kilobytes per device, at most ~60 KB of best times).
 - **`CloudRecordPlugin.swift`** is a local Capacitor plugin, like the Game
   Center one, and only moves strings: `read` returns every key, `write` sets or
   removes keys, and a `change` event fires when iCloud delivers another
-  device's write. All of the merging is the page's (`apps/hypersweeper/src/cloudRecord.ts`;
+  device's write. The page reaches it through `@tiling/native`
+  (`packages/native/src/cloudStore.ts`, shared with Rep-tiles). All of the merging is the page's (`apps/hypersweeper/src/cloudRecord.ts`;
   "The record in iCloud" in [`apps/hypersweeper/docs/ui.md`](../docs/ui.md) has the
   rules).
 - **Only the app registers it** (`BridgeViewController.capacitorDidLoad`, under
@@ -517,7 +519,8 @@ far inside (a few kilobytes per device, at most ~60 KB of best times).
 
 The App Store app asks for a rating once, after the player's third win.
 
-- **The page counts** (`apps/hypersweeper/src/review.ts`). `countWin` in
+- **The page counts** (`apps/hypersweeper/src/review.ts`, over `reviewPrompt` in
+  `@tiling/native`, which Rep-tiles shares). `countWin` in
   `main.ts` files each win, and on the third — `REVIEW_AFTER_WINS`, pinned by
   `apps/hypersweeper/tests/unit/review.test.ts` — it calls the plugin at the
   beat the win card opens on. The count (`ms:review` in local storage) stops
@@ -532,30 +535,34 @@ The App Store app asks for a rating once, after the player's third win.
   (`Capacitor.isPluginAvailable("Review")`), so the website, the PWA and the
   Electron app neither count nor ask.
 
-## A second game's iPhone app
+## Another game's iPhone app
 
 This project is Hypersweeper's alone — its App Clip, Game Center
 achievements, iCloud record and sticker pack are all this game's — which is why
 it lives under `apps/hypersweeper/`. Another game gets an iPhone app of its
-own, not a target in this one. Nothing is built for one yet; when it is:
+own, not a target in this one. Rep-tiles has one: `apps/reptiles/ios/`, and
+[its README](../../reptiles/ios/README.md) is the worked example. For the next
+game:
 
-1. **Capacitor in the game's folder.** In `apps/<game>/`, run `npx cap init`
-   to write its `capacitor.config.json` (its own `appId`, `webDir: "dist"`,
-   and `backgroundColor` from its `packaging.json`), then `npx cap add ios`.
-   That creates `apps/<game>/ios/`, Capacitor's default location. Add
-   `@capacitor/core` and `@capacitor/ios` to the game's `package.json`; npm
-   hoists them to the root `node_modules`, which the generated Podfile then
-   points to.
-2. **Build packaged, then sync.** `VITE_PACKAGED=1 npm run build`, run
-   `node scripts/check-offline-assets.mjs apps/<game>/dist` (it reads the
-   game's `bundledAssets`), then `npx cap sync ios`. That is what
-   `scripts/build-ios-app.sh` does for Hypersweeper; give it a game argument
-   the way `build-mac-app.sh` has `--game`, rather than copying it.
-3. **Its own App Store record and bundle ID**, its own icons (drawn by the
-   game's `npm run icons`), and — if it should ship from CI — a matrix entry
-   in `app-store.yml`, which today archives only this project.
-4. **CI:** a cap-sync step like `web-checks`' for Hypersweeper, so a broken
-   config fails on every push rather than on whoever next opens Xcode.
+1. **Capacitor in the game's folder.** Write `apps/<game>/capacitor.config.json`
+   (its own `appId`, `webDir: "dist"`, `backgroundColor` from its
+   `packaging.json`), add `@capacitor/core`, `@capacitor/haptics` and
+   `@tiling/native` to the game's `dependencies` and `@capacitor/cli` and
+   `@capacitor/ios` to its `devDependencies`, then build it packaged and run
+   `npx cap add ios --packagemanager CocoaPods` in `apps/<game>/` (Capacitor 8
+   otherwise picks Swift Package Manager, which the build script and the
+   workflow do not expect). Then make Rep-tiles' edits: the Podfile's iOS 18
+   floor, `Version.xcconfig` as the project's base configuration, the team,
+   `Info.plist`'s keys, a `BridgeViewController` that names the device, the
+   privacy manifest.
+2. **Build, sync, archive** with what is already there:
+   `scripts/build-ios-app.sh --game <game>` (`make ios-app GAME=<game>`), and
+   in `app-store.yml` an entry in the `game` input and its line in the
+   platforms step.
+3. **Its own App Store record and bundle ID**, and its own icons (drawn by the
+   game's `npm run icons`).
+4. **CI** needs nothing: `game-checks` syncs the iOS project of any game with a
+   `capacitor.config.json`.
 
 ## Releasing
 
@@ -577,7 +584,8 @@ On a `macos-26` GitHub-hosted runner, with the newest stable Xcode, it:
    profiles are stored anywhere. The team is read from the project's
    `DEVELOPMENT_TEAM`.
 
-The upload job is titled with the version it uploads (`Upload 0.2.133 (both)`),
+The upload job is titled with the game and the version it uploads
+(`Upload hypersweeper 0.2.133 (both)`),
 read from `apps/hypersweeper/package.json` by a few-second job before it: a run's own title is
 fixed before anything is checked out, so the job's is the one that can say it.
 The job summary is headed with the version and build number, and lists what was
@@ -607,7 +615,8 @@ bundles are attached as an artifact.
 ### Uploading a build
 
 Go to Actions → **App Store upload** → *Run workflow*, keep the branch on
-`master`, and pick `both`, `ios` or `mac` (`ios` includes the App Clip, which
+`master`, pick the game (`hypersweeper`, or `reptiles` for Rep-tiles' app, see
+its README), and pick `both`, `ios` or `mac` (`ios` includes the App Clip, which
 cannot be uploaded apart from it). A run started from any other branch
 fails at its first step. Two runs never overlap: a second one waits for the
 first to finish.

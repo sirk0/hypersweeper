@@ -337,7 +337,8 @@ corner (Hypersweeper's icon) opens Settings (`?settings`), which has the
 player's choices — the **colour scheme**, Auto (the device's
 `prefers-color-scheme`, the default), Light or Dark, as a three-way pill
 (`src/scheme.ts`, below), the **sound** theme — Chime, Arcade, Blocks (the
-default) or Off — and its volume (below), and the tiling past a finished board, a switch, off by
+default) or Off — and its volume (below), **Haptics** where the device can buzz (an
+iPhone in the app, an Android browser; on by default), and the tiling past a finished board, a switch, off by
 default (below) — then shows the version, checks for updates (the shared check in `@tiling/platform`) and
 links the **privacy policy** (`public/privacy.html`, served as `/privacy`, in
 a new tab); the update row and the policy link are left out of a packaged
@@ -612,8 +613,13 @@ its ✕) and every level — every marking on every board — and tiling page op
 (`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
-its own `Rep-tiles` folder there. No iPhone app yet (a recipe is in
-`apps/hypersweeper/ios/README.md`, "A second game's iPhone app").
+its own `Rep-tiles` folder there. It is an **iPhone and iPad app** too,
+`apps/reptiles/ios/` — `make ios-app GAME=reptiles`, uploaded by
+`app-store.yml` with `game: reptiles` — which buzzes as a tile lands and a
+board is finished (Settings › **Haptics**, shown only where something can
+buzz), keeps the stars in iCloud and asks for a rating after the third finished
+board: see [`ios/README.md`](ios/README.md), and `tests/e2e/native.spec.ts`,
+which pins all three over Capacitor's real bridge.
 
 ## Deploy
 
@@ -1089,12 +1095,20 @@ quick way to see the win state.
   `grownExtension` keeps the first patch that reaches far enough.
   `tests/unit/tilingExtension.test.ts` tests it on Hypersweeper's boards.
 - `src/preferences.ts` — the player's choices from Settings (the colour
-  scheme, sound, the tiling past a finished board), in
+  scheme, sound, haptics, the tiling past a finished board), in
   `localStorage` through the shared guard, defaults where it is unreadable.
 - `src/sound.ts` — what each move sounds like (`RepSound`: a tile placed,
   a turn, a win, the settings' sample) as `@tiling/sound`'s figures,
   `playSound`, `applySound` (theme and volume), the default theme and each
   theme's line in Settings.
+- `src/haptics.ts` — what a move feels like (`RepHaptic`: a tile placed, a
+  win) as `@tiling/native`'s `HapticSpec`s, and the device flag the iOS shell
+  sets (`window.reptilesDevice`); the mechanism, and whether anything can be
+  felt, are the package's. Called beside the sounds, from `src/input/drag.ts`
+  and `changed` in `src/main.ts`.
+- `src/review.ts`, `src/cloudStars.ts` — the iPhone app's rating prompt, and
+  the stars kept in iCloud (each level's most, merged both ways); both do
+  nothing outside the app (`ios/README.md`).
 - `src/scheme.ts` — the colour scheme: `applyScheme` sets `data-scheme` on
   `<html>` (none for Auto) and points the `theme-color` metas at the page
   colour. The dark colours are in `styles.css` twice, with the same

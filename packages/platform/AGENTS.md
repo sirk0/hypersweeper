@@ -25,8 +25,10 @@ iCloud record; Rep-tiles' stars (`apps/reptiles/src/progress.ts`); both games'
 settings page, for the update check.
 
 A module joins this package when a **second** game needs it (see "Packages" in
-the root `AGENTS.md`). Hypersweeper's `haptics.ts`, `device.ts` and `share.ts`
-are the likely next ones.
+the root `AGENTS.md`). Hypersweeper's `device.ts` and `share.ts` are the likely
+next ones. What a game asks of its native shell — haptics, the rating prompt,
+iCloud — went to a package of its own, `@tiling/native` (`packages/native/`), so
+a game that never ships natively takes on no Capacitor dependency.
 
 ```sh
 cd packages/platform && npm run typecheck && npm run test

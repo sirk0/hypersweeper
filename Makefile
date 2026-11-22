@@ -116,25 +116,27 @@ desktop-icon:    ## regenerate Hypersweeper's icons, the desktop one included (m
 	cd apps/hypersweeper && npm run icons
 
 # --- iOS app -----------------------------------------------------------------
-# The TypeScript app packaged as an iPhone app: the built bundle is synced into
-# the Capacitor project in apps/hypersweeper/ios/ and Xcode signs and installs it. This is the
-# build that can buzz — @capacitor/haptics reaches the Taptic Engine, which no
-# web API on iOS can. Needs a Mac with Xcode; see apps/hypersweeper/ios/README.md.
+# A game packaged as an iPhone app: the built bundle is synced into the
+# Capacitor project in apps/$(GAME)/ios/ and Xcode signs and installs it. This
+# is the build that can buzz — @capacitor/haptics reaches the Taptic Engine,
+# which no web API on iOS can. GAME picks the game, as for the Mac app —
+# `make ios-app GAME=reptiles`. Needs a Mac with Xcode; see
+# apps/hypersweeper/ios/README.md and apps/reptiles/ios/README.md.
 
-ios-app:         ## build the game and open the iPhone project in Xcode (macOS)
-	scripts/build-ios-app.sh --open
+ios-app:         ## build $(GAME) and open its iPhone project in Xcode (macOS; GAME=hypersweeper|reptiles)
+	scripts/build-ios-app.sh --game $(GAME) --open
 
-ios-run:         ## build and install straight onto a connected iPhone (macOS)
-	scripts/build-ios-app.sh --run
+ios-run:         ## build $(GAME) and install it straight onto a connected iPhone (macOS)
+	scripts/build-ios-app.sh --game $(GAME) --run
 
-ios-prepare:     ## build the bundle and sync it into apps/hypersweeper/ios/ (works anywhere)
-	scripts/build-ios-app.sh --prepare-only
+ios-prepare:     ## build $(GAME)'s bundle and sync it into apps/$(GAME)/ios/ (works anywhere)
+	scripts/build-ios-app.sh --game $(GAME) --prepare-only
 
 ios-install:     ## install the Capacitor tooling (the npm workspace at the repo root)
 	npm install
 
-ios-icon:        ## regenerate the app icons and launch image from the vector source (macOS + Xcode)
-	cd apps/hypersweeper && npm run icons
+ios-icon:        ## regenerate $(GAME)'s app icons and launch image from the vector source
+	cd apps/$(GAME) && npm run icons
 
 ios-stickers:    ## render the iMessage sticker pack from the game's boards (SWIFTSHADER=1 with no GPU)
 	cd apps/hypersweeper && npm run stickers
@@ -152,4 +154,4 @@ reptiles-e2e:    ## Rep-tiles' Playwright smoke test against its production bund
 	cd apps/reptiles && npm run e2e
 
 clean:           ## remove build artifacts
-	rm -rf build shells/desktop/app shells/desktop/app.json shells/desktop/resources apps/hypersweeper/ios/App/App/public
+	rm -rf build shells/desktop/app shells/desktop/app.json shells/desktop/resources apps/*/ios/App/App/public

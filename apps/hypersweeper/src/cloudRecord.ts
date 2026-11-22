@@ -1,4 +1,3 @@
-import { Capacitor, registerPlugin, type PluginListenerHandle } from "@capacitor/core";
 import {
   emptyProgress,
   loadRecord,
@@ -10,6 +9,7 @@ import {
 import { mergeStars, parseStars, replaceStars, storedStars, type Stars } from "./favourites";
 import { catchUpGameCenter } from "./gameCenter";
 import { TOP_N, parseEntries, replaceBoards, storedBoards, type ScoreEntry } from "./leaderboard";
+import { cloudRead, cloudStoreSupported, cloudWrite, onCloudChange } from "@tiling/native";
 import { readObject, storage } from "@tiling/platform";
 
 // iCloud, where the App Store builds keep the record in step.
@@ -58,16 +58,9 @@ import { readObject, storage } from "@tiling/platform";
 // iCloud gives the app 1 MB and 1024 keys. A device key is a few kilobytes and
 // the shared list at most ~60 KB with every board played, so neither is close.
 
-interface CloudRecordPlugin {
-  read(): Promise<{ values: Record<string, string> }>;
-  write(options: { values: Record<string, string | null> }): Promise<void>;
-  addListener(
-    event: "change",
-    listener: (change: { keys: string[] }) => void,
-  ): Promise<PluginListenerHandle>;
-}
-
-const Native = registerPlugin<CloudRecordPlugin>("CloudRecord");
+// The plugin itself — `read`, `write` and the `change` event — is reached
+// through `@tiling/native` (packages/native/src/cloudStore.ts), shared with
+// Rep-tiles; everything below is how Hypersweeper's record merges.
 
 /** iCloud's keys. */
 const SCORES = "scores";
@@ -388,11 +381,7 @@ function saveState(state: SyncState): void {
 
 /** Whether this shell keeps the record in iCloud. */
 export function cloudRecordSupported(): boolean {
-  try {
-    return Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("CloudRecord");
-  } catch {
-    return false;
-  }
+  return cloudStoreSupported();
 }
 
 /** Clears waiting to reach the next sync. */
@@ -400,8 +389,7 @@ const pendingClears: Partial<Resets> = {};
 
 async function runSync(): Promise<void> {
   if (!storage()) return; // nothing local to sync
-  const { values } = await Native.read();
-  const cloud = values ?? {};
+  const cloud = await cloudRead();
   // Achievements first: reading the record seeds it from the best times when
   // there is none, and that must be *this* device's times, not the ones the
   // merge is about to bring in from the others.
@@ -436,7 +424,7 @@ async function runSync(): Promise<void> {
   if (result.boardsChanged) replaceBoards(result.boards);
   if (result.starsChanged) replaceStars(result.stars);
   saveState(result.state);
-  if (Object.keys(result.writes).length > 0) await Native.write({ values: result.writes });
+  if (Object.keys(result.writes).length > 0) await cloudWrite(result.writes);
   if (result.recordChanged) catchUpGameCenter();
 }
 
@@ -464,7 +452,7 @@ export function syncCloudRecord(): void {
 export function startCloudRecord(): void {
   if (started || !cloudRecordSupported()) return;
   started = true;
-  void Native.addListener("change", () => syncCloudRecord()).catch(() => {});
+  onCloudChange(() => syncCloudRecord());
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") syncCloudRecord();
   });
