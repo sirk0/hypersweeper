@@ -78,7 +78,10 @@ and when the app comes back to the foreground. The merge takes the larger count
 per level, so it is idempotent and each device writes the whole map. Stars are
 never taken away, so nothing needs Hypersweeper's reset dates. A screen that
 counts stars (home, Tilings, a tiling's page) is drawn again when another
-device's arrive.
+device's arrive. A second key, `times`, keeps each level's fastest finish
+(milliseconds) the same way, the merge taking the least; it is written only
+when iCloud is missing some of it. A board left half-covered (`src/saved.ts`)
+stays on the device: it is not synced.
 
 ### The rating prompt
 
@@ -92,8 +95,8 @@ sheet shows, and never shows one in TestFlight.
 <https://tiling-games.pages.dev/rep-tiles/privacy> (`apps/reptiles/public/privacy.html`).
 Under **App Privacy**, answer *No, we do not collect data from this app*: the
 label reads **Data Not Collected**, which `PrivacyInfo.xcprivacy` says too.
-Rep-tiles has no analytics at all. The stars go to the player's own iCloud
-key-value store, which we cannot read, so that is not collection.
+Rep-tiles has no analytics at all. The stars and best times go to the
+player's own iCloud key-value store, which we cannot read, so that is not collection.
 
 ### The store listing
 

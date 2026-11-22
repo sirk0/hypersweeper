@@ -19,6 +19,7 @@
 
 import { BARS, bandOf, type Band } from "../difficulty";
 import { boardKeys, levelByKey, markedOf, type Level } from "../levels";
+import { formatTime } from "../progress";
 import { cardArt } from "./cardArt";
 import { barsIcon, outlineIcon, starRow, trayIcon } from "./icons";
 
@@ -78,6 +79,11 @@ export interface PickerOptions {
   tilings: Level[];
   /** Stars earned on a level, by key. */
   stars: (key: string) => number;
+  /** A level's fastest finish, in milliseconds, or null: Play names it. */
+  best?: (key: string) => number | null;
+  /** Whether a board of the level is kept half-covered (saved.ts): Play
+   * reads Resume. */
+  inPlay?: (key: string) => boolean;
   play: (level: Level) => void;
   /** The level picked when the page was last left (`?…&pick=<key>`), or
    * none: a random board then, plain. */
@@ -226,7 +232,14 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
     ]
       .filter(Boolean)
       .join(" · ");
-    go.append("Play", bandIcon(band), what);
+    const best = options.best?.(level.key) ?? null;
+    if (best !== null) {
+      const time = document.createElement("span");
+      time.className = "play-best";
+      time.textContent = `best ${formatTime(best)}`;
+      what.append(" · ", time);
+    }
+    go.append(options.inPlay?.(level.key) ? "Resume" : "Play", bandIcon(band), what);
     go.addEventListener("click", () => play(level));
     bar.append(go);
 

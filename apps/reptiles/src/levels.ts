@@ -504,6 +504,13 @@ function makeLevel(
   };
 }
 
+/** A board of the first-run tutorial (src/tutorial.ts): a level made from
+ * its exact cells like any other, one piece each, but never listed, dealt or
+ * measured. */
+export function tutorialLevel(key: string, label: string, ring: Ring, cells: Cyc[][]): Level {
+  return makeLevel(key, label, ring, whole(cells), "regular", [], label);
+}
+
 /** A level on a `box`-edge square window of one of Hypersweeper's periodic
  * tilings (see `templateWindow`), keyed and labelled as the tiling is. A
  * uniform tiling is named by its one vertex configuration; a 2-uniform one by

@@ -76,4 +76,45 @@ describe("progress", () => {
       ["c", 1],
     ]);
   });
+
+  it("keeps each level's fastest finish under its own key, and merges the least in", async () => {
+    const items: Record<string, string> = {
+      "rep-tiles.times": '{"a": 90000, "b": -4, "c": "fast", "d": 61234.6}',
+    };
+    const p = await freshProgress(items);
+    expect(["a", "b", "c", "d", "e"].map(p.bestTimeFor)).toEqual([90000, null, null, 61235, null]);
+    expect(p.recordTime("a", 95000)).toBe(false);
+    expect(p.recordTime("a", 80000)).toBe(true);
+    expect(p.recordTime("e", 12000)).toBe(true);
+    expect(p.recordTime("f", Number.NaN)).toBe(false);
+    expect(JSON.parse(items["rep-tiles.times"]!)).toEqual({ a: 80000, d: 61235, e: 12000 });
+    // the stars are untouched
+    expect(items["rep-tiles.stars"]).toBeUndefined();
+
+    let heard = 0;
+    p.onStarsMerged(() => heard++);
+    p.mergeTimes(new Map([["a", 85000]]));
+    expect(heard).toBe(0); // nothing fell
+    p.mergeTimes(
+      new Map([
+        ["a", 70000],
+        ["g", 5000],
+        ["h", 0],
+      ]),
+    );
+    expect(heard).toBe(1);
+    expect(Object.fromEntries(p.allTimes())).toEqual({ a: 70000, d: 61235, e: 12000, g: 5000 });
+  });
+
+  it("formats a time as minutes and seconds", async () => {
+    const p = await freshProgress({});
+    expect([0, 999, 5000, 65_400, 600_000, 3_725_000].map(p.formatTime)).toEqual([
+      "0:00",
+      "0:00",
+      "0:05",
+      "1:05",
+      "10:00",
+      "62:05",
+    ]);
+  });
 });

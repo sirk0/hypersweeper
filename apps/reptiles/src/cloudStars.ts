@@ -1,8 +1,8 @@
 import { cloudRead, cloudStoreSupported, cloudWrite, onCloudChange } from "@tiling/native";
-import { allStars, mergeStars } from "./progress";
+import { allStars, allTimes, isTime, mergeStars, mergeTimes } from "./progress";
 
-// The stars in iCloud, where the App Store app keeps them in step across the
-// player's iPhone and iPad and through a reinstall.
+// The stars in iCloud, and the best times, where the App Store app keeps them
+// in step across the player's iPhone and iPad and through a reinstall.
 //
 // The stars live in `localStorage` (progress.ts), one device's. In the App
 // Store app the native `CloudRecord` plugin
@@ -19,8 +19,13 @@ import { allStars, mergeStars } from "./progress";
 // merges again and writes back what was lost. Stars are never taken away, so
 // there is nothing a merge cannot express. A thousand-odd levels at a few
 // characters each is well inside iCloud's 1 MB.
+//
+// **And one key, `times`**: every level's fastest finish, `{ level: ms }`,
+// merged the same way but keeping the least per level — idempotent too, and a
+// best time is never made slower.
 
 const KEY = "stars";
+const TIMES_KEY = "times";
 
 /** The stars a stored string holds; anything unreadable is none. */
 export function parseCloudStars(raw: string | undefined): Map<string, number> {
@@ -55,11 +60,48 @@ export function mergeCloudStars(
   return { merged, localBehind, cloudBehind };
 }
 
+/** The best times a stored string holds; anything unreadable is none. */
+export function parseCloudTimes(raw: string | undefined): Map<string, number> {
+  const out = new Map<string, number>();
+  if (!raw) return out;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return out;
+    for (const [level, ms] of Object.entries(parsed))
+      if (isTime(ms)) out.set(level, Math.round(ms));
+  } catch {
+    // unreadable: none
+  }
+  return out;
+}
+
+/** The two records of best times merged — each level's least — and whether
+ * either side is missing any of it. */
+export function mergeCloudTimes(
+  local: ReadonlyMap<string, number>,
+  cloud: ReadonlyMap<string, number>,
+): { merged: Map<string, number>; localBehind: boolean; cloudBehind: boolean } {
+  const merged = new Map(local);
+  for (const [level, ms] of cloud) merged.set(level, Math.min(merged.get(level) ?? Infinity, ms));
+  let localBehind = false;
+  let cloudBehind = false;
+  for (const [level, ms] of merged) {
+    if ((local.get(level) ?? Infinity) > ms) localBehind = true;
+    if ((cloud.get(level) ?? Infinity) > ms) cloudBehind = true;
+  }
+  return { merged, localBehind, cloudBehind };
+}
+
 async function runSync(): Promise<void> {
-  const cloud = parseCloudStars((await cloudRead())[KEY]);
-  const { merged, localBehind, cloudBehind } = mergeCloudStars(allStars(), cloud);
-  if (localBehind) mergeStars(merged);
-  if (cloudBehind) await cloudWrite({ [KEY]: JSON.stringify(Object.fromEntries(merged)) });
+  const record = await cloudRead();
+  const stars = mergeCloudStars(allStars(), parseCloudStars(record[KEY]));
+  const times = mergeCloudTimes(allTimes(), parseCloudTimes(record[TIMES_KEY]));
+  if (stars.localBehind) mergeStars(stars.merged);
+  if (times.localBehind) mergeTimes(times.merged);
+  const write: Record<string, string> = {};
+  if (stars.cloudBehind) write[KEY] = JSON.stringify(Object.fromEntries(stars.merged));
+  if (times.cloudBehind) write[TIMES_KEY] = JSON.stringify(Object.fromEntries(times.merged));
+  if (Object.keys(write).length > 0) await cloudWrite(write);
 }
 
 let queue: Promise<void> = Promise.resolve();

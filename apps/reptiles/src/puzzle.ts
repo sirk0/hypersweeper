@@ -4,6 +4,7 @@
 import type { Cyc } from "./geometry/cyclotomic";
 import { Frontier } from "./geometry/frontier";
 import {
+  curveOnto,
   realCorners,
   posed,
   selfTurns,
@@ -30,6 +31,10 @@ export interface Placed {
   pieces: Piece[];
 }
 
+/** A tile as laid, without the id the puzzle gives it: what a board's layout
+ * is a list of, for undo and redo and to keep a board in play (saved.ts). */
+export type LaidTile = Omit<Placed, "id">;
+
 /** A way a tile fits: which kind, held how, and where it lands. */
 export interface Fit {
   kind: number;
@@ -46,6 +51,11 @@ export class Puzzle {
   private nextId = 1;
   /** Per kind, the turns that leave its shape looking the same. */
   private same: number[][];
+  /** Undo and redo: the layout at the last finished move (`commit`), the
+   * layouts before it, and those undone since. */
+  private committed: LaidTile[] = [];
+  private past: LaidTile[][] = [];
+  private future: LaidTile[][] = [];
 
   constructor(readonly level: Level) {
     this.frontier = this.untouched();
@@ -339,6 +349,91 @@ export class Puzzle {
       this.lift(tile.id);
     }
     return false;
+  }
+
+  /** The tiles down as the last finished move left them — not a tile in hand
+   * mid-drag, lifted off but not yet laid anywhere. */
+  get layout(): readonly LaidTile[] {
+    return this.committed;
+  }
+
+  /** Mark the end of a move: a tile laid, moved or taken off. Where the tiles
+   * down differ from the last move's, that layout goes on the undo list and
+   * the redo list is cleared; a tile lifted and put back where it was is no
+   * move. True if it was one. */
+  commit(): boolean {
+    const now = this.tiles.map(({ id: _, ...t }) => t);
+    if (this.layoutKey(now) === this.layoutKey(this.committed)) return false;
+    this.past.push(this.committed);
+    this.future = [];
+    this.committed = now;
+    return true;
+  }
+
+  get canUndo(): boolean {
+    return this.past.length > 0;
+  }
+
+  get canRedo(): boolean {
+    return this.future.length > 0;
+  }
+
+  /** Put the tiles back as they were before the last move. */
+  undo(): boolean {
+    const before = this.past.pop();
+    if (!before) return false;
+    this.future.push(this.committed);
+    this.lay(before);
+    return true;
+  }
+
+  /** Make the last move undone again. */
+  redo(): boolean {
+    const after = this.future.pop();
+    if (!after) return false;
+    this.past.push(this.committed);
+    this.lay(after);
+    return true;
+  }
+
+  /** Start from `layout` — a board kept from before (saved.ts) — as the
+   * first move's: nothing to undo. Each tile must be one of the level's kinds
+   * held as given, at a spot it fits; throws, leaving the board empty, if
+   * any is not. */
+  resume(layout: readonly { kind: number; rot: number; flip: boolean; verts: Cyc[][] }[]): void {
+    this.reset();
+    try {
+      for (const { kind, rot, flip, verts } of layout) {
+        if (!this.level.tiles[kind]) throw new Error("resume: no such tile");
+        if (flip && !this.level.mirror) throw new Error("resume: this board never flips");
+        const pieces = curveOnto(this.shapeAt(kind, rot, flip), verts);
+        if (!this.allows(pieces)) throw new Error("resume: the vertex rule forbids it");
+        this.place(kind, pieces, rot, flip);
+      }
+    } catch (err) {
+      this.reset();
+      throw err;
+    }
+    this.committed = this.tiles.map(({ id: _, ...t }) => t);
+    this.past = [];
+    this.future = [];
+  }
+
+  /** Lay exactly `layout`, from an empty board, as the last move. */
+  private lay(layout: LaidTile[]): void {
+    this.reset();
+    for (const t of layout) this.place(t.kind, t.pieces, t.rot, t.flip);
+    this.committed = layout;
+  }
+
+  /** A layout's tiles, exactly and in no order: two layouts are the same move
+   * when their keys are. */
+  private layoutKey(layout: readonly LaidTile[]): string {
+    const { ring } = this.level;
+    return layout
+      .map((t) => `${t.kind}|${t.flip}|${spotKey(ring, t.pieces)}`)
+      .sort()
+      .join("\n");
   }
 
   reset(): void {
