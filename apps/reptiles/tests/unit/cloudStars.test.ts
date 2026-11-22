@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mergeCloudStars, parseCloudStars } from "../../src/cloudStars";
+import {
+  mergeCloudStars,
+  mergeCloudTimes,
+  parseCloudStars,
+  parseCloudTimes,
+} from "../../src/cloudStars";
 
 // The stars' merge with iCloud (src/cloudStars.ts): each level's most, which
 // is idempotent, so a device writes the whole merged map whenever iCloud is
@@ -44,5 +49,31 @@ describe("the stars in iCloud", () => {
       localBehind: false,
       cloudBehind: false,
     });
+  });
+});
+
+describe("the best times in iCloud", () => {
+  it("reads a stored record, and anything unreadable as none", () => {
+    expect([...parseCloudTimes('{"a": 61000, "b": 0, "c": -5, "d": "9", "e": 1500.4}')]).toEqual([
+      ["a", 61000],
+      ["e", 1500],
+    ]);
+    for (const raw of [undefined, "", "{not json", "[1,2]", "3", "null"])
+      expect(parseCloudTimes(raw).size).toBe(0);
+  });
+
+  it("keeps each level's least, and says which side is behind", () => {
+    const local = stars({ a: 5000, b: 9000 });
+    const { merged, localBehind, cloudBehind } = mergeCloudTimes(
+      local,
+      stars({ a: 4000, b: 9500, c: 7000 }),
+    );
+    expect(Object.fromEntries(merged)).toEqual({ a: 4000, b: 9000, c: 7000 });
+    expect([localBehind, cloudBehind]).toEqual([true, true]);
+    // merging the same record again changes nothing
+    const again = mergeCloudTimes(merged, merged);
+    expect([again.localBehind, again.cloudBehind]).toEqual([false, false]);
+    expect(mergeCloudTimes(local, new Map()).cloudBehind).toBe(true);
+    expect(mergeCloudTimes(new Map(), local).localBehind).toBe(true);
   });
 });

@@ -3,7 +3,8 @@
 // `.settings-list` rows, so it gets their look and the desktop pane's header.
 //
 // Everything here is a statement about the code, so keep it true: the rules
-// and the stars are `src/puzzle.ts` (`won`, `stars`), the gestures
+// and the stars are `src/puzzle.ts` (`won`, `stars`, undo and redo), a board
+// kept `src/saved.ts`, the best time `src/progress.ts`, the gestures
 // `src/input/drag.ts`, the keys `onKey` in `src/main.ts`, and the header
 // `index.html`.
 
@@ -58,6 +59,11 @@ const SECTIONS: Section[] = [
           "or picking up a tray tile ends it.",
       ],
       [
+        "Undo and redo",
+        "The hooked arrows in the header — [Z], and [Shift]+[Z] or [Y] — take " +
+          "back the last move (a tile laid, moved or taken off) and make it again.",
+      ],
+      [
         "Matching rules and colourings",
         "Some boards mark each tile's edges with lines, arrows or colours. A " +
           "tile lands only where its marks meet its neighbours' as they should, " +
@@ -76,6 +82,11 @@ const SECTIONS: Section[] = [
         "The light bulb — or [H] — shows a tile to lay and where, or one to " +
           "take off. Using it costs the third star.",
       ],
+      [
+        "Time",
+        "The win card tells the time from the first tile down to the last, and " +
+          "your best on that board. The best shows on Play, on its tiling's page.",
+      ],
     ],
   },
   {
@@ -90,6 +101,13 @@ const SECTIONS: Section[] = [
         "The header",
         "Restart starts the level again; the die deals another level of the " +
           "same difficulty. Finished, you get Play again and Next level.",
+      ],
+      [
+        "Leave and come back",
+        "A board left half-covered is kept as it was — its tiles, the time " +
+          "spent on it and the hints shown — and opens that way again: on its " +
+          "tiling's page, Play reads Resume. Restart, Play again or finishing " +
+          "it starts it afresh.",
       ],
       [
         "Picking a level",

@@ -248,6 +248,31 @@ some back off.
   clock shows while playing: the time from the first tile down to the last
   is told only on the win card, with how many hints were shown (a press
   again while a hint is on show is not another) — there is no time limit.
+  The fastest finish of each level, any number of stars, is kept
+  (`recordTime`, `rep-tiles.times`): the win card says "— a new best!" when
+  one beats it, else "· best m:ss" (a first finish is only its time), and a
+  tiling's page shows it on Play ("best 0:42").
+- **Undo and redo** (the hooked arrows at the head of the header's right
+  cluster; Z, and Shift+Z or Y, with or without Ctrl/⌘) step back and forth
+  through moves: a tile laid, moved or taken off. The drag control marks the
+  end of each (`Puzzle.commit`, called by `done` in `drag.ts`); a tile lifted
+  and put back where it was is no move, and a new move clears what was
+  undone. An undo cancels a tile in hand first (`DragControl.cancel`). A
+  hint shown stays shown — undo is not a way back to the third star — and a
+  finished board undone and redone keeps its first finish's time.
+- **A board left half-covered is kept** (`src/saved.ts`, `rep-tiles.boards`):
+  its tiles, the time spent on it so far and the hints shown, saved at every
+  move, as a hint is shown, and as the level is left — for another screen,
+  another level, or the page hidden (`pagehide`, `visibilitychange`: an
+  iPhone may close the app in the background). Opening the level again lays
+  it back (`Puzzle.resume`, nothing to undo), the time running on from where
+  it was left; on its tiling's page Play reads **Resume**. Each tile is kept
+  exactly — its kind, turn, side and its pieces' vertices, integers — and
+  checked as it is laid back (a translate of its kind held that way
+  (`curveOnto`), allowed and fitting), with a fingerprint of the level's own
+  cells, so a board kept for a level since changed, or unreadable, opens
+  empty. Restart and Play again forget it, as does finishing; at most 30 are
+  kept (`MAX_SAVED`), the one left longest ago dropped first.
 - **The hint** (the bulb in the header, or H) looks at the board as it
   stands and says what to do next, worked out exactly (`src/hint.ts`). First
   it checks the tiles down: can the board still be finished round them — any
@@ -356,7 +381,7 @@ zoom — drawn as the settings are; every line of it is a statement about the
 code, so it changes with the behaviour it describes. On a desktop both are in
 the sidebar's foot. `smoke.spec.ts` pins all three, and More games. Levels are picked in
 Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
-home and back, then (no clock: the time taken is on the win card) the hint, restart,
+home and back, then (no clock: the time taken is on the win card) undo, redo, the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
 the level's name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest
@@ -364,8 +389,9 @@ of the screen, the tray on a strip along the bottom (portrait) or the right
 (landscape). The win card has Play again and Next level (another level of
 the same difficulty, dealt at random as the die deals), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
-outside it). Each move
-is a history entry, so the browser's Back works.
+outside it). Each move between screens
+is a history entry, so the browser's Back works (a tile's move is not: undo
+is the header's).
 
 **Sound** — Hypersweeper's synthesiser, shared as `@tiling/sound`
 (`packages/sound`), in its three themes — Chime, Arcade and **Blocks**, the
@@ -620,7 +646,7 @@ its own `Rep-tiles` folder there. It is an **iPhone and iPad app** too,
 `apps/reptiles/ios/` — `make ios-app GAME=reptiles`, uploaded by
 `app-store.yml` with `game: reptiles` — which buzzes as a tile lands and a
 board is finished (Settings › **Haptics**, shown only where something can
-buzz), keeps the stars in iCloud and asks for a rating after the third finished
+buzz), keeps the stars and best times in iCloud and asks for a rating after the third finished
 board: see [`ios/README.md`](ios/README.md), and `tests/e2e/native.spec.ts`,
 which pins all three over Capacitor's real bridge.
 
@@ -1110,8 +1136,8 @@ quick way to see the win state.
   felt, are the package's. Called beside the sounds, from `src/input/drag.ts`
   and `changed` in `src/main.ts`.
 - `src/review.ts`, `src/cloudStars.ts` — the iPhone app's rating prompt, and
-  the stars kept in iCloud (each level's most, merged both ways); both do
-  nothing outside the app (`ios/README.md`).
+  the stars and best times kept in iCloud (each level's most stars and least
+  time, merged both ways); both do nothing outside the app (`ios/README.md`).
 - `src/scheme.ts` — the colour scheme: `applyScheme` sets `data-scheme` on
   `<html>` (none for Auto) and points the `theme-color` metas at the page
   colour. The dark colours are in `styles.css` twice, with the same
@@ -1121,7 +1147,10 @@ quick way to see the win state.
   holds them equal, so a colour changes in both.
 - `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
   the game works without it; the old finished-levels list reads as one star
-  each).
+  each), and the fastest finish per level (`rep-tiles.times`, milliseconds).
+- `src/saved.ts` — the boards in play, kept per level (`saveBoard`,
+  `loadBoard`, `forgetBoard`, `hasBoard`; `fingerprint`), held by
+  `tests/unit/history.test.ts` with undo and redo.
 - `src/puzzle.ts` — pure game state: `place`, `lift`, `snap` (in the held
   orientation only — `selfTurns` in `shape.ts` says which turns leave a tile
   unchanged — and, on a level with a rule, only edge to edge and where every
@@ -1133,7 +1162,9 @@ quick way to see the win state.
   there first (blind, it gets lost on V[3.4².6; 3.6.3.6]; on the
   Socolar–Taylor board it takes a quarter of a minute, so its test is left
   out), and `layOwn`, which lays every one of the board's own tiles that
-  still fits — what the dev seam's `fill()` does first.
+  still fits — what the dev seam's `fill()` does first. Undo and redo:
+  `commit` marks the end of a move (the layout it leaves is `layout`),
+  `undo`, `redo`, `canUndo`, `canRedo`; `resume` lays a kept board back.
 - `src/view/curve.ts` — drawing a tile: a `Loop` per piece (`loopsOf`),
   drawn as one path with a sub-path each (`loopsPath`), bounded by
   `loopsReach`; and round edges: `outlinePath` (a polygon as an

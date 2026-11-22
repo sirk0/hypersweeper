@@ -12,6 +12,9 @@
 // than one way — and laid into a corner it cannot be finished from, which is
 // what taking tiles back off is for.
 //
+// Each finished move — a tile laid, moved or taken off — is committed to the
+// puzzle's undo list (`Puzzle.commit`); a tile lifted and put back is no move.
+//
 // A tile lands only as it is held. The rotate controls — one each way (R and
 // Shift+R) — turn every tray tile at once, and the tile in hand, before or
 // while dragging: a second finger can tap one mid-drag; on a level with
@@ -68,6 +71,9 @@ export interface DragControl {
   /** Where the last tile laid landed across the screen, -1..1: what the win
    * flourish leans toward. */
   lastPan(): number;
+  /** Put a tile in hand back where it came from, ending the drag — before an
+   * undo or a redo lays the board anew. */
+  cancel(): void;
 }
 
 export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void): DragControl {
@@ -115,6 +121,12 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   const settle = (): void => {
     board.draw();
     changed();
+  };
+
+  /** The end of a move: on the undo list, if the tiles down changed. */
+  const done = (): void => {
+    puzzle.commit();
+    settle();
   };
 
   const setRemoving = (on: boolean): void => {
@@ -215,7 +227,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     if (placed && board.removing) {
       ev.preventDefault();
       puzzle.lift(Number(placed.getAttribute("data-tile")));
-      settle();
+      done();
       return;
     }
     if (tray) {
@@ -303,7 +315,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     drag = null;
     board.clearDrag();
     if (d.origin) puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
-    settle();
+    done();
   }
 
   const finish = (ev: PointerEvent, drop: boolean): void => {
@@ -344,7 +356,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     } else if (d.origin && !discard) {
       puzzle.place(d.origin.kind, d.origin.pieces, d.origin.rot, d.origin.flip);
     }
-    settle();
+    done();
   };
   svg.addEventListener("pointerup", (ev) => finish(ev, true));
   svg.addEventListener("pointercancel", (ev) => finish(ev, false));
@@ -368,5 +380,5 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   // Safari's own pinch, which would zoom the page rather than the board.
   for (const type of ["gesturestart", "gesturechange", "gestureend"])
     svg.addEventListener(type, (ev) => ev.preventDefault());
-  return { turn, flip, setRemoving, lastPan: () => lastPan };
+  return { turn, flip, setRemoving, lastPan: () => lastPan, cancel };
 }

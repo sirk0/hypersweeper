@@ -9,7 +9,15 @@ import { Hinter } from "./hintClient";
 import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./levels";
 import { startCloudStars, syncCloudStars } from "./cloudStars";
 import { haptic, setHapticsEnabled } from "./haptics";
-import { onStarsMerged, recordStars, starsFor } from "./progress";
+import {
+  bestTimeFor,
+  formatTime,
+  onStarsMerged,
+  recordStars,
+  recordTime,
+  starsFor,
+} from "./progress";
+import { forgetBoard, hasBoard, loadBoard, saveBoard } from "./saved";
 import { noteFinishForReview } from "./review";
 import { Puzzle } from "./puzzle";
 import { renderCatalog, type Tally } from "./view/catalog";
@@ -37,6 +45,8 @@ const count = byId("count");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
 const hintButton = byId<HTMLButtonElement>("hint");
+const undoButton = byId<HTMLButtonElement>("undo");
+const redoButton = byId<HTMLButtonElement>("redo");
 const thinking = byId("thinking");
 
 /** Works out the hint for the board in play, in the background after every
@@ -159,7 +169,11 @@ function show(screen: Screen, side = ""): void {
     if (key === side) row.setAttribute("aria-current", "page");
     else row.removeAttribute("aria-current");
   }
-  if (screen !== "game") won.hidden = true;
+  if (screen !== "game") {
+    won.hidden = true;
+    // the board left as it stands, and the time spent on it so far
+    if (session) keep(session);
+  }
 }
 
 function goHome(push = true): void {
@@ -246,6 +260,8 @@ function goTiling(level: Level, push = true, pick: string | null = null): void {
   renderPicker(byId("tiling-list"), {
     tilings: [level],
     stars: starsFor,
+    best: bestTimeFor,
+    inPlay: hasBoard,
     play: (l) => open(l),
     initial: pick,
     remember: keepPick(`tiling=${level.key}`),
@@ -314,17 +330,48 @@ interface Session {
    * as it is finished, and again only after a tile is taken off and it is
    * finished anew. */
   wasWon: boolean;
+  /** The layout last kept (saved.ts): a move since is kept again. */
+  kept: unknown;
+  /** The level's best time before this finish, and whether this finish beat
+   * it — what the win card says of the time. */
+  bestBefore: number | null;
+  newBest: boolean;
 }
 
 let session: Session | null = null;
 
+/** The time spent on the board, in milliseconds: from the first tile down to
+ * the finish, or to now. */
 function elapsed(s: Session): number {
   if (s.started === null) return 0;
-  return ((s.finished ?? performance.now()) - s.started) / 1000;
+  return (s.finished ?? performance.now()) - s.started;
 }
 
-const clockText = (seconds: number): string =>
-  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+/** Keep the board in play as it stands (saved.ts) — or, finished, forget it:
+ * finished, it opens afresh. */
+function keep(s: Session): void {
+  s.kept = s.puzzle.layout;
+  if (s.puzzle.won) forgetBoard(s.puzzle.level.key);
+  else saveBoard(s.puzzle.level, s.puzzle.layout, elapsed(s), s.hints);
+}
+
+function undo(): void {
+  const s = session;
+  if (!s) return;
+  s.control.cancel();
+  if (!s.puzzle.undo()) return;
+  s.board.draw();
+  changed();
+}
+
+function redo(): void {
+  const s = session;
+  if (!s) return;
+  s.control.cancel();
+  if (!s.puzzle.redo()) return;
+  s.board.draw();
+  changed();
+}
 
 const laidOf = (s: Session): Laid[] =>
   s.puzzle.tiles.map(({ id, kind, pieces }) => ({ id, kind, pieces }));
@@ -346,6 +393,10 @@ function changed(): void {
     if (!puzzle.won) hinter.update(puzzle.level, laidOf(s));
   }
   hintButton.disabled = puzzle.won;
+  undoButton.disabled = !puzzle.canUndo;
+  redoButton.disabled = !puzzle.canRedo;
+  // a move since the board was last kept: keep it again
+  if (puzzle.layout !== s.kept) keep(s);
   count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
   if (!puzzle.won) s.dismissed = false;
   if (puzzle.won && !s.wasWon) {
@@ -362,9 +413,14 @@ function changed(): void {
     return;
   }
   extendTiling(s);
-  if (s.finished === null) s.finished = performance.now();
+  if (s.finished === null) {
+    s.finished = performance.now();
+    s.bestBefore = bestTimeFor(puzzle.level.key);
+    s.newBest = recordTime(puzzle.level.key, elapsed(s));
+    if (s.newBest) syncCloudStars();
+  }
   s.control.setRemoving(false);
-  const seconds = elapsed(s);
+  const ms = elapsed(s);
   const stars = puzzle.stars(s.hints > 0);
   const need = puzzle.level.need.reduce((a, b) => a + b, 0);
   const stars3 = byId("won-stars");
@@ -381,7 +437,15 @@ function changed(): void {
       : s.hints > 0
         ? `☆ ${s.hints} ${s.hints === 1 ? "hint" : "hints"} used.`
         : "☆ No hints — that counts once the tiles are no more than needed.",
-    `Time: ${clockText(seconds)}`,
+    `Time: ${formatTime(ms)}${
+      s.newBest
+        ? s.bestBefore === null
+          ? ""
+          : " — a new best!"
+        : s.bestBefore === null
+          ? ""
+          : ` · best ${formatTime(s.bestBefore)}`
+    }`,
   ];
   byId("won-detail").replaceChildren(
     ...lines.map((line) => {
@@ -396,26 +460,43 @@ function changed(): void {
   }
 }
 
-/** Start `level` afresh: a new puzzle, a new board in the stage. */
-function open(level: Level, push = true): void {
+/** Open `level`: as it was left, where a board of it is kept (saved.ts),
+ * unless `fresh` — else a new puzzle, a new board in the stage. */
+function open(level: Level, push = true, fresh = false): void {
+  if (session) keep(session);
   if (push) history.pushState(null, "", `?level=${level.key}`);
   show("game");
   placeName();
   const puzzle = new Puzzle(level);
+  const saved = fresh ? null : loadBoard(level);
+  if (fresh) forgetBoard(level.key);
+  if (saved) {
+    try {
+      puzzle.resume(saved.tiles);
+    } catch {
+      // not a board of this level as it is now: start afresh
+      forgetBoard(level.key);
+    }
+  }
+  const resumed = saved !== null && puzzle.tiles.length === saved.tiles.length;
   host.replaceChildren();
   const board = new SvgBoard(host, puzzle);
+  const now = performance.now();
   session = {
     puzzle,
     board,
     control: attachDrag(board, puzzle, changed),
-    started: null,
+    started: resumed && (saved.ms > 0 || saved.tiles.length > 0) ? now - saved.ms : null,
     finished: null,
     dismissed: false,
-    hints: 0,
+    hints: resumed ? saved.hints : 0,
     // not the empty board's, so `changed` starts on its hint
     laidKey: "-",
     extending: false,
     wasWon: false,
+    kept: puzzle.layout,
+    bestBefore: null,
+    newBest: false,
   };
   setThinking(false);
   const name = byId("level");
@@ -427,8 +508,9 @@ function open(level: Level, push = true): void {
   changed();
 }
 
+/** Start the level again, from an empty board: what was kept of it goes. */
 function restart(): void {
-  if (session) open(session.puzzle.level, false);
+  if (session) open(session.puzzle.level, false, true);
 }
 
 function setThinking(on: boolean): void {
@@ -449,7 +531,10 @@ async function showHint(): Promise<void> {
   setThinking(false);
   if (!hint || s.puzzle.won) return;
   // a press again while this board's hint is on show shows nothing new
-  if (!s.board.hint) s.hints++;
+  if (!s.board.hint) {
+    s.hints++;
+    keep(s);
+  }
   s.board.hint = hint;
   s.board.draw();
 }
@@ -492,6 +577,8 @@ function dismiss(): void {
 }
 
 byId("restart").addEventListener("click", restart);
+undoButton.addEventListener("click", undo);
+redoButton.addEventListener("click", redo);
 hintButton.addEventListener("click", () => void showHint());
 document
   .querySelector("#home [data-action=settings]")
@@ -525,7 +612,12 @@ for (const button of document.querySelectorAll("[data-go-home]"))
 document.addEventListener("keydown", (ev) => {
   if (!session || byId("game").hidden) return;
   const { control, board } = session;
-  if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
+  if (ev.key === "z" || ev.key === "Z" || ev.key === "y" || ev.key === "Y") {
+    // Z undoes; Shift+Z or Y redoes — with Ctrl or ⌘ too, as elsewhere
+    ev.preventDefault();
+    if (ev.key === "y" || ev.key === "Y" || ev.shiftKey) redo();
+    else undo();
+  } else if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
   else if (ev.key === "Escape") {
     if (!won.hidden) dismiss();
     else control.setRemoving(false);
@@ -535,6 +627,15 @@ document.addEventListener("keydown", (ev) => {
   else if (ev.key === "h" || ev.key === "H") void showHint();
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
+// Leaving the page, or the app going to the background (where an iPhone may
+// close it): the board in play is kept with the time spent on it so far.
+const keepNow = (): void => {
+  if (session && !byId("game").hidden) keep(session);
+};
+window.addEventListener("pagehide", keepNow);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") keepNow();
+});
 window.addEventListener("popstate", route);
 
 /** The level's name: on a phone a faint label on the page behind the board;
@@ -588,6 +689,7 @@ if (import.meta.env.DEV) {
         if (!session) return;
         session.puzzle.layOwn();
         session.puzzle.solve();
+        session.puzzle.commit();
         session.board.draw();
         changed();
       },
@@ -596,6 +698,7 @@ if (import.meta.env.DEV) {
       lay(n: number): void {
         if (!session) return;
         session.puzzle.layOwn(n);
+        session.puzzle.commit();
         session.board.draw();
         changed();
       },

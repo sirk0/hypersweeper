@@ -251,7 +251,8 @@ export function starRow(earned: number): HTMLSpanElement {
 
 const STROKE = `stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
 
-/** The header's and home screen's glyphs, on a 24-unit square: home, restart,
+/** The header's and home screen's glyphs, on a 24-unit square: home, undo
+ * and redo, restart,
  * a light bulb for the hint, a die for a new random level and the settings
  * gear, and the question mark for How to play (all three Hypersweeper's). */
 export const GLYPHS: Record<string, string> = {
@@ -259,6 +260,11 @@ export const GLYPHS: Record<string, string> = {
   home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
     <path d="M6.2 9.4 V19.6 H17.8 V9.4" ${STROKE}/>
     <path d="M10.2 19.6 V14.4 H13.8 V19.6" ${STROKE}/>`,
+  // Undo and redo: a hooked arrow back to the left, and its mirror image.
+  undo: `<path d="M8.6 4.8 L4.4 9 L8.6 13.2" ${STROKE}/>
+    <path d="M4.4 9 H14.2 A5.2 5.2 0 0 1 14.2 19.4 H9.6" ${STROKE}/>`,
+  redo: `<path d="M15.4 4.8 L19.6 9 L15.4 13.2" ${STROKE}/>
+    <path d="M19.6 9 H9.8 A5.2 5.2 0 0 0 9.8 19.4 H14.4" ${STROKE}/>`,
   restart: `<path d="M4.5 12 A7.5 7.5 0 1 0 12 4.5" ${STROKE}/>
     <path d="M15.1 1.4 L11.4 4.5 L15.1 7.6" ${STROKE}/>`,
   hint: `<path d="M9.2 17.2 V15.6 C9.2 14.2 8.4 13.4 7.5 12.4 A6 6 0 1 1 16.5 12.4 C15.6 13.4 14.8 14.2 14.8 15.6 V17.2 Z" ${STROKE}/>
