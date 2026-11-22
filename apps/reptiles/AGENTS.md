@@ -55,7 +55,10 @@ some back off.
     colour, with a line across every edge between two tiles that were one
     colour — a line meets a line, a blank edge a blank one. A line runs from
     edge to edge, square on to each and ending on it, straight across or
-    round the corner two lined edges share. A line never ends in a tile:
+    round the corner two lined edges share; where a tile has three or more
+    lined edges, one line runs between two of them and each other one
+    branches off it, ending inside that line's stroke, so lines meeting in a
+    tile leave no gap. A line never ends in a tile:
     where one would (a tile with one lined edge), it is cut back to a half
     disc each side of that edge, and again from the tile across while that
     leaves a tile one line — so a half disc meets only a half disc, and the
@@ -82,7 +85,7 @@ some back off.
     the middle where it has no way), and a tile's points of one class are
     joined by a line in the class's colour, leaving each edge square on
     there — two by one curve, more paired as they come round the outline,
-    three at a hub — so two tiles meeting as they should run one line on
+    three as one line and a branch off it, as a lined tile's — so two tiles meeting as they should run one line on
     across their edge. A class with one point on a tile is a half disc there
     (two tiles make one disc), and a tile of several pieces, the
     Socolar–Taylor tile, keeps half discs throughout: lines across its
@@ -1146,7 +1149,13 @@ quick way to see the win state.
   two lined edges share — or, two edges further apart on an octagon or a
   dodecagon, about the point their lines meet, `meet`; on an irregular tile,
   a Laves tile's kite, rhombus or pentagon, a cubic leaving each edge's
-  middle along its inward normal, and spokes to the middle the same way;
+  middle along its inward normal; three or more lined edges as one line
+  between two of them, drawn so, with a branch off it from each other one —
+  straight on along its edge's normal where that meets the line at a fair
+  angle, else curving round to meet it square on at a point clear of its
+  ends — the pair whose line and branches are least ink, branches crossing
+  counted against it (`branched`), so every branch ends inside a line's
+  stroke and leaves no notch;
   butt-capped, so never past the edge), and a line cut back (`END`) as a half disc;
   Penrose's arrows as arcs about the tile's corners (`arcsOf` finds the corners whose two edges' crossings are one kind
   and one distance off; `ARC_AT`, by kind, where an arc crosses its edge —

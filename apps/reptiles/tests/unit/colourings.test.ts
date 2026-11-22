@@ -993,6 +993,82 @@ describe("colourings", () => {
     ]);
   });
 
+  // a path's subpaths, each as its numbers: its start first, its end last
+  const subpaths = (d: string): number[][] =>
+    d
+      .split("M")
+      .filter((s) => s)
+      .map((s) => (s.match(/-?\d+(\.\d+)?/g) ?? []).map(Number));
+
+  it("draws three lines on a tile as one between two, the third branching off it square on", () => {
+    // the staggered triangular's triangle, each side cut at its middle, its
+    // bottom side's two halves and the right side's lower half lined
+    const s = Math.sqrt(3);
+    const xy: [number, number][] = [
+      [0, 0],
+      [0.5, 0],
+      [1, 0],
+      [0.75, s / 4],
+      [0.5, s / 2],
+      [0.25, s / 4],
+    ];
+    const marks = [LINE, LINE, LINE, BLANK, BLANK, BLANK];
+    const [line] = decorParts([{ xy, marks }]);
+    expect(line!.class).toBe("decor line");
+    const [arch, branch] = subpaths(line!.d) as [number[], number[]];
+    expect(subpaths(line!.d)).toHaveLength(2);
+    // round the cut between the bottom side's halves, middle to middle
+    expect(arch.slice(0, 2)).toEqual([0.25, 0]);
+    expect(arch.slice(-2)).toEqual([0.75, 0]);
+    // the branch straight on from the right side's middle, along its
+    // inward normal, ending on the arch: a quarter side from the cut
+    expect(line!.d).toMatch(/M0\.8750 0\.2165L/);
+    const [bx, by] = branch.slice(-2) as [number, number];
+    expect(Math.hypot(bx - 0.5, by)).toBeCloseTo(0.25, 2);
+    const along: [number, number] = [bx - 0.875, by - s / 8];
+    const inward: [number, number] = [-s / 2, -0.5];
+    expect(along[0] * inward[1] - along[1] * inward[0]).toBeCloseTo(0, 3);
+    expect(along[0] * inward[0] + along[1] * inward[1]).toBeGreaterThan(0);
+  });
+
+  it.each([
+    "staggeredtri.branchinglines",
+    "staggeredtri.branchinglines2",
+    "offsetsquare.branchinglines",
+    "prismaticpent.branchinglines",
+    "herringbone.branchinglines",
+    "trihex.lines",
+    "tritrunctrihex.lines",
+    "squarerows3dual.lines",
+  ])("%s: lines meeting in a tile branch off one line, with no end left inside", (key) => {
+    const level = levelByKey(key)!;
+    let branching = 0;
+    for (const t of level.tiles) {
+      const [loop] = loopsOf(level.ring, t.pieces);
+      const { xy, marks } = loop!;
+      const m = xy.length;
+      const mids = marks!.flatMap((mark, i) => {
+        if (mark !== LINE) return [];
+        const [a, b] = [xy[i]!, xy[(i + 1) % m]!];
+        return [[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]];
+      });
+      if (mids.length < 3) continue;
+      branching++;
+      const line = decorParts([loop!]).find((p) => p.class === "decor line")!;
+      const paths = subpaths(line.d);
+      // one line between two lined edges, and a branch from each other one
+      expect(paths).toHaveLength(mids.length - 1);
+      const onEdge = ([x, y]: number[]): number =>
+        mids.findIndex(([mx, my]) => Math.hypot(mx! - x!, my! - y!) < 1e-3);
+      const ends = [...paths.map((p) => onEdge(p.slice(0, 2))), onEdge(paths[0]!.slice(-2))];
+      expect(ends.every((e) => e >= 0)).toBe(true);
+      expect(new Set(ends).size).toBe(mids.length);
+      // each branch ends inside the tile, on the line, never on an edge
+      for (const p of paths.slice(1)) expect(onEdge(p.slice(-2))).toBe(-1);
+    }
+    expect(branching).toBeGreaterThan(0);
+  });
+
   it("draws a line on an irregular tile as a curve square on to each edge: a kite's, a rhombus's", () => {
     const num = (d: string): number[] => (d.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
     const s = Math.sqrt(3);
