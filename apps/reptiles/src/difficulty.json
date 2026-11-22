@@ -13072,12 +13072,12 @@
     "hidden": 0
   },
   "triangles.2oneinthree.jigsaw": {
-    "score": 1.1,
+    "score": 1.131,
     "presses": 9,
     "flips": 0,
-    "fits": 54,
-    "seen": 13,
-    "hidden": 3
+    "fits": 56,
+    "seen": 16,
+    "hidden": 2
   },
   "hexagons.2oneinthree.jigsaw": {
     "score": 1.29,
@@ -13112,11 +13112,11 @@
     "hidden": 0
   },
   "trihex.2oneinthreebyshape.jigsaw": {
-    "score": 0.681,
+    "score": 0.719,
     "presses": 2,
     "flips": 0,
-    "fits": 55,
-    "seen": 3,
+    "fits": 57,
+    "seen": 5,
     "hidden": 4
   },
   "trihex.2oneinthreebyshape.jigsaw-2": {
@@ -13124,23 +13124,23 @@
     "presses": 2,
     "flips": 0,
     "fits": 59,
-    "seen": 10,
-    "hidden": 3
+    "seen": 11,
+    "hidden": 2
   },
   "trihex.2oneinthreebyshape.jigsaw-3": {
-    "score": 0.697,
+    "score": 0.733,
     "presses": 2,
     "flips": 0,
-    "fits": 57,
-    "seen": 6,
+    "fits": 59,
+    "seen": 8,
     "hidden": 2
   },
   "trihex.2oneinthree.jigsaw": {
-    "score": 1.53,
+    "score": 1.561,
     "presses": 6,
     "flips": 0,
-    "fits": 96,
-    "seen": 10,
+    "fits": 101,
+    "seen": 15,
     "hidden": 38
   },
   "trihex.2oneinthree.jigsaw-2": {
@@ -13152,12 +13152,12 @@
     "hidden": 43
   },
   "trihex.2oneinthree.jigsaw-3": {
-    "score": 1.693,
+    "score": 1.702,
     "presses": 7,
     "flips": 0,
-    "fits": 121,
-    "seen": 25,
-    "hidden": 47
+    "fits": 123,
+    "seen": 29,
+    "hidden": 45
   },
   "trihex.3byshape.jigsaw": {
     "score": 0.522,
@@ -13384,12 +13384,12 @@
     "hidden": 29
   },
   "elongated.2oneinthree.jigsaw": {
-    "score": 2.297,
-    "presses": 20,
+    "score": 1.904,
+    "presses": 14,
     "flips": 0,
-    "fits": 100,
-    "seen": 27,
-    "hidden": 19
+    "fits": 92,
+    "seen": 21,
+    "hidden": 17
   },
   "elongated.2oneinthree.jigsaw-2": {
     "score": 2.109,
@@ -13400,20 +13400,20 @@
     "hidden": 15
   },
   "elongated.2oneinthree.jigsaw-3": {
-    "score": 2.359,
-    "presses": 20,
+    "score": 2.068,
+    "presses": 16,
     "flips": 0,
-    "fits": 87,
-    "seen": 19,
-    "hidden": 18
+    "fits": 82,
+    "seen": 20,
+    "hidden": 12
   },
   "elongated.2oneinthree.jigsaw-4": {
-    "score": 2.235,
-    "presses": 20,
+    "score": 1.94,
+    "presses": 16,
     "flips": 0,
-    "fits": 99,
-    "seen": 26,
-    "hidden": 17
+    "fits": 89,
+    "seen": 23,
+    "hidden": 10
   },
   "elongated.3byshape.jigsaw": {
     "score": 1.116,
@@ -13548,24 +13548,24 @@
     "presses": 9,
     "flips": 0,
     "fits": 89,
-    "seen": 15,
-    "hidden": 20
+    "seen": 14,
+    "hidden": 21
   },
   "snubhex.2oneinthreebyshape.jigsaw-2": {
-    "score": 1.445,
-    "presses": 7,
+    "score": 1.546,
+    "presses": 10,
     "flips": 0,
-    "fits": 147,
-    "seen": 39,
-    "hidden": 46
+    "fits": 145,
+    "seen": 34,
+    "hidden": 49
   },
   "snubhex.2oneinthreebyshape.jigsaw-3": {
     "score": 1.444,
     "presses": 9,
     "flips": 0,
     "fits": 125,
-    "seen": 28,
-    "hidden": 37
+    "seen": 27,
+    "hidden": 38
   },
   "snubhex.2oneinthreebyshape.jigsaw-4": {
     "score": 1.404,
@@ -13576,12 +13576,12 @@
     "hidden": 39
   },
   "snubhex.2oneinthreebyshape.jigsaw-5": {
-    "score": 1.292,
+    "score": 1.247,
     "presses": 10,
     "flips": 0,
-    "fits": 92,
-    "seen": 20,
-    "hidden": 14
+    "fits": 87,
+    "seen": 18,
+    "hidden": 11
   },
   "snubhex.2oneinthreebyshape.jigsaw-6": {
     "score": 1.442,
@@ -13592,19 +13592,19 @@
     "hidden": 43
   },
   "snubhex.2oneinthreebyshape2.jigsaw": {
-    "score": 1.148,
+    "score": 1.138,
     "presses": 7,
     "flips": 0,
-    "fits": 81,
-    "seen": 12,
+    "fits": 80,
+    "seen": 11,
     "hidden": 15
   },
   "snubhex.2oneinthreebyshape2.jigsaw-2": {
-    "score": 1.197,
+    "score": 1.173,
     "presses": 7,
     "flips": 0,
-    "fits": 100,
-    "seen": 28,
+    "fits": 97,
+    "seen": 25,
     "hidden": 10
   },
   "snubhex.2oneinthreebyshape2.jigsaw-3": {
@@ -13624,12 +13624,12 @@
     "hidden": 11
   },
   "snubhex.2oneinthreebyshape2.jigsaw-5": {
-    "score": 1.196,
-    "presses": 10,
+    "score": 1.109,
+    "presses": 7,
     "flips": 0,
-    "fits": 82,
-    "seen": 14,
-    "hidden": 10
+    "fits": 84,
+    "seen": 13,
+    "hidden": 13
   },
   "snubhex.2oneinthreebyshape2.jigsaw-6": {
     "score": 1.212,
@@ -13976,12 +13976,12 @@
     "hidden": 8
   },
   "elongated2.2oneinthree.jigsaw": {
-    "score": 2.898,
+    "score": 2.916,
     "presses": 20,
     "flips": 0,
-    "fits": 67,
-    "seen": 24,
-    "hidden": 9
+    "fits": 69,
+    "seen": 25,
+    "hidden": 10
   },
   "elongated2.2oneinthree.jigsaw-2": {
     "score": 2.261,
@@ -13992,19 +13992,19 @@
     "hidden": 4
   },
   "elongated2.2oneinthree.jigsaw-3": {
-    "score": 2.776,
-    "presses": 20,
+    "score": 2.468,
+    "presses": 16,
     "flips": 0,
-    "fits": 78,
-    "seen": 32,
+    "fits": 79,
+    "seen": 33,
     "hidden": 8
   },
   "elongated2.2oneinthree.jigsaw-4": {
-    "score": 2.502,
+    "score": 2.512,
     "presses": 14,
     "flips": 0,
-    "fits": 63,
-    "seen": 25,
+    "fits": 64,
+    "seen": 26,
     "hidden": 6
   },
   "elongated2.2oneinthree2.jigsaw": {
@@ -14048,12 +14048,12 @@
     "hidden": 8
   },
   "elongated3.2oneinthree.jigsaw-2": {
-    "score": 2.332,
+    "score": 2.307,
     "presses": 22,
     "flips": 0,
-    "fits": 87,
-    "seen": 28,
-    "hidden": 9
+    "fits": 84,
+    "seen": 21,
+    "hidden": 13
   },
   "elongated3.2oneinthree2.jigsaw": {
     "score": 1.994,
@@ -14064,12 +14064,12 @@
     "hidden": 8
   },
   "elongated3.2oneinthree2.jigsaw-2": {
-    "score": 2.406,
+    "score": 2.419,
     "presses": 22,
     "flips": 0,
-    "fits": 97,
-    "seen": 31,
-    "hidden": 16
+    "fits": 99,
+    "seen": 29,
+    "hidden": 20
   },
   "tritrunctrihex.2oneinthreebyshape.jigsaw": {
     "score": 2.073,
@@ -14120,20 +14120,20 @@
     "hidden": 14
   },
   "fannedhex.2oneinthree.jigsaw": {
-    "score": 1.937,
-    "presses": 13,
+    "score": 1.9,
+    "presses": 11,
     "flips": 0,
-    "fits": 119,
-    "seen": 38,
-    "hidden": 29
+    "fits": 135,
+    "seen": 53,
+    "hidden": 30
   },
   "fannedhex.2oneinthree3.jigsaw": {
-    "score": 1.61,
+    "score": 1.634,
     "presses": 6,
     "flips": 0,
-    "fits": 126,
-    "seen": 36,
-    "hidden": 38
+    "fits": 132,
+    "seen": 41,
+    "hidden": 39
   },
   "fannedhex.2oneinthree3.jigsaw-2": {
     "score": 1.566,
@@ -14144,12 +14144,12 @@
     "hidden": 27
   },
   "fannedhex.2oneinthree3.jigsaw-3": {
-    "score": 1.521,
+    "score": 1.55,
     "presses": 6,
     "flips": 0,
-    "fits": 114,
-    "seen": 23,
-    "hidden": 37
+    "fits": 120,
+    "seen": 28,
+    "hidden": 38
   },
   "fannedhex.2oneinthree3.jigsaw-4": {
     "score": 1.627,
@@ -14184,28 +14184,28 @@
     "hidden": 72
   },
   "hexbands.2oneinthree.jigsaw-2": {
-    "score": 2.033,
+    "score": 2.009,
     "presses": 19,
     "flips": 0,
-    "fits": 150,
-    "seen": 33,
-    "hidden": 36
+    "fits": 145,
+    "seen": 29,
+    "hidden": 35
   },
   "hexbands.2oneinthree.jigsaw-3": {
-    "score": 2.254,
+    "score": 2.257,
     "presses": 21,
     "flips": 0,
-    "fits": 206,
-    "seen": 69,
-    "hidden": 51
+    "fits": 207,
+    "seen": 68,
+    "hidden": 53
   },
   "hexbands.2oneinthree2.jigsaw": {
-    "score": 1.84,
+    "score": 1.83,
     "presses": 13,
     "flips": 0,
-    "fits": 192,
-    "seen": 65,
-    "hidden": 35
+    "fits": 189,
+    "seen": 58,
+    "hidden": 39
   },
   "snubelongated2.2oneinthree.jigsaw": {
     "score": 3.303,
@@ -14472,12 +14472,12 @@
     "hidden": 4
   },
   "squarerows2.2oneinthree.jigsaw-2": {
-    "score": 2.644,
-    "presses": 19,
+    "score": 2.526,
+    "presses": 18,
     "flips": 0,
-    "fits": 105,
-    "seen": 37,
-    "hidden": 22
+    "fits": 97,
+    "seen": 33,
+    "hidden": 18
   },
   "squarerows2.2oneinthree.jigsaw-3": {
     "score": 2.343,
@@ -14496,12 +14496,12 @@
     "hidden": 9
   },
   "squarerows3.2oneinthreebyshape.jigsaw-2": {
-    "score": 1.386,
+    "score": 1.366,
     "presses": 9,
     "flips": 0,
-    "fits": 84,
+    "fits": 82,
     "seen": 18,
-    "hidden": 10
+    "hidden": 8
   },
   "squarerows3.2oneinthreebyshape2.jigsaw": {
     "score": 1.012,
@@ -14520,12 +14520,12 @@
     "hidden": 2
   },
   "squarerows3.2oneinthree.jigsaw": {
-    "score": 2.159,
+    "score": 2.17,
     "presses": 18,
     "flips": 0,
-    "fits": 123,
-    "seen": 52,
-    "hidden": 7
+    "fits": 125,
+    "seen": 50,
+    "hidden": 11
   },
   "squarerows3.2oneinthree.jigsaw-2": {
     "score": 2.168,
@@ -14592,28 +14592,28 @@
     "hidden": 47
   },
   "hexrows.2oneinthreebyshape.jigsaw": {
-    "score": 2.222,
+    "score": 2.274,
     "presses": 15,
     "flips": 0,
-    "fits": 109,
-    "seen": 23,
-    "hidden": 32
+    "fits": 119,
+    "seen": 26,
+    "hidden": 39
   },
   "hexrows.2oneinthreebyshape.jigsaw-2": {
-    "score": 2.361,
+    "score": 2.41,
     "presses": 15,
     "flips": 0,
-    "fits": 173,
-    "seen": 38,
-    "hidden": 75
+    "fits": 195,
+    "seen": 51,
+    "hidden": 84
   },
   "hexrows.2oneinthreebyshape.jigsaw-3": {
-    "score": 1.989,
+    "score": 2.089,
     "presses": 13,
     "flips": 0,
-    "fits": 109,
-    "seen": 32,
-    "hidden": 23
+    "fits": 130,
+    "seen": 45,
+    "hidden": 31
   },
   "hexrows.2oneinthree.jigsaw": {
     "score": 2.084,
@@ -14632,36 +14632,36 @@
     "hidden": 61
   },
   "hexrows.2oneinthree.jigsaw-3": {
-    "score": 2.127,
+    "score": 2.209,
     "presses": 13,
     "flips": 0,
-    "fits": 107,
-    "seen": 25,
-    "hidden": 28
+    "fits": 123,
+    "seen": 28,
+    "hidden": 41
   },
   "hexrows.3byshape.jigsaw": {
-    "score": 1.85,
-    "presses": 13,
+    "score": 2.144,
+    "presses": 17,
     "flips": 0,
-    "fits": 81,
-    "seen": 25,
-    "hidden": 2
+    "fits": 79,
+    "seen": 24,
+    "hidden": 1
   },
   "hexrows.3byshape.jigsaw-2": {
-    "score": 2.096,
-    "presses": 19,
+    "score": 1.602,
+    "presses": 13,
     "flips": 0,
-    "fits": 75,
-    "seen": 5,
-    "hidden": 10
+    "fits": 72,
+    "seen": 4,
+    "hidden": 8
   },
   "hexrows.3byshape.jigsaw-3": {
-    "score": 1.887,
+    "score": 1.864,
     "presses": 15,
     "flips": 0,
-    "fits": 78,
-    "seen": 20,
-    "hidden": 4
+    "fits": 76,
+    "seen": 19,
+    "hidden": 3
   },
   "dodecasquare.2byshape.jigsaw": {
     "score": 2.181,
@@ -14712,24 +14712,24 @@
     "hidden": 81
   },
   "hexrings.2oneinthreebyshape.jigsaw": {
-    "score": 2.142,
-    "presses": 13,
+    "score": 2.079,
+    "presses": 12,
     "flips": 0,
-    "fits": 313,
-    "seen": 123,
-    "hidden": 102
+    "fits": 299,
+    "seen": 114,
+    "hidden": 97
   },
   "squaretrihex.2oneinthreebyshape.jigsaw": {
-    "score": 2.75,
-    "presses": 21,
+    "score": 1.884,
+    "presses": 9,
     "flips": 0,
     "fits": 128,
     "seen": 17,
     "hidden": 51
   },
   "squaretrihex.2oneinthreebyshape.jigsaw-3": {
-    "score": 2.641,
-    "presses": 21,
+    "score": 1.841,
+    "presses": 9,
     "flips": 0,
     "fits": 136,
     "seen": 20,
@@ -14784,12 +14784,12 @@
     "hidden": 32
   },
   "squaretrihex2.2oneinthreebyshape.jigsaw-2": {
-    "score": 2.472,
-    "presses": 14,
+    "score": 2.212,
+    "presses": 11,
     "flips": 0,
     "fits": 111,
-    "seen": 39,
-    "hidden": 24
+    "seen": 40,
+    "hidden": 23
   },
   "squaretrihex2.2oneinthreebyshape.jigsaw-4": {
     "score": 2.133,
@@ -14808,68 +14808,68 @@
     "hidden": 31
   },
   "squaretrihex2.2oneinthreebyshape2.jigsaw-2": {
-    "score": 2.777,
-    "presses": 15,
+    "score": 2.675,
+    "presses": 14,
     "flips": 0,
-    "fits": 127,
-    "seen": 51,
-    "hidden": 28
+    "fits": 123,
+    "seen": 50,
+    "hidden": 25
   },
   "squaretrihex2.2oneinthreebyshape2.jigsaw-3": {
-    "score": 3.11,
-    "presses": 22,
-    "flips": 0,
-    "fits": 159,
-    "seen": 51,
-    "hidden": 51
-  },
-  "squaretrihex2.2oneinthreebyshape2.jigsaw-5": {
-    "score": 3.193,
-    "presses": 23,
+    "score": 2.399,
+    "presses": 12,
     "flips": 0,
     "fits": 163,
-    "seen": 67,
-    "hidden": 39
+    "seen": 54,
+    "hidden": 52
+  },
+  "squaretrihex2.2oneinthreebyshape2.jigsaw-5": {
+    "score": 2.559,
+    "presses": 14,
+    "flips": 0,
+    "fits": 169,
+    "seen": 70,
+    "hidden": 42
   },
   "squaretrihex2.2oneinthree.jigsaw": {
-    "score": 2.708,
+    "score": 2.716,
     "presses": 14,
     "flips": 0,
-    "fits": 134,
+    "fits": 136,
     "seen": 39,
-    "hidden": 41
+    "hidden": 43
   },
   "squaretrihex2.2oneinthree.jigsaw-2": {
-    "score": 2.812,
+    "score": 2.821,
     "presses": 14,
     "flips": 0,
-    "fits": 120,
-    "seen": 42,
-    "hidden": 30
+    "fits": 122,
+    "seen": 43,
+    "hidden": 31
   },
   "squaretrihex2.2oneinthree.jigsaw-3": {
-    "score": 2.887,
-    "presses": 17,
+    "score": 2.523,
+    "presses": 12,
     "flips": 0,
-    "fits": 155,
+    "fits": 154,
     "seen": 59,
-    "hidden": 39
+    "hidden": 38
   },
   "squaretrihex2.2oneinthree.jigsaw-4": {
-    "score": 2.578,
+    "score": 2.572,
     "presses": 12,
     "flips": 0,
-    "fits": 170,
-    "seen": 14,
-    "hidden": 96
+    "fits": 168,
+    "seen": 13,
+    "hidden": 95
   },
   "squaretrihex2.2oneinthree.jigsaw-5": {
-    "score": 2.543,
+    "score": 2.541,
     "presses": 12,
     "flips": 0,
-    "fits": 161,
-    "seen": 67,
-    "hidden": 37
+    "fits": 160,
+    "seen": 68,
+    "hidden": 35
   },
   "dodecarhombitrihex.2oneinthreebyshape.jigsaw": {
     "score": 2.498,
@@ -15096,28 +15096,28 @@
     "hidden": 16
   },
   "deltoidal.2oneinthree2.jigsaw-2": {
-    "score": 1.294,
-    "presses": 8,
-    "flips": 4,
-    "fits": 174,
-    "seen": 62,
-    "hidden": 15
+    "score": 1.318,
+    "presses": 7,
+    "flips": 5,
+    "fits": 167,
+    "seen": 60,
+    "hidden": 18
   },
   "deltoidal.2oneinthree2.jigsaw-3": {
-    "score": 1.239,
+    "score": 1.258,
     "presses": 6,
     "flips": 5,
     "fits": 207,
     "seen": 71,
-    "hidden": 22
+    "hidden": 25
   },
   "deltoidal.2oneinthree2.jigsaw-4": {
-    "score": 1.222,
-    "presses": 7,
-    "flips": 4,
-    "fits": 176,
-    "seen": 62,
-    "hidden": 12
+    "score": 1.212,
+    "presses": 6,
+    "flips": 5,
+    "fits": 184,
+    "seen": 60,
+    "hidden": 17
   },
   "kisrhombille.2apart.jigsaw": {
     "score": 1.342,
@@ -15136,16 +15136,16 @@
     "hidden": 0
   },
   "kisrhombille.2apart.jigsaw-3": {
-    "score": 1.974,
-    "presses": 29,
+    "score": 1.628,
+    "presses": 23,
     "flips": 0,
     "fits": 42,
     "seen": 0,
     "hidden": 0
   },
   "kisrhombille.2apart.jigsaw-4": {
-    "score": 2.145,
-    "presses": 29,
+    "score": 1.889,
+    "presses": 25,
     "flips": 0,
     "fits": 38,
     "seen": 0,
@@ -15160,8 +15160,8 @@
     "hidden": 0
   },
   "kisrhombille.2apart.jigsaw-6": {
-    "score": 2.037,
-    "presses": 31,
+    "score": 1.814,
+    "presses": 27,
     "flips": 0,
     "fits": 43,
     "seen": 0,
@@ -15440,16 +15440,16 @@
     "hidden": 2
   },
   "stackedbond.2oneinthree.jigsaw": {
-    "score": 0.402,
-    "presses": 2,
+    "score": 0.439,
+    "presses": 1,
     "flips": 0,
-    "fits": 47,
-    "seen": 3,
+    "fits": 50,
+    "seen": 6,
     "hidden": 0
   },
   "stackedbond.2oneinthree2.jigsaw": {
-    "score": 0.322,
-    "presses": 2,
+    "score": 0.289,
+    "presses": 1,
     "flips": 0,
     "fits": 44,
     "seen": 0,
@@ -15464,24 +15464,24 @@
     "hidden": 0
   },
   "runningbond.2oneinthree.jigsaw": {
-    "score": 0.396,
-    "presses": 2,
+    "score": 0.415,
+    "presses": 1,
     "flips": 0,
-    "fits": 83,
-    "seen": 3,
+    "fits": 86,
+    "seen": 6,
     "hidden": 0
   },
   "runningbond.2oneinthree.jigsaw-2": {
-    "score": 0.374,
-    "presses": 2,
+    "score": 0.411,
+    "presses": 1,
     "flips": 0,
-    "fits": 74,
-    "seen": 2,
+    "fits": 78,
+    "seen": 6,
     "hidden": 0
   },
   "runningbond.2oneinthree.jigsaw-3": {
-    "score": 0.384,
-    "presses": 2,
+    "score": 0.362,
+    "presses": 1,
     "flips": 0,
     "fits": 84,
     "seen": 2,
@@ -15512,12 +15512,12 @@
     "hidden": 0
   },
   "runningbond.2oneinthree3.jigsaw": {
-    "score": 0.677,
+    "score": 0.685,
     "presses": 1,
     "flips": 0,
-    "fits": 111,
-    "seen": 8,
-    "hidden": 23
+    "fits": 112,
+    "seen": 6,
+    "hidden": 26
   },
   "runningbond.2oneinthree3.jigsaw-2": {
     "score": 0.637,
@@ -15536,60 +15536,60 @@
     "hidden": 28
   },
   "basketweave3.2oneinthree.jigsaw": {
-    "score": 0.998,
-    "presses": 10,
+    "score": 0.843,
+    "presses": 5,
     "flips": 0,
-    "fits": 144,
-    "seen": 30,
-    "hidden": 16
+    "fits": 136,
+    "seen": 36,
+    "hidden": 2
   },
   "basketweave3.2oneinthree.jigsaw-2": {
-    "score": 0.996,
-    "presses": 8,
+    "score": 0.889,
+    "presses": 5,
     "flips": 0,
-    "fits": 149,
-    "seen": 49,
-    "hidden": 4
+    "fits": 142,
+    "seen": 41,
+    "hidden": 5
   },
   "basketweave3.2oneinthree.jigsaw-3": {
-    "score": 1.029,
-    "presses": 10,
+    "score": 0.918,
+    "presses": 5,
     "flips": 0,
-    "fits": 170,
-    "seen": 42,
-    "hidden": 16
+    "fits": 167,
+    "seen": 45,
+    "hidden": 10
   },
   "basketweave3.2oneinthree.jigsaw-4": {
-    "score": 1.012,
-    "presses": 8,
+    "score": 0.911,
+    "presses": 5,
     "flips": 0,
-    "fits": 161,
-    "seen": 51,
-    "hidden": 8
+    "fits": 154,
+    "seen": 42,
+    "hidden": 10
   },
   "basketweave3.2oneinthree.jigsaw-5": {
-    "score": 0.994,
-    "presses": 9,
+    "score": 0.869,
+    "presses": 5,
     "flips": 0,
-    "fits": 157,
-    "seen": 36,
-    "hidden": 16
+    "fits": 149,
+    "seen": 42,
+    "hidden": 2
   },
   "basketweave3.2oneinthree.jigsaw-6": {
-    "score": 1.017,
-    "presses": 8,
+    "score": 0.914,
+    "presses": 5,
     "flips": 0,
-    "fits": 159,
-    "seen": 55,
-    "hidden": 4
+    "fits": 152,
+    "seen": 52,
+    "hidden": 0
   },
   "herringbone.2oneinthree2.jigsaw": {
-    "score": 0.93,
-    "presses": 6,
+    "score": 0.851,
+    "presses": 4,
     "flips": 0,
-    "fits": 116,
-    "seen": 27,
-    "hidden": 13
+    "fits": 114,
+    "seen": 23,
+    "hidden": 15
   },
   "herringbone.2oneinthree2.jigsaw-2": {
     "score": 0.916,
@@ -15604,15 +15604,15 @@
     "presses": 4,
     "flips": 0,
     "fits": 107,
-    "seen": 20,
-    "hidden": 17
+    "seen": 21,
+    "hidden": 16
   },
   "herringbone.2oneinthree2.jigsaw-4": {
-    "score": 0.876,
+    "score": 0.855,
     "presses": 4,
     "flips": 0,
-    "fits": 122,
-    "seen": 26,
+    "fits": 119,
+    "seen": 23,
     "hidden": 17
   },
   "pentagon10.3mixed.jigsaw": {
@@ -15664,52 +15664,52 @@
     "hidden": 2
   },
   "offsetsquare.2oneinthree.jigsaw": {
-    "score": 0.603,
-    "presses": 5,
-    "flips": 0,
-    "fits": 62,
-    "seen": 6,
-    "hidden": 0
-  },
-  "offsetsquare.2oneinthree.jigsaw-2": {
-    "score": 0.532,
-    "presses": 5,
-    "flips": 0,
-    "fits": 56,
-    "seen": 2,
-    "hidden": 0
-  },
-  "offsetsquare.2oneinthree.jigsaw-3": {
-    "score": 0.589,
-    "presses": 5,
+    "score": 0.585,
+    "presses": 3,
     "flips": 0,
     "fits": 66,
     "seen": 6,
+    "hidden": 4
+  },
+  "offsetsquare.2oneinthree.jigsaw-2": {
+    "score": 0.624,
+    "presses": 3,
+    "flips": 0,
+    "fits": 66,
+    "seen": 12,
     "hidden": 0
+  },
+  "offsetsquare.2oneinthree.jigsaw-3": {
+    "score": 0.574,
+    "presses": 3,
+    "flips": 0,
+    "fits": 70,
+    "seen": 6,
+    "hidden": 4
   },
   "offsetsquare.2oneinthree2.jigsaw": {
-    "score": 0.525,
-    "presses": 5,
+    "score": 0.516,
+    "presses": 3,
     "flips": 0,
-    "fits": 58,
-    "seen": 2,
-    "hidden": 0
+    "fits": 62,
+    "seen": 0,
+    "hidden": 6
   },
   "offsetsquare.2oneinthree2.jigsaw-2": {
-    "score": 0.51,
-    "presses": 5,
+    "score": 0.521,
+    "presses": 3,
     "flips": 0,
-    "fits": 55,
-    "seen": 1,
-    "hidden": 0
+    "fits": 60,
+    "seen": 0,
+    "hidden": 6
   },
   "offsetsquare.2oneinthree2.jigsaw-3": {
-    "score": 0.495,
-    "presses": 5,
+    "score": 0.509,
+    "presses": 3,
     "flips": 0,
-    "fits": 61,
-    "seen": 1,
-    "hidden": 0
+    "fits": 66,
+    "seen": 0,
+    "hidden": 6
   },
   "offsetsquare.2oneinthree3.jigsaw": {
     "score": 0.885,
@@ -15720,27 +15720,27 @@
     "hidden": 24
   },
   "offsetsquare.2oneinthree3.jigsaw-2": {
-    "score": 0.928,
+    "score": 0.936,
     "presses": 3,
     "flips": 0,
-    "fits": 94,
-    "seen": 16,
-    "hidden": 24
-  },
-  "offsetsquare.2oneinthree3.jigsaw-3": {
-    "score": 0.91,
-    "presses": 3,
-    "flips": 0,
-    "fits": 102,
-    "seen": 16,
+    "fits": 95,
+    "seen": 15,
     "hidden": 26
   },
+  "offsetsquare.2oneinthree3.jigsaw-3": {
+    "score": 0.917,
+    "presses": 3,
+    "flips": 0,
+    "fits": 103,
+    "seen": 15,
+    "hidden": 28
+  },
   "staggeredtri.2oneinthree.jigsaw": {
-    "score": 0.995,
-    "presses": 12,
+    "score": 0.96,
+    "presses": 8,
     "flips": 4,
-    "fits": 92,
-    "seen": 8,
+    "fits": 104,
+    "seen": 18,
     "hidden": 2
   },
   "staggeredtri.2apart.jigsaw": {
@@ -15760,12 +15760,12 @@
     "hidden": 0
   },
   "pythagorean.2oneinthree.jigsaw": {
-    "score": 1.402,
+    "score": 1.392,
     "presses": 3,
     "flips": 0,
-    "fits": 119,
+    "fits": 117,
     "seen": 44,
-    "hidden": 23
+    "hidden": 21
   },
   "pythagorean.2oneinthree.jigsaw-2": {
     "score": 1.396,
@@ -15856,20 +15856,20 @@
     "hidden": 54
   },
   "rotatedhex.2oneinthree.jigsaw": {
-    "score": 1.642,
-    "presses": 6,
+    "score": 1.553,
+    "presses": 5,
     "flips": 0,
-    "fits": 200,
-    "seen": 22,
-    "hidden": 106
+    "fits": 180,
+    "seen": 15,
+    "hidden": 93
   },
   "rotatedhex.2oneinthree.jigsaw-2": {
-    "score": 1.656,
+    "score": 1.66,
     "presses": 6,
     "flips": 0,
-    "fits": 192,
-    "seen": 33,
-    "hidden": 91
+    "fits": 194,
+    "seen": 31,
+    "hidden": 95
   },
   "rotatedhex.2oneinthree.jigsaw-3": {
     "score": 1.636,
@@ -15880,12 +15880,12 @@
     "hidden": 104
   },
   "rotatedhex.2oneinthree.jigsaw-4": {
-    "score": 1.646,
+    "score": 1.66,
     "presses": 6,
     "flips": 0,
-    "fits": 195,
+    "fits": 201,
     "seen": 29,
-    "hidden": 96
+    "hidden": 102
   },
   "rotatedhex.2oneinthree.jigsaw-5": {
     "score": 1.634,
@@ -15896,12 +15896,12 @@
     "hidden": 94
   },
   "rotatedhex.2oneinthree.jigsaw-6": {
-    "score": 1.587,
+    "score": 1.566,
     "presses": 5,
     "flips": 0,
-    "fits": 190,
-    "seen": 23,
-    "hidden": 96
+    "fits": 182,
+    "seen": 19,
+    "hidden": 92
   },
   "rotatedhex.3byshape.jigsaw": {
     "score": 0.534,
@@ -15984,11 +15984,11 @@
     "hidden": 2
   },
   "rotatedtri.2oneinthreebyshape.jigsaw-5": {
-    "score": 0.728,
+    "score": 0.704,
     "presses": 2,
     "flips": 0,
-    "fits": 89,
-    "seen": 14,
+    "fits": 87,
+    "seen": 12,
     "hidden": 0
   },
   "rotatedtri.2oneinthreebyshape.jigsaw-6": {
@@ -16200,26 +16200,26 @@
     "hidden": 51
   },
   "trapezoid.3apart.jigsaw": {
-    "score": 1.261,
-    "presses": 8,
+    "score": 1.081,
+    "presses": 6,
     "flips": 0,
-    "fits": 42,
-    "seen": 2,
-    "hidden": 2
+    "fits": 41,
+    "seen": 3,
+    "hidden": 0
   },
   "rightisosceles.3apart.jigsaw": {
-    "score": 1.745,
-    "presses": 13,
-    "flips": 3,
-    "fits": 124,
-    "seen": 39,
+    "score": 1.634,
+    "presses": 7,
+    "flips": 4,
+    "fits": 125,
+    "seen": 44,
     "hidden": 24
   },
   "drafter.3apart.jigsaw": {
-    "score": 1.175,
-    "presses": 13,
+    "score": 0.948,
+    "presses": 8,
     "flips": 0,
-    "fits": 39,
+    "fits": 38,
     "seen": 0,
     "hidden": 0
   },
@@ -16232,19 +16232,19 @@
     "hidden": 6
   },
   "kissingsquares.3apart.jigsaw": {
-    "score": 0.849,
-    "presses": 2,
+    "score": 0.786,
+    "presses": 1,
     "flips": 0,
     "fits": 71,
     "seen": 10,
     "hidden": 1
   },
   "kissingtriangles.3apart.jigsaw": {
-    "score": 1.271,
-    "presses": 8,
+    "score": 1.168,
+    "presses": 6,
     "flips": 1,
     "fits": 56,
-    "seen": 8,
+    "seen": 9,
     "hidden": 0
   }
 }

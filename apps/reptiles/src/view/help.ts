@@ -73,7 +73,8 @@ const SECTIONS: Section[] = [
         "Jigsaws",
         "A jigsaw board is a colouring in one colour: each edge's knob or " +
           "socket fits only its match, as the colours would. Its rim is cut too, " +
-          "so the tiles along it show where they go.",
+          "so the tiles along it show where they go — and a tile sticks to a knob " +
+          "or a socket anywhere along the edge, not only in a corner.",
       ],
     ],
   },

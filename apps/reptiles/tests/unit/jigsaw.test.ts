@@ -14,7 +14,7 @@ import {
   partner,
   seamMark,
 } from "../../src/geometry/marks";
-import type { XY } from "../../src/geometry/shape";
+import { centroid, spotKey, turnsOntoPieces, type XY } from "../../src/geometry/shape";
 import { LEVELS, boardKeys, levelByKey, type Level } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 import { jigsawPoints } from "../../src/view/curve";
@@ -205,5 +205,59 @@ describe("jigsaw levels", () => {
     const p = new Puzzle(levelByKey(key)!);
     expect(p.solve()).toBe(true);
     expect(p.won).toBe(true);
+  });
+
+  // a tile dropped on the middle of the rim, away from any corner: held by a
+  // knob, a socket or an S seam there, as by a corner — but not by a straight
+  // edge, which looks like any other
+  it.each([
+    "squares.2apart.jigsaw",
+    "squares.2oneinthree.jigsaw",
+    "triangles.2apart.jigsaw",
+    "runningbond.2oneinthree.jigsaw",
+  ])("%s: a tile sticks part-way along the rim where the rim is cut, and only there", (key) => {
+    const level = levelByKey(key)!;
+    const { ring } = level;
+    const rim = new Map<string, number>();
+    level.region.forEach((loop, i) =>
+      loop.forEach((a, j) =>
+        rim.set(
+          `${ring.key(a)}>${ring.key(loop[(j + 1) % loop.length]!)}`,
+          level.regionMarks![i]![j]!,
+        ),
+      ),
+    );
+    const p = new Puzzle(level);
+    const corners = new Set(p.openCorners.keys());
+    let held = 0;
+    let straight = 0;
+    for (const cell of level.cells) {
+      const verts = cell[0]!.verts;
+      // a cell on the rim with none of its corners on a rim corner
+      if (verts.some((v) => corners.has(ring.key(v)))) continue;
+      const along = verts.flatMap((a, i) => {
+        const m = rim.get(`${ring.key(a)}>${ring.key(verts[(i + 1) % verts.length]!)}`);
+        return m === undefined ? [] : [m];
+      });
+      if (along.length === 0) continue;
+      const kind = level.tiles.findIndex((t) => turnsOntoPieces(t, cell).length > 0);
+      const rot = turnsOntoPieces(level.tiles[kind]!, cell)[0]!;
+      const c = centroid(verts.map((v) => ring.toXY(v)));
+      const got = p.snap(kind, c, 0.05, rot);
+      const cut = along.some((m) => {
+        const jig = jigsaw(m)!;
+        return !("seam" in jig && jig.seam === SEAM_FLAT);
+      });
+      if (cut) {
+        held++;
+        expect(got && spotKey(ring, got), key).toBe(spotKey(ring, cell));
+      } else {
+        straight++;
+        expect(got, key).toBeNull();
+      }
+    }
+    expect(held).toBeGreaterThan(0);
+    // the one in three: red tiles side by side along the rim, a straight seam
+    if (key === "squares.2oneinthree.jigsaw") expect(straight).toBeGreaterThan(0);
   });
 });

@@ -8,7 +8,12 @@ lay tiles into a corner the board cannot be finished from, and has to take
 some back off.
 
 - A dropped tile sticks to a corner of what is still uncovered — never
-  part-way along a straight edge. While it would stick, a ✓ shows where it
+  part-way along a straight edge. On a jigsaw (below) an open edge cut as a
+  knob, a socket or an S seam holds a tile too, wherever along the edge it
+  is: a tile laid along it whole, its own edge there the same mark (`sawOn`
+  in `frontier.ts`; a straight seam holds nothing, looking as any straight
+  edge does). The hint, the solver and the difficulty measure still work
+  corner by corner. While it would stick, a ✓ shows where it
   will land and a dot marks each of its corners that meets the edge (the rim
   or a placed tile), wherever along it. Only a tile's real corners stick or
   get a dot — never a point part-way along one of its sides, where a marked
@@ -249,7 +254,7 @@ some back off.
     piles and turns — but for the **rim**, which is cut as the tiles along it
     are (`Level.regionMarks`) where a coloured board's takes any: the rim
     shows where the tiles along it go, and every jigsaw measures easier than
-    its colouring (403 of 403 boards; medians 1.97 and 1.57). A colouring
+    its colouring (403 of 403 boards; medians 1.97 and 1.56). A colouring
     has no jigsaw where it cannot be drawn so: two colours that meet their
     own on a level that flips (a mirror turns an S into a Z, but leaves a
     colour as it is; 46 of them), or knobs that crowd an edge's at every
@@ -260,7 +265,8 @@ some back off.
     (`decor.size`), so no float decides it as the game builds a level; 129
     of the 137 are full size, the kisrhombille's at 0.64. Each is on every
     board its colouring is (`boardNumbers`), keyed `<colouring>.jigsaw` and
-    listed after the colourings on a tiling's page.
+    listed after the colourings on a tiling's page. A tile sticks to a knob
+    or a socket part-way along the frontier, not only in a corner (above).
   A marked level is measured as any other (Difficulty, below), with no
   floor at its plain board's score: marks can make a board easier as well as
   harder.
