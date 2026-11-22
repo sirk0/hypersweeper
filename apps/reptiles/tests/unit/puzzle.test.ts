@@ -47,7 +47,17 @@ import {
   type XY,
 } from "../../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
-import { BOARDS, LEVELS, levelByKey, notation, parseNotation, type Level } from "../../src/levels";
+import { measureTraps } from "../../src/difficulty";
+import {
+  BOARDS,
+  LEVELS,
+  VERTEX_RULED,
+  boardKeys,
+  levelByKey,
+  notation,
+  parseNotation,
+  type Level,
+} from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
 
 /** A one-piece tile's or cell's polygon — every level's but the rep-tiles
@@ -1058,4 +1068,49 @@ describe("puzzle", () => {
     for (const rot of p.orientations(0)) expect(p.snap(0, centre, 1, rot)).toBeNull();
     expect(p.snap(1, centre, 0.5, p.orientations(1)[0]!)).not.toBeNull();
   });
+
+  it("says where a tile would break the vertex rule: at a point of the hole", () => {
+    const { p, hex } = trihexWithHole([3, 6, 3, 6]);
+    const { ring } = p.level;
+    const centre = centroid(hex.map((v) => ring.toXY(v)));
+    const corners = new Set(hex.map((v) => ring.key(v)));
+    // a triangle in the hexagon's place: refused, at one of its corners —
+    // or, at the very middle, the corner it would put there
+    const breaks = p
+      .orientations(0)
+      .map((rot) => p.ruleBreak(0, centre, 1, rot))
+      .filter((b) => b !== null);
+    expect(breaks.length).toBeGreaterThan(0);
+    for (const b of breaks) {
+      const [x, y] = ring.toXY(b);
+      const atCorner = corners.has(ring.key(b));
+      const atMiddle = Math.hypot(x - centre[0], y - centre[1]) < 1e-9;
+      expect(atCorner || atMiddle).toBe(true);
+    }
+    // the hexagon lands, so there is nothing to show
+    expect(p.ruleBreak(1, centre, 0.5, p.orientations(1)[0]!)).toBeNull();
+    // and on the plain level, nothing ever
+    const plain = trihexWithHole().p;
+    for (const rot of plain.orientations(0)) expect(plain.ruleBreak(0, centre, 1, rot)).toBeNull();
+  });
+
+  it("lists a vertex rule just where it changes what fits as the board is laid", () => {
+    const uniform = LEVELS.filter((l) => l.group === "uniform" && !l.decor).map((l) => l.key);
+    expect(uniform).toHaveLength(8);
+    const bites = uniform.filter((key) => {
+      const plain = levelByKey(key)!;
+      const ruled = { ...plain, rule: plain.configs[0]! };
+      const a = measureTraps(plain);
+      const b = measureTraps(ruled);
+      return a.fits !== b.fits || a.seen + a.hidden !== b.seen + b.hidden;
+    });
+    expect(bites).toEqual(VERTEX_RULED);
+    // each listed after its tiling's other markings, on every board of it
+    for (const key of VERTEX_RULED) {
+      const marks = LEVELS.filter((l) => l.decor?.of === key);
+      expect(marks.at(-1)!.key).toBe(`${key}.vertex`);
+      expect(boardKeys(`${key}.vertex`)).toHaveLength(levelByKey(key)!.boards);
+      expect(levelByKey(`${key}.vertex`)!.rule).toEqual(levelByKey(key)!.configs[0]);
+    }
+  }, 60_000);
 });

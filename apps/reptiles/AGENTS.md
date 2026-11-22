@@ -36,9 +36,9 @@ some back off.
   a flip control (or F) mirrors every tray tile and the one in hand across
   the upright line through its middle, as its icon draws it, however the
   tiles are turned — so a flip changes the turn too (`Puzzle.flipTurn`: held
-  at ζ^rot, the other side is at ζ^(n/2 − rot); the hint counts from there;
-  the difficulty measure still counts a flip as keeping the turn, as it did
-  before, so its scores and the colourings chosen by them stand). Where the tray never holds a half turn (a 120°
+  at ζ^rot, the other side is at ζ^(n/2 − rot); the hint and the
+  difficulty measure count from there, and so the colouring choice ranked by
+  it). Where the tray never holds a half turn (a 120°
   step) the line is the one nearest upright it can, 30° off; with no rotate
   step at all, the turn stays. A tile lands only on its own side.
 - Taking tiles off: drag a placed tile back over the tray (it turns red on
@@ -219,8 +219,8 @@ some back off.
     point where some copy's side is met part-way is carried back onto one
     copy and every copy cut there, round until no corner lies part-way along
     any piece — twice on type 10's pentagon, once on types 13 and 15. Each
-    has a lined board and a coloured one (type 13 two lined), from 0.5 to
-    1.9 measured; the lines between a side's two pieces close into a loop
+    has a lined board and a coloured one (type 13 two lined), from 1.4 to
+    2.7 measured; the lines between a side's two pieces close into a loop
     with the tile across.
   - *The six isogonal tilings* (`?level=offsetsquare.lines`,
     `?level=pythagorean.2oneinthree`, `?level=rotatedtri.3byshape`) are
@@ -235,8 +235,8 @@ some back off.
     triangle, the rotated triangular's triangle but not its hexagon, and the
     three-scale triangular's middle triangle once a side and its large one
     twice. Each has two lined
-    boards and two or three coloured, 29 in all, from 0.16 (the offset
-    square's lines) to 1.55 (the three-scale triangular in three colours)
+    boards and two or three coloured, 29 in all, from 0.51 (the offset
+    square's lines) to 2.72 (the three-scale triangular in three colours)
     measured.
   - *Jigsaws* (`?level=squares.2apart.jigsaw`, `?level=hexagons.3apart.jigsaw`,
     `?level=ammannbeenker.3apart.jigsaw`): a colouring again, in one colour
@@ -254,7 +254,7 @@ some back off.
     piles and turns — but for the **rim**, which is cut as the tiles along it
     are (`Level.regionMarks`) where a coloured board's takes any: the rim
     shows where the tiles along it go, and every jigsaw measures easier than
-    its colouring (403 of 403 boards; medians 1.97 and 1.56). A colouring
+    its colouring (406 of 406 boards; medians 2.05 and 1.62). A colouring
     has no jigsaw where it cannot be drawn so: two colours that meet their
     own on a level that flips (a mirror turns an S into a Z, but leaves a
     colour as it is; 46 of them), or knobs that crowd an edge's at every
@@ -262,11 +262,33 @@ some back off.
     sizes (`KNOB_SIZES`) that keeps every tray tile's outline clear of
     itself (`knobsClear`: no two edges' strokes within a fiftieth of an
     edge), chosen as `npm run levels` writes the index and kept there
-    (`decor.size`), so no float decides it as the game builds a level; 129
-    of the 137 are full size, the kisrhombille's at 0.64. Each is on every
+    (`decor.size`), so no float decides it as the game builds a level; 130
+    of the 138 are full size, the kisrhombille's at 0.64. Each is on every
     board its colouring is (`boardNumbers`), keyed `<colouring>.jigsaw` and
     listed after the colourings on a tiling's page. A tile sticks to a knob
     or a socket part-way along the frontier, not only in a corner (above).
+  - *Vertex rules* (`?level=rhombitrihex.vertex`, "3.4.6.4 · every point"):
+    the plain tiles, but every point must keep the tiling's own vertex
+    configuration (`Level.rule`, `vertexRuleLevel` in `levels.ts`): a tile
+    lands only where every point it touches, its corner added, can still
+    become 3.4.6.4 read either way round, and only edge to edge
+    (`RuleState` in `src/geometry/vertexRule.ts`). So six triangles never
+    stand where a hexagon was, nor squares and triangles of 3³.4² meet as
+    3².4.3.4. One on each uniform tiling where the rule changes what fits as
+    the board is laid (`VERTEX_RULED`, held to that by a test): seven — not
+    4.8², whose squares and octagons make nothing else. It is easier than its
+    plain board on 3³.4², 3.4.6.4, 4.6.12, 3.12² and 3².4.3.4 (wrong fits
+    turned away) and harder on 3.6.3.6 and 3⁴.6, where a fine fit becomes
+    a dead end. Its tray is the plain one, so it is on every board of its
+    tiling, `markedBoards.json` not asked (`boardNumbers`); listed last on
+    a tiling's page, its card the configuration drawn round one point
+    (`vertexFigure` in `src/view/icons.ts`), which stands beside the level's
+    name in play too. While a held tile would fit but for the rule, a red
+    ring marks the point it would break it at instead of the ✓, and flashes
+    there if it is let go (`Puzzle.ruleBreak`). The hint and the difficulty
+    measure ask the rule as play does: each frontier their searches try
+    carries its `RuleState`, and the hint remembers a dead frontier with
+    the corners round its points.
   A marked level is measured as any other (Difficulty, below), with no
   floor at its plain board's score: marks can make a board easier as well as
   harder.
@@ -566,7 +588,8 @@ board to the search's promises, so a changed window that leaves
 `npm run difficulty`. After changing a level's window, name or tiles, or
 `npm run colourings`, re-run `npm run levels` too.
 
-**A marking on every board.** A marked level is listed (and searched for:
+**A marking on every board.** A vertex rule is on every board of its
+tiling, as plain is. Any other marked level is listed (and searched for:
 `npm run colourings`) on its tiling's first board, and laid on the rest by
 `markedOn` in `levels.ts`. A painting of a periodic tiling is written down as
 numbers on the first board's own translation classes and lattice origin, so
@@ -587,9 +610,10 @@ so its colouring stays on its first board. `npm run marked-boards`
 every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
-colouring's tiles in more ways or fewer: 104 of a thousand do): 891 boards
-past the first, 1628 levels in all — and the jigsaws, on the boards their
-colourings are, 403 more: 2031. Run it after `npm run boards`,
+colouring's tiles in more ways or fewer: 107 of a thousand do): 888 boards
+past the first, 1625 levels in all — and the jigsaws, on the boards their
+colourings are, 406 more, and the vertex rules, on every board, 33 more:
+2064. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -608,7 +632,7 @@ that fits there (`Puzzle.fitsAt`), and each fit not the board's own is *seen*
 (a corner it opens takes nothing at all), *fine* (the board's own tiles laid
 round it leave a hole that fills, within 40 tiles: six triangles where a
 hexagon was) or *hidden* — wrong, and looking as right as any
-(`measureTraps`). The score is the turning, plus 1.25 (`TRAPS`) times the
+(`measureTraps`). The score is the turning, plus 1.35 (`TRAPS`) times the
 share of fits that are wrong (seen or hidden), plus 0.15 per extra tile kind
 and tiles/200. Bands split at 0.85 and 1.45 (`MEDIUM`, `HARD`), set so that
 every flag-transitive level, 4.8² and 3³.4² are easy and the Cairo pentagonal,
@@ -627,10 +651,10 @@ of step.
 
 The ladder it is built for is every flat board Hypersweeper has: squares,
 triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
-aperiodic ones. A level can also hold every vertex to a configuration
-(`Level.rule`, "every point is 3.3.4.3.4") — built and tested, unused so far.
+aperiodic ones, and the uniform tilings again with every point held to their
+vertex configuration (`Level.rule`, the `.vertex` levels above).
 
-**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 137 of those colourings again as jigsaws, every marking on every board of its tiling that it makes the same tray on, 2031 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 138 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 2064 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,

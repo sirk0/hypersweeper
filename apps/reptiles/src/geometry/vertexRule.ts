@@ -12,6 +12,8 @@
 // count; a regular p-gon's corner spans (p − 2)·n / 2p of the n directions.
 
 import type { Cyc, Ring } from "./cyclotomic";
+import type { Frontier } from "./frontier";
+import type { Piece } from "./shape";
 
 export interface Corner {
   /** ζ^start is the direction of the corner's first edge, counter-clockwise. */
@@ -70,4 +72,84 @@ export function fitsConfig(
     }
   }
   return false;
+}
+
+/**
+ * The corners laid round each vertex so far, for a level held to `rule` — a
+ * value, not a store: `with` gives the state with a tile more, leaving this
+ * one as it was, so a search (the hint's, the difficulty measure's) can
+ * carry one along with each frontier it tries and drop it on the way back.
+ */
+export class RuleState {
+  private constructor(
+    readonly ring: Ring,
+    readonly rule: readonly number[],
+    private readonly corners: ReadonlyMap<string, readonly Corner[]>,
+  ) {}
+
+  /** Nothing laid yet. */
+  static empty(ring: Ring, rule: readonly number[]): RuleState {
+    return new RuleState(ring, rule, new Map());
+  }
+
+  /** The state with every tile of `laid` down as well. */
+  static of(ring: Ring, rule: readonly number[], laid: Iterable<readonly Piece[]>): RuleState {
+    let s = RuleState.empty(ring, rule);
+    for (const pieces of laid) s = s.with(pieces);
+    return s;
+  }
+
+  /** The state with `pieces` down too. */
+  with(pieces: readonly Piece[]): RuleState {
+    const corners = new Map(this.corners);
+    for (const p of pieces)
+      for (const [key, corner] of cornersOf(this.ring, p.verts))
+        corners.set(key, [...(corners.get(key) ?? []), corner]);
+    return new RuleState(this.ring, this.rule, corners);
+  }
+
+  /**
+   * Where `pieces` (which already fit `frontier`) would break the rule: a
+   * point where they meet what is down other than edge to edge, or a vertex
+   * of theirs whose corners, theirs added, no turn of the rule (read either
+   * way round) has — null where the rule lets them land.
+   */
+  breaks(frontier: Frontier, pieces: readonly Piece[]): Cyc | null {
+    const t = frontier.tJunction(pieces);
+    if (t) return t;
+    const added = new Map<string, { at: Cyc; corners: Corner[] }>();
+    for (const p of pieces) {
+      const corners = cornersOf(this.ring, p.verts);
+      corners.forEach(([key, corner], i) => {
+        const was = added.get(key);
+        if (was) was.corners.push(corner);
+        else
+          added.set(key, { at: p.verts[i]!, corners: [...(this.corners.get(key) ?? []), corner] });
+      });
+    }
+    for (const { at, corners } of added.values())
+      if (!fitsConfig(this.ring.n, this.rule, corners)) return at;
+    return null;
+  }
+
+  /** Whether the rule lets `pieces` land (`breaks` finds nothing). */
+  allows(frontier: Frontier, pieces: readonly Piece[]): boolean {
+    return this.breaks(frontier, pieces) === null;
+  }
+
+  /** The corners round each of `vertices`, as a key: what tells two layouts
+   * with one frontier apart, to the rule (the hint's dead frontiers). */
+  keyAt(vertices: Iterable<string>): string {
+    const out: string[] = [];
+    for (const v of vertices) {
+      const cs = this.corners.get(v);
+      if (!cs) continue;
+      const list = cs
+        .map((c) => `${c.start}:${c.sides}`)
+        .sort()
+        .join(",");
+      out.push(`${v}=${list}`);
+    }
+    return out.sort().join(";");
+  }
 }

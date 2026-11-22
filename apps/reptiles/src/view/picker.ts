@@ -21,7 +21,7 @@ import { BARS, bandOf, type Band } from "../difficulty";
 import { boardKeys, levelByKey, markedOf, type Level } from "../levels";
 import { formatTime } from "../progress";
 import { cardArt } from "./cardArt";
-import { barsIcon, outlineIcon, starRow, trayIcon } from "./icons";
+import { barsIcon, outlineIcon, starRow, trayIcon, vertexFigure } from "./icons";
 
 /** The level a board and a marking make: `<marking>` on the first board,
  * `<marking>-<n>` on the n-th. */
@@ -184,7 +184,7 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
     }
 
     // the tiling's markings: plain, its matching rules, its colourings, its
-    // jigsaws
+    // jigsaws, its vertex rule
     const tiles = section("pick-tiles", "Tiles", "Plain, or marked: edges that must match");
     const row = document.createElement("div");
     row.className = "family-row marking-row";
@@ -199,13 +199,18 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       button.setAttribute("aria-pressed", String(m.key === marking));
       if (!here) button.classList.add("off");
       button.title = m.decor
-        ? m.decor.jigsaw
-          ? `Jigsaw: ${m.decor.label.replace(/^jigsaw, /, "")}`
-          : `${m.decor.rules ? "Matching rule" : "Colouring"}: ${m.decor.label}`
+        ? m.decor.vertex
+          ? `Vertex rule: every point is ${tiling.name}`
+          : m.decor.jigsaw
+            ? `Jigsaw: ${m.decor.label.replace(/^jigsaw, /, "")}`
+            : `${m.decor.rules ? "Matching rule" : "Colouring"}: ${m.decor.label}`
         : "Plain tiles";
       const slot = document.createElement("span");
       slot.className = "tray-slot";
-      drawLater(slot, `tray:${m.key}`, () => trayIcon(levelByKey(m.key)!));
+      // a vertex rule's tray is the plain one: its card is the rule
+      if (m.decor?.vertex)
+        drawLater(slot, `vertex:${m.key}`, () => vertexFigure(levelByKey(m.key)!));
+      else drawLater(slot, `tray:${m.key}`, () => trayIcon(levelByKey(m.key)!));
       const meta = document.createElement("span");
       meta.className = "card-meta";
       meta.append(bandIcon(bandOf(key)), starRow(here ? stars(key) : 0));

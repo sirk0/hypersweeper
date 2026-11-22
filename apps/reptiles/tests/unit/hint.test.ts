@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { posed, turnsOntoPieces, type Piece } from "../../src/geometry/shape";
+import { posed, spotKey, turnsOntoPieces, type Piece } from "../../src/geometry/shape";
 import { HintSolver, runToEnd, type Hint, type Laid } from "../../src/hint";
 import { levelByKey, type Level } from "../../src/levels";
 import { Puzzle } from "../../src/puzzle";
@@ -53,7 +53,7 @@ function strays(lv: Level): { laid: Laid; fine: boolean }[] {
   for (const at of solver.convexCorners(empty))
     for (const o of solver.optionsAt(empty, at)) {
       if (o.own) continue;
-      const fine = runToEnd(solver.cover(empty.cover(o.spot))) !== null;
+      const fine = runToEnd(solver.cover(solver.lay(empty, o.spot))) !== null;
       out.push({ laid: { id: 1 + out.length, kind: o.kind, pieces: o.spot }, fine });
     }
   return out;
@@ -62,17 +62,23 @@ function strays(lv: Level): { laid: Laid; fine: boolean }[] {
 const hintFor = (lv: Level, laid: Laid[]): Hint => runToEnd(new HintSolver(lv).hint(laid));
 
 describe("the hint", () => {
-  it.each(["squares", "trihex", "rhombitrihex", "cairo", "squares.lines", "hat"])(
-    "on an empty %s board lays its own tiles, one hint a tile, to the finish",
-    (key) => {
-      const lv = level(key);
-      const done = followHints(lv, [], lv.cells.length + 1);
-      expect(done).toHaveLength(lv.cells.length);
-      const solver = new HintSolver(lv);
-      for (const t of done) expect(solver.isOwn(t.pieces)).toBe(true);
-      expect(solver.frontierOf(done).empty).toBe(true);
-    },
-  );
+  it.each([
+    "squares",
+    "trihex",
+    "rhombitrihex",
+    "cairo",
+    "squares.lines",
+    "hat",
+    "trihex.vertex",
+    "snubhex.vertex",
+  ])("on an empty %s board lays its own tiles, one hint a tile, to the finish", (key) => {
+    const lv = level(key);
+    const done = followHints(lv, [], lv.cells.length + 1);
+    expect(done).toHaveLength(lv.cells.length);
+    const solver = new HintSolver(lv);
+    for (const t of done) expect(solver.isOwn(t.pieces)).toBe(true);
+    expect(solver.frontierOf(done).empty).toBe(true);
+  });
 
   it("has nothing to say on a finished board", () => {
     const lv = level("squares");
@@ -129,6 +135,49 @@ describe("the hint", () => {
     const done = followHints(lv, laid);
     expect(solver.frontierOf(done).empty).toBe(true);
   });
+
+  it.each(["elongated.vertex", "snubhex.vertex", "rhombitrihex.vertex"])(
+    "on %s, offers only what the vertex rule lets land, and takes off what leaves it no way",
+    (key) => {
+      const lv = level(key);
+      const plain = level(lv.decor!.of);
+      const sidesOf = (pieces: readonly Piece[]): number => pieces[0]!.verts.length;
+      // half the board's own tiles down, the order they were cut in
+      const own: Laid[] = lv.cells.slice(0, Math.floor(lv.cells.length / 2)).map((pieces, i) => ({
+        id: 100 + i,
+        kind: lv.tiles.findIndex((t) => sidesOf(t.pieces) === sidesOf(pieces)),
+        pieces,
+      }));
+      const p = new Puzzle(lv);
+      for (const t of own) p.place(t.kind, t.pieces, 0);
+      /** The tiles not the board's own that fit an open corner, by spot. */
+      const offered = (of: Level): Map<string, Laid> => {
+        const solver = new HintSolver(of);
+        const f = solver.frontierOf(own);
+        const out = new Map<string, Laid>();
+        for (const at of solver.convexCorners(f))
+          for (const o of solver.optionsAt(f, at))
+            if (!o.own) out.set(spotKey(of.ring, o.spot), { id: 1, kind: o.kind, pieces: o.spot });
+        return out;
+      };
+      const ruled = offered(lv);
+      const loose = offered(plain);
+      // the rule turns some away, and lets in nothing the plain board does not
+      expect(loose.size).toBeGreaterThan(ruled.size);
+      for (const [k, t] of ruled) {
+        expect(loose.has(k)).toBe(true);
+        expect(p.allows(t.pieces)).toBe(true);
+      }
+      for (const [k, t] of loose) if (!ruled.has(k)) expect(p.allows(t.pieces)).toBe(false);
+      // one it lets land but the board cannot be finished round, taken off
+      const solver = new HintSolver(lv);
+      const f = solver.frontierOf(own);
+      const dead = [...ruled.values()].find(
+        (t) => runToEnd(solver.cover(solver.lay(f, t.pieces))) === null,
+      );
+      if (dead) expect(hintFor(lv, [...own, dead])).toEqual({ remove: dead.id });
+    },
+  );
 
   it("is a tile the game itself would let land, as the tray holds it", () => {
     const lv = level("rhombitrihex");

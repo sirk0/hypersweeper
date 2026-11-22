@@ -472,6 +472,59 @@ button.primary {
   content: "· ";
 }
 
+/* A vertex-rule level's sign beside its name (icons.ts `vertexFigure`): the
+   configuration every point must keep, drawn round one point. */
+.board-name .level-rule svg {
+  width: 1.6em;
+  height: 1.6em;
+  margin-right: 0.35em;
+  vertical-align: -0.5em;
+}
+
+.vertex-figure .tile {
+  cursor: inherit;
+}
+
+.vertex-figure .vertex-rim {
+  fill: none;
+  stroke: var(--muted);
+}
+
+.vertex-figure .vertex-dot {
+  fill: var(--accent);
+  stroke: var(--ink);
+  stroke-width: 0.04;
+}
+
+/* Where a held tile would break the vertex rule: a ring round the point
+   (svgBoard.ts `showRuleBreak`), in place of the check mark. */
+.rule-break {
+  fill: none;
+  stroke: var(--remove);
+  pointer-events: none;
+}
+
+.rule-break.flash {
+  animation: rule-break-flash 0.9s ease-out forwards;
+}
+
+@keyframes rule-break-flash {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rule-break.flash {
+    animation-duration: 0.01s;
+    animation-delay: 0.9s;
+  }
+}
+
 .star {
   color: var(--muted);
   font-size: 1.1rem;

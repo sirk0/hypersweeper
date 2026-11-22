@@ -106,6 +106,33 @@ test("a jigsaw board: one colour, knobs on the edges and the rim, the rim picks 
   expect(errors).toEqual([]);
 });
 
+test("a vertex rule: its card on the tiling page is the configuration, drawn beside the name too", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto("/?tiling=rhombitrihex");
+  // last of the tiling's markings: the vertex figure, not a tray
+  const card = page.locator('.marking-card[data-marking="rhombitrihex.vertex"]');
+  await expect(card).toHaveCount(1);
+  await expect(page.locator(".marking-card").last()).toHaveAttribute(
+    "data-marking",
+    "rhombitrihex.vertex",
+  );
+  await expect(card.locator("svg.vertex-figure")).toBeVisible();
+  // 3.4.6.4: a triangle, two squares and a hexagon round the point
+  await expect(card.locator("svg.vertex-figure path.tile")).toHaveCount(4);
+  await expect(card).toHaveAttribute("title", "Vertex rule: every point is 3.4.6.4");
+  await card.click();
+  await page.locator(".pick-play .play").click();
+  await expect(page).toHaveURL(/level=rhombitrihex\.vertex/);
+  await expect(page.locator("#level")).toHaveText("3.4.6.4 · every point");
+  await expect(page.locator("#level-rule svg.vertex-figure")).toBeVisible();
+  // a plain board has no sign
+  await page.goto("/?level=rhombitrihex");
+  await expect(page.locator("#level-rule")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test("a square dragged into the corner of the squares level lands there", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=squares");

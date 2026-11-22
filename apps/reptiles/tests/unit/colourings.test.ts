@@ -63,7 +63,7 @@ const Z4 = cyclotomic(4);
 const APERIODIC_COLOURINGS = aperiodicColourings as Record<string, { tiles: number }>;
 // the lined and coloured levels — not the jigsaws drawn from them, which
 // tests/unit/jigsaw.test.ts holds to their colourings
-const COLOURED = LEVELS.filter((l) => l.decor && !l.decor.jigsaw);
+const COLOURED = LEVELS.filter((l) => l.decor && !l.decor.jigsaw && !l.decor.vertex);
 /** The tilings whose full colouring choice is too slow for a unit test. */
 const SLOW_CHOICE = [
   "studdedtri2",
@@ -262,8 +262,8 @@ describe("colourings", () => {
       "snubelongated.lines",
       "snubelongated.lines2",
       "snubelongated.2oneinthreebyshape",
+      "snubelongated.2byshape",
       "snubelongated.2oneinthree",
-      "snubelongated.3byshape",
       "dissectedtrunchex2.lines",
       "dissectedtrunchex2.dots",
       "dissectedtrunchex2.2oneinthreebyshape",
@@ -382,8 +382,8 @@ describe("colourings", () => {
       "snubelongateddual.lines2",
       "dissectedtrunchex2dual.lines",
       "dissectedtrunchex2dual.lines2",
-      "dissectedtrunchex2dual.2colours",
       "dissectedtrunchex2dual.2oneinthree",
+      "dissectedtrunchex2dual.2colours",
       "dissectedtrunchex2dual.3byshape",
       "squarerows2dual.lines",
       "squarerows2dual.lines2",
@@ -397,8 +397,8 @@ describe("colourings", () => {
       "squarerows3dual.2oneinthree",
       "dissectedtrunchexdual.lines",
       "dissectedtrunchexdual.lines2",
-      "dissectedtrunchexdual.2oneinthree",
       "dissectedtrunchexdual.2colours",
+      "dissectedtrunchexdual.2oneinthree",
       "dissectedtrunchexdual.3byshape",
       "hexrowsdual.lines",
       "hexrowsdual.lines2",

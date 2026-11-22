@@ -153,7 +153,8 @@ export interface Level {
   group: GroupKey;
   /** A vertex configuration every vertex *must* keep, for a level whose
    * puzzle is that rule — a tile then lands only where every point it touches
-   * can still become it. Unset on every level so far. */
+   * can still become it (`vertexRuleLevel`, the `.vertex` levels of the
+   * uniform tilings). */
   rule?: number[];
   /** For a level on a Hypersweeper tiling window, which: the tiling and the
    * window `archimedeanBoard(tiling, nx, ny)` takes — unless the tiling had to
@@ -222,6 +223,9 @@ export interface Decor {
   label: string;
   jigsaw?: string;
   size?: number;
+  /** On a vertex-rule level, the configuration every point must keep
+   * (`Level.rule`): its tiles are the plain ones, so it is on every board. */
+  vertex?: number[];
 }
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -787,7 +791,8 @@ export const GROUPS = [
 /** A level's family: one of `GROUPS`, or for a level of marked tiles (its
  * `decor`) what it marks them with — listed with the tiling it marks, not as
  * a family of its own (`markedOf`). */
-export type GroupKey = (typeof GROUPS)[number]["key"] | "rules" | "colourings" | "jigsaw";
+export type GroupKey =
+  (typeof GROUPS)[number]["key"] | "rules" | "colourings" | "jigsaw" | "vertex";
 
 const NOTATIONS = catalog.tilingNotations as Record<string, string>;
 
@@ -2297,6 +2302,41 @@ export const PAINTED: string[] = [
   ...ISOGONAL.map(([key]) => key),
 ];
 
+/** The uniform tilings with a vertex-rule level: those where the rule
+ * changes what fits as the board is laid (held so by a test). Not 4.8²,
+ * whose squares and octagons can make nothing else, nor the regular three,
+ * with one tile each. */
+export const VERTEX_RULED = [
+  "trihex",
+  "trunchex",
+  "elongated",
+  "snubsquare",
+  "snubhex",
+  "rhombitrihex",
+  "trunctrihex",
+];
+
+/** A uniform tiling's board held to its vertex configuration: the plain
+ * tiles, but a tile lands only where every point it touches can still be
+ * 3.4.6.4 (or whatever the tiling is) — no six triangles where a hexagon
+ * was. */
+export function vertexRuleLevel(plain: Level): Level {
+  const [config] = plain.configs;
+  if (!config || plain.configs.length !== 1)
+    throw new Error(`${plain.key}: a vertex rule needs one configuration`);
+  const label = "every point";
+  return {
+    ...plain,
+    key: `${plain.key}.vertex`,
+    base: `${plain.key}.vertex`,
+    label: `${plain.label}, ${label}`,
+    name: `${plain.name} · ${label}`,
+    group: "vertex",
+    rule: config,
+    decor: { of: plain.key, colours: 0, rules: false, label, vertex: config },
+  };
+}
+
 /** The marked levels made otherwise than from src/colourings.json, after
  * the paintings, each by its key: Penrose's tilings with his arrows, then
  * every aperiodic level's and spiral's matching rules and colouring read off
@@ -2317,6 +2357,11 @@ const MARKED_BY_HAND: [key: string, of: string, make: (plain: Level) => Level][]
           ],
         ]
       : []),
+  ]),
+  ...VERTEX_RULED.map((of): [string, string, (plain: Level) => Level] => [
+    `${of}.vertex`,
+    of,
+    vertexRuleLevel,
   ]),
 ];
 
@@ -2427,7 +2472,9 @@ export function buildFirstBoards(): Level[] {
     const made = jigsawOf(level);
     return made ? [made] : [];
   });
-  return [...plain, ...marked, ...jigsaws];
+  // the vertex rules last, after the jigsaws
+  const isRule = (l: Level): boolean => l.group === "vertex";
+  return [...plain, ...marked.filter((l) => !isRule(l)), ...jigsaws, ...marked.filter(isRule)];
 }
 
 /** What the game knows of a first board before it is built: enough to list
@@ -2561,7 +2608,9 @@ export interface BoardRef {
 /** The numbers of the boards `level` is laid on: every board of its tiling
  * for a plain level, those `markedBoards.json` lists for a marked one. */
 function boardNumbers(level: Pick<Level, "key" | "boards" | "decor">): number[] {
-  if (!level.decor) return Array.from({ length: level.boards }, (_, i) => i + 1);
+  // a vertex rule's tray is the plain one: it is on every board, as plain is
+  if (!level.decor || level.decor.vertex)
+    return Array.from({ length: level.boards }, (_, i) => i + 1);
   // a jigsaw is on every board its colouring is
   return [1, ...(MARKED_BOARDS[level.decor.jigsaw ?? level.key] ?? [])];
 }
