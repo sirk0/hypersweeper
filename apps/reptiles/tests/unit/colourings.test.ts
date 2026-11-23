@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { part } from "./shard";
 import colouringsData from "../../src/colourings.json";
 import {
   COLOURS_CAP,
@@ -535,7 +536,7 @@ describe("colourings", () => {
     }
   });
 
-  it.each(COLOURED.map((l) => l.key))(
+  it.each(part(COLOURED.map((l) => l.key)))(
     "%s: no more tiles than the plain board's per colour, every shared edge's two marks partners",
     (key) => {
       const level = levelByKey(key)!;
@@ -727,15 +728,17 @@ describe("colourings", () => {
   // are checked only by building them (`paintedLevel` throws on one
   // that no longer makes a level) and by the tests above.
   it.each(
-    [
-      ...UNIFORM,
-      ...TWO_UNIFORM,
-      ...LAVES,
-      ...TWO_ISOHEDRAL_KEYED,
-      ...RECTANGLES,
-      ...PENTAGONAL,
-      ...ISOGONAL,
-    ].filter(([key]) => !SLOW_CHOICE.includes(key)),
+    part(
+      [
+        ...UNIFORM,
+        ...TWO_UNIFORM,
+        ...LAVES,
+        ...TWO_ISOHEDRAL_KEYED,
+        ...RECTANGLES,
+        ...PENTAGONAL,
+        ...ISOGONAL,
+      ].filter(([key]) => !SLOW_CHOICE.includes(key)),
+    ),
   )(
     "%s: src/colourings.json is in step with the choice (npm run colourings)",
     (key, box) => {
@@ -747,7 +750,7 @@ describe("colourings", () => {
     30_000,
   );
 
-  it.each(COLOURED_LATTICES)(
+  it.each(part(COLOURED_LATTICES))(
     "%s: src/colourings.json lists every painting worth a level (npm run colourings)",
     (key, lattice) => {
       expect(regularColourings(levelByKey(key)!, lattice)).toEqual(
@@ -757,7 +760,7 @@ describe("colourings", () => {
     30_000,
   );
 
-  it.each([...RECTANGLES, ...PENTAGONAL, ...ISOGONAL])(
+  it.each(part([...RECTANGLES, ...PENTAGONAL, ...ISOGONAL]))(
     "%s: painted on tiles cut alike, a kind each, every piece of a side meeting one piece across",
     (key, box) => {
       const plain = makeFirstBoard(key);
@@ -895,7 +898,7 @@ describe("colourings", () => {
   const LINED = COLOURED.filter((l) =>
     l.tiles.every((t) => t.pieces[0]!.marks!.every((m) => m === LINE || m === END || m === BLANK)),
   );
-  it.each(LINED.map((l) => l.key))(
+  it.each(part(LINED.map((l) => l.key)))(
     "%s: no line ends in a tile — it is cut back to half discs, which meet only half discs",
     (key) => {
       const level = levelByKey(key)!;

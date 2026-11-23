@@ -714,15 +714,16 @@ along a round edge only where its own edge there is the same curve, whole
 window board is as near square as its tiling allows at two or three
 dozen tiles — but V[3.4.3.12; 3.12²], whose dodecagon centres make it coarse:
 20 tiles, its next square window 60; and the 3×3 basket weave, 48, a whole
-square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats, tests and
-builds it on every change, and `game-e2e (reptiles)` runs the Playwright smoke
-test against the production bundle (`tests/e2e/smoke.spec.ts`: the screens,
+square of blocks (its smaller windows are a lopsided pinwheel). CI's `game-checks (reptiles)` job typechecks, formats and
+builds it on every change, `game-unit (reptiles, i/4)` runs the unit tests on
+four runners (below), and `game-e2e (reptiles, i/4)` runs the Playwright smoke
+test against the production bundle, in Chromium, sharded over four (`tests/e2e/smoke.spec.ts`: the screens,
 the desktop's in `tests/e2e/desktop.spec.ts`,
 a tiling's page — a board, its tiles, Play — the card pictures, settings, the header, the hint (followed to a two-star finish), rotating both ways, wheel and pinch zoom, the tray at
 board scale, every tile on screen at first, its rows and, zoomed in, its scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
 its ✕) and every level — every marking on every board — and tiling page opening with no error
-(`tests/e2e/every-level.spec.ts`, in Chromium and in WebKit as an iPhone). It packages as an offline desktop app through the
+(`tests/e2e/every-level.spec.ts`). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
 its own `Rep-tiles` folder there. It is an **iPhone and iPad app** too,
@@ -784,7 +785,8 @@ npm install          # at the repo root, first time and after a dependency chang
 cd apps/reptiles
 npm run dev          # http://localhost:5174 (Hypersweeper's dev server is 5173)
 npm run typecheck    # tsc --noEmit, strict — also checks the packages/geometry files it imports
-npm run test         # vitest unit tests (a few seconds)
+npm run test         # vitest unit tests (five minutes; `npx vitest related --run <files>` for a change)
+TEST_SHARD=2/4 npm run test   # one CI shard's share of them (a minute and a half)
 npm run format       # Prettier (the root .prettierrc.json), in place; CI runs format:check
 npm run build        # typecheck + the production bundle (PWA included) into dist/
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
@@ -1346,8 +1348,8 @@ the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
   on an iPhone. `tests/unit/engines.test.ts` builds every level with sin and
   cos one ulp off, up, down and by turns, and fails on any level that comes
   out differently; `tests/e2e/every-level.spec.ts` opens every level and
-  every tiling's page, in Chromium and, in CI, in WebKit as an iPhone
-  (`PW_WEBKIT=1` locally, after `npx playwright install webkit`).
+  every tiling's page, in Chromium (WebKit is not run: the unit test is what
+  catches a level Safari's floats build differently).
 - **A level follows a Hypersweeper board** — but for the tiles of several
   pieces, which Hypersweeper cannot have (a minesweeper cell is one polygon):
   the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and
@@ -1378,5 +1380,14 @@ the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
   A name the geometry has but does not export gets a line in
   `packages/geometry/src/index.ts`. `packages/geometry/tests/boundaries.test.ts`
   fails on a deep import or one game importing another.
+- **A test over every level or board takes its CI shard's share.** CI runs
+  the unit tests on four runners (`packaging.json` `ci.unitShards`,
+  `TEST_SHARD="i/4"`). Vitest splits by file, and one file, `puzzle.test.ts`,
+  is most of the time, so the long files cut themselves instead: they wrap
+  each per-level or per-board `it.each` list in `part(...)`
+  (`tests/unit/shard.ts`) and run on every shard, and `vitest.config.ts` deals
+  every other file to one shard. A new test that loops over levels or boards
+  goes inside such a list, or wraps its own list in `part`. Unset, `part`
+  keeps everything, so a local run is the whole suite.
 - Verify visual changes with a real screenshot (the `reptiles` entry in
   `.claude/launch.json` starts the dev server).

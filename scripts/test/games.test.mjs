@@ -17,6 +17,7 @@ import {
   ownVersionGames,
   previewProjects,
   readSite,
+  shardMatrix,
 } from "../lib/games.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
@@ -122,6 +123,27 @@ test("a folder without packaging.json is not a game; a game without web is not d
     deployMatrix(games).map((d) => d.app),
     ["hypersweeper"],
   );
+});
+
+test("Rep-tiles' e2e and unit tests take four runners each; a game without `ci` takes one", () => {
+  const four = [1, 2, 3, 4].map((shard) => ({ game: "reptiles", shard, of: 4 }));
+  assert.deepEqual(shardMatrix(listGames(ROOT), "e2e"), four);
+  assert.deepEqual(shardMatrix(listGames(ROOT), "unit"), four);
+  const root = fakeRepo({
+    hypersweeper: { productName: "Hypersweeper", ci: { e2eShards: 4 } },
+    plain: { productName: "Plain" },
+    split: { productName: "Split", ci: { unitShards: 2 } },
+  });
+  const games = listGames(root);
+  assert.deepEqual(shardMatrix(games, "e2e"), [
+    { game: "plain", shard: 1, of: 1 },
+    { game: "split", shard: 1, of: 1 },
+  ]);
+  assert.deepEqual(shardMatrix(games, "unit"), [
+    { game: "plain", shard: 1, of: 1 },
+    { game: "split", shard: 1, of: 2 },
+    { game: "split", shard: 2, of: 2 },
+  ]);
 });
 
 test("the flagship's long jobs run unless every change is inside another game", () => {

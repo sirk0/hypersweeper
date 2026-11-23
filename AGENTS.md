@@ -123,9 +123,11 @@ four runners. Those two are Hypersweeper's, independent of each other, and
 skipped on a pull request that changes nothing outside the other games'
 folders. Then there are:
 
-- `game-checks (<game>)` and `game-e2e (<game>)`, one matrix entry per other
-  game: typecheck, Prettier, unit tests, build, the packaged offline check,
-  and the Playwright smoke test;
+- `game-checks (<game>)`, `game-unit (<game>, i/n)` and `game-e2e (<game>, i/n)`,
+  one matrix entry per other game — the last two one per shard, as many as
+  the game's `packaging.json` `ci` asks (Rep-tiles four each, Chromium only):
+  typecheck, Prettier, build, the packaged offline check; the unit tests; and
+  the Playwright smoke test;
 - `packages-checks`: typecheck, Prettier and tests for `packages/*`;
 - `template-check`: scaffolds a throwaway game and runs all of the above on
   it;
@@ -219,7 +221,7 @@ to be safe" — that is what CI is for.
 
 **When the work is ready** — not after every edit — commit, push the branch and
 open a pull request. CI's jobs (pytest, ruff, `data-sync`, `web-checks`, the
-four e2e shards, `game-checks`, `game-e2e`, `packages-checks`, `template-check`) are the authoritative full run; a red one is yours to fix on
+four e2e shards, `game-checks`, `game-unit`, `game-e2e`, `packages-checks`, `template-check`) are the authoritative full run; a red one is yours to fix on
 the same branch, and the change is done when CI is green.
 
 ## Rules that apply to every change
