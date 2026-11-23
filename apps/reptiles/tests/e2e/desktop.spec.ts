@@ -107,11 +107,13 @@ test("a group's page: its families in grids, a jump to each", async ({ page }) =
     "Regular",
     "Uniform",
     "2-uniform",
+    "Star polygons",
   ]);
   await expect(page.locator("#catalog-links .pane-link")).toHaveText([
     "Regular",
     "Uniform",
     "2-uniform",
+    "Star polygons",
   ]);
   // a grid that wraps, not a row that scrolls sideways
   const row = page.locator('#catalog-list [data-family="2-uniform"] .family-row');
@@ -180,7 +182,7 @@ test("crossing the desktop's width redraws the screen, and keeps a level's tiles
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("#sidebar")).toBeHidden();
   await expect(page.locator("#catalog-title")).toHaveText("Tilings");
-  await expect(page.locator("#catalog-list .family")).toHaveCount(11);
+  await expect(page.locator("#catalog-list .family")).toHaveCount(12);
   await page.setViewportSize({ width: 1280, height: 720 });
   await expect(page.locator("#catalog-title")).toHaveText("Aperiodic");
 

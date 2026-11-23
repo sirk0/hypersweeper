@@ -40,6 +40,8 @@ describe("the tiling round a finished level", () => {
   it.each([
     ["squares", "periodic, from its own tiles"],
     ["elongated2", "periodic, its window too small for a period: off a wider one"],
+    ["star36a60", "a star tiling, periodic"],
+    ["star18183", "a star tiling of big tiles, periodic"],
     ["penrose", "aperiodic, in the whole patch its window was cut from"],
     ["hatmetatiles", "the hat's family, in its patch"],
     ["chair", "a rep-tile, in a bigger copy"],

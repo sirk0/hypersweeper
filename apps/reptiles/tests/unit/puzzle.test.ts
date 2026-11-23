@@ -41,11 +41,13 @@ import {
   posed,
   sideCount,
   spotKey,
+  starLike,
   turnsOnto,
   turnsOntoPieces,
   type Piece,
   type XY,
 } from "../../src/geometry/shape";
+import { STAR_TILINGS } from "../../src/geometry/stars";
 import { cornersOf, fitsConfig, span, type Corner } from "../../src/geometry/vertexRule";
 import { measureTraps } from "../../src/difficulty";
 import {
@@ -243,7 +245,8 @@ describe("puzzle", () => {
   const isDual = (group: string): boolean => group === "laves" || group === "2-isohedral";
   // (a tile of several pieces — the fish, the Socolar–Taylor tile — has no
   // Hypersweeper board to match, nor has the hat's family:
-  // tests/unit/hat.test.ts is its oracle)
+  // tests/unit/hat.test.ts is its oracle — nor have the star tilings:
+  // tests/unit/stars.test.ts is theirs)
   const unturned = BOARD_LEVELS.filter(
     (l) =>
       !l.window?.turned &&
@@ -251,6 +254,7 @@ describe("puzzle", () => {
       !l.pieceTile &&
       !l.socolarTaylor &&
       !l.hat &&
+      !l.star &&
       !l.decor,
   ).map((l) => l.key);
   /** A board past a tiling's first, cut from Hypersweeper's template as
@@ -290,13 +294,15 @@ describe("puzzle", () => {
   });
 
   // (a bond, a pentagonal tiling, a rep-tile, a spiral or an aperiodic tiling
-  // has no one vertex configuration, and an isogonal one is not edge to edge)
+  // has no one vertex configuration, and an isogonal one is not edge to edge;
+  // a star tiling's configuration names a star's points and dents apart,
+  // which tests/unit/stars.test.ts checks)
   // (a marked level goes by the board it marks)
   const familyOf = (l: Level): string => (l.decor ? levelByKey(l.decor.of)!.group : l.group);
   const ofPolygons = BOARD_LEVELS.filter(
     (l) =>
       !isDual(familyOf(l)) &&
-      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic"].includes(
+      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic", "star"].includes(
         familyOf(l),
       ),
   ).map((l) => l.key);
@@ -978,6 +984,11 @@ describe("puzzle", () => {
       if (level.group === "regular" || level.group === "uniform")
         expect(level.name).toBe(notation(level.configs[0]!));
     }
+    // the star tilings as Wikipedia writes them, angles in degrees
+    expect(named("star")).toEqual(STAR_TILINGS.map((t) => t.name));
+    expect(named("star")).toHaveLength(30);
+    expect(named("star")).toContain("3.6*60°.6**60°");
+    expect(named("star")).toContain("(8.4*45°)²");
     expect(notation([3, 3, 3, 4, 4])).toBe("3³.4²");
     expect(parseNotation("[3⁶; 3².4.12]")).toEqual([
       [3, 3, 3, 3, 3, 3],
@@ -989,12 +1000,19 @@ describe("puzzle", () => {
     ]);
   });
 
-  it("starts every tray tile resting on a flat side", () => {
+  it("starts every tray tile resting on a flat side — a star on its points", () => {
     for (const level of LEVELS) {
       for (const shape of level.tiles) {
-        // the first piece's first edge horizontal, and every piece above it
         const [a, b] = shape.pieces[0]!.verts.map((v) => level.ring.toXY(v));
-        expect(a![1]).toBeCloseTo(b![1], 12);
+        if (starLike(shape)) {
+          // a star has no side the rest of it is above: its first corner,
+          // one of its points, is its lowest, at the origin
+          expect(a![0]).toBeCloseTo(0, 12);
+          expect(a![1]).toBeCloseTo(0, 12);
+        } else {
+          // the first piece's first edge horizontal, and every piece above it
+          expect(a![1]).toBeCloseTo(b![1], 12);
+        }
         for (const v of allVerts(shape.pieces))
           expect(level.ring.toXY(v)[1]).toBeGreaterThanOrEqual(-1e-12);
       }

@@ -120,6 +120,181 @@
     "name": "[3.4.6.4; 4.6.12]",
     "group": "2-uniform"
   },
+  {
+    "key": "star36a30",
+    "label": "Six-pointed stars and triangles, their points 30°",
+    "name": "3.6*30°.6**30°",
+    "group": "star"
+  },
+  {
+    "key": "star36a60",
+    "label": "Six-pointed stars and triangles, their points 60°",
+    "name": "3.6*60°.6**60°",
+    "group": "star"
+  },
+  {
+    "key": "star36a90",
+    "label": "Six-pointed stars and triangles, their points 90°",
+    "name": "3.6*90°.6**90°",
+    "group": "star"
+  },
+  {
+    "key": "star44a30",
+    "label": "Four-pointed stars and squares, their points 30°",
+    "name": "4.4*30°.4**30°",
+    "group": "star"
+  },
+  {
+    "key": "star44a45",
+    "label": "Four-pointed stars and squares, their points 45°",
+    "name": "4.4*45°.4**45°",
+    "group": "star"
+  },
+  {
+    "key": "star44a60",
+    "label": "Four-pointed stars and squares, their points 60°",
+    "name": "4.4*60°.4**60°",
+    "group": "star"
+  },
+  {
+    "key": "star63a20",
+    "label": "Three-pointed stars and hexagons, their points 20°",
+    "name": "6.3*20°.3**20°",
+    "group": "star"
+  },
+  {
+    "key": "star63a30",
+    "label": "Three-pointed stars and hexagons, their points 30°",
+    "name": "6.3*30°.3**30°",
+    "group": "star"
+  },
+  {
+    "key": "star63a45",
+    "label": "Three-pointed stars and hexagons, their points 45°",
+    "name": "6.3*45°.3**45°",
+    "group": "star"
+  },
+  {
+    "key": "star333a20",
+    "label": "Three-pointed stars and triangles, their points 20°",
+    "name": "3.3*20°.3.3**20°",
+    "group": "star"
+  },
+  {
+    "key": "star333a30",
+    "label": "Three-pointed stars and triangles, their points 30°",
+    "name": "3.3*30°.3.3**30°",
+    "group": "star"
+  },
+  {
+    "key": "star333a40",
+    "label": "Three-pointed stars and triangles, their points 40°",
+    "name": "3.3*40°.3.3**40°",
+    "group": "star"
+  },
+  {
+    "key": "star464",
+    "label": "Squares, hexagons and four-pointed stars",
+    "name": "4.6.4*30°.6",
+    "group": "star"
+  },
+  {
+    "key": "star84",
+    "label": "Octagons and four-pointed stars",
+    "name": "(8.4*45°)²",
+    "group": "star"
+  },
+  {
+    "key": "star12124",
+    "label": "Dodecagons and four-pointed stars",
+    "name": "12.12.4*60°",
+    "group": "star"
+  },
+  {
+    "key": "star338438",
+    "label": "Eight- and four-pointed stars and triangles",
+    "name": "3.3.8*15°.4**60°.8*15°",
+    "group": "star"
+  },
+  {
+    "key": "star3383438",
+    "label": "Eight-pointed stars, squares and triangles",
+    "name": "3.3.8*15°.3.4.3.8*15°",
+    "group": "star"
+  },
+  {
+    "key": "star34838",
+    "label": "Octagons, eight-pointed stars, squares and triangles",
+    "name": "3.4.8.3.8*15°",
+    "group": "star"
+  },
+  {
+    "key": "star55454",
+    "label": "Pentagons and four-pointed stars",
+    "name": "5.5.4*18°.5.4*18°",
+    "group": "star"
+  },
+  {
+    "key": "star4666",
+    "label": "Two kinds of six-pointed star, and squares",
+    "name": "4.6*30°.6**90°.6*30°",
+    "group": "star"
+  },
+  {
+    "key": "star46",
+    "label": "Six-pointed stars and squares",
+    "name": "(4.6*30°)³",
+    "group": "star"
+  },
+  {
+    "key": "star996",
+    "label": "Nonagons and six-pointed stars",
+    "name": "9.9.6*80°",
+    "group": "star"
+  },
+  { "key": "star66", "label": "Hexagrams and hexagons", "name": "(6.6*60°)²", "group": "star" },
+  {
+    "key": "star123",
+    "label": "Dodecagons and three-pointed stars",
+    "name": "(12.3*30°)²",
+    "group": "star"
+  },
+  {
+    "key": "star346312",
+    "label": "Twelve-pointed stars, hexagons, squares and triangles",
+    "name": "3.4.6.3.12*30°",
+    "group": "star"
+  },
+  {
+    "key": "star33312",
+    "label": "Twelve-pointed stars and triangles",
+    "name": "3.3.3.12*30°.3.3.12*30°",
+    "group": "star"
+  },
+  {
+    "key": "star18183",
+    "label": "Octadecagons and three-pointed stars",
+    "name": "18.18.3*40°",
+    "group": "star"
+  },
+  {
+    "key": "star3666",
+    "label": "Hexagrams, hexagons and triangles",
+    "name": "3.6.6*60°.6",
+    "group": "star"
+  },
+  {
+    "key": "star8386",
+    "label": "Octagons, and three- and six-pointed stars",
+    "name": "8.3*15°.8.6*75°",
+    "group": "star"
+  },
+  {
+    "key": "star9393",
+    "label": "Nonagons, triangles and three-pointed stars",
+    "name": "9.3.9.3*20°",
+    "group": "star"
+  },
   { "key": "tetrakis", "label": "Tetrakis square", "name": "V4.8²", "group": "laves" },
   { "key": "rhombille", "label": "Rhombille", "name": "V3.6.3.6", "group": "laves" },
   { "key": "triakis", "label": "Triakis triangular", "name": "V3.12²", "group": "laves" },

@@ -22,8 +22,8 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
   {
     key: "regular",
     name: "Regular polygons",
-    hint: "Triangles, squares, hexagons, octagons and dodecagons, corner to corner",
-    families: ["regular", "uniform", "2-uniform"],
+    hint: "Triangles, squares, hexagons, octagons and dodecagons, corner to corner — and stars",
+    families: ["regular", "uniform", "2-uniform", "star"],
     icon: "trihex",
   },
   {

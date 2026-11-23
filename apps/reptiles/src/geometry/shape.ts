@@ -90,6 +90,21 @@ export function sides(shape: Shape): number {
   return shape.pieces.reduce((n, p) => n + sideCount(shape.ring, p.verts), 0);
 }
 
+/** Whether a tile is a star: one piece whose corners turn in and out by
+ * turns, six or more of them — an isotoxal star's points and dents (the star
+ * tilings', `geometry/stars.ts`). */
+export function starLike(shape: Shape): boolean {
+  if (shape.pieces.length !== 1) return false;
+  const { ring } = shape;
+  const verts = shape.pieces[0]!.verts;
+  const m = verts.length;
+  if (m < 6 || m % 2) return false;
+  const turn = (i: number): number =>
+    orient(ring, verts[(i + m - 1) % m]!, verts[i]!, verts[(i + 1) % m]!);
+  const first = turn(0);
+  return first !== 0 && verts.every((_, i) => turn(i) === (i % 2 ? -first : first));
+}
+
 /** Which way an edge bulges, seen along it: to its left, to its right, or not
  * at all. Every bulge is the same symmetric arc, so an edge bulging `IN` from
  * a to b is the very line of one bulging `OUT` from b to a — the two edges
@@ -374,7 +389,8 @@ export function turnsOntoPieces(shape: Shape, cell: readonly Piece[]): number[] 
  * ring's directions; where the longest cannot (the cut across a pentagonal
  * spiral's pentagon), the longest that can. The piece it rests on comes
  * first, listed from that side. A tile with no side to rest on — every side
- * of each piece has some other piece across it — is held as it is. */
+ * of each piece has some other piece across it — is held as it is; one
+ * piece with none, a star, rests on its points (`restOnPoints`). */
 export function restFlat(
   ring: Ring,
   cell: Cyc[][],
@@ -445,6 +461,7 @@ export function restFlat(
       }
     }
   }
+  if (cell.length === 1) return restOnPoints(ring, cell[0]!, marks?.[0]);
   if (cell.length > 1) {
     const from = cell[0]![0]!;
     return {
@@ -459,4 +476,81 @@ export function restFlat(
     };
   }
   throw new Error("restFlat: no side runs along a ring direction");
+}
+
+/**
+ * A one-piece tile with no side to rest on — a star, the next point below
+ * every side's line — rests on its points instead: on two of them level,
+ * where a turn of the ring lays the line between them flat (the whole tile
+ * above it); else on one, straight down, the tile mirrored about the upright
+ * through it; else on two as nearly level as the ring's turns allow (never
+ * more than half a turn off), the lower of them at the origin. Listed from
+ * the point it rests on — the left one of two.
+ */
+function restOnPoints(ring: Ring, verts: Cyc[], marks?: readonly number[]): Shape {
+  const m = verts.length;
+  const listed = (k: number, i: number): Shape => {
+    const from = verts[i]!;
+    const order = [...verts.slice(i), ...verts.slice(0, i)];
+    return {
+      ring,
+      pieces: [
+        piece(
+          order.map((v) => ring.mul(ring.zeta(k), ring.sub(v, from))),
+          undefined,
+          marks && [...marks.slice(i), ...marks.slice(0, i)],
+        ),
+      ],
+    };
+  };
+  // the lines between two corners with the whole tile on their left: its
+  // hull's sides
+  const chords: [number, number][] = [];
+  for (let i = 0; i < m; i++)
+    for (let j = 0; j < m; j++)
+      if (i !== j && verts.every((v) => orient(ring, verts[i]!, verts[j]!, v) >= 0))
+        chords.push([i, j]);
+  const level = (z: Cyc): boolean => ring.isZero(ring.sub(z, ring.conj(z)));
+  const above = (z: Cyc): boolean => orient(ring, ring.zero, ring.one, z) > 0;
+  // two points level
+  for (const [i, j] of chords) {
+    for (let k = 0; k < ring.n; k++) {
+      const turned = ring.mul(ring.zeta(k), ring.sub(verts[j]!, verts[i]!));
+      if (level(turned) && ring.toXY(turned)[0] > 0) return listed(k, i);
+    }
+  }
+  // one point, straight down: its two sides each other's mirror image in the
+  // upright through it, both rising
+  for (let i = 0; i < m; i++) {
+    const before = ring.sub(verts[(i + m - 1) % m]!, verts[i]!);
+    const after = ring.sub(verts[(i + 1) % m]!, verts[i]!);
+    for (let k = 0; k < ring.n; k++) {
+      const p = ring.mul(ring.zeta(k), before);
+      const q = ring.mul(ring.zeta(k), after);
+      if (!ring.eq(p, ring.neg(ring.conj(q))) || !above(q)) continue;
+      const shape = listed(k, i);
+      if (shape.pieces[0]!.verts.every((v) => ring.isZero(v) || above(v))) return shape;
+    }
+  }
+  // two points as nearly level as a turn lays them: a choice among turns
+  // whose tilts are whole steps apart, but for a tilt and its mirror image,
+  // which the exact sign decides — rising to the right first
+  let best: { tilt: number; rising: boolean; k: number; low: number } | undefined;
+  for (const [i, j] of chords) {
+    for (let k = 0; k < ring.n; k++) {
+      const turned = ring.mul(ring.zeta(k), ring.sub(verts[j]!, verts[i]!));
+      const [x, y] = ring.toXY(turned);
+      if (x <= 0) continue;
+      const tilt = Math.abs(Math.atan2(y, x));
+      const rising = above(turned);
+      if (
+        !best ||
+        tilt < best.tilt - 1e-9 ||
+        (Math.abs(tilt - best.tilt) <= 1e-9 && rising && !best.rising)
+      )
+        best = { tilt, rising, k, low: rising ? i : j };
+    }
+  }
+  if (!best) throw new Error("restOnPoints: a tile with no hull");
+  return listed(best.k, best.low);
 }
