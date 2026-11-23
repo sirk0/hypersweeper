@@ -16,6 +16,7 @@
     "levels": "vite-node scripts/index-levels.mts",
     "difficulty": "vite-node scripts/measure-difficulty.mts",
     "boards": "vite-node scripts/find-boards.mts",
+    "curvable": "vite-node scripts/find-curvable.mts",
     "marked-boards": "vite-node scripts/find-marked-boards.mts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

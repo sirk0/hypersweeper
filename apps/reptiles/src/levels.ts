@@ -1737,6 +1737,34 @@ export function jigsawOf(coloured: Level, size?: number): Level | null {
   };
 }
 
+/** `plain`'s board with its cells (each piece counter-clockwise) marked as
+ * `marks` says, edge by edge, and its rim cut as the tiles along it are, as
+ * a jigsaw's is — never listed. What `npm run curvable`
+ * (scripts/find-curvable.mts) measures a board with round edges by, its
+ * arcs drawn as one knob shape out of one tile and into the other. */
+export function markedBoard(
+  plain: Level,
+  key: string,
+  cells: Cyc[][][],
+  marks: number[][][],
+): Level {
+  const level = makeLevel(
+    key,
+    plain.label,
+    plain.ring,
+    cells,
+    plain.group,
+    plain.configs,
+    plain.name,
+    undefined,
+    marks,
+  );
+  return {
+    ...level,
+    regionMarks: rimOf(key, plain.ring, level.region, level.cells, (p, i) => p.marks![i]!),
+  };
+}
+
 /** The board a painting of `plain` is laid on: `plain` itself, but for a
  * congruent-rectangle bond with T-vertices, whose bricks are cut there into
  * steps of the ring's unit (`Window.steps`: a half brick, a third in the 3×3

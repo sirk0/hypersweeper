@@ -794,6 +794,7 @@ npm run colourings   # list each painted tiling's lined and coloured levels into
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core; ONLY=missing measures only boards it does not list yet)
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
+npm run curvable     # census, writes nothing: which plain boards' edges could be round as the Spectre's are, and what that does to their difficulty (minutes; MEASURE=0 skips the measure)
 ```
 
 or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`,
