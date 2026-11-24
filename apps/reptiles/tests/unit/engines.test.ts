@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { part } from "./shard";
 
 // Every browser builds the same levels. The geometry is exact, but floats
 // still draw it, order it and solve for lattice points — and Math.sin and
@@ -57,7 +58,11 @@ describe("every browser's floats", () => {
     Math.cos = cos;
   });
 
-  it.each(["up", "down", "alternate"] as const)(
+  // a CI shard's share of the three (tests/unit/shard.ts): on four shards,
+  // one each and none on the fourth, which then has only this to show
+  const nudges = part(["up", "down", "alternate"] as const);
+  if (nudges.length === 0) it.skip("build every level the same: on another shard", () => {});
+  it.each(nudges)(
     "build every level the same with sin and cos one ulp %s",
     async (nudge) => {
       const real = await everyLevel();

@@ -3,6 +3,9 @@
 //
 //   node scripts/games.mjs github     # name=JSON lines for $GITHUB_OUTPUT:
 //                                     #   others   — the generic jobs' matrix
+//                                     #   e2e, unit — game-e2e's and
+//                                     #              game-unit's, a runner
+//                                     #              per shard
 //                                     #   deploy   — games with a Pages project
 //                                     #              of their own (production)
 //                                     #   moved    — old projects to redirect
@@ -27,6 +30,7 @@ import {
   ownVersionGames,
   previewProjects,
   readSite,
+  shardMatrix,
 } from "./lib/games.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -35,6 +39,8 @@ const command = process.argv[2];
 
 if (command === "github") {
   console.log(`others=${JSON.stringify(otherGames(games))}`);
+  console.log(`e2e=${JSON.stringify(shardMatrix(games, "e2e"))}`);
+  console.log(`unit=${JSON.stringify(shardMatrix(games, "unit"))}`);
   console.log(`deploy=${JSON.stringify(deployMatrix(games))}`);
   console.log(`moved=${JSON.stringify(movedMatrix(games))}`);
   console.log(`projects=${JSON.stringify(previewProjects(games, readSite(root)))}`);

@@ -76,14 +76,18 @@ jobs:
     # shards), so a pull request that changes nothing outside the other games'
     # folders skips them; anything else — Hypersweeper itself, packages/, data/,
     # the root workspace files, the workflows — runs them, and so does every
-    # push to master. The other games' jobs (game-checks, game-e2e) are seconds
-    # of work and run on every change, one matrix entry per game, so a new game
+    # push to master. The other games' jobs (game-checks, game-unit, game-e2e)
+    # run on every change, one matrix entry per game — and for game-unit and
+    # game-e2e one per shard, as many as the game's packaging.json `ci` asks
+    # (Rep-tiles four each, a scaffolded game one) — so a new game
     # (scripts/new-game.mjs) needs no edit here. A skipped job counts as passed
     # for a required check.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       others: ${{ steps.list.outputs.others }}
+      unit: ${{ steps.list.outputs.unit }}
+      e2e: ${{ steps.list.outputs.e2e }}
       hypersweeper: ${{ steps.diff.outputs.hypersweeper }}
     steps:
       - uses: actions/checkout@v4
@@ -328,16 +332,14 @@ jobs:
   game-checks:
     # Every game but Hypersweeper (which has web-checks), one matrix entry per
     # game from the games job: typecheck (which also checks the packages/
-    # files it imports), formatting, unit tests, a production build, and the
-    # packaged bundle the desktop shell stages — built with VITE_PACKAGED=1 and
-    # checked to reference nothing remote. Runs on every change. Rep-tiles'
-    # unit tests alone take seven to nine minutes on a runner (they build and
-    # measure every level — every marking on every board, 1654 — and choose
-    # the colourings again), so ten was too tight.
+    # files it imports), formatting, a production build, and the packaged
+    # bundle the desktop shell stages — built with VITE_PACKAGED=1 and checked
+    # to reference nothing remote. Runs on every change. The unit tests are
+    # game-unit's, below, so this is a minute.
     name: game-checks (${{ matrix.game }})
     needs: games
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -359,8 +361,6 @@ jobs:
         run: npm run typecheck
       - name: Formatting
         run: npm run format:check
-      - name: Unit tests
-        run: npm run test
       - name: Production build
         run: npx vite build
       - name: Packaged bundle is self-contained
@@ -383,20 +383,59 @@ jobs:
           npx cap sync ios
           test -f ios/App/App/public/index.html
 
-  game-e2e:
-    # Each of those games' Playwright smoke test against its production bundle
-    # under `vite preview`: it boots under the deployed security policy (the
-    # shared preset applies public/_headers there) with no console errors and
-    # plays. The browser install is most of the job — the same Chromium
-    # headless shell, for the same reasons, as web-e2e above.
-    name: game-e2e (${{ matrix.game }})
+  game-unit:
+    # Those games' vitest unit tests, split over the runners the game's
+    # packaging.json `ci.unitShards` asks for, each told its share by
+    # TEST_SHARD="i/n" (a game with one shard gets "1/1": everything).
+    # Rep-tiles' take four: run whole they were five and a half minutes on one
+    # runner, four and a half of them a single file (puzzle.test.ts, every
+    # board solved by search) that vitest's own --shard, which splits by file,
+    # cannot cut. So its long files take a slice of their own cases
+    # (apps/reptiles/tests/unit/shard.ts) and run on every shard, and
+    # vitest.config.ts deals the rest out by file.
+    name: game-unit (${{ matrix.game }}, ${{ matrix.shard }}/${{ matrix.of }})
     needs: games
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        game: ${{ fromJSON(needs.games.outputs.others) }}
+        include: ${{ fromJSON(needs.games.outputs.unit) }}
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.game }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        working-directory: .
+        run: npm ci
+      - name: Unit tests (shard ${{ matrix.shard }}/${{ matrix.of }})
+        run: npm run test
+        env:
+          TEST_SHARD: ${{ matrix.shard }}/${{ matrix.of }}
+
+  game-e2e:
+    # Each of those games' Playwright smoke test against its production bundle
+    # under `vite preview`: it boots under the deployed security policy (the
+    # shared preset applies public/_headers there) with no console errors and
+    # plays. In Chromium only — the same headless shell, for the same reasons,
+    # as web-e2e above. Sharded as web-e2e is, over the runners the game's
+    # packaging.json `ci.e2eShards` asks for: Rep-tiles' suite (every level
+    # opened) was eight and a half minutes on one runner. Each shard builds
+    # the bundle it serves (the config's webServer), a few seconds.
+    name: game-e2e (${{ matrix.game }}, ${{ matrix.shard }}/${{ matrix.of }})
+    needs: games
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.games.outputs.e2e) }}
     defaults:
       run:
         working-directory: apps/${{ matrix.game }}
@@ -412,21 +451,18 @@ jobs:
         run: npm ci
       - name: Install Playwright Chromium headless shell
         run: npx playwright install --only-shell chromium
-      # A game whose Playwright config has a WebKit project (Rep-tiles: every
-      # level opened as an iPhone would, since every iOS browser is WebKit)
-      # gets WebKit too.
-      - name: Install Playwright WebKit (games tested in it)
-        run: |
-          if grep -q 'name: "webkit"' playwright.config.ts; then
-            npx playwright install --with-deps webkit
-          fi
-      - name: Smoke test
-        run: npx playwright test
+      - name: Smoke test (shard ${{ matrix.shard }}/${{ matrix.of }})
+        # --pass-with-no-tests: a game with fewer tests than shards
+        run: npx playwright test --shard=${{ matrix.shard }}/${{ matrix.of }} --pass-with-no-tests
+        env:
+          # Three browsers on the runner's four vCPUs, as web-e2e runs (a game
+          # whose config does not read it gets Playwright's default, two).
+          E2E_WORKERS: 3
       - name: Upload Playwright report
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.game }}-playwright-report
+          name: ${{ matrix.game }}-playwright-report-${{ matrix.shard }}
           path: apps/${{ matrix.game }}/playwright-report/
           retention-days: 7
 

@@ -1,11 +1,10 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
-// Every level opens, and every tiling's page — in Chromium and, in CI, in
-// WebKit as an iPhone (playwright.config.ts): a level that throws as it is
+// Every level opens, and every tiling's page: a level that throws as it is
 // built shows nothing at all (a tiling's card that "does nothing" when
-// tapped), and a level can throw in one browser and not another (Safari's
-// sin and cos are not Chrome's; tests/unit/engines.test.ts). So each is
+// tapped). Chromium only; a level that throws in Safari alone (its sin and cos
+// are not Chrome's) is tests/unit/engines.test.ts's to catch. So each is
 // opened, in the page, and must show with no error.
 
 interface Entry {
@@ -49,7 +48,8 @@ async function go(page: Page, query: string): Promise<void> {
   }, query);
 }
 
-/** `items` in runs of `size`, so the sweep spreads over the workers. */
+/** `items` in runs of `size`, so the sweep spreads over the workers and CI's
+ * shards. */
 const runs = <T>(items: T[], size: number): T[][] =>
   Array.from({ length: Math.ceil(items.length / size) }, (_, i) =>
     items.slice(i * size, (i + 1) * size),
@@ -85,8 +85,8 @@ for (const [n, run] of runs(EVERY, 25).entries()) {
   });
 }
 
-// WebKit allows 100 history.pushState calls per 10 seconds a page, so the
-// tilings are spread over several tests, each its own page.
+// The tilings are spread over several tests too, each its own page (WebKit,
+// once tested here, allows 100 history.pushState calls per 10 seconds a page).
 const WITH_MARKED = PLAIN.filter((e) => markedOf(e.key).length > 0);
 for (const [n, run] of runs(WITH_MARKED, 20).entries()) {
   test(`every tiling with marked levels opens its page, every marked level on it (${n + 1}: ${run[0]!.key} to ${run.at(-1)!.key})`, async ({

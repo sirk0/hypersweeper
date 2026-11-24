@@ -19,6 +19,15 @@
 //   url        where the game is played in production.
 //   movedFrom  a Pages project the game used to have, now redeployed as a
 //              redirect to `url` (scripts/build-site.mjs `moved`).
+//
+// How many runners its CI jobs take is its packaging.json `ci`:
+//
+//   e2eShards   game-e2e's Playwright suite, split with `--shard=i/n`
+//   unitShards  game-unit's vitest run, told its slice by TEST_SHARD="i/n" —
+//               which the game's own tests must honour (Rep-tiles':
+//               tests/unit/shard.ts), or every runner runs all of them
+//
+// Both default to 1: a scaffolded game's tests are seconds of work.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -30,7 +39,7 @@ export const FLAGSHIP = "hypersweeper";
  *   analytics?: boolean, siteUrlVariable?: string }} Web
  * @typedef {{ key: string, dir: string, name: string, productName: string,
  *   description: string, appStore: string | null, sharedVersion: boolean,
- *   web: Web | null }} Game
+ *   web: Web | null, ci: { e2eShards: number, unitShards: number } }} Game
  * @typedef {{ project: string, url: string, previewAlias: string }} Site
  */
 
@@ -54,6 +63,7 @@ export function listGames(root) {
         appStore: packaging.appStore ?? null,
         sharedVersion: packaging.sharedVersion === true,
         web: packaging.web ? { path: key, ...packaging.web } : null,
+        ci: { e2eShards: 1, unitShards: 1, ...packaging.ci },
       };
     });
 }
@@ -66,6 +76,18 @@ export function readSite(root) {
 /** The games other than the flagship: the generic CI jobs' matrix. */
 export function otherGames(games) {
   return games.filter((g) => g.key !== FLAGSHIP).map((g) => g.key);
+}
+
+/** game-e2e's or game-unit's matrix: one `{ game, shard, of }` per runner,
+ * `of` being the game's `ci.e2eShards` or `ci.unitShards`.
+ * @param {"e2e" | "unit"} kind */
+export function shardMatrix(games, kind) {
+  return games
+    .filter((g) => g.key !== FLAGSHIP)
+    .flatMap((g) => {
+      const of = g.ci[`${kind}Shards`];
+      return Array.from({ length: of }, (_, i) => ({ game: g.key, shard: i + 1, of }));
+    });
 }
 
 /** The games other than the flagship with a version of their own — the ones

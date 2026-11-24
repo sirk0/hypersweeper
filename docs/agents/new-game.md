@@ -68,7 +68,12 @@ A game that needs a Pages project of its own (Hypersweeper, for now) sets
   where `hexBoard` is. Exact coordinates, if the game needs them, are
   Rep-tiles' `apps/reptiles/src/geometry/` — see the next section.
 - **The smoke test** should play a move of the real game (Rep-tiles' drags a
-  tile in). It runs in CI as `game-e2e (<key>)`.
+  tile in). It runs in CI as `game-e2e (<key>, 1/1)`. Once a game's unit or
+  e2e tests grow past a few minutes, split them over runners with
+  `packaging.json`'s `"ci": { "e2eShards": n, "unitShards": n }`: e2e is
+  sharded by Playwright's `--shard`, and the unit tests are told their share
+  by `TEST_SHARD="i/n"`, which the game's tests must honour (Rep-tiles'
+  `tests/unit/shard.ts` and `vitest.config.ts`).
 - **`packaging.json`:** set `desktop.smokeRoute` to a screen with a board on
   it, and `desktop.smokePainted` to what proves it painted.
 - **Icons:** draw the game's picture in `scripts/make-icons.mts` and run
@@ -92,8 +97,9 @@ with both games importing it.
 
 | Where | What |
 |---|---|
-| CI `game-checks (<key>)` | typecheck, Prettier, unit tests, build, the packaged bundle's offline check, the desktop shell's tests |
-| CI `game-e2e (<key>)` | the Playwright smoke test |
+| CI `game-checks (<key>)` | typecheck, Prettier, build, the packaged bundle's offline check, the desktop shell's tests |
+| CI `game-unit (<key>, i/n)` | the unit tests, one job per shard (one, unless `packaging.json` `ci.unitShards` says more) |
+| CI `game-e2e (<key>, i/n)` | the Playwright smoke test, one job per shard (`ci.e2eShards`) |
 | CI `template-check` | scaffolds a throwaway game on every change and runs all of the above on it, so the template stays working |
 | `deploy-cloudflare.yml` | on every push to `master`, builds it into the shared site and publishes it at `https://tiling-games.pages.dev/<key>/` |
 | `pr-preview.yml` | `https://pr-<n>.tiling-games.pages.dev/<key>/` per pull request (and `alpha.tiling-games.pages.dev/<key>/`, the latest PR's), in the one sticky comment |

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { part } from "./shard";
 import measured from "../../src/difficulty.json";
 import {
   band,
@@ -55,7 +56,7 @@ const median = (xs: number[]): number => {
 };
 
 describe("difficulty", () => {
-  it.each(BOARDS.map((b) => b.key))(
+  it.each(part(BOARDS.map((b) => b.key)))(
     "%s: src/difficulty.json is in step with the measure",
     (key) => {
       const m = stored[key];
@@ -77,7 +78,7 @@ describe("difficulty", () => {
     },
   );
 
-  it.each(TRAPS_CHECKED)("%s: its traps are as src/difficulty.json has them", (key) => {
+  it.each(part(TRAPS_CHECKED))("%s: its traps are as src/difficulty.json has them", (key) => {
     const { fits, seen, hidden } = measureTraps(levelByKey(key)!);
     expect({ fits, seen, hidden }, "run npm run difficulty").toEqual({
       fits: stored[key]!.fits,
