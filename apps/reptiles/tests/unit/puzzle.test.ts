@@ -250,7 +250,8 @@ describe("puzzle", () => {
   // (a tile of several pieces — the fish, the Socolar–Taylor tile — has no
   // Hypersweeper board to match, nor has the hat's family:
   // tests/unit/hat.test.ts is its oracle — nor have the star tilings:
-  // tests/unit/stars.test.ts is theirs)
+  // tests/unit/stars.test.ts is theirs — nor the girih tilings:
+  // tests/unit/girih.test.ts)
   const unturned = BOARD_LEVELS.filter(
     (l) =>
       !l.window?.turned &&
@@ -259,6 +260,8 @@ describe("puzzle", () => {
       !l.socolarTaylor &&
       !l.hat &&
       !l.star &&
+      !l.girih &&
+      !l.girihTiling &&
       !l.decor,
   ).map((l) => l.key);
   /** A board past a tiling's first, cut from Hypersweeper's template as
@@ -300,15 +303,23 @@ describe("puzzle", () => {
   // (a bond, a pentagonal tiling, a rep-tile, a spiral or an aperiodic tiling
   // has no one vertex configuration, and an isogonal one is not edge to edge;
   // a star tiling's configuration names a star's points and dents apart,
-  // which tests/unit/stars.test.ts checks)
+  // which tests/unit/stars.test.ts checks; a girih tiling's tiles are not
+  // all regular, and its configurations are not named)
   // (a marked level goes by the board it marks)
   const familyOf = (l: Level): string => (l.decor ? levelByKey(l.decor.of)!.group : l.group);
   const ofPolygons = BOARD_LEVELS.filter(
     (l) =>
       !isDual(familyOf(l)) &&
-      !["rectangle", "isogonal", "pentagonal", "reptile", "spiral", "aperiodic", "star"].includes(
-        familyOf(l),
-      ),
+      ![
+        "rectangle",
+        "isogonal",
+        "pentagonal",
+        "reptile",
+        "spiral",
+        "aperiodic",
+        "star",
+        "girih",
+      ].includes(familyOf(l)),
   ).map((l) => l.key);
   it.each(part(ofPolygons))(
     "%s is one outline, every inner point its vertex configuration",
@@ -804,10 +815,14 @@ describe("puzzle", () => {
     // his kite and dart, Ammann–Beenker's square and rhombus; and the isogonal
     // tilings of one polygon in two or three sizes — each with its lined
     // boards, which keep the plain board's classes (a coloured one is in its
-    // paints)
+    // paints); and the girih tilings with both the six-sided hexagon and
+    // bowtie
     expect(twins.map((l) => l.key).sort()).toEqual([
       "ammannbeenker",
       "ammannbeenker.rules",
+      "girih",
+      "girihbowties",
+      "girihhexagons",
       "hexringsdual",
       "hexringsdual.lines",
       "hexringsdual.lines2",

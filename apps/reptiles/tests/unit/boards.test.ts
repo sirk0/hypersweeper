@@ -102,11 +102,12 @@ describe("boards", () => {
   });
 
   it("gives every aperiodic window five to ten boards, the Spectre's two alike", () => {
-    const windows = LEVELS.filter((l) => l.aperiodic || l.hat);
+    const windows = LEVELS.filter((l) => l.aperiodic || l.girih || l.hat);
     expect(windows.map((l) => l.key)).toEqual([
       "penrose",
       "kitedart",
       "ammannbeenker",
+      "girih",
       "tile11",
       "spectre",
       "hat",
