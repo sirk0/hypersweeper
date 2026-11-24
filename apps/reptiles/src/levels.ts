@@ -1859,7 +1859,9 @@ export function jigsawOf(coloured: Level, size?: number): Level | null {
         turnsOntoPieces(shape, mirrored.pieces).length > 0,
     );
     if (at < 0) at = shapes.push({ shape: bare, cls }) - 1;
-    return shapes.slice(0, at).some((s) => s.cls === cls) ? `${cls} twin` : cls;
+    if (!shapes.slice(0, at).some((s) => s.cls === cls)) return cls;
+    // a second kind of star is a colour of its own, as on the plain board
+    return cls === "star" ? "star star-2" : `${cls} twin`;
   });
   const decor = coloured.decor!;
   const label = `jigsaw, ${decor.label}`;
