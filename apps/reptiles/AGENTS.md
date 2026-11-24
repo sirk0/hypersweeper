@@ -506,7 +506,10 @@ phone's size).
 Board, `src/preferences.ts`). With it on, once the region is covered, the
 tiling the level was cut from is carried on round it as faint outlines (`path.beyond`,
 `--muted`, a 1px non-scaling hairline under the region — nothing filled,
-nothing to tap) out to the edges of the screen, fading in, and the board may
+nothing to tap) out to the edges of the screen, fading in — the whole
+screen, under the header, the notch and the home indicator too: they are
+drawn in a backdrop SVG of their own (`.board-backdrop`, fixed to the
+viewport behind `#game`, which isolates), lined up with the board's, and the board may
 then be zoomed out past the fit to see more of it: to `WON_MIN_ZOOM` (a
 third), held up where its tiles would be under `MIN_TILE_PX` across or the view
 would outrun how far the tiling is known; the tray keeps its fitted size.
