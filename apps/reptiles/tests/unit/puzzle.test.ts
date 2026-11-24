@@ -815,10 +815,14 @@ describe("puzzle", () => {
     // his kite and dart, Ammann–Beenker's square and rhombus; and the isogonal
     // tilings of one polygon in two or three sizes — each with its lined
     // boards, which keep the plain board's classes (a coloured one is in its
-    // paints)
+    // paints); and the girih tilings with both the six-sided hexagon and
+    // bowtie
     expect(twins.map((l) => l.key).sort()).toEqual([
       "ammannbeenker",
       "ammannbeenker.rules",
+      "girih",
+      "girihbowties",
+      "girihhexagons",
       "hexringsdual",
       "hexringsdual.lines",
       "hexringsdual.lines2",
