@@ -41,7 +41,12 @@
 // `MEASURE=0` skips the measure (seconds a board, the Socolar–Taylor tile's
 // minutes: left out unless named).
 
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { latticeOf } from "../src/colourings";
+import { jigsaw } from "../src/geometry/marks";
+import { piece, sideCount, type Bulge, type Piece, type XY } from "../src/geometry/shape";
+import { loopsOf, type Loop } from "../src/view/curve";
 import { measure, wrongShare } from "../src/difficulty";
 import { knobMark, seamMark, SEAM_FLAT } from "../src/geometry/marks";
 import { ccw } from "../src/geometry/outline";
@@ -79,6 +84,11 @@ const RESTARTS = 300;
 const MAX_SIGN_CLASSES = 10;
 /** `MEASURE=0` skips the difficulty measure (seconds a board). */
 const MEASURE = process.env.MEASURE !== "0";
+/** `SVG=<dir>` draws each measured board there as `<key>.svg`: the board
+ * as dealt (its rim cut round) with the tray under it, then finished round,
+ * then finished plain — a prototype's picture, the arcs drawn as the
+ * Spectre's are (`outlinePath`). */
+const SVG = process.env.SVG;
 /** Boards whose measure takes minutes: left out unless named. */
 const SLOW = new Set(only.length ? [] : ["socolartaylor"]);
 
@@ -394,6 +404,162 @@ function labellingSearch(
   return { frames: best.frames, how: `${total} labellings` };
 }
 
+// -- pictures (SVG=<dir>) ------------------------------------------------------
+
+/** The game's tile colours (src/styles.css, light), by side count. */
+const FILL: Record<string, [string, string]> = {
+  3: ["#e07f72", "#8f3a2f"],
+  4: ["#e9a85a", "#8a5418"],
+  5: ["#e3c75a", "#7f6914"],
+  6: ["#86b872", "#3f6b2e"],
+  7: ["#72b68e", "#316645"],
+  8: ["#5fb3aa", "#23625b"],
+  12: ["#6e9fca", "#2f5679"],
+  13: ["#a98bc0", "#5f4771"],
+};
+const PIECES: [string, string] = ["#9aa3b5", "#48505f"];
+
+/** A knob mark's arc: out of the tile (OUT, −1) or into it (IN, 1); a seam
+ * straight. */
+const bulgeOf = (mark: number): Bulge => {
+  const j = jigsaw(mark);
+  return j && "knob" in j ? (j.out ? -1 : 1) : 0;
+};
+const rounded = (pieces: readonly Piece[]): Piece[] =>
+  pieces.map((p) => piece(p.verts, p.marks?.map(bulgeOf)));
+
+function fillOf(level: Level, pieces: readonly Piece[]): [string, string] {
+  if (pieces.length > 1) return PIECES;
+  return FILL[sideCount(level.ring, pieces[0]!.verts)] ?? FILL[13]!;
+}
+
+/** How deep an arc may be drawn, as the game's (`LIFT` in src/view/curve.ts,
+ * 0.6, the Spectre's) and shallower: a board is drawn at the deepest that
+ * keeps every tray tile's outline clear of itself — the Spectre's arcs cross
+ * at a square's corner. */
+const LIFTS = [0.6, 0.45, 0.33, 0.25, 0.18, 0.12];
+const ALONG = 0.15;
+
+/** A tile's outline as cubic arcs at `lift`: the path, and points along it. */
+function arcs(loop: Loop, lift: number, map: (p: XY) => XY = (p) => p): { d: string; pts: XY[] } {
+  const { xy, curve } = loop;
+  const pts: XY[] = [];
+  let d = "";
+  xy.forEach((a, i) => {
+    const b = xy[(i + 1) % xy.length]!;
+    const bulge = curve?.[i] ?? 0;
+    const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+    const [nx, ny] = [-dy * lift * bulge, dx * lift * bulge];
+    const c1: XY = [a[0] + ALONG * dx + nx, a[1] + ALONG * dy + ny];
+    const c2: XY = [b[0] - ALONG * dx + nx, b[1] - ALONG * dy + ny];
+    const m = (p: XY): string =>
+      map(p)
+        .map((v) => v.toFixed(2))
+        .join(",");
+    if (i === 0) d += `M${m(a)}`;
+    d += bulge ? `C${m(c1)} ${m(c2)} ${m(b)}` : `L${m(b)}`;
+    for (let k = 0; k < 12; k++) {
+      const t = k / 12;
+      const u = 1 - t;
+      const w = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+      pts.push([
+        w[0]! * a[0] + w[1]! * c1[0] + w[2]! * c2[0] + w[3]! * b[0],
+        w[0]! * a[1] + w[1]! * c1[1] + w[2]! * c2[1] + w[3]! * b[1],
+      ]);
+    }
+  });
+  return { d: d + "Z", pts };
+}
+
+/** Whether a closed outline (sampled) crosses itself. */
+function crosses(pts: XY[]): boolean {
+  const n = pts.length;
+  const side = (p: XY, q: XY, r: XY): number =>
+    (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+  for (let i = 0; i < n; i++)
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      const [a, b, c, e] = [pts[i]!, pts[(i + 1) % n]!, pts[j]!, pts[(j + 1) % n]!];
+      if (side(a, b, c) * side(a, b, e) < 0 && side(c, e, a) * side(c, e, b) < 0) return true;
+    }
+  return false;
+}
+
+/** The board as dealt, finished round, and finished plain, side by side,
+ * each panel fitted to one height, the tray's tiles under the first. */
+function picture(plain: Level, round: Level, note: string): string {
+  const H = 300;
+  const trayLoops = round.tiles.flatMap((t) => loopsOf(round.ring, rounded(t.pieces)));
+  const lift = LIFTS.find((l) => trayLoops.every((loop) => !crosses(arcs(loop, l).pts))) ?? 0.08;
+  note += ` · arcs ${Math.round((lift / LIFTS[0]!) * 100)}% of the Spectre's`;
+  const gap = 28;
+  const panels: { loops: Loop[][]; fills: ([string, string] | null)[]; title: string }[] = [];
+  const rim: Loop[] = round.region.map((verts, i) => ({
+    xy: verts.map((v) => round.ring.toXY(v)),
+    curve: round.regionMarks?.[i]?.map(bulgeOf),
+  }));
+  panels.push({ loops: [rim], fills: [null], title: "as dealt" });
+  panels.push({
+    loops: round.cells.map((c) => loopsOf(round.ring, rounded(c))),
+    fills: round.cells.map((c) => fillOf(round, c)),
+    title: "finished, round",
+  });
+  panels.push({
+    loops: plain.cells.map((c) => loopsOf(plain.ring, c)),
+    fills: plain.cells.map((c) => fillOf(plain, c)),
+    title: "finished, plain",
+  });
+  const reach = (loops: Loop[][]): [number, number, number, number] => {
+    const pts = loops.flatMap((l) => l.flatMap((loop) => arcs(loop, lift).pts));
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  };
+  const [bx0, by0, bx1, by1] = reach(panels[1]!.loops);
+  const scale = H / (by1 - by0);
+  const width = (bx1 - bx0) * scale;
+  const body: string[] = [];
+  const top = 56;
+  panels.forEach(({ loops, fills, title }, i) => {
+    const ox = 20 + i * (width + gap);
+    const map = ([x, y]: XY): XY => [ox + (x - bx0) * scale, top + (by1 - y) * scale];
+    body.push(
+      `<text x="${ox}" y="${top - 10}" class="h">${title}</text>`,
+      ...loops.map((l, j) => {
+        const [fill, edge] = fills[j] ?? ["#ede0c8", "#82796a"];
+        const d = l.map((loop) => arcs(loop, lift, map).d).join("");
+        return `<path d="${d}" fill="${fill}" stroke="${edge}" stroke-width="1.6" stroke-linejoin="round" fill-rule="evenodd"/>`;
+      }),
+    );
+  });
+  // the tray: each kind as it is held, at the board's scale, in a row
+  const tray = round.tiles.map((t) => loopsOf(round.ring, rounded(t.pieces)));
+  let tx = 20;
+  const trayTop = top + H + 40;
+  let trayH = 0;
+  body.push(`<text x="20" y="${trayTop - 12}" class="h">tray</text>`);
+  tray.forEach((l, k) => {
+    const [x0, y0, x1, y1] = reach([l]);
+    const map = ([x, y]: XY): XY => [tx + (x - x0) * scale, trayTop + (y1 - y) * scale];
+    const [fill, edge] = fillOf(round, round.tiles[k]!.pieces);
+    body.push(
+      `<path d="${l.map((loop) => arcs(loop, lift, map).d).join("")}" fill="${fill}" stroke="${edge}" stroke-width="1.6" stroke-linejoin="round"/>`,
+    );
+    tx += (x1 - x0) * scale + 24;
+    trayH = Math.max(trayH, (y1 - y0) * scale);
+  });
+  const W = Math.max(20 + 3 * width + 2 * gap + 20, tx);
+  const Ht = trayTop + trayH + 24;
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(0)}" height="${Ht.toFixed(0)}" viewBox="0 0 ${W.toFixed(1)} ${Ht.toFixed(1)}">`,
+    `<style>text{font:600 15px system-ui,sans-serif;fill:#2e2b25}.h{font-weight:500;fill:#82796a;font-size:13px}</style>`,
+    `<rect width="100%" height="100%" fill="#f5ead8"/>`,
+    `<text x="20" y="26">${plain.label} (${plain.key}) · ${note}</text>`,
+    ...body,
+    `</svg>`,
+  ].join("\n");
+}
+
 interface Row {
   key: string;
   label: string;
@@ -605,6 +771,10 @@ function census(entry: { key: string; label: string; group: string }): Row {
       wrongRound: wrongShare(after),
       kinds: [level.tiles.length, curved.tiles.length],
     };
+    if (SVG) {
+      const note = `score ${before.score.toFixed(2)} → ${after.score.toFixed(2)} · wrong fits ${Math.round(100 * wrongShare(before))}% → ${Math.round(100 * wrongShare(after))}%`;
+      writeFileSync(join(SVG, `${entry.key}.svg`), picture(level, curved, note));
+    }
   }
   return {
     key: entry.key,
