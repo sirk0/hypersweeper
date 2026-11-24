@@ -6,11 +6,12 @@
 // from.
 //
 // - **A periodic level** (the uniform, 2-uniform, Laves, 2-isohedral, bond,
-//   pentagonal and isogonal windows, and the rep-tiles that are cut from a
+//   pentagonal, isogonal, star and periodic girih windows, and the rep-tiles that are cut from a
 //   lattice) is carried on from its own tiles — or, where its window is too
 //   small to hold a whole period, from a wider window of the same tiling round
 //   it (`periodicContext`, already in the window's coordinates).
-// - **The rest** — the aperiodic windows, the hat's family, the spirals, the
+// - **The rest** — the aperiodic windows, the hat's family, the self-similar
+//   girih pattern, the spirals, the
 //   rep-tiles, the Socolar–Taylor tile — are found in bigger patches their own
 //   builders grow: the whole patch a window was cut from and deeper ones, more
 //   rings, more inflations.
@@ -30,6 +31,7 @@ import {
 } from "./geometry/extension";
 import type { Cyc, Ring } from "./geometry/cyclotomic";
 import { hatPatch } from "./geometry/hat";
+import { girihWindow } from "./geometry/girih";
 import { piecePatch } from "./geometry/pieces";
 import { repTilePatch } from "./geometry/repTile";
 import { socolarTaylorPatch } from "./geometry/socolarTaylor";
@@ -90,7 +92,7 @@ function grown(level: Level): Iterable<Vertex[][]> | null {
       }
     },
   });
-  const { aperiodic, hat, spiral, inflations, pieceTile, socolarTaylor } = level;
+  const { aperiodic, hat, girih, spiral, inflations, pieceTile, socolarTaylor } = level;
   if (aperiodic) {
     const { mode, depth, variant } = aperiodic;
     // the whole patch the window was cut from, then deeper ones; a round tile
@@ -104,6 +106,12 @@ function grown(level: Level): Iterable<Vertex[][]> | null {
   if (hat) {
     return sizes((k) => {
       const { ring, cells } = hatPatch(hat.tile, hat.depth + k, Number.MAX_SAFE_INTEGER);
+      return plain(ring, cells);
+    });
+  }
+  if (girih) {
+    return sizes((k) => {
+      const { ring, cells } = girihWindow(girih.depth + k, null);
       return plain(ring, cells);
     });
   }

@@ -526,7 +526,7 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   // the board stays fitted.
   const fitted = (await page.locator("svg.board path.region").boundingBox())!;
   await page.waitForTimeout(1500);
-  await expect(page.locator("svg.board path.beyond")).toHaveCount(0);
+  await expect(page.locator(".board-backdrop path.beyond")).toHaveCount(0);
   expect(await wheelOut(page, 6)).toBeCloseTo(fitted.width, 0);
   expect(errors).toEqual([]);
 });
@@ -555,10 +555,27 @@ test("with its setting on, a finished board shows the tiling past it and zooms o
   // The finished board's tiling, carried on past its edge as outlines
   // (src/extension.ts, worked out in a worker), and with it zoom out past the
   // fit — to a third of it, and no further.
-  await expect(page.locator("svg.board path.beyond")).toHaveCount(1);
-  expect((await page.locator("svg.board path.beyond").getAttribute("d"))!.length).toBeGreaterThan(
-    1000,
-  );
+  await expect(page.locator(".board-backdrop path.beyond")).toHaveCount(1);
+  expect(
+    (await page.locator(".board-backdrop path.beyond").getAttribute("d"))!.length,
+  ).toBeGreaterThan(1000);
+  // …out to every edge of the screen, past the header and the tray too — not
+  // only the board's own room under the header.
+  const reach = await page.evaluate(() => {
+    const r = document.querySelector(".board-backdrop path.beyond")!.getBoundingClientRect();
+    return {
+      top: r.top,
+      left: r.left,
+      bottom: r.bottom,
+      right: r.right,
+      w: innerWidth,
+      h: innerHeight,
+    };
+  });
+  expect(reach.top).toBeLessThanOrEqual(0);
+  expect(reach.left).toBeLessThanOrEqual(0);
+  expect(reach.bottom).toBeGreaterThanOrEqual(reach.h);
+  expect(reach.right).toBeGreaterThanOrEqual(reach.w);
   const out = await wheelOut(page, 12);
   expect(out).toBeLessThan(fitted.width * 0.4);
   expect(out).toBeGreaterThan(fitted.width / 3 - 1);
@@ -566,7 +583,7 @@ test("with its setting on, a finished board shows the tiling past it and zooms o
   // again.
   await page.keyboard.press("x"); // ✕ remove mode
   await page.locator("svg.board [data-tile]").first().click();
-  await expect(page.locator("svg.board path.beyond")).toHaveCount(0);
+  await expect(page.locator(".board-backdrop path.beyond")).toHaveCount(0);
   const back = (await page.locator("svg.board path.region").boundingBox())!;
   expect(back.width).toBeCloseTo(fitted.width, 0);
   expect(errors).toEqual([]);
@@ -643,7 +660,7 @@ test("tray tiles are the size they land at, zoomed in or not", async ({ page }) 
   );
 });
 
-test("Tilings' families are named as Hypersweeper names them (and the stars, which it has not)", async ({
+test("Tilings' families are named as Hypersweeper names them (and the stars and girih, which it has not)", async ({
   page,
 }) => {
   await page.setViewportSize(PHONE);
@@ -656,6 +673,7 @@ test("Tilings' families are named as Hypersweeper names them (and the stars, whi
     "Laves",
     "2-isohedral",
     "Pentagonal",
+    "Girih",
     "Isogonal",
     "Congruent rectangles",
     "Rep-tiles",

@@ -42,6 +42,15 @@
 //   a lined tile's lines do. A class with one point on
 //   a tile is a half disc there instead: two tiles together make one disc.
 //
+// - Strapwork — a girih tile's (geometry/girih.ts): no mark, and it asks
+//   nothing of where a tile goes, but the pattern the tiles are for. From
+//   the middle of every edge two lines leave at 54° to it, one toward each
+//   end, and each runs on until it meets another (Hankin's method,
+//   `strapwork`): a ten-pointed star in the decagon, a five-pointed one in
+//   the pentagon. Every edge's two lines leave its middle at the same
+//   angles, so whatever two girih tiles meet along an edge, their lines run
+//   on into each other.
+//
 // Each part is a path's `d` and class, in the coordinates `map` gives; the
 // caller makes the elements. Nothing here is hit-tested: the classes carry
 // `pointer-events: none`.
@@ -433,11 +442,90 @@ function halfDiscAlong([ux, uy]: XY, at: XY, r: number, map: (p: XY) => XY): str
   return `M${pt(p0)}A${fmt(mr)} ${fmt(mr)} 0 0 ${sweep} ${pt(p1)}Z`;
 }
 
+/** The angle girih strapwork leaves each edge at. */
+const CONTACT = (54 * Math.PI) / 180;
+
+/** `run` as a path, through `map`. */
+const polyline = (run: readonly XY[], map: (p: XY) => XY): string =>
+  run.map((p, i) => `${i ? "L" : "M"}${pt(map(p))}`).join("");
+
+/** Whether `p` is inside the polygon `xy` (floats: a drawing). */
+function inside(xy: readonly XY[], p: XY): boolean {
+  let wind = false;
+  xy.forEach((a, i) => {
+    const b = xy[(i + 1) % xy.length]!;
+    if (
+      a[1] > p[1] !== b[1] > p[1] &&
+      p[0] < a[0] + ((p[1] - a[1]) * (b[0] - a[0])) / (b[1] - a[1])
+    )
+      wind = !wind;
+  });
+  return wind;
+}
+
+/**
+ * A girih tile's strapwork, by Hankin's method: from the middle of each
+ * edge of `xy` (counter-clockwise) two rays into the tile at `CONTACT` to the
+ * edge, one toward each end; rays paired where they meet inside the tile,
+ * the nearest meetings first, each ray once — two rays along one line from
+ * neighbouring edges (round a 72° corner) meet as one straight run. Each
+ * run is a polyline from one edge's middle to another's, through the point
+ * its two rays meet. Floats: a drawing, nothing is keyed by it.
+ */
+export function strapwork(xy: readonly XY[]): XY[][] {
+  const m = xy.length;
+  const rays: { from: XY; dir: XY }[] = [];
+  xy.forEach((a, i) => {
+    const b = xy[(i + 1) % m]!;
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const u: XY = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+    const n: XY = [-u[1], u[0]];
+    const from: XY = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const [c, s] = [Math.cos(CONTACT), Math.sin(CONTACT)];
+    rays.push({ from, dir: [c * u[0] + s * n[0], c * u[1] + s * n[1]] });
+    rays.push({ from, dir: [-c * u[0] + s * n[0], -c * u[1] + s * n[1]] });
+  });
+  const scale = Math.max(...xy.map((p) => Math.hypot(...sub(p, xy[0]!))), 1);
+  const eps = 1e-9 * scale;
+  const meetings: { r: number; s: number; cost: number; at: XY | null }[] = [];
+  rays.forEach((r, i) =>
+    rays.forEach((q, j) => {
+      if (j <= i || r.from === q.from) return;
+      const d = sub(q.from, r.from);
+      const det = cross(r.dir, q.dir);
+      if (Math.abs(det) < 1e-9) {
+        // one line, the two rays facing each other: one straight run
+        if (Math.abs(cross(r.dir, d)) > eps || dot(r.dir, d) <= 0 || dot(q.dir, d) >= 0) return;
+        meetings.push({ r: i, s: j, cost: Math.hypot(...d), at: null });
+        return;
+      }
+      const t = cross(d, q.dir) / det;
+      const u = cross(d, r.dir) / det;
+      if (t <= eps || u <= eps) return;
+      const at: XY = [r.from[0] + t * r.dir[0], r.from[1] + t * r.dir[1]];
+      if (!inside(xy, at)) return;
+      meetings.push({ r: i, s: j, cost: t + u, at });
+    }),
+  );
+  meetings.sort((p, q) => p.cost - q.cost || p.r - q.r || p.s - q.s);
+  const used = new Set<number>();
+  const runs: XY[][] = [];
+  for (const { r, s, at } of meetings) {
+    if (used.has(r) || used.has(s)) continue;
+    used.add(r);
+    used.add(s);
+    runs.push(at ? [rays[r]!.from, at, rays[s]!.from] : [rays[r]!.from, rays[s]!.from]);
+  }
+  return runs;
+}
+
 /** What a level's marks are sized by (`decorParts`): `disc`, the edge
  * length its half discs are, and `line`, the one its labels' lines are. */
 export interface MarkUnit {
   disc?: number | undefined;
   line?: number | undefined;
+  /** Every tile carries girih strapwork (`strapwork`). */
+  strapwork?: boolean;
 }
 
 const UNITS = new WeakMap<Level, MarkUnit | undefined>();
@@ -456,6 +544,7 @@ const median = (lengths: number[]): number | undefined =>
 export function markUnit(level: Level): MarkUnit | undefined {
   if (UNITS.has(level)) return UNITS.get(level);
   let unit: MarkUnit | undefined;
+  if (level.girih || level.girihTiling) unit = { strapwork: true };
   if (level.decor && PATCH_MARKED.includes(level.decor.of)) {
     const { ring } = level;
     const length = (a: Cyc, b: Cyc): number => {
@@ -509,6 +598,14 @@ export function decorParts(
   const [o, x1] = [map([0, 0]), map([1, 0])];
   const stretch = Math.hypot(x1[0] - o[0], x1[1] - o[1]);
   const widths = new Map<string, number>();
+  if (sizes?.strapwork)
+    for (const { xy } of loops)
+      add(
+        "decor strapwork",
+        strapwork(xy)
+          .map((run) => polyline(run, map))
+          .join(""),
+      );
   for (const { xy, marks, curve } of loops) {
     if (!marks) continue;
     const m = xy.length;

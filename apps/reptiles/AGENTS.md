@@ -80,7 +80,8 @@ some back off.
     Each arrow is drawn as an arc about one of the tile's corners, crossing
     its edge a share of the way back from the arrow's head, so the arcs run
     on unbroken only where the arrows agree — Ammann's on the rhombi,
-    Conway's on the kites and darts. **Every other aperiodic level** —
+    Conway's on the kites and darts. **Every other aperiodic level** but the
+    self-similar girih pattern (whose strapwork, below, is drawn only) —
     Ammann–Beenker, Tile(1,1), the Spectre, the hat, the turtle, the hat's
     metatiles and the Socolar–Taylor tile (`?level=ammannbeenker.rules`,
     `?level=hatmetatiles.rules`) — has a rule read off its builder's own
@@ -533,7 +534,10 @@ phone's size).
 Board, `src/preferences.ts`). With it on, once the region is covered, the
 tiling the level was cut from is carried on round it as faint outlines (`path.beyond`,
 `--muted`, a 1px non-scaling hairline under the region — nothing filled,
-nothing to tap) out to the edges of the screen, fading in, and the board may
+nothing to tap) out to the edges of the screen, fading in — the whole
+screen, under the header, the notch and the home indicator too: they are
+drawn in a backdrop SVG of their own (`.board-backdrop`, fixed to the
+viewport behind `#game`, which isolates), lined up with the board's, and the board may
 then be zoomed out past the fit to see more of it: to `WON_MIN_ZOOM` (a
 third), held up where its tiles would be under `MIN_TILE_PX` across or the view
 would outrun how far the tiling is known; the tray keeps its fitted size.
@@ -555,9 +559,9 @@ title. Home is **Quick start**: Easy, Medium and Hard as three cards side by
 side, each the picture of a tiling of that difficulty (`SHOWCASE` in
 `home.ts`: its outline and tiles, as its Tilings card draws it — never the
 board tiled), its counts and its hint; below 1100px, one under another. The
-catalog's twelve families are put together in **five groups**
+catalog's thirteen families are put together in **five groups**
 (`MENU_GROUPS`): Regular polygons (regular, uniform, 2-uniform, star polygons), Irregular
-tiles (Laves, 2-isohedral, pentagonal), Offset corners (isogonal, bonds),
+tiles (Laves, 2-isohedral, pentagonal, girih), Offset corners (isogonal, bonds),
 Self-similar (rep-tiles, spirals) and Aperiodic — each family in exactly one
 (`tests/unit/groups.test.ts`). A group's page (`?group=<key>`; `?tilings`
 opens the first) is its families' sections, their cards in grids that wrap,
@@ -642,9 +646,9 @@ every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
 colouring's tiles in more ways or fewer: 107 of 1625 do): 1518 boards
-past the first, 2559 levels in all — and the jigsaws, on the boards their
+past the first, 2585 levels in all — and the jigsaws, on the boards their
 colourings are, 809 more, and the vertex rules, on every board, 33 more:
-3401. Run it after `npm run boards`,
+3427. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -686,7 +690,7 @@ tilings beside them, which Hypersweeper has not), then spirals and
 aperiodic ones, and the uniform tilings again with every point held to their
 vertex configuration (`Level.rule`, the `.vertex` levels above).
 
-**Status: 134 tilings in twelve sections, then 219 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, twenty-eight of the thirty star tilings, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 270 colourings of the uniform, 2-uniform, star, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 210 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 3401 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 138 tilings in thirteen sections, then 219 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, twenty-eight of the thirty star tilings, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 270 colourings of the uniform, 2-uniform, star, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 210 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 3427 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -704,7 +708,18 @@ eighteen of one angle, 4.6.4*30°.6 to 9.3.9.3*20°, in Wikipedia's order; 21 to
 named V and the primal's pair, V[3⁶; 3⁴.6]₁), *Pentagonal* (types 10, 13 and
 15 — James, Rice, and Mann et al. — one convex pentagon each, named as
 Hypersweeper labels them: none is vertex-transitive, so there is no one
-configuration to name it by), *Isogonal* (all six of Hypersweeper's — offset
+configuration to name it by), *Girih* (a family of its own: Hypersweeper has
+none — the five tiles medieval Islamic strapwork was laid with, a decagon,
+a pentagon, an elongated hexagon, a bowtie and a rhombus, every side a unit
+and every corner a multiple of 36°: decagons side by side with a bowtie in
+each gap, then big hexagons and big bowties laid side by side and each cut
+into small hexagons and bowties by the self-similar rule below; 21 to 31
+tiles a window, named for their tiles, and every girih tile drawn with its
+**strapwork** — from each edge's middle two lines at 54°, each running on
+until it meets another, a ten-pointed star in the decagon — which asks
+nothing of where a tile goes but runs on unbroken across every edge, so a
+finished board is the pattern; plain tiles only for now, no colourings),
+*Isogonal* (all six of Hypersweeper's — offset
 square, staggered triangular, Pythagorean, rotated hexagonal, rotated
 triangular, three-scale triangular — regular polygons, every vertex alike but
 not edge to edge, one tile's side running through each; named as Hypersweeper
@@ -731,6 +746,13 @@ his kites and darts, Ammann–Beenker's squares and rhombi, the Spectre — each
 the centred window of its builder's patch, 24 to 33 tiles, the sun or star in
 the middle; any cover wins, so the matching rules that keep the other three
 aperiodic are not enforced — the Spectre, never flipped, needs none — then
+after Ammann–Beenker **the self-similar girih pattern** (`?level=girih`),
+which Hypersweeper has no board for: one decagon cut twice by a rule of the
+kind Lu and Steinhardt found on the Darb-i Imam shrine — every girih
+decagon, hexagon and bowtie cut τ² smaller, the small tiles straddling the
+big one's sides — 27 tiles round the decagon, which a cut keeps at the
+middle, ringed by hexagons and bowties whose ratio tends to τ, so it never
+repeats; its strapwork drawn as the periodic girih levels' is, then
 **the hat's family**, cut from the patch Hypersweeper's three boards of it are
 (`hatMetatiles` in `@tiling/geometry`) but windowed Rep-tiles' own way (`?level=hat`,
 `?level=turtle`, `?level=hatmetatiles`): *the hat*, Tile(1,√3), the first
@@ -988,6 +1010,29 @@ quick way to see the win state.
   tile of most corners, as `templateWindow` does — its tiles that fit whole,
   their largest piece joined edge to edge — moved off it for a board past
   the first (`starCut` in `levels.ts`, by 1/GRID steps of the lattice cell).
+- `src/geometry/girih.ts` — **the girih tiles**: the five (`GIRIH_TURNS`,
+  each a list of its corners' turns in tenths of a turn) walked out exactly
+  in ℤ[ζ10] by `girihCell`. The self-similar rule (`RULE`, `subdivide`)
+  grows each tile by τ² (exactly: τ = ζ + ζ⁻¹) and cuts it, as Lu and
+  Steinhardt's does, with a small hexagon along every big side — its long
+  diagonal, τ² long, the side, half of it in each of the two big tiles that
+  share it, kept once — and whole small tiles filling the rest: a big
+  bowtie two bowties, a big hexagon two hexagons and three bowties, a big
+  decagon a decagon, ten hexagons and ten bowties. The fills were found by
+  an exact search of every way to fill each big tile, the most symmetric
+  kept (the decagon's and bowtie's all of their tile's symmetry, the
+  hexagon's its half turn: none of its sixteen keeps more), and the rule
+  cuts only decagons, hexagons and bowties. `girihPatch` cuts one decagon
+  `depth` times, `girihWindow` keeps the tiles nearest its middle as the
+  hat's windows are kept (`centredWindow`), or nearest another tile, a board
+  past the first. The periodic tilings (`GIRIH_TILINGS`) are written as
+  the star tilings are — two lattice steps and one period's tiles — and
+  `subdivide` times cut by the rule (`girihPeriodicPatch`, memoised: the
+  board search cuts thousands of windows from a few patches);
+  `girihPeriodicWindow` cuts a square of them as `starWindow` does. The
+  tests (`tests/unit/girih.test.ts`) are its oracle: each fill covers its
+  big tile exactly with the hexagons' halves, each patch overlaps nothing
+  and leaves no gap, and a period fills its lattice cell.
 - `src/geometry/hat.ts` — the hat's family, cut from `hatMetatiles` in
   `@tiling/geometry` (`packages/geometry/src/hat.ts`, shared with
   Hypersweeper's hat, turtle and metatile boards): Craig Kaplan's hatviz
@@ -1211,6 +1256,14 @@ quick way to see the win state.
   ones, marked `star`, named as Wikipedia writes its configuration — its
   `configs` none, a configuration here naming a star's points and dents
   apart.
+  `girihTilingLevel` makes a periodic girih tiling's from `GIRIH` (its key
+  in `GIRIH_TILINGS` and its window's box), in the Girih section after the
+  pentagonal tilings, marked `girihTiling`, named for its tiles, its
+  `configs` none; `girihLevel` the self-similar girih pattern's
+  (`GIRIH_SELF_SIMILAR`: how many cuts, how many tiles the window keeps),
+  after Ammann–Beenker in the Aperiodic section, marked `girih` — a
+  `centre` board source, as the hat's family's are, its whole patch its
+  source's `whole`, which `npm run boards` centres windows in.
   `hatLevel` makes the hat's family's from `HAT_FAMILY` (the key, the tile,
   how many substitutions, how many tiles the window keeps), after the
   Spectre, marked `hat`.
@@ -1366,7 +1419,11 @@ quick way to see the win state.
   fifth), a tile's points of one class joined by a cubic leaving each along
   its inward normal (`LABEL_COLOURS`; a lone one a half disc), as wide as
   `markUnit`'s `line`, the level's middle side length, so every line of a
-  level is one width. Every tile, tray
+  level is one width; and on a girih level (`markUnit`'s `strapwork`), on
+  every tile, marked or not, its strapwork by Hankin's method
+  (`strapwork`): from each edge's middle two rays at 54° to it, paired
+  where they meet inside the tile, nearest first — two along one line
+  round a 72° corner one straight run. Every tile, tray
   tile, dragged tile and icon is decorated through it, and given its colour
   classes (`edge`) it draws the tile's border again last (`tile-edge`), so a
   line's end or a half disc never paints over a border — every border is
@@ -1422,7 +1479,9 @@ the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
   Hypersweeper has no board for: defined in `src/geometry/stars.ts` and
   checked by `tests/unit/stars.test.ts` (a period's tiles a lattice cell's
   area, overlapping nothing over a block of periods, every vertex its
-  configuration) — and for the tiles of several
+  configuration) — and the girih tilings, periodic and self-similar,
+  defined in `src/geometry/girih.ts` and checked by
+  `tests/unit/girih.test.ts` — and for the tiles of several
   pieces, which Hypersweeper cannot have (a minesweeper cell is one polygon):
   the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and
   checked by covering their grown tile exactly, and the Socolar–Taylor tile in
@@ -1441,8 +1500,8 @@ the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues (7,
-  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 9 cyan,
-  between 8 and 12; 13, Tile(1,1),
+  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 9 cyan and
+  10, the girih decagon, a bluer cyan, between 8 and 12; 13, Tile(1,1),
   the Spectre, the hat and the turtle, violet at its end, and 18 lavender past
   it — real corners, `sideCount`), a tile
   of several pieces in slate, off the ramp (`.pieces`), a star in orchid

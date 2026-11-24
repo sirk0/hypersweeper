@@ -65,6 +65,8 @@
   --tile-13-edge: #5f4771;
   --tile-9: #66aab9;
   --tile-9-edge: #275f6b;
+  --tile-10: #6aa5c2;
+  --tile-10-edge: #2b5b72;
   --tile-18: #9d8fcf;
   --tile-18-edge: #51468a;
   --tile-star: #cd7fb5;
@@ -164,6 +166,8 @@
     --tile-13-edge: #dac8e8;
     --tile-9: #52939f;
     --tile-9-edge: #b3dde5;
+    --tile-10: #5890ab;
+    --tile-10-edge: #b5d9ea;
     --tile-18: #8577b6;
     --tile-18-edge: #d4ccf0;
     --tile-star: #b4689c;
@@ -234,6 +238,8 @@
   --tile-13-edge: #dac8e8;
   --tile-9: #52939f;
   --tile-9-edge: #b3dde5;
+  --tile-10: #5890ab;
+  --tile-10-edge: #b5d9ea;
   --tile-18: #8577b6;
   --tile-18-edge: #d4ccf0;
   --tile-star: #b4689c;
@@ -589,6 +595,24 @@ button.primary {
   stroke-linejoin: round;
 }
 
+/* Where the tiling past a finished board is drawn: the whole screen, edge to
+   edge — under the header, the notch and the home indicator, which the board's
+   own SVG stops short of — behind everything on the level's screen but the
+   page itself (#game isolates, so z-index -1 stays above the body's ground). */
+#game {
+  isolation: isolate;
+}
+
+.board-backdrop {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* The tiling past a finished board (src/extension.ts): its tiles' outlines,
    faint, out to the screen's edges under the region — nothing filled, nothing
    to tap. They come in once the board is finished. */
@@ -656,6 +680,11 @@ button.primary {
 .tile.sides-9 {
   fill: var(--tile-9);
   stroke: var(--tile-9-edge);
+}
+
+.tile.sides-10 {
+  fill: var(--tile-10);
+  stroke: var(--tile-10-edge);
 }
 
 .tile.sides-12 {
@@ -781,6 +810,10 @@ button.primary {
   stroke: var(--tile-9-edge);
 }
 
+.tile-edge.sides-10 {
+  stroke: var(--tile-10-edge);
+}
+
 .tile-edge.sides-12 {
   stroke: var(--tile-12-edge);
 }
@@ -846,6 +879,23 @@ button.primary {
 
 .card-picture .decor.line {
   stroke-width: 0.1;
+}
+
+/* A girih tile's strapwork (view/decor.ts, strapwork): a band from each
+   edge's middle, cut square there, so it runs on into the next tile's;
+   drawn only, it asks nothing of where a tile goes. */
+.decor.strapwork {
+  fill: none;
+  stroke: var(--decor-line);
+  stroke-width: 0.07;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 8;
+  opacity: 0.55;
+}
+
+.card-picture .decor.strapwork {
+  stroke-width: 0.09;
 }
 
 /* Penrose's arrows as arcs about the tiles' corners: one kind dark, the

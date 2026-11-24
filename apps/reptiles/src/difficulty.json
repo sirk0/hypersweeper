@@ -3407,6 +3407,150 @@
     "seen": 126,
     "hidden": 59
   },
+  "girihdecagons": {
+    "score": 1.188,
+    "presses": 1,
+    "flips": 0,
+    "fits": 340,
+    "seen": 24,
+    "hidden": 192
+  },
+  "girihdecagons-2": {
+    "score": 1.236,
+    "presses": 1,
+    "flips": 0,
+    "fits": 428,
+    "seen": 96,
+    "hidden": 190
+  },
+  "girihdecagons-3": {
+    "score": 1.162,
+    "presses": 1,
+    "flips": 0,
+    "fits": 318,
+    "seen": 12,
+    "hidden": 184
+  },
+  "girihdecagons-4": {
+    "score": 1.225,
+    "presses": 1,
+    "flips": 0,
+    "fits": 412,
+    "seen": 76,
+    "hidden": 196
+  },
+  "girihdecagons-5": {
+    "score": 1.172,
+    "presses": 1,
+    "flips": 0,
+    "fits": 304,
+    "seen": 30,
+    "hidden": 160
+  },
+  "girihdecagons-6": {
+    "score": 1.184,
+    "presses": 1,
+    "flips": 0,
+    "fits": 340,
+    "seen": 37,
+    "hidden": 178
+  },
+  "girihhexagons": {
+    "score": 0.983,
+    "presses": 5,
+    "flips": 0,
+    "fits": 504,
+    "seen": 33,
+    "hidden": 125
+  },
+  "girihhexagons-2": {
+    "score": 0.984,
+    "presses": 5,
+    "flips": 0,
+    "fits": 490,
+    "seen": 48,
+    "hidden": 107
+  },
+  "girihhexagons-3": {
+    "score": 0.934,
+    "presses": 4,
+    "flips": 0,
+    "fits": 530,
+    "seen": 43,
+    "hidden": 125
+  },
+  "girihhexagons-4": {
+    "score": 0.906,
+    "presses": 4,
+    "flips": 0,
+    "fits": 465,
+    "seen": 25,
+    "hidden": 111
+  },
+  "girihhexagons-5": {
+    "score": 1.018,
+    "presses": 5,
+    "flips": 0,
+    "fits": 545,
+    "seen": 46,
+    "hidden": 142
+  },
+  "girihhexagons-6": {
+    "score": 0.889,
+    "presses": 4,
+    "flips": 0,
+    "fits": 492,
+    "seen": 27,
+    "hidden": 112
+  },
+  "girihbowties": {
+    "score": 1.378,
+    "presses": 5,
+    "flips": 0,
+    "fits": 335,
+    "seen": 86,
+    "hidden": 117
+  },
+  "girihbowties-2": {
+    "score": 1.4,
+    "presses": 5,
+    "flips": 0,
+    "fits": 372,
+    "seen": 54,
+    "hidden": 179
+  },
+  "girihbowties-3": {
+    "score": 1.401,
+    "presses": 5,
+    "flips": 0,
+    "fits": 308,
+    "seen": 65,
+    "hidden": 124
+  },
+  "girihbowties-4": {
+    "score": 1.414,
+    "presses": 5,
+    "flips": 0,
+    "fits": 343,
+    "seen": 61,
+    "hidden": 155
+  },
+  "girihbowties-5": {
+    "score": 1.5,
+    "presses": 7,
+    "flips": 0,
+    "fits": 378,
+    "seen": 72,
+    "hidden": 166
+  },
+  "girihbowties-6": {
+    "score": 1.398,
+    "presses": 5,
+    "flips": 0,
+    "fits": 361,
+    "seen": 67,
+    "hidden": 158
+  },
   "offsetsquare": {
     "score": 0.353,
     "presses": 0,
@@ -4086,6 +4230,70 @@
     "fits": 141,
     "seen": 19,
     "hidden": 51
+  },
+  "girih": {
+    "score": 0.985,
+    "presses": 5,
+    "flips": 0,
+    "fits": 541,
+    "seen": 20,
+    "hidden": 83
+  },
+  "girih-2": {
+    "score": 0.998,
+    "presses": 5,
+    "flips": 0,
+    "fits": 484,
+    "seen": 27,
+    "hidden": 70
+  },
+  "girih-3": {
+    "score": 1.094,
+    "presses": 6,
+    "flips": 0,
+    "fits": 523,
+    "seen": 30,
+    "hidden": 89
+  },
+  "girih-4": {
+    "score": 1.037,
+    "presses": 5,
+    "flips": 0,
+    "fits": 494,
+    "seen": 41,
+    "hidden": 72
+  },
+  "girih-5": {
+    "score": 0.929,
+    "presses": 4,
+    "flips": 0,
+    "fits": 498,
+    "seen": 27,
+    "hidden": 69
+  },
+  "girih-6": {
+    "score": 1.179,
+    "presses": 7,
+    "flips": 0,
+    "fits": 489,
+    "seen": 56,
+    "hidden": 65
+  },
+  "girih-7": {
+    "score": 1.029,
+    "presses": 5,
+    "flips": 0,
+    "fits": 462,
+    "seen": 33,
+    "hidden": 70
+  },
+  "girih-8": {
+    "score": 1.125,
+    "presses": 6,
+    "flips": 0,
+    "fits": 519,
+    "seen": 36,
+    "hidden": 94
   },
   "tile11": {
     "score": 1.939,

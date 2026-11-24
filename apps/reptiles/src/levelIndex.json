@@ -441,6 +441,24 @@
     "name": "Type 15 (Mann et al., 2015)",
     "group": "pentagonal"
   },
+  {
+    "key": "girihdecagons",
+    "label": "Girih decagons side by side in a lattice, a bowtie in every gap",
+    "name": "Decagons and bowties",
+    "group": "girih"
+  },
+  {
+    "key": "girihhexagons",
+    "label": "Big girih hexagons side by side, each cut into hexagons and bowties",
+    "name": "Hexagons cut",
+    "group": "girih"
+  },
+  {
+    "key": "girihbowties",
+    "label": "Big girih bowties side by side, each cut into bowties and hexagons",
+    "name": "Bowties cut",
+    "group": "girih"
+  },
   { "key": "offsetsquare", "label": "Offset square", "name": "Offset square", "group": "isogonal" },
   {
     "key": "staggeredtri",
@@ -570,6 +588,12 @@
     "key": "ammannbeenker",
     "label": "Ammann–Beenker",
     "name": "Ammann–Beenker",
+    "group": "aperiodic"
+  },
+  {
+    "key": "girih",
+    "label": "A girih decagon, hexagons and bowties, cut τ² smaller over and over: it never repeats",
+    "name": "Girih",
     "group": "aperiodic"
   },
   { "key": "tile11", "label": "Tile(1,1)", "name": "Tile(1,1)", "group": "aperiodic" },

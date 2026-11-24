@@ -182,7 +182,7 @@ test("crossing the desktop's width redraws the screen, and keeps a level's tiles
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("#sidebar")).toBeHidden();
   await expect(page.locator("#catalog-title")).toHaveText("Tilings");
-  await expect(page.locator("#catalog-list .family")).toHaveCount(12);
+  await expect(page.locator("#catalog-list .family")).toHaveCount(13);
   await page.setViewportSize({ width: 1280, height: 720 });
   await expect(page.locator("#catalog-title")).toHaveText("Aperiodic");
 
