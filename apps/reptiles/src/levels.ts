@@ -18,12 +18,15 @@ import {
 } from "@tiling/geometry";
 import {
   KNOBS,
+  ARC_DEPTHS,
   KNOB_SIZES,
   LINE,
   MAX_COLOURS,
   SEAM_FLAT,
   SEAM_S,
   SEAM_Z,
+  arc,
+  arcMark,
   arrowMark,
   colourMark,
   colours as colourPair,
@@ -56,6 +59,7 @@ import aperiodicColouringsData from "./aperiodicColourings.json";
 import { ccw, outline } from "./geometry/outline";
 import { cutAlike } from "./geometry/cutAlike";
 import colouringsData from "./colourings.json";
+import curvingsData from "./curvings.json";
 import levelIndexData from "./levelIndex.json";
 import markedBoardsData from "./markedBoards.json";
 import {
@@ -1765,6 +1769,77 @@ export function markedBoard(
   };
 }
 
+/** The tilings with a curved level (`curvedOf`): their edges the Spectre's
+ * arcs, out of one tile and into the one across — a matching rule drawn into
+ * the outline. Chosen from `npm run curvable`'s census, which writes each
+ * one's curving to `src/curvings.json` (`-- --write`). */
+export const CURVED = ["trihex", "triangles"];
+
+/** A curving as `src/curvings.json` keeps it: the depth its arcs are drawn
+ * at (an index into `ARC_DEPTHS`), the sublattice it repeats by, and for
+ * each board it is laid on, each cell's bulge edge by edge, piece by piece,
+ * in the board's own cell order — −1 out, 1 in, 0 straight (`Bulge`). */
+export interface Curving {
+  depth: number;
+  period: [number, number, number];
+  boards: Record<string, number[][][]>;
+}
+const CURVINGS = curvingsData as unknown as Record<string, Curving>;
+
+/** The deepest arc (an index into `ARC_DEPTHS`) that keeps every one of
+ * `tiles` — marked with arcs at any depth — clear of itself, as a jigsaw's
+ * knobs are sized (`knobsClear`); -1 where none does. Floats: asked only by
+ * `npm run curvable -- --write`, which writes the depth down. */
+export function arcDepthOf(tiles: readonly Shape[]): number {
+  const at = (depth: number): Shape[] =>
+    tiles.map((t) => ({
+      ring: t.ring,
+      pieces: t.pieces.map((p) =>
+        piece(
+          p.verts,
+          p.curve,
+          p.marks?.map((m) => {
+            const a = arc(m);
+            return a ? arcMark(a.out, depth) : m;
+          }),
+        ),
+      ),
+    }));
+  return ARC_DEPTHS.findIndex((_, d) => at(d).every(knobsClear));
+}
+
+/** A tiling's curved level on `board` (its first, or one past it): the
+ * board's cells with each edge an arc or straight as `src/curvings.json`
+ * keeps it — an arc out of a tile meets only one into the tile across, a
+ * straight edge only a straight one — and its rim cut as the tiles along it
+ * are, as the Spectre's is. Listed with the matching rules. */
+function curvedLevel(board: Level): Level {
+  const of = board.base;
+  const curving = CURVINGS[of];
+  const bulges = curving?.boards[String(board.board)];
+  if (!curving || !bulges) throw new Error(`${of}: no curving for board ${board.board}`);
+  if (bulges.length !== board.cells.length) throw new Error(`${of}: its curving is out of step`);
+  const cells = board.cells.map((c) => c.map((p) => p.verts));
+  const marks = bulges.map((cell, i) =>
+    cell.map((piece, q) => {
+      if (piece.length !== cells[i]![q]!.length)
+        throw new Error(`${of}: its curving is out of step`);
+      return piece.map((b) => (b ? arcMark(b < 0, curving.depth) : seamMark(SEAM_FLAT)));
+    }),
+  );
+  const key = `${of}.curved`;
+  const plain = FIRST_BY_KEY.get(of) ?? board;
+  const label = "curves";
+  const made = markedBoard(board, key, cells, marks);
+  return {
+    ...made,
+    label: `${plain.label}, ${label}`,
+    name: `${plain.name} · ${label}`,
+    group: "rules",
+    decor: { of, colours: 1, rules: true, label },
+  };
+}
+
 /** The board a painting of `plain` is laid on: `plain` itself, but for a
  * congruent-rectangle bond with T-vertices, whose bricks are cut there into
  * steps of the ring's unit (`Window.steps`: a half brick, a third in the 3×3
@@ -2385,6 +2460,11 @@ const MARKED_BY_HAND: [key: string, of: string, make: (plain: Level) => Level][]
           ],
         ]
       : []),
+  ]),
+  ...CURVED.filter((of) => CURVINGS[of]).map((of): [string, string, (plain: Level) => Level] => [
+    `${of}.curved`,
+    of,
+    curvedLevel,
   ]),
   ...VERTEX_RULED.map((of): [string, string, (plain: Level) => Level] => [
     `${of}.vertex`,

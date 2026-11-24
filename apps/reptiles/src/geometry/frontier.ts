@@ -56,7 +56,7 @@ import {
   type Shape,
   type XY,
 } from "./shape";
-import { NONE, SEAM_FLAT, jigsaw, partner } from "./marks";
+import { NONE, SEAM_FLAT, arc, jigsaw, partner } from "./marks";
 
 export interface Edge {
   a: Cyc;
@@ -238,9 +238,10 @@ function distToSegment(p: XY, a: XY, b: XY): number {
 }
 
 /** Whether an edge marked `mark` holds a tile laid along it, as a corner
- * does: a jigsaw edge cut as a knob, a socket or an S seam — not a straight
- * one, which looks like any other straight edge. */
+ * does: a jigsaw edge cut as a knob, a socket or an S seam, or an arc — not
+ * a straight one, which looks like any other straight edge. */
 function sawOn(mark: number): boolean {
+  if (arc(mark)) return true;
   const jig = jigsaw(mark);
   return jig !== null && !("seam" in jig && jig.seam === SEAM_FLAT);
 }

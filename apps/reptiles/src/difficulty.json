@@ -12999,6 +12999,38 @@
     "seen": 0,
     "hidden": 0
   },
+  "trihex.curved": {
+    "score": 1.229,
+    "presses": 5,
+    "flips": 0,
+    "fits": 97,
+    "seen": 22,
+    "hidden": 27
+  },
+  "trihex.curved-2": {
+    "score": 1.326,
+    "presses": 5,
+    "flips": 0,
+    "fits": 107,
+    "seen": 24,
+    "hidden": 37
+  },
+  "trihex.curved-3": {
+    "score": 1.27,
+    "presses": 5,
+    "flips": 0,
+    "fits": 107,
+    "seen": 24,
+    "hidden": 34
+  },
+  "triangles.curved": {
+    "score": 0.477,
+    "presses": 7,
+    "flips": 0,
+    "fits": 38,
+    "seen": 0,
+    "hidden": 0
+  },
   "squares.2apart.jigsaw": {
     "score": 0.23,
     "presses": 0,

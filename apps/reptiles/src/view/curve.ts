@@ -11,7 +11,7 @@
 // drawn from either end is the same line.
 
 import type { Ring } from "../geometry/cyclotomic";
-import { KNOB_SIZES, SEAM_FLAT, SEAM_S, jigsaw } from "../geometry/marks";
+import { ARC_DEPTHS, KNOB_SIZES, SEAM_FLAT, SEAM_S, arc, jigsaw } from "../geometry/marks";
 import type { Bulge, Piece, XY } from "../geometry/shape";
 
 /** One piece of a tile as drawn: its outline, in board units, and its round
@@ -143,6 +143,12 @@ const S_SEAM: Step[] = (() => {
 /** A jigsaw edge's steps, in the edge's frame, from its mark; null for an
  * edge that is not one, or is a flat seam (drawn as a straight line). */
 function jigsawSteps(mark: number | undefined): { steps: readonly Step[]; size: number } | null {
+  // an arc: the Spectre's cubic (`controls`), at its depth, corner to corner
+  const round = mark === undefined ? null : arc(mark);
+  if (round) {
+    const h = LIFT * ARC_DEPTHS[round.depth]! * (round.out ? 1 : -1);
+    return { steps: [{ c1: [ALONG, h], c2: [1 - ALONG, h], p: [1, 0] }], size: 1 };
+  }
   const jig = mark === undefined ? null : jigsaw(mark);
   if (!jig) return null;
   const size = KNOB_SIZES[jig.size]!;

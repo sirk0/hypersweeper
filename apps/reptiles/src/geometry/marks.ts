@@ -43,6 +43,13 @@
 //   like), `SEAM_S` (a knob on the edge's first half, a socket on its
 //   second) and `SEAM_Z`, the S seen in a mirror. A knob is symmetric along
 //   its edge, so a mirror leaves it as it is.
+// - an arc, `arcMark(out, depth)`: the Spectre's round edge as a mark (a
+//   curved level, `curvedOf` in src/levels.ts) — one symmetric arc bulging
+//   out of the tile (`out`) or into it, its partner the other; drawn at
+//   `ARC_DEPTHS[depth]` of the Spectre's depth. Symmetric along its edge, so
+//   a mirror leaves it as it is. Unlike `Bulge`, a mark is counted by
+//   `turnsOnto` and `selfTurns`, so a curved symmetric tile turns as its
+//   curves say.
 //
 // Like a round edge's bulge (`Bulge` in shape.ts), a mark is a label on an
 // exact straight edge, and an edge carrying one is never cut part-way.
@@ -78,6 +85,27 @@ export const SEAM_S = 1;
 export const SEAM_Z = 2;
 const PER_SIZE = 2 * KNOBS + 3;
 const EDGES_END = EDGES + KNOB_SIZES.length * PER_SIZE;
+
+const ARCS = EDGES_END;
+/** How deep a level's arcs are drawn, as a share of the Spectre's (`LIFT` in
+ * view/curve.ts): the deepest that keeps every tray tile's outline clear of
+ * itself (`curvedOf`) — the Spectre's own crosses itself at a triangle's
+ * corner. Like a knob's size, no part of what meets what. */
+export const ARC_DEPTHS = [1, 0.75, 0.55, 0.4, 0.3] as const;
+const ARCS_END = ARCS + 2 * ARC_DEPTHS.length;
+
+/** An arc out of the tile (`out`) or into it, drawn at `ARC_DEPTHS[depth]`. */
+export function arcMark(out: boolean, depth = 0): number {
+  if (!Number.isInteger(depth) || depth < 0 || depth >= ARC_DEPTHS.length)
+    throw new Error(`arcMark: an arc's depth runs 0 to ${ARC_DEPTHS.length - 1}`);
+  return ARCS + 2 * depth + (out ? 1 : 0);
+}
+
+/** An arc's way and depth; null for any other mark. */
+export function arc(mark: number): { out: boolean; depth: number } | null {
+  if (mark < ARCS || mark >= ARCS_END) return null;
+  return { out: (mark - ARCS) % 2 === 1, depth: Math.floor((mark - ARCS) / 2) };
+}
 
 function jigsawSize(size: number): number {
   if (!Number.isInteger(size) || size < 0 || size >= KNOB_SIZES.length)
@@ -180,6 +208,8 @@ function turnedLabel(mark: number): number | null {
 
 /** The mark the tile across an edge must have there. */
 export function partner(mark: number): number {
+  const round = arc(mark);
+  if (round) return arcMark(!round.out, round.depth);
   const jig = jigsaw(mark);
   if (jig) return "knob" in jig ? knobMark(jig.knob, !jig.out, jig.size) : mark;
   const turned = turnedLabel(mark);

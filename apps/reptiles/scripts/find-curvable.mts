@@ -1,6 +1,8 @@
 // Which plain boards can have their straight edges turned into the Spectre's
-// round ones, and what that would ask of a player: a census, printed, that
-// writes nothing. `npm run curvable` (`-- <key>…` for only those tilings).
+// round ones, and what that would ask of a player: a census, printed.
+// `npm run curvable` (`-- <key>…` for only those tilings); `-- --write`
+// records the curvings of the tilings `CURVED` lists (src/levels.ts) in
+// src/curvings.json, which the curved levels are built from.
 //
 // A round edge (`Bulge` in src/geometry/shape.ts) is one symmetric arc, out
 // of one tile and into the one across, so a shared edge asks only that one
@@ -42,9 +44,11 @@
 // minutes: left out unless named).
 
 import { writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { format, resolveConfig } from "prettier";
 import { join } from "node:path";
 import { latticeOf } from "../src/colourings";
-import { jigsaw } from "../src/geometry/marks";
+import { ARC_DEPTHS, arcMark, jigsaw } from "../src/geometry/marks";
 import { piece, sideCount, type Bulge, type Piece, type XY } from "../src/geometry/shape";
 import { loopsOf, type Loop } from "../src/view/curve";
 import { measure, wrongShare } from "../src/difficulty";
@@ -53,17 +57,22 @@ import { ccw } from "../src/geometry/outline";
 import type { Cyc, Ring } from "../src/geometry/cyclotomic";
 import { turnsOnto, posed, type Shape } from "../src/geometry/shape";
 import {
+  CURVED,
   PATCH_MARKED,
+  arcDepthOf,
+  levelByKey,
   makeFirstBoard,
   markedBoard,
   patchFrames,
   patchWindow,
+  type Curving,
   type Level,
 } from "../src/levels";
 import levelIndex from "../src/levelIndex.json";
 import { meetings, refine, type FramedPatch, type RefinedPatch } from "../src/patchMarks";
 
-const only = process.argv.slice(2);
+const WRITE = process.argv.includes("--write");
+const only = process.argv.slice(2).filter((a) => a !== "--write");
 const PLAIN_GROUPS = new Set([
   "regular",
   "uniform",
@@ -83,7 +92,7 @@ const RESTARTS = 300;
 /** Every choice of way for up to this many round classes is tried. */
 const MAX_SIGN_CLASSES = 10;
 /** `MEASURE=0` skips the difficulty measure (seconds a board). */
-const MEASURE = process.env.MEASURE !== "0";
+const MEASURE = process.env.MEASURE !== "0" && !WRITE;
 /** `SVG=<dir>` draws each measured board there as `<key>.svg`: the board
  * as dealt (its rim cut round) with the tray under it, then finished round,
  * then finished plain — a prototype's picture, the arcs drawn as the
@@ -173,10 +182,24 @@ function boardFrames(level: Level): FramedPatch {
   };
 }
 
+/** A sublattice of the board's lattice in Hermite normal form: the steps
+ * a·u and b·u + d·v (0 ≤ b < a). A curving may repeat by one of these where
+ * it cannot by the tiling's own period — 3⁶'s pinwheel. */
+type Sublattice = [a: number, b: number, d: number];
+const SUBLATTICES: Sublattice[] = [];
+for (let n = 1; n <= 4; n++)
+  for (let a = 1; a <= n; a++)
+    if (n % a === 0) for (let b = 0; b < a; b++) SUBLATTICES.push([a, b, n / a]);
+
 /** The cells of `refined` grouped into translation classes by `lattice`:
  * floats propose the lattice step between two cells, exact arithmetic
  * checks it. Each cell its own class where the board shows no lattice. */
-function translationClasses(ring: Ring, refined: RefinedPatch, level: Level): number[] {
+function translationClasses(
+  ring: Ring,
+  refined: RefinedPatch,
+  level: Level,
+  [sa, sb, sd]: Sublattice = [1, 0, 1],
+): number[] {
   let lattice: { u: Cyc; v: Cyc } | null = null;
   try {
     lattice = latticeOf(ring, level.cells);
@@ -210,6 +233,8 @@ function translationClasses(ring: Ring, refined: RefinedPatch, level: Level): nu
         const q = (ux * dy - uy * dx) / det;
         const [ip, iq] = [Math.round(p), Math.round(q)];
         if (Math.abs(p - ip) > 1e-6 || Math.abs(q - iq) > 1e-6) continue;
+        // in the sublattice: ip·u + iq·v = x·(sa·u) + y·(sb·u + sd·v)
+        if (iq % sd !== 0 || (ip - sb * (iq / sd)) % sa !== 0) continue;
         const t = ring.add(times(ip, lattice!.u), times(iq, lattice!.v));
         const shifted = refined.cells[r]!.pieces.flatMap((pc) =>
           pc.verts.map((x) => ring.key(ring.add(x, t))),
@@ -571,6 +596,10 @@ interface Row {
   fitsPlain: number;
   fitsRound: number;
   mirror: boolean;
+  /** The sublattice the curving repeats by, where it is periodic. */
+  period: Sublattice | null;
+  /** Each cell's bulges, piece by piece, edge by edge (a periodic board's). */
+  bulges: number[][][] | null;
   /** The level has round edges already: the Spectre. */
   alreadyRound: boolean;
   /** Its difficulty plain and round, as `measure` reads it. */
@@ -583,8 +612,8 @@ interface Row {
   } | null;
 }
 
-function census(entry: { key: string; label: string; group: string }): Row {
-  const level = makeFirstBoard(entry.key);
+function census(entry: { key: string; label: string; group: string }, board?: Level): Row {
+  const level = board ?? makeFirstBoard(entry.key);
   const patched = PATCH_MARKED.includes(entry.key);
   const framed = patched ? patchFrames(entry.key) : boardFrames(level);
   const refined = refine(framed);
@@ -628,65 +657,80 @@ function census(entry: { key: string; label: string; group: string }): Row {
   let best = asLaid;
   let bestFrames = laidFrames;
   let searched = "builder's frames";
+  let bestSub: Sublattice | null = null;
+  const better = (o: Outcome): boolean =>
+    o.round > best.round || (o.round === best.round && o.roots.length > best.roots.length);
   if (!patched) {
-    const cls = translationClasses(ring, refined, level);
-    const classCount = Math.max(...cls) + 1;
-    // a class's frames, as indices into each of its cells' own lists: a
-    // frame of the class is a turn and mirror, the same for every member
-    const options: { rot: number; flip: boolean }[][] = [];
-    for (let k = 0; k < classCount; k++) {
-      const first = cls.indexOf(k);
-      options.push(allFrames[first]!.map(({ rot, flip }) => ({ rot, flip })));
-    }
-    const pick = (choice: number[]): Frame[] =>
-      refined.cells.map((_, i) => {
-        const want = options[cls[i]!]![choice[cls[i]!]!]!;
-        return (
-          allFrames[i]!.find((f) => f.rot === want.rot && f.flip === want.flip) ?? laidFrames[i]!
-        );
-      });
-    const total = options.reduce((p, o) => p * o.length, 1);
-    const better = (o: Outcome): boolean =>
-      o.round > best.round || (o.round === best.round && o.roots.length > best.roots.length);
-    if (total <= EXHAUSTIVE) {
-      searched = `all ${total} framings`;
-      const choice = options.map(() => 0);
-      for (let n = 0; n < total; n++) {
-        let rest = n;
-        for (let k = 0; k < classCount; k++) {
-          choice[k] = rest % options[k]!.length;
-          rest = Math.floor(rest / options[k]!.length);
-        }
-        const frames = pick(choice);
-        const o = solve(kinds, meets, frames);
-        if (better(o)) [best, bestFrames] = [o, frames];
+    // one frame per translation class: of the tiling's own lattice, then of
+    // each sublattice up to four times its cell while some edge stays
+    // straight, each tried whole (a climb only on the lattice itself)
+    for (const sub of SUBLATTICES) {
+      const base = sub === SUBLATTICES[0];
+      if (!base && best.round === meets.length) break;
+      const cls = translationClasses(ring, refined, level, sub);
+      const classCount = Math.max(...cls) + 1;
+      // a class's frames, as indices into each of its cells' own lists: a
+      // frame of the class is a turn and mirror, the same for every member
+      const options: { rot: number; flip: boolean }[][] = [];
+      for (let k = 0; k < classCount; k++) {
+        const first = cls.indexOf(k);
+        options.push(allFrames[first]!.map(({ rot, flip }) => ({ rot, flip })));
       }
-    } else {
-      searched = `${RESTARTS} climbs over ${total.toExponential(1)} framings`;
-      let seed = 1;
-      const random = (): number => {
-        seed = (seed * 1103515245 + 12345) % 2147483648;
-        return seed / 2147483648;
-      };
-      for (let r = 0; r < RESTARTS; r++) {
-        const choice = options.map((o) => Math.floor(random() * o.length));
-        let here = solve(kinds, meets, pick(choice));
-        for (let sweep = 0, moved = true; moved && sweep < 20; sweep++) {
-          moved = false;
+      const pick = (choice: number[]): Frame[] =>
+        refined.cells.map((_, i) => {
+          const want = options[cls[i]!]![choice[cls[i]!]!]!;
+          return (
+            allFrames[i]!.find((f) => f.rot === want.rot && f.flip === want.flip) ?? laidFrames[i]!
+          );
+        });
+      const total = options.reduce((p, o) => p * o.length, 1);
+      const was = best;
+      if (total <= EXHAUSTIVE) {
+        const choice = options.map(() => 0);
+        for (let n = 0; n < total; n++) {
+          let rest = n;
           for (let k = 0; k < classCount; k++) {
-            const was = choice[k]!;
-            for (let f = 0; f < options[k]!.length; f++) {
-              if (f === was) continue;
-              choice[k] = f;
-              const o = solve(kinds, meets, pick(choice));
-              if (o.round > here.round) {
-                here = o;
-                moved = true;
-              } else choice[k] = was;
+            choice[k] = rest % options[k]!.length;
+            rest = Math.floor(rest / options[k]!.length);
+          }
+          const frames = pick(choice);
+          const o = solve(kinds, meets, frames);
+          if (better(o)) [best, bestFrames] = [o, frames];
+        }
+      } else if (base) {
+        let seed = 1;
+        const random = (): number => {
+          seed = (seed * 1103515245 + 12345) % 2147483648;
+          return seed / 2147483648;
+        };
+        for (let r = 0; r < RESTARTS; r++) {
+          const choice = options.map((o) => Math.floor(random() * o.length));
+          let here = solve(kinds, meets, pick(choice));
+          for (let sweep = 0, moved = true; moved && sweep < 20; sweep++) {
+            moved = false;
+            for (let k = 0; k < classCount; k++) {
+              const was = choice[k]!;
+              for (let f = 0; f < options[k]!.length; f++) {
+                if (f === was) continue;
+                choice[k] = f;
+                const o = solve(kinds, meets, pick(choice));
+                if (o.round > here.round) {
+                  here = o;
+                  moved = true;
+                } else choice[k] = was;
+              }
             }
           }
+          if (better(here)) [best, bestFrames] = [here, pick(choice)];
         }
-        if (better(here)) [best, bestFrames] = [here, pick(choice)];
+      }
+      if (best !== was || base) {
+        const n = sub[0] * sub[2];
+        searched =
+          total <= EXHAUSTIVE
+            ? `all ${total} framings${n > 1 ? ` (period ×${n}: ${sub.join(",")})` : ""}`
+            : `${RESTARTS} climbs over ${total.toExponential(1)} framings`;
+        bestSub = sub;
       }
     }
     // then, where the tiles have few edges, every labelling of their slots
@@ -701,6 +745,7 @@ function census(entry: { key: string; label: string; group: string }): Row {
       if (better(o)) {
         [best, bestFrames] = [o, found.frames];
         searched += `; ${found.how}, framed cell by cell`;
+        bestSub = null;
       }
     }
   }
@@ -725,6 +770,22 @@ function census(entry: { key: string; label: string; group: string }): Row {
     const f = ownFits(b);
     if (f < fitsRound) [bulge, fitsRound] = [b, f];
   }
+
+  // each of the board's own cells' bulges, edge by edge as it is listed
+  // (counter-clockwise), where its cells are its refined ones: what
+  // `src/curvings.json` keeps (`-- --write`)
+  const bulges = patched
+    ? null
+    : level.cells.map((cell, i) =>
+        cell.map((p) =>
+          p.verts.map((v, e) => {
+            const key = edgeKey(ring, v, p.verts[(e + 1) % p.verts.length]!);
+            const s = bestFrames[i]!.slotOf.get(key);
+            if (s === undefined) throw new Error(`${entry.key}: its cells are cut`);
+            return bulge.get(`${kinds[i]}:${s}`) ?? 0;
+          }),
+        ),
+      );
 
   // and what they ask of a player, measured as a board's difficulty is: the
   // arcs as one knob shape, out of one tile and into the other, a straight
@@ -788,8 +849,56 @@ function census(entry: { key: string; label: string; group: string }): Row {
     fitsRound,
     mirror: level.mirror,
     alreadyRound: level.regionCurves !== undefined,
+    period: bestSub,
+    bulges,
     measured,
   };
+}
+
+// `-- --write`: each tiling `CURVED` lists, curved on every board whose
+// search finds the first board's curving again (as periodic, as many round
+// classes, as large a share round), written to src/curvings.json, with the
+// depth its arcs are drawn at — then `npm run levels` and `npm run
+// marked-boards` lay them, and `ONLY=missing npm run difficulty` measures them
+if (WRITE) {
+  const out: Record<string, Curving> = {};
+  for (const key of CURVED) {
+    const first = makeFirstBoard(key);
+    const entry = { key, label: first.label, group: first.group };
+    const row = census(entry, first);
+    if (!row.period || !row.bulges || !row.best.round)
+      throw new Error(`${key}: no periodic curving to write`);
+    const boards: Record<string, number[][][]> = { 1: row.bulges };
+    for (let n = 2; n <= levelByKey(key)!.boards; n++) {
+      const board = levelByKey(`${key}-${n}`)!;
+      const r = census(entry, board);
+      const alike =
+        r.period !== null &&
+        r.bulges !== null &&
+        r.best.roots.length === row.best.roots.length &&
+        Math.abs(r.best.round / r.meetings - row.best.round / row.meetings) < 0.15;
+      if (alike) boards[n] = r.bulges!;
+      else console.log(`${key}-${n}: another curving, left out`);
+    }
+    // the depth: the deepest that keeps every tray tile clear of itself
+    const cells = first.cells.map((c) => c.map((p) => p.verts));
+    const marks = row.bulges.map((cell) =>
+      cell.map((piece) => piece.map((b) => (b ? arcMark(b < 0, 0) : seamMark(SEAM_FLAT, 0)))),
+    );
+    const depth = arcDepthOf(markedBoard(first, `${key}.curved`, cells, marks).tiles);
+    if (depth < 0) throw new Error(`${key}: its arcs cross at every depth`);
+    out[key] = { depth, period: row.period, boards };
+    console.log(
+      `${key}: period ${row.period.join(",")}, depth ${ARC_DEPTHS[depth]}, boards ${Object.keys(boards).join(" ")}`,
+    );
+  }
+  const path = fileURLToPath(new URL("../src/curvings.json", import.meta.url));
+  writeFileSync(
+    path,
+    await format(JSON.stringify(out), { ...(await resolveConfig(path)), filepath: path }),
+  );
+  console.log(`wrote ${path}`);
+  process.exit(0);
 }
 
 const plain = (levelIndex as { key: string; label: string; group: string }[]).filter(

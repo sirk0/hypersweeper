@@ -118,6 +118,30 @@ some back off.
     shared edge of the board keeps, from one class with a way (the chair)
     to six (the right-angled fish). The P-pentomino's board asks nothing, so
     it has no rule level (`NO_PATCH_RULES`).
+  - *Curves* (`?level=trihex.curved`, `?level=triangles.curved`): the
+    Spectre's trick on a periodic tiling — every edge an arc bulging out of
+    one tile and into the one across (`arcMark` in `marks.ts`, its partner
+    the arc the other way), or straight, meeting only straight. A matching
+    rule drawn into the outline, so listed with the matching rules ("3.6.3.6
+    · curves"). Unlike the Spectre's own round edges (`Shape.curve`), an arc
+    is a mark, so `turnsOnto` and `selfTurns` count it: a curved hexagon is
+    no longer the same turned 60°, and the turns it asks for come out right.
+    Which edges bulge which way is found by `npm run curvable`, the census of
+    every plain board (`scripts/find-curvable.mts`): each shared edge asks its
+    two slots for opposite bulges, a parity problem on the tile's edges, with
+    each translation class's frame searched — of the tiling's own lattice,
+    then of its sublattices up to four times its cell (3⁶'s pinwheel repeats
+    by √3 × √3, its one straight edge pairing the triangles into rhombi).
+    `-- --write` records each `CURVED` tiling's curving board by board, and
+    the depth its arcs are drawn at (`ARC_DEPTHS`, the deepest that keeps every
+    tray tile clear of itself, `knobsClear`: three quarters of the
+    Spectre's, whose own crosses itself at a triangle's corner), in
+    `src/curvings.json`; a board whose search finds another curving is left
+    out (3.6.3.6 is on three boards, the triangles' one). The rim is cut as
+    the tiles along it are, as the Spectre's is. 3.6.3.6 measures 1.23 curved
+    (0.37 plain), the triangles 0.48 (0.27). The census finds 84 of the 104
+    plain boards whose curves would change play; `tests/unit/curved.test.ts`
+    holds these two to it.
   - *Colourings* (`?level=squares.2apart`, `?level=hexagons.2oneinthree2`): a
     colouring repeats more coarsely than the tiling — squares as a
     checkerboard, or in rows of three colours, or hexagons a third of them
@@ -610,10 +634,10 @@ so its colouring stays on its first board. `npm run marked-boards`
 every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
-colouring's tiles in more ways or fewer: 107 of a thousand do): 888 boards
-past the first, 1625 levels in all — and the jigsaws, on the boards their
+colouring's tiles in more ways or fewer: 107 of a thousand do): 890 boards
+past the first, 1629 levels in all — and the jigsaws, on the boards their
 colourings are, 406 more, and the vertex rules, on every board, 33 more:
-2064. Run it after `npm run boards`,
+2068. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -654,7 +678,7 @@ triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
 aperiodic ones, and the uniform tilings again with every point held to their
 vertex configuration (`Level.rule`, the `.vertex` levels above).
 
-**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 138 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 2064 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 104 tilings in eleven sections, then 167 matching rules (curves on 3.6.3.6 and the triangles, lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 138 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 2068 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -794,7 +818,7 @@ npm run colourings   # list each painted tiling's lined and coloured levels into
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core; ONLY=missing measures only boards it does not list yet)
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
-npm run curvable     # census (SVG=<dir> also draws each board there): which plain boards' edges could be round as the Spectre's are, and what that does to their difficulty (minutes; MEASURE=0 skips the measure)
+npm run curvable     # census (SVG=<dir> also draws each board there; -- --write records CURVED's curvings into src/curvings.json): which plain boards' edges could be round as the Spectre's are, and what that does to their difficulty (minutes; MEASURE=0 skips the measure)
 ```
 
 or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`,
