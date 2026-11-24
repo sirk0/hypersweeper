@@ -33,6 +33,7 @@ import {
   regular,
   selfTurns,
   spotKey,
+  starLike,
   walk,
   type Piece,
   type Shape,
@@ -44,6 +45,7 @@ import {
   LEVELS,
   PENTAGONAL,
   RECTANGLES,
+  STARS,
   TWO_ISOHEDRAL_KEYED,
   makeFirstBoard,
   paintBase,
@@ -84,6 +86,8 @@ const SLOW_CHOICE = [
   "hexringsdual",
   "dodecarhombitrihexdual",
   "pentagon15",
+  "star34838",
+  "star33312",
 ];
 
 /** A unit square at (x, y) with `marks` on its edges: bottom, right, top,
@@ -165,7 +169,7 @@ describe("edge marks", () => {
 });
 
 describe("colourings", () => {
-  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones, the 2-isohedral ones, the congruent-rectangle bonds, the pentagonal tilings and the isogonal ones as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
+  it("paints each regular board lined, then in two and three colours; the other uniform ones, the 2-uniform ones, the Laves ones, the 2-isohedral ones, the congruent-rectangle bonds, the pentagonal tilings, the isogonal ones and the star tilings as src/colourings.json lists; and gives Penrose's tilings their arrows, and the aperiodic levels, the spirals and the rep-tiles rules read off their patch", () => {
     expect(COLOURED.map((l) => l.key)).toEqual([
       "squares.lines",
       "squares.2apart",
@@ -479,6 +483,146 @@ describe("colourings", () => {
       "threescaletri.3colours",
       "threescaletri.3colours2",
       "threescaletri.3colours3",
+      "star36a30.lines",
+      "star36a30.lines2",
+      "star36a30.2oneinthreebyshape",
+      "star36a30.2oneinthree",
+      "star36a30.3byshape",
+      "star36a60.lines",
+      "star36a60.lines2",
+      "star36a60.2oneinthreebyshape",
+      "star36a60.2oneinthree",
+      "star36a60.3byshape",
+      "star36a90.lines",
+      "star36a90.lines2",
+      "star36a90.2oneinthreebyshape",
+      "star36a90.2oneinthree",
+      "star36a90.3byshape",
+      "star44a30.lines",
+      "star44a30.lines2",
+      "star44a30.2oneinthree",
+      "star44a30.2oneinthree2",
+      "star44a30.3colours",
+      "star44a45.lines",
+      "star44a45.lines2",
+      "star44a45.2oneinthree",
+      "star44a45.2oneinthree2",
+      "star44a45.3colours",
+      "star44a60.lines",
+      "star44a60.lines2",
+      "star44a60.2oneinthree",
+      "star44a60.2oneinthree2",
+      "star44a60.3colours",
+      "star63a20.lines",
+      "star63a20.lines2",
+      "star63a20.2oneinthreebyshape",
+      "star63a20.3byshape",
+      "star63a30.lines",
+      "star63a30.lines2",
+      "star63a30.2oneinthreebyshape",
+      "star63a30.3byshape",
+      "star63a45.lines",
+      "star63a45.lines2",
+      "star63a45.2oneinthreebyshape",
+      "star63a45.3byshape",
+      "star333a20.lines",
+      "star333a20.dots",
+      "star333a20.2oneinthreebyshape",
+      "star333a20.3byshape",
+      "star333a20.3colours",
+      "star333a30.lines",
+      "star333a30.dots",
+      "star333a30.2oneinthreebyshape",
+      "star333a30.3byshape",
+      "star333a30.3colours",
+      "star333a40.lines",
+      "star333a40.dots",
+      "star333a40.2oneinthreebyshape",
+      "star333a40.3byshape",
+      "star333a40.3colours",
+      "star464.lines",
+      "star464.lines2",
+      "star464.2byshape",
+      "star464.2oneinthree",
+      "star464.3colours",
+      "star84.lines",
+      "star84.lines2",
+      "star84.2oneinthree",
+      "star84.2oneinthree2",
+      "star84.3colours",
+      "star12124.lines",
+      "star12124.lines2",
+      "star12124.2oneinthree",
+      "star12124.2oneinthree2",
+      "star12124.3colours",
+      "star338438.lines",
+      "star338438.lines2",
+      "star338438.2byshape",
+      "star338438.2oneinthreebyshape",
+      "star338438.3byshape",
+      "star3383438.dots",
+      "star3383438.2byshape",
+      "star3383438.2byshape2",
+      "star34838.lines",
+      "star34838.dots",
+      "star34838.2byshape",
+      "star34838.2oneinthreebyshape",
+      "star34838.2byshape2",
+      "star55454.lines",
+      "star55454.lines2",
+      "star55454.2oneinthreebyshape",
+      "star55454.3byshape",
+      "star55454.3byshape2",
+      "star4666.lines",
+      "star4666.lines2",
+      "star4666.2byshape",
+      "star4666.2oneinthreebyshape",
+      "star4666.2oneinthreebyshape2",
+      "star46.lines",
+      "star46.lines2",
+      "star46.2byshape",
+      "star46.2oneinthree",
+      "star46.3colours",
+      "star996.lines",
+      "star996.lines2",
+      "star996.2oneinthreebyshape",
+      "star996.2oneinthree",
+      "star996.3byshape",
+      "star66.lines",
+      "star66.lines2",
+      "star66.2oneinthreebyshape",
+      "star66.2oneinthree",
+      "star66.3byshape",
+      "star123.lines",
+      "star123.lines2",
+      "star123.2oneinthreebyshape",
+      "star123.2oneinthree",
+      "star123.3byshape",
+      "star346312.2byshape",
+      "star346312.2byshape2",
+      "star346312.2byshape3",
+      "star33312.2oneinthreebyshape",
+      "star33312.2oneinthreebyshape2",
+      "star33312.2oneinthreebyshape3",
+      "star18183.lines",
+      "star18183.lines2",
+      "star18183.2oneinthreebyshape",
+      "star18183.2oneinthree",
+      "star18183.3byshape",
+      "star3666.lines",
+      "star3666.2oneinthreebyshape",
+      "star3666.2byshape",
+      "star3666.2oneinthreebyshape2",
+      "star8386.lines",
+      "star8386.lines2",
+      "star8386.2oneinthreebyshape",
+      "star8386.2oneinthreebyshape2",
+      "star8386.3byshape",
+      "star9393.lines",
+      "star9393.lines2",
+      "star9393.2oneinthree",
+      "star9393.3colours",
+      "star9393.3colours2",
       "penrose.rules",
       "kitedart.rules",
       "ammannbeenker.rules",
@@ -695,7 +839,7 @@ describe("colourings", () => {
     }
   });
 
-  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one, each 2-isohedral one, each bond and each pentagonal and isogonal tiling", () => {
+  it("keeps at most two lined and three coloured levels on each other uniform tiling, each 2-uniform one, each Laves one, each 2-isohedral one, each bond, each pentagonal and isogonal tiling and each star tiling", () => {
     for (const [key] of [
       ...UNIFORM,
       ...TWO_UNIFORM,
@@ -704,6 +848,7 @@ describe("colourings", () => {
       ...RECTANGLES,
       ...PENTAGONAL,
       ...ISOGONAL,
+      ...STARS,
     ]) {
       const marked = COLOURED.filter((l) => l.decor!.of === key);
       expect(marked.filter((l) => l.decor!.rules).length, key).toBeLessThanOrEqual(RULES_CAP);
@@ -723,7 +868,8 @@ describe("colourings", () => {
   // The full choice on the 2-uniform tilings of a dozen or more translation
   // classes takes from half a minute to six (hexrings, nineteen classes), and
   // on the 2-isohedral tilings of most classes from ten seconds to four, and
-  // on the pentagonal type 15's twelve two minutes:
+  // on the pentagonal type 15's twelve two minutes, and on the star tilings
+  // 3.4.8.3.8*15° and 3.3.3.12*30°.3.3.12*30° about two minutes each:
   // those are left to `npm run colourings` (`SLOW_CHOICE`), and their listed paintings
   // are checked only by building them (`paintedLevel` throws on one
   // that no longer makes a level) and by the tests above.
@@ -737,6 +883,7 @@ describe("colourings", () => {
         ...RECTANGLES,
         ...PENTAGONAL,
         ...ISOGONAL,
+        ...STARS,
       ].filter(([key]) => !SLOW_CHOICE.includes(key)),
     ),
   )(
@@ -1073,6 +1220,97 @@ describe("colourings", () => {
     }
     expect(branching).toBeGreaterThan(0);
   });
+
+  // a star tiling's lined levels with a line on a star: their stars' lines
+  // run through the middle, never round a dent, where they would leave the
+  // tile — but for two round one point, which go round it
+  const starLines = (t: Shape): number[] =>
+    starLike(t) ? t.pieces[0]!.marks!.flatMap((mark, i) => (mark === LINE ? [i] : [])) : [];
+  const STAR_LINED = LINED.filter(
+    (l) =>
+      STARS.some(([key]) => key === l.decor!.of) && l.tiles.some((t) => starLines(t).length > 1),
+  );
+  it.each(part(STAR_LINED.map((l) => l.key)))(
+    "%s: a star's lines leave each edge square on and stay inside the star",
+    (key) => {
+      const level = levelByKey(key)!;
+      const num = (d: string): number[] => (d.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
+      for (const t of level.tiles) {
+        const lined = starLines(t);
+        if (lined.length < 2) continue;
+        const [loop] = loopsOf(level.ring, t.pieces);
+        const { xy } = loop!;
+        const m = xy.length;
+        const line = decorParts([loop!]).find((p) => p.class === "decor line")!;
+        const mid = (i: number): number[] => {
+          const [a, b] = [xy[i]!, xy[(i + 1) % m]!];
+          return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        };
+        // two round one point: an arc about it, as on any tile
+        const [i, j] = lined as [number, number];
+        if (lined.length === 2 && (j === (i + 1) % m || i === (j + 1) % m) && /A/.test(line.d)) {
+          // the corner the two edges share is a point: it turns left
+          const at = j === (i + 1) % m ? j : i;
+          const [p, tip, q] = [xy[(at - 1 + m) % m]!, xy[at]!, xy[(at + 1) % m]!];
+          expect(line.d).toMatch(/^M[^A-Z]*A[^A-Z]*$/);
+          expect(
+            (tip[0] - p[0]) * (q[1] - tip[1]) - (tip[1] - p[1]) * (q[0] - tip[0]),
+          ).toBeGreaterThan(0);
+          continue;
+        }
+        // else straight runs and quadratics only: no arc round a corner
+        expect(line.d).toMatch(/^[MLQ0-9 .-]*$/);
+        const inside = ([x, y]: number[]): boolean => {
+          let winding = false;
+          for (let e = 0; e < m; e++) {
+            const [a, b] = [xy[e]!, xy[(e + 1) % m]!];
+            if (
+              a[1] > y! !== b[1] > y! &&
+              x! < a[0] + ((y! - a[1]) * (b[0] - a[0])) / (b[1] - a[1])
+            )
+              winding = !winding;
+          }
+          return winding;
+        };
+        const starts = new Set<number>();
+        for (const d of line.d.split("M").filter((s) => s)) {
+          const [, ...steps] = d.split(/(?=[LQ])/);
+          const start = num(d).slice(0, 2);
+          // from a lined edge's middle (to the drawing's four decimals),
+          // square on to it
+          const edge = lined.find(
+            (e) => Math.hypot(mid(e)[0]! - start[0]!, mid(e)[1]! - start[1]!) < 1e-3,
+          );
+          expect(edge).toBeDefined();
+          starts.add(edge!);
+          const [a, b] = [xy[edge!]!, xy[(edge! + 1) % m]!];
+          const next = num(steps[0]!);
+          const along =
+            ((next[0]! - start[0]!) * (b[0] - a[0]) + (next[1]! - start[1]!) * (b[1] - a[1])) /
+            Math.hypot(b[0] - a[0], b[1] - a[1]);
+          expect(Math.abs(along)).toBeLessThan(2e-4);
+          // every point of it inside the star
+          let at = start;
+          for (const step of steps) {
+            const n = num(step);
+            const [c, end] = step[0] === "Q" ? [n.slice(0, 2), n.slice(2, 4)] : [null, n];
+            for (let k = 1; k < 16; k++) {
+              const u = k / 16;
+              const p = c
+                ? [0, 1].map(
+                    (h) => (1 - u) ** 2 * at[h]! + 2 * (1 - u) * u * c[h]! + u * u * end[h]!,
+                  )
+                : [0, 1].map((h) => at[h]! + (end[h]! - at[h]!) * u);
+              expect(inside(p), `${key}: ${p}`).toBe(true);
+            }
+            at = end;
+          }
+        }
+        // a subpath from every lined edge but the one the first runs out to
+        expect(starts.size).toBe(lined.length - 1);
+      }
+    },
+  );
 
   it("draws a line on an irregular tile as a curve square on to each edge: a kite's, a rhombus's", () => {
     const num = (d: string): number[] => (d.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);

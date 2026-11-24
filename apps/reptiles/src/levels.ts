@@ -1867,6 +1867,7 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
       ...RECTANGLES,
       ...PENTAGONAL,
       ...ISOGONAL,
+      ...STARS,
     ].find(([key]) => key === plain.key)?.[1];
     if (regular) setup = { lattice: regular[1], context: [] };
     else if (box !== undefined) {
@@ -1878,7 +1879,7 @@ export function paintingSetup(plain: Level): { lattice: Lattice; context: Piece[
   return setup;
 }
 
-/** A uniform, 2-uniform, Laves, 2-isohedral, bond, pentagonal or isogonal tiling's window, `box` edges
+/** A uniform, 2-uniform, star, Laves, 2-isohedral, bond, pentagonal or isogonal tiling's window, `box` edges
  * square, and a patch of the same tiling twice that size round it, moved onto
  * the window's coordinates: what lies past the window's rim, for its
  * colourings (and, for the snub hexagonal, whose window holds one hexagon, the
@@ -1939,7 +1940,7 @@ export function periodicContext(
 /** Which of a painted board's paintings to make levels of
  * (`npm run colourings`, scripts/find-colourings.mts): every one a regular
  * board's `paintedCandidates` keeps, and the chosen few of a uniform,
- * 2-uniform, Laves, 2-isohedral, bond, pentagonal or isogonal board's — searching takes from a second to minutes, so the choice
+ * 2-uniform, star, Laves, 2-isohedral, bond, pentagonal or isogonal board's — searching takes from a second to minutes, so the choice
  * is written down and only those are built. */
 const CHOSEN_PAINTINGS = colouringsData as Record<string, PaintingParams[]>;
 
@@ -2378,8 +2379,8 @@ const byEase = (a: Level, b: Level): number =>
 /** The tilings painted, in the order their marked levels are listed: the
  * regular three, the other eight uniform ones, the twenty 2-uniform ones, the
  * eight Laves ones, the twenty 2-isohedral ones, the five
- * congruent-rectangle bonds, the three pentagonal tilings and the six
- * isogonal ones. */
+ * congruent-rectangle bonds, the three pentagonal tilings, the six
+ * isogonal ones and the thirty star tilings. */
 export const PAINTED: string[] = [
   ...COLOURED.map(([key]) => key),
   ...UNIFORM.map(([key]) => key),
@@ -2389,6 +2390,7 @@ export const PAINTED: string[] = [
   ...RECTANGLES.map(([key]) => key),
   ...PENTAGONAL.map(([key]) => key),
   ...ISOGONAL.map(([key]) => key),
+  ...STARS.map(([key]) => key),
 ];
 
 /** The uniform tilings with a vertex-rule level: those where the rule

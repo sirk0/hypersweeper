@@ -1,4 +1,4 @@
-// Which of a uniform, 2-uniform, Laves, 2-isohedral, bond, pentagonal or isogonal tiling's colourings become levels: searching every one
+// Which of a uniform, 2-uniform, star, Laves, 2-isohedral, bond, pentagonal or isogonal tiling's colourings become levels: searching every one
 // takes seconds (thousands of paintings on a board of six translation
 // classes), so `npm run colourings` (scripts/find-colourings.mts) chooses
 // here and writes the choice to src/colourings.json, which the game builds
@@ -16,12 +16,18 @@ import {
   type PaintedCandidate,
 } from "./levels";
 
+/** The tilings whose colourings are searched in two colours only:
+ * 3.4.6.3.12*30°'s eighteen translation classes leave too few three-colour
+ * offsets ruled out early (`offsetsFor`) for the search to end within an
+ * hour, where two colours take two seconds. */
+export const TWO_COLOURS_ONLY: ReadonlySet<string> = new Set(["star346312"]);
+
 /** How many lined levels a uniform, 2-uniform, Laves, 2-isohedral or bond tiling keeps, and how many coloured. */
 export const RULES_CAP = 2;
 export const COLOURS_CAP = 3;
 
 /**
- * The paintings of the uniform, 2-uniform, Laves, 2-isohedral, bond, pentagonal or isogonal board `plain` (its window `box` edges square)
+ * The paintings of the uniform, 2-uniform, star, Laves, 2-isohedral, bond, pentagonal or isogonal board `plain` (its window `box` edges square)
  * worth a level, at most `RULES_CAP` lined and `COLOURS_CAP` coloured: fewest
  * tray tiles first, then the most turning as measured (`turningScore`: the
  * dead ends are too slow to measure on every candidate) — but a lined board with a
@@ -36,7 +42,8 @@ export function chooseColourings(of: Level, box: number): PaintingParams[] {
   const plain = paintBase(of);
   const context = periodicContext(plain, box);
   const lattice = latticeOf(plain.ring, context);
-  const all = paintings(plain.ring, plain.cells, lattice, [2, 3], context, plainKinds(plain));
+  const counts = TWO_COLOURS_ONLY.has(plain.key) ? [2] : [2, 3];
+  const all = paintings(plain.ring, plain.cells, lattice, counts, context, plainKinds(plain));
   const ranked = paintedCandidates(plain, all)
     .map((c) => ({ ...c, score: turningScore(c.level) }))
     .sort((a, b) => a.level.tiles.length - b.level.tiles.length || b.score - a.score);

@@ -242,6 +242,30 @@ some back off.
     boards and two or three coloured, 29 in all, from 0.51 (the offset
     square's lines) to 2.72 (the three-scale triangular in three colours)
     measured.
+  - *The twenty-two star tilings* (`?level=star36a60.lines`,
+    `?level=star464.2byshape`, `?level=star333a20.dots`) — thirty boards,
+    the four of an adjustable angle at three angles each — are lined and
+    coloured just as the 2-uniform ones are, one tray tile per colour and
+    shape, at most two lined boards and three coloured each, named as the
+    plain tilings are: "3.6*60°.6**60° · lines". Every one is edge to edge
+    (a star's dent takes a corner whole), so nothing is cut. A line on a
+    star runs through its middle (`starLines` in `src/view/decor.ts`): it
+    leaves its edge's middle square on, turns onto the axis of the point
+    that edge runs to and follows it in, so it stays in the triangle
+    middle–tip–dent its edge bounds, inside the star however thin the point
+    — where an arc round a dent, or a curve between two far edges, would
+    leave it. Two lines are one, rounded at the middle inside the dents'
+    polygon; three or more are the straightest two cornered at the middle,
+    the rest running into that corner; two round one point go round it, as
+    on any tile. Twenty-eight have lined boards (3.3*α.3.3**α and
+    3.4.8.3.8*15° a dots one each, 3.3.8*15°.3.4.3.8*15° dots only); all
+    thirty have coloured ones: 54 lined and 86 coloured in all, from 0.66 (4.4*45°.4**45° · lines II)
+    to 6.58 (3.4.8.3.8*15° in two colours by shape) measured.
+    3.4.6.3.12*30° and 3.3.3.12*30°.3.3.12*30° have no lined board, and
+    3.4.6.3.12*30° is searched in two colours only (`TWO_COLOURS_ONLY` in
+    `src/colouringChoice.ts`): its eighteen translation classes leave too
+    few three-colour offsets ruled out early for the search to end within
+    an hour.
   - *Jigsaws* (`?level=squares.2apart.jigsaw`, `?level=hexagons.3apart.jigsaw`,
     `?level=ammannbeenker.3apart.jigsaw`): a colouring again, in one colour
     — each tile coloured by its shape, as on the plain board — with every
@@ -257,17 +281,20 @@ some back off.
     So it is the same rule, mark for mark, as the colouring — the same tray,
     piles and turns — but for the **rim**, which is cut as the tiles along it
     are (`Level.regionMarks`) where a coloured board's takes any: the rim
-    shows where the tiles along it go, and every jigsaw measures easier than
-    its colouring (406 of 406 boards; medians 2.05 and 1.62). A colouring
+    shows where the tiles along it go, and nearly every jigsaw measures
+    easier than its colouring (807 of 809 boards; medians 2.02 and 1.57 —
+    4.6*30°.6**90°.6*30° in two colours by shape a hair harder on two
+    boards, its rim halving the fits but leaving more of them wrong). A colouring
     has no jigsaw where it cannot be drawn so: two colours that meet their
     own on a level that flips (a mirror turns an S into a Z, but leaves a
-    colour as it is; 46 of them), or knobs that crowd an edge's at every
-    size (one, Klaassen's). A level's knobs are drawn at the largest of four
+    colour as it is; 49 of them), or knobs that crowd an edge's at every
+    size (twelve: Klaassen's, and eleven star tilings' colourings, their
+    knobs crowding the thin points). A level's knobs are drawn at the largest of four
     sizes (`KNOB_SIZES`) that keeps every tray tile's outline clear of
     itself (`knobsClear`: no two edges' strokes within a fiftieth of an
     edge), chosen as `npm run levels` writes the index and kept there
-    (`decor.size`), so no float decides it as the game builds a level; 130
-    of the 138 are full size, the kisrhombille's at 0.64. Each is on every
+    (`decor.size`), so no float decides it as the game builds a level; 170
+    of the 210 are full size, the kisrhombille's at 0.64. Each is on every
     board its colouring is (`boardNumbers`), keyed `<colouring>.jigsaw` and
     listed after the colourings on a tiling's page. A tile sticks to a knob
     or a socket part-way along the frontier, not only in a corner (above).
@@ -614,10 +641,10 @@ so its colouring stays on its first board. `npm run marked-boards`
 every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
-colouring's tiles in more ways or fewer: 107 of a thousand do): 888 boards
-past the first, 1789 levels in all — and the jigsaws, on the boards their
-colourings are, 406 more, and the vertex rules, on every board, 33 more:
-2228. Run it after `npm run boards`,
+colouring's tiles in more ways or fewer: 107 of 1625 do): 1518 boards
+past the first, 2559 levels in all — and the jigsaws, on the boards their
+colourings are, 809 more, and the vertex rules, on every board, 33 more:
+3401. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -659,7 +686,7 @@ tilings beside them, which Hypersweeper has not), then spirals and
 aperiodic ones, and the uniform tilings again with every point held to their
 vertex configuration (`Level.rule`, the `.vertex` levels above).
 
-**Status: 134 tilings in twelve sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 138 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 2228 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 134 tilings in twelve sections, then 219 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, twenty-eight of the thirty star tilings, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 270 colourings of the uniform, 2-uniform, star, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 210 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 3401 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -672,7 +699,7 @@ vertex; the four whose stars' angle may be anything in a range each at three
 angles — 3.6*α.6**α at 30°, 60° and 90°, 4.4*α.4**α at 30°, 45° and 60°,
 6.3*α.3**α at 20°, 30° and 45°, 3.3*α.3.3**α at 20°, 30° and 40° — then the
 eighteen of one angle, 4.6.4*30°.6 to 9.3.9.3*20°, in Wikipedia's order; 21 to
-37 tiles a window, plain tiles only for now), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
+37 tiles a window, lined and coloured as the 2-uniform tilings are), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
 *2-isohedral* (the twenty 2-uniform tilings' duals, two kinds of tile each,
 named V and the primal's pair, V[3⁶; 3⁴.6]₁), *Pentagonal* (types 10, 13 and
 15 — James, Rice, and Mann et al. — one convex pentagon each, named as
@@ -806,7 +833,7 @@ npm run build        # typecheck + the production bundle (PWA included) into dis
 npm run e2e          # Playwright smoke test: builds, serves with `vite preview`, plays a move
 npm run boards       # find every tiling's boards past its first into src/boards.json (minutes)
 npm run marked-boards # lay every matching rule and colouring on every board into src/markedBoards.json (half a minute)
-npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's, spiral's and rep-tile's colouring into src/aperiodicColourings.json (a minute)
+npm run colourings   # list each painted tiling's lined and coloured levels into src/colourings.json (twenty-five minutes, nearly all the 2-uniform and 2-isohedral tilings of many classes; `-- <key>…` for only those), and each aperiodic level's, spiral's and rep-tile's colouring into src/aperiodicColourings.json (a minute)
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core; ONLY=missing measures only boards it does not list yet)
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
@@ -1070,7 +1097,9 @@ quick way to see the win state.
   cell, not only every cell it moves onto the patch's vertices: one along
   2-uniform rows of squares and triangles carries the squares onto squares
   and a triangle to where no vertex is. The twenty 2-uniform tilings
-  (`TWO_UNIFORM`) are painted just as the uniform ones are. The eight Laves tilings (`LAVES`) are painted
+  (`TWO_UNIFORM`) are painted just as the uniform ones are, and the star
+  tilings (`STARS`) just as those, 3.4.6.3.12*30° in two colours only
+  (`TWO_COLOURS_ONLY`). The eight Laves tilings (`LAVES`) are painted
   just as these are, their wider patch a wider dual window (`lavesWindow`,
   in the same ring); one tile each, they are labelled as the regular boards
   are. The twenty 2-isohedral tilings (`TWO_ISOHEDRAL`, listed by their own
@@ -1317,7 +1346,9 @@ quick way to see the win state.
   disc on the edge's middle; a lined board's lines from edge to edge, square
   on and ending on each (straight across, or a Truchet arc about the corner
   two lined edges share — or, two edges further apart on an octagon or a
-  dodecagon, about the point their lines meet, `meet`; on an irregular tile,
+  dodecagon, about the point their lines meet, `meet`; on a star, in along
+  the axis of the point each edge runs to and through the middle,
+  `starLines` — an arc round a dent would leave it; on an irregular tile,
   a Laves tile's kite, rhombus or pentagon, a cubic leaving each edge's
   middle along its inward normal; three or more lined edges as one line
   between two of them, drawn so, with a branch off it from each other one —

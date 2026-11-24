@@ -13,7 +13,10 @@
 //   or, for two edges further apart on an octagon or a dodecagon, about the
 //   point past the tile where their lines meet. On an irregular tile (a
 //   Laves tile's kite, rhombus or pentagon) it is a curve that leaves each
-//   edge along its inward normal: square on all the same.
+//   edge along its inward normal: square on all the same. On a star (a
+//   star tiling's) it runs in to the axis of the point its edge runs to and
+//   along it through the middle (`starLines`): an arc round a dent, or a
+//   curve between two far edges, would leave the tile.
 //   Three or more lined edges on a tile are one such line between two of
 //   them with a branch off it from each other one (`branched`): straight on
 //   along its edge's normal where that meets the line at a fair angle, else
@@ -287,6 +290,126 @@ export function branched(
       if (!best || cost < best.cost - 1e-9) best = { cost, d };
     }
   return best!.d;
+}
+
+/** A star's middle and, for each edge, the point its edge runs to (the
+ * convex end of it; a star's every edge runs from a dent to a point) — or
+ * null for a tile that is no star: one whose corners do not turn out and
+ * in by turns, at least three of each. A star is star-shaped about its
+ * middle, the mean of its corners, so every line drawn there in the
+ * triangles middle–corner–corner stays inside it. (Floats: a drawing.) */
+interface StarHub {
+  centre: XY;
+  tips: number[];
+  /** The radius of the polygon of its dents' largest disc about the
+   * middle: room to round a corner in, inside the tile. */
+  room: number;
+}
+
+function starHub(xy: readonly XY[]): StarHub | null {
+  const m = xy.length;
+  if (m < 6 || m % 2) return null;
+  const reflex = xy.map((v, i) => {
+    const prev = xy[(i - 1 + m) % m]!;
+    const next = xy[(i + 1) % m]!;
+    return cross(sub(v, prev), sub(next, v)) < 0;
+  });
+  if (!reflex.every((r, i) => r !== reflex[(i + 1) % m])) return null;
+  const centre: XY = [xy.reduce((s, p) => s + p[0], 0) / m, xy.reduce((s, p) => s + p[1], 0) / m];
+  const tips = xy.map((_, i) => (reflex[i] ? (i + 1) % m : i));
+  // the dents' polygon is convex and inside the star: its nearest side
+  const dents = xy.filter((_, i) => reflex[i]);
+  let room = Infinity;
+  dents.forEach((a, k) => {
+    const b = dents[(k + 1) % dents.length]!;
+    const ab = sub(b, a);
+    room = Math.min(room, Math.abs(cross(ab, sub(centre, a))) / Math.hypot(...ab));
+  });
+  return { centre, tips, room };
+}
+
+/**
+ * A star's lines (`lined`, its lined edges): each leaves its edge's middle
+ * square on, turns onto the axis of the point that edge runs to (the line
+ * from the star's middle to that point's tip) where its normal meets it, and
+ * runs along it to the middle — so it stays in the triangle middle–tip–dent
+ * its edge bounds, inside the star however thin the point, where an arc
+ * round a dent would leave it. Two lines are one curve through the middle,
+ * rounded there inside the dents' polygon; more are the two whose turn at
+ * the middle is the straightest as that one line, cornered at the middle,
+ * and every other running into that corner, which lies on its centre line:
+ * a butt end there is inside that line's stroke and its round join. A
+ * subpath each, mapped.
+ */
+function starLines(
+  xy: readonly XY[],
+  { centre, tips, room }: StarHub,
+  lined: readonly number[],
+  map: (p: XY) => XY,
+): string {
+  const m = xy.length;
+  const along = (from: XY, to: XY, d: number): XY => {
+    const v = sub(to, from);
+    const len = Math.hypot(...v);
+    return [from[0] + (v[0] * d) / len, from[1] + (v[1] * d) / len];
+  };
+  // each lined edge's middle and where its normal meets its point's axis
+  const arms = lined.map((i) => {
+    const [a, b] = [xy[i]!, xy[(i + 1) % m]!];
+    const mid: XY = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const tip = xy[tips[i]!]!;
+    const n: XY = [-(b[1] - a[1]), b[0] - a[0]];
+    const axis = sub(tip, centre);
+    // mid + s·n = centre + u·axis
+    const den = cross(n, axis);
+    const u = cross(n, sub(mid, centre)) / den;
+    const turn: XY = [centre[0] + u * axis[0], centre[1] + u * axis[1]];
+    return { mid, turn };
+  });
+  // an arm from its edge to `end`, on the way to the middle: straight along
+  // the normal, rounded onto the axis
+  const arm = ({ mid, turn }: (typeof arms)[number], end: XY): string => {
+    const leg = Math.hypot(...sub(turn, mid));
+    const on = Math.hypot(...sub(end, turn));
+    const f = Math.min(0.9 * leg, 0.5 * on);
+    const [p, q] = [along(turn, mid, f), along(turn, end, f)];
+    return `M${pt(map(mid))}L${pt(map(p))}Q${pt(map(turn))} ${pt(map(q))}L${pt(map(end))}`;
+  };
+  // the arm from the middle back out to its edge
+  const out = ({ mid, turn }: (typeof arms)[number], from: XY): string => {
+    const leg = Math.hypot(...sub(turn, mid));
+    const on = Math.hypot(...sub(from, turn));
+    const f = Math.min(0.9 * leg, 0.5 * on);
+    const [p, q] = [along(turn, from, f), along(turn, mid, f)];
+    return `L${pt(map(p))}Q${pt(map(turn))} ${pt(map(q))}L${pt(map(mid))}`;
+  };
+  // the straightest pair through the middle
+  let [x, y] = [0, 1];
+  let best = Infinity;
+  for (let a = 0; a < arms.length; a++)
+    for (let b = a + 1; b < arms.length; b++) {
+      const [u, v] = [sub(arms[a]!.turn, centre), sub(arms[b]!.turn, centre)];
+      const c = dot(u, v) / (Math.hypot(...u) * Math.hypot(...v));
+      if (c < best - 1e-9) [best, x, y] = [c, a, b];
+    }
+  const [first, second] = [arms[x]!, arms[y]!];
+  let d: string;
+  if (arms.length === 2) {
+    // rounded at the middle, inside the dents' polygon
+    const r =
+      0.5 *
+      Math.min(
+        room,
+        Math.hypot(...sub(first.turn, centre)),
+        Math.hypot(...sub(second.turn, centre)),
+      );
+    const [p, q] = [along(centre, first.turn, r), along(centre, second.turn, r)];
+    d = `${arm(first, p)}Q${pt(map(centre))} ${pt(map(q))}${out(second, q)}`;
+  } else d = `${arm(first, centre)}${out(second, centre)}`;
+  arms.forEach((a, k) => {
+    if (k !== x && k !== y) d += arm(a, centre);
+  });
+  return d;
 }
 
 /** A half disc of radius `r` centred at `at` on the edge a → b, on its left
@@ -592,8 +715,15 @@ export function decorParts(
       // line's to branch off, where there is one)
       return { ...cubic(p, off(i, hi), off(j, hj), q, map), weight: corner === null ? 1.5 : 1 };
     };
+    // a star's lines run through its middle (`starLines`), but for two round
+    // one point, which go round it as on any tile
+    const star = lined.length >= 2 ? starHub(xy) : null;
+    const tip = (i: number): number | null => star?.tips[i] ?? null;
+    const roundOnePoint =
+      lined.length === 2 && tip(lined[0]!) !== null && tip(lined[0]!) === tip(lined[1]!);
+    if (star && !roundOnePoint) lines.push(starLines(xy, star, lined, map));
     // (never one: a line that would end here is cut back to a half disc)
-    if (lined.length === 2) lines.push(lineBetween(lined[0]!, lined[1]!).d);
+    else if (lined.length === 2) lines.push(lineBetween(lined[0]!, lined[1]!).d);
     // more: one line between two of them, the others branching off it
     else if (lined.length > 2)
       lines.push(
