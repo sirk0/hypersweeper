@@ -227,6 +227,9 @@ export interface Decor {
   label: string;
   jigsaw?: string;
   size?: number;
+  /** On a curved level (`curvedOf`): its edges arcs, out and in — a rule of
+   * no painting, so the colourings' checks leave it be. */
+  curved?: boolean;
   /** On a vertex-rule level, the configuration every point must keep
    * (`Level.rule`): its tiles are the plain ones, so it is on every board. */
   vertex?: number[];
@@ -1836,7 +1839,7 @@ function curvedLevel(board: Level): Level {
     label: `${plain.label}, ${label}`,
     name: `${plain.name} · ${label}`,
     group: "rules",
-    decor: { of, colours: 1, rules: true, label },
+    decor: { of, colours: 1, rules: true, label, curved: true },
   };
 }
 

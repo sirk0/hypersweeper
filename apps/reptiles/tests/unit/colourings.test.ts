@@ -63,7 +63,9 @@ const Z4 = cyclotomic(4);
 const APERIODIC_COLOURINGS = aperiodicColourings as Record<string, { tiles: number }>;
 // the lined and coloured levels — not the jigsaws drawn from them, which
 // tests/unit/jigsaw.test.ts holds to their colourings
-const COLOURED = LEVELS.filter((l) => l.decor && !l.decor.jigsaw && !l.decor.vertex);
+const COLOURED = LEVELS.filter(
+  (l) => l.decor && !l.decor.jigsaw && !l.decor.vertex && !l.decor.curved,
+);
 /** The tilings whose full colouring choice is too slow for a unit test. */
 const SLOW_CHOICE = [
   "studdedtri2",

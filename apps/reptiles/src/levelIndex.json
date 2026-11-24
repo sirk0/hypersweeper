@@ -3768,14 +3768,14 @@
     "label": "Trihexagonal, curves",
     "name": "3.6.3.6 · curves",
     "group": "rules",
-    "decor": { "of": "trihex", "colours": 1, "rules": true, "label": "curves" }
+    "decor": { "of": "trihex", "colours": 1, "rules": true, "label": "curves", "curved": true }
   },
   {
     "key": "triangles.curved",
     "label": "Triangles, curves",
     "name": "3⁶ · curves",
     "group": "rules",
-    "decor": { "of": "triangles", "colours": 1, "rules": true, "label": "curves" }
+    "decor": { "of": "triangles", "colours": 1, "rules": true, "label": "curves", "curved": true }
   },
   {
     "key": "squares.2apart.jigsaw",
