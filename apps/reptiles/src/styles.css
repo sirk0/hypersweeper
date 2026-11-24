@@ -40,11 +40,13 @@
   --open: #7b4fd0;
   /* Tiles take Hypersweeper's shape hues, by side count: 3 red, 4 orange,
      5 yellow, 6 green, 7 sea green (between, as Hypersweeper's hue ramp puts
-     it: Klaassen's heptagon), 8 teal, 12 blue, 13 violet (the Spectre) — and
+     it: Klaassen's heptagon), 8 teal, 9 cyan, 12 blue, 13 violet (the
+     Spectre), 18 lavender — and
      rose for a second kind with as many sides as another (a 2-isohedral
      level's two quadrilaterals, and three of the aperiodic tilings' two).
      A tile of several pieces (the fish, the kissing squares) has no one side
-     count: it is slate, off the hue ramp. */
+     count: it is slate, off the hue ramp. A star (the star tilings') is
+     orchid whatever its sides, and a second kind of star periwinkle. */
   --tile-3: #e07f72;
   --tile-3-edge: #8f3a2f;
   --tile-4: #e9a85a;
@@ -61,6 +63,14 @@
   --tile-12-edge: #2f5679;
   --tile-13: #a98bc0;
   --tile-13-edge: #5f4771;
+  --tile-9: #66aab9;
+  --tile-9-edge: #275f6b;
+  --tile-18: #9d8fcf;
+  --tile-18-edge: #51468a;
+  --tile-star: #cd7fb5;
+  --tile-star-edge: #6f2e5c;
+  --tile-star-2: #7f93d9;
+  --tile-star-2-edge: #34458a;
   --tile-twin: #d68aa6;
   --tile-twin-edge: #7d3453;
   --tile-pieces: #9aa3b5;
@@ -152,6 +162,14 @@
     --tile-12-edge: #b8d4ee;
     --tile-13: #987bae;
     --tile-13-edge: #dac8e8;
+    --tile-9: #52939f;
+    --tile-9-edge: #b3dde5;
+    --tile-18: #8577b6;
+    --tile-18-edge: #d4ccf0;
+    --tile-star: #b4689c;
+    --tile-star-edge: #f0c2e0;
+    --tile-star-2: #6a7ec2;
+    --tile-star-2-edge: #c3cff2;
     --tile-twin: #b8708c;
     --tile-twin-edge: #f2c0d2;
     --tile-pieces: #7c859a;
@@ -214,6 +232,14 @@
   --tile-12-edge: #b8d4ee;
   --tile-13: #987bae;
   --tile-13-edge: #dac8e8;
+  --tile-9: #52939f;
+  --tile-9-edge: #b3dde5;
+  --tile-18: #8577b6;
+  --tile-18-edge: #d4ccf0;
+  --tile-star: #b4689c;
+  --tile-star-edge: #f0c2e0;
+  --tile-star-2: #6a7ec2;
+  --tile-star-2-edge: #c3cff2;
   --tile-twin: #b8708c;
   --tile-twin-edge: #f2c0d2;
   --tile-pieces: #7c859a;
@@ -627,6 +653,11 @@ button.primary {
   stroke: var(--tile-8-edge);
 }
 
+.tile.sides-9 {
+  fill: var(--tile-9);
+  stroke: var(--tile-9-edge);
+}
+
 .tile.sides-12 {
   fill: var(--tile-12);
   stroke: var(--tile-12-edge);
@@ -635,6 +666,21 @@ button.primary {
 .tile.sides-13 {
   fill: var(--tile-13);
   stroke: var(--tile-13-edge);
+}
+
+.tile.sides-18 {
+  fill: var(--tile-18);
+  stroke: var(--tile-18-edge);
+}
+
+.tile.star {
+  fill: var(--tile-star);
+  stroke: var(--tile-star-edge);
+}
+
+.tile.star-2 {
+  fill: var(--tile-star-2);
+  stroke: var(--tile-star-2-edge);
 }
 
 .tile.pieces {
@@ -731,12 +777,28 @@ button.primary {
   stroke: var(--tile-8-edge);
 }
 
+.tile-edge.sides-9 {
+  stroke: var(--tile-9-edge);
+}
+
 .tile-edge.sides-12 {
   stroke: var(--tile-12-edge);
 }
 
 .tile-edge.sides-13 {
   stroke: var(--tile-13-edge);
+}
+
+.tile-edge.sides-18 {
+  stroke: var(--tile-18-edge);
+}
+
+.tile-edge.star {
+  stroke: var(--tile-star-edge);
+}
+
+.tile-edge.star-2 {
+  stroke: var(--tile-star-2-edge);
 }
 
 .tile-edge.pieces {

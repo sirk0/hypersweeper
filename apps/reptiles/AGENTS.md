@@ -18,7 +18,11 @@ some back off.
   or a placed tile), wherever along it. Only a tile's real corners stick or
   get a dot — never a point part-way along one of its sides, where a marked
   tile's edge is cut (`sidesOf` in `frontier.ts`).
-- Every tray tile starts resting on a flat side. A tile lands only as it is
+- Every tray tile starts resting on a flat side — but a star, which has no
+  side the rest of it lies above, rests on its points (`restOnPoints` in
+  `shape.ts`): on two of them level where a turn of the ring lays them so,
+  else straight down on one, mirrored about the upright through it, else on
+  two as nearly level as the ring's turns allow. A tile lands only as it is
   held, and there is **one** rotate step, with a control for each direction at
   the end of the tray (R clockwise; Shift+R or E anticlockwise): it turns
   *every* tray tile, and the one in hand, by the level's step — the largest
@@ -525,7 +529,7 @@ side, each the picture of a tiling of that difficulty (`SHOWCASE` in
 `home.ts`: its outline and tiles, as its Tilings card draws it — never the
 board tiled), its counts and its hint; below 1100px, one under another. The
 catalog's twelve families are put together in **five groups**
-(`MENU_GROUPS`): Regular polygons (regular, uniform, 2-uniform), Irregular
+(`MENU_GROUPS`): Regular polygons (regular, uniform, 2-uniform, star polygons), Irregular
 tiles (Laves, 2-isohedral, pentagonal), Offset corners (isogonal, bonds),
 Self-similar (rep-tiles, spirals) and Aperiodic — each family in exactly one
 (`tests/unit/groups.test.ts`). A group's page (`?group=<key>`; `?tilings`
@@ -611,9 +615,9 @@ every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
 colouring's tiles in more ways or fewer: 107 of a thousand do): 888 boards
-past the first, 1625 levels in all — and the jigsaws, on the boards their
+past the first, 1789 levels in all — and the jigsaws, on the boards their
 colourings are, 406 more, and the vertex rules, on every board, 33 more:
-2064. Run it after `npm run boards`,
+2228. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -650,15 +654,25 @@ and the traps of a sample (`TRAPS_CHECKED`); it fails while the file is out
 of step.
 
 The ladder it is built for is every flat board Hypersweeper has: squares,
-triangles, hexagons, the uniform and 2-uniform tilings, then spirals and
+triangles, hexagons, the uniform and 2-uniform tilings (and the star
+tilings beside them, which Hypersweeper has not), then spirals and
 aperiodic ones, and the uniform tilings again with every point held to their
 vertex configuration (`Level.rule`, the `.vertex` levels above).
 
-**Status: 104 tilings in eleven sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 138 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 2064 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 134 tilings in twelve sections, then 165 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 184 colourings of the uniform, 2-uniform, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 138 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 2228 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
-[3⁶; 3⁴.6]₁), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
+[3⁶; 3⁴.6]₁), *Star polygons* (a family of its own: Hypersweeper has none —
+Grünbaum and Shephard's twenty-two "uniform" tilings with star polygons,
+regular polygons and isotoxal stars every vertex alike, named by their
+configuration as Wikipedia writes it with the angles in degrees: 3.6*60°.6**60°
+is a triangle, a six-pointed star's 60° point and another's dent round every
+vertex; the four whose stars' angle may be anything in a range each at three
+angles — 3.6*α.6**α at 30°, 60° and 90°, 4.4*α.4**α at 30°, 45° and 60°,
+6.3*α.3**α at 20°, 30° and 45°, 3.3*α.3.3**α at 20°, 30° and 40° — then the
+eighteen of one angle, 4.6.4*30°.6 to 9.3.9.3*20°, in Wikipedia's order; 21 to
+37 tiles a window, plain tiles only for now), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
 *2-isohedral* (the twenty 2-uniform tilings' duals, two kinds of tile each,
 named V and the primal's pair, V[3⁶; 3⁴.6]₁), *Pentagonal* (types 10, 13 and
 15 — James, Rice, and Mann et al. — one convex pentagon each, named as
@@ -825,7 +839,8 @@ quick way to see the win state.
   (the fish, the kissing squares: `polygon` makes the one-piece kind; nothing
   asks the pieces to touch, so a tile whose pieces lie apart, the
   Socolar–Taylor tile, fits too) — `Pose` (rotate by ζᵏ, optional mirror, translate), `regular`,
-  `walk` (a region outline as unit steps), and the float measures used for
+  `walk` (a region outline as unit steps), `starLike` (a star: one piece whose
+  corners turn in and out by turns), and the float measures used for
   drawing and nearest-snap. `posed`, `turnsOnto`, `selfTurns` and `restFlat`
   take every piece together: a tile rests on a side with all its pieces above
   it (or, having none, as it is); `spotKey` names a placement by all its
@@ -929,6 +944,23 @@ quick way to see the win state.
   Tile(1,1) — but for the round Spectre (`keepFlat`), whose two curves meet
   there. `APERIODIC` in `levels.ts` keys each level and names the board it is
   cut from (`aperiodic.mode`: both Spectre levels are `spectre`'s).
+- `src/geometry/stars.ts` — **the star tilings**: Grünbaum and Shephard's
+  twenty-two "uniform" tilings with star polygons (*Tilings and Patterns*
+  §2.5, as Wikipedia's *Uniform tiling* lists them), which Hypersweeper has
+  no board for. A star {n_α} is an isotoxal 2n-gon of unit sides, its n
+  points of angle α and its n dents of 2π − 2π/n − α; a point where only two
+  tiles meet (a dent against a corner) is no vertex. `STAR_TILINGS` writes
+  each down as one period — two lattice steps and the tiles of one cell, each
+  its kind, the corner it starts from, that corner and its first side's
+  direction — in ℤ[ζ6], ζ8, ζ12, ζ18, ζ20 or ζ24, every side a unit ζᵏ, so
+  `kindCell` walks the tiles out exactly. The data was found by growing each
+  tiling from its configuration and reading its period off; the tests
+  (`tests/unit/stars.test.ts`) are its oracle. The four of an adjustable
+  angle are each three tilings, at three angles (a different star is a
+  different tray). `starWindow` cuts a `box`-edge square round the period's
+  tile of most corners, as `templateWindow` does — its tiles that fit whole,
+  their largest piece joined edge to edge — moved off it for a board past
+  the first (`starCut` in `levels.ts`, by 1/GRID steps of the lattice cell).
 - `src/geometry/hat.ts` — the hat's family, cut from `hatMetatiles` in
   `@tiling/geometry` (`packages/geometry/src/hat.ts`, shared with
   Hypersweeper's hat, turtle and metatile boards): Craig Kaplan's hatviz
@@ -1145,6 +1177,11 @@ quick way to see the win state.
   builder grows it, how many tiles it keeps), checked the same way, and
   `aperiodicLevel` an aperiodic window from `APERIODIC` (the mode key, how
   many substitutions, how many tiles the centred window keeps).
+  `starLevel` makes a star tiling's from `STARS` (its key in `STAR_TILINGS`
+  and its window's box), in the Star polygons section after the 2-uniform
+  ones, marked `star`, named as Wikipedia writes its configuration — its
+  `configs` none, a configuration here naming a star's points and dents
+  apart.
   `hatLevel` makes the hat's family's from `HAT_FAMILY` (the key, the tile,
   how many substitutions, how many tiles the window keeps), after the
   Spectre, marked `hat`.
@@ -1350,7 +1387,11 @@ the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
   out differently; `tests/e2e/every-level.spec.ts` opens every level and
   every tiling's page, in Chromium (WebKit is not run: the unit test is what
   catches a level Safari's floats build differently).
-- **A level follows a Hypersweeper board** — but for the tiles of several
+- **A level follows a Hypersweeper board** — but for the star tilings, which
+  Hypersweeper has no board for: defined in `src/geometry/stars.ts` and
+  checked by `tests/unit/stars.test.ts` (a period's tiles a lattice cell's
+  area, overlapping nothing over a block of periods, every vertex its
+  configuration) — and for the tiles of several
   pieces, which Hypersweeper cannot have (a minesweeper cell is one polygon):
   the rep-tiles of several pieces are defined in `src/geometry/pieces.ts` and
   checked by covering their grown tile exactly, and the Socolar–Taylor tile in
@@ -1369,9 +1410,13 @@ the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
 - **Colours come from `var(--…)`** in `src/styles.css`, with the
   `prefers-color-scheme: dark` block kept in step. A tile is coloured by its
   side count (`.sides-3`, `.sides-4`, …), on Hypersweeper's shape hues (7,
-  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 13, Tile(1,1),
-  the Spectre, the hat and the turtle, violet at its end — real corners, `sideCount`), a tile
-  of several pieces in slate, off the ramp (`.pieces`), and a second kind
+  Klaassen's heptagon, between 6 and 8 as its hue ramp puts it; 9 cyan,
+  between 8 and 12; 13, Tile(1,1),
+  the Spectre, the hat and the turtle, violet at its end, and 18 lavender past
+  it — real corners, `sideCount`), a tile
+  of several pieces in slate, off the ramp (`.pieces`), a star in orchid
+  whatever its corners, off the ramp too (`.star`, `starLike` in `shape.ts`;
+  a second kind of star periwinkle, `.star-2`), and a second kind
   coloured as another in rose (`.twin`), and a coloured board's tile in its
   colour's paint (`.paint-<c>`, `--paint-<c>`: terracotta, blue, gold, green)
   — read a kind's classes from `level.colours`, never from its side count.

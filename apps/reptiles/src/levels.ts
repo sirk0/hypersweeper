@@ -41,6 +41,7 @@ import { spiralPatch } from "./geometry/spiral";
 import { aperiodicPatch } from "./geometry/aperiodic";
 import { SOCOLAR_TAYLOR_PATCH, socolarTaylorPatch, stCell } from "./geometry/socolarTaylor";
 import { hatFrames, hatPatch, type HatTile } from "./geometry/hat";
+import { starSteps, starTiling, starWindow } from "./geometry/stars";
 import {
   adjacency,
   deriveRules,
@@ -76,6 +77,7 @@ import {
   restFlat,
   selfTurns,
   sides,
+  starLike,
   signedArea,
   turnsOnto,
   turnsOntoPieces,
@@ -203,6 +205,11 @@ export interface Level {
    * of them are cut from (`hatMetatiles` in @tiling/geometry) — which tile, how many substitutions grow the H
    * metatile its patch is, and how many tiles its centred window keeps. */
   hat?: { tile: HatTile; depth: number; keep: number; centre?: number };
+  /** For a star tiling's level — one Hypersweeper has no board for, defined
+   * here in `geometry/stars.ts` and keyed as the level is — the edge of its
+   * window's square, and for a board after the first where that square is
+   * centred. */
+  star?: { box: number; centre?: XY };
   /** For a level whose tiles carry marks (geometry/marks.ts): the plain
    * level whose board it is, in how many colours (1 for `rules`: a matching
    * rule in one colour — lines across the tiles, made from a colouring by
@@ -452,10 +459,13 @@ function makeLevel(
     (a, b) => sides(a.shape) - sides(b.shape) || area(a.shape) - area(b.shape) || a.paint - b.paint,
   );
   const tiles = kinds.map((k) => k.shape);
-  const colour = (s: Shape): string => (s.pieces.length > 1 ? "pieces" : `sides-${sides(s)}`);
+  const colour = (s: Shape): string =>
+    s.pieces.length > 1 ? "pieces" : starLike(s) ? "star" : `sides-${sides(s)}`;
   const colours = tiles.map((t, i) => {
     if (paints) return `${colour(t)} paint paint-${kinds[i]!.paint}`;
     const twin = tiles.slice(0, i).some((u) => colour(u) === colour(t));
+    // a second kind of star is a colour of its own, not the rose twin
+    if (twin && colour(t) === "star") return "star star-2";
     return `${colour(t)}${twin ? " twin" : ""}`;
   });
   const region = outline(ring, cells.flat());
@@ -745,6 +755,12 @@ export const GROUPS = [
     key: "2-uniform",
     name: familyLabel("2-uniform"),
     hint: "Regular shapes, two kinds of corner",
+  },
+  {
+    key: "star",
+    // (Hypersweeper has no such family, so no label of its for it)
+    name: "Star polygons",
+    hint: "Regular polygons and stars, every corner alike",
   },
   {
     key: "laves",
@@ -1348,6 +1364,40 @@ const windowBoards = (tiling: string, box: number): string =>
     make: (at) => windowLevel(tiling, box, at),
   });
 
+/** A star tiling's window (`starWindow`), moved `at` steps of 1/GRID of its
+ * lattice cell each way off its centre and grown by its third, in quarter
+ * edges. */
+function starCut(key: string, box: number, at?: Variant) {
+  let offset: XY = [0, 0];
+  if (at !== undefined) {
+    if (typeof at === "number") throw new Error(`${key}: a window moves by a step, not ${at}`);
+    const [a, b] = starSteps(key);
+    const [i, j] = [at[0] / GRID, at[1] / GRID];
+    offset = [i * a[0] + j * b[0], i * a[1] + j * b[1]];
+  }
+  return starWindow(key, boxOf(box, at), offset);
+}
+
+/** A level on a `box`-edge square window of a star tiling, named by its
+ * vertex configuration as Wikipedia writes it. Its `configs` are none: a
+ * configuration here is a list of polygons, and a star's point and dent are
+ * two corners of one tile. */
+function starLevel(key: string, box: number, at?: Variant): Level {
+  const spec = starTiling(key);
+  const { ring, cells, centre } = starCut(key, box, at);
+  return {
+    ...makeLevel(key, spec.label, ring, whole(cells), "star", [], spec.name),
+    star: { box: boxOf(box, at), ...(at === undefined ? {} : { centre }) },
+  };
+}
+
+const starBoards = (key: string, box: number): string =>
+  firstBoard(key, {
+    kind: "window",
+    cut: (at) => starCut(key, box, at),
+    make: (at) => starLevel(key, box, at),
+  });
+
 const lavesBoards = (dual: string, box: number): string =>
   firstBoard(dual, {
     kind: "window",
@@ -1844,12 +1894,14 @@ export function periodicContext(
 ): Piece[][] {
   const { ring } = plain;
   const wide =
-    plain.group === "laves"
-      ? lavesWindow(lavesPrimal(plain.key), scale * box)
-      : plain.group === "2-isohedral"
-        ? lavesWindow(plain.dualOf!, scale * box)
-        : // (an isogonal patch, as its window, can leave a lone tile at a corner)
-          templateWindow(plain.key, scale * box, { dropStrays });
+    plain.group === "star"
+      ? starWindow(plain.key, scale * box)
+      : plain.group === "laves"
+        ? lavesWindow(lavesPrimal(plain.key), scale * box)
+        : plain.group === "2-isohedral"
+          ? lavesWindow(plain.dualOf!, scale * box)
+          : // (an isogonal patch, as its window, can leave a lone tile at a corner)
+            templateWindow(plain.key, scale * box, { dropStrays });
   // a bond's bricks cut into steps, and a pentagonal or isogonal tiling's
   // tiles cut alike, as its painted board's are (`paintBase`)
   const wideCells: Cyc[][] =
@@ -1916,6 +1968,7 @@ export function paintedBox(key: string): number | undefined {
     ...RECTANGLES,
     ...PENTAGONAL,
     ...ISOGONAL,
+    ...STARS,
   ].find(([k]) => k === key)?.[1];
 }
 
@@ -2282,6 +2335,42 @@ export const UNIFORM: [tiling: string, box: number][] = [
   ["trunctrihex", 11.95],
 ];
 
+/** The star tilings (`STAR_TILINGS` in geometry/stars.ts), and each one's
+ * window: the squarest near two or three dozen tiles that keeps one outline
+ * and a whole vertex inside (`box`, in edges, measured by scanning sizes). */
+export const STARS: [tiling: string, box: number][] = [
+  ["star36a30", 6.6],
+  ["star36a60", 9.7],
+  ["star36a90", 10.35],
+  ["star44a30", 7],
+  ["star44a45", 7.85],
+  ["star44a60", 8.95],
+  ["star63a20", 7.85],
+  ["star63a30", 8.95],
+  ["star63a45", 9.55],
+  ["star333a20", 5.25],
+  ["star333a30", 5.45],
+  ["star333a40", 6.1],
+  ["star464", 8.2],
+  ["star84", 12.4],
+  ["star12124", 17.15],
+  ["star338438", 7.3],
+  ["star3383438", 6.35],
+  ["star34838", 7.5],
+  ["star55454", 7.7],
+  ["star4666", 10.2],
+  ["star46", 8],
+  ["star996", 17.8],
+  ["star66", 13],
+  ["star123", 13.55],
+  ["star346312", 6.95],
+  ["star33312", 5.6],
+  ["star18183", 20.15],
+  ["star3666", 10.7],
+  ["star8386", 13.55],
+  ["star9393", 10.5],
+];
+
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>
   a.tiles.length - b.tiles.length || a.cells.length - b.cells.length;
@@ -2395,6 +2484,9 @@ const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
   },
   // The twenty 2-uniform tilings.
   { keys: TWO_UNIFORM.map(([tiling, box]) => windowBoards(tiling, box)), byEase: true },
+  // The twenty-two tilings with star polygons: the four of an adjustable
+  // angle, each at three, then the eighteen of one angle each.
+  { keys: STARS.map(([key, box]) => starBoards(key, box)) },
   // The eight Laves tilings with more than one kind of vertex (the regular
   // tilings are their own Laves duals, already above).
   { keys: LAVES.map(([dual, box]) => lavesBoards(dual, box)) },

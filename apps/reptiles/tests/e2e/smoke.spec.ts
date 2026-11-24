@@ -643,13 +643,16 @@ test("tray tiles are the size they land at, zoomed in or not", async ({ page }) 
   );
 });
 
-test("Tilings' families are named as Hypersweeper names them", async ({ page }) => {
+test("Tilings' families are named as Hypersweeper names them (and the stars, which it has not)", async ({
+  page,
+}) => {
   await page.setViewportSize(PHONE);
   await page.goto("/?tilings");
   await expect(page.locator(".family h2")).toHaveText([
     "Regular",
     "Uniform",
     "2-uniform",
+    "Star polygons",
     "Laves",
     "2-isohedral",
     "Pentagonal",
