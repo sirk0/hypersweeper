@@ -235,6 +235,11 @@ type Shelf = { at: XY[]; slots: Box[]; box: Box };
 
 export class SvgBoard {
   readonly svg: SVGSVGElement;
+  /** The whole screen behind the page, edge to edge — under the header, the
+   * notch and the home indicator too, which the board's own SVG stops short
+   * of — where a finished board's tiling is drawn (`showBeyond`). */
+  private backdrop: SVGSVGElement;
+  private backdropWorld: SVGGElement;
   /** The world layer (region, tiles, open edges) and the dragged tile over
    * everything: both under the camera's transform. */
   private still: SVGGElement;
@@ -323,8 +328,10 @@ export class SvgBoard {
     host: HTMLElement,
     private puzzle: Puzzle,
   ) {
+    this.backdrop = el("svg", { class: "board-backdrop", "aria-hidden": "true" });
+    this.backdropWorld = el("g", {}, this.backdrop);
     this.svg = el("svg", { class: "board", role: "img", "aria-label": "Tiling board" });
-    host.appendChild(this.svg);
+    host.append(this.backdrop, this.svg);
     this.still = el("g", { class: "world" }, this.svg);
     this.zone = el("rect", { class: "tray-zone" }, this.svg);
     const clipId = `shelf-clip-${++boards}`;
@@ -749,7 +756,7 @@ export class SvgBoard {
     const world = `matrix(${this.scale},0,0,${-this.scale},${tx},${ty})`;
     this.still.setAttribute("transform", world);
     this.moving.setAttribute("transform", world);
-    this.coverBeyond(width, height);
+    this.placeBackdrop(tx, ty);
     const [z0, w0, z1, w1] = this.card;
     const rx = this.cardGap > 0 ? CARD_RADIUS : 0;
     for (const [k, v] of Object.entries({ x: z0, y: w0, width: z1 - z0, height: w1 - w0, rx }))
@@ -776,6 +783,25 @@ export class SvgBoard {
     );
   }
 
+  /** The backdrop sized to the screen, its world layer lined up with the
+   * board's (`tx`, `ty`: the world's offset in the board's SVG), and the
+   * outlines made to reach its every corner. */
+  private placeBackdrop(tx: number, ty: number): void {
+    if (!this.beyond) return;
+    const { left, top, width, height } = this.backdrop.getBoundingClientRect();
+    if (width <= 0 || height <= 0) return;
+    const at = this.svg.getBoundingClientRect();
+    // the board's SVG's (0, 0), in the backdrop's pixels
+    const dx = at.left - left;
+    const dy = at.top - top;
+    this.backdrop.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    this.backdropWorld.setAttribute(
+      "transform",
+      `matrix(${this.scale},0,0,${-this.scale},${tx + dx},${ty + dy})`,
+    );
+    this.coverBeyond([-dx, -dy, width - dx, height - dy]);
+  }
+
   /** Carry the finished board's tiling on past its edge, as outlines out to
    * the edges of the screen under the region and its tiles, and let the board
    * zoom out past the fit to see more of it — or, with null, take them away
@@ -784,7 +810,12 @@ export class SvgBoard {
   showBeyond(ext: TilingExtension | null, mid: XY = [0, 0]): void {
     this.beyond?.path.remove();
     this.beyond = ext
-      ? { ext, mid, path: el("path", { class: "beyond", "data-beyond": "" }), covered: 0 }
+      ? {
+          ext,
+          mid,
+          path: el("path", { class: "beyond", "data-beyond": "" }, this.backdropWorld),
+          covered: 0,
+        }
       : null;
     if (!ext && this.zoom < 1) this.zoom = 1;
     this.place();
@@ -801,7 +832,7 @@ export class SvgBoard {
   private get minZoom(): number {
     const beyond = this.beyond;
     if (!beyond) return 1;
-    const { width, height } = this.svg.getBoundingClientRect();
+    const { width, height } = this.backdrop.getBoundingClientRect();
     const tiles = MIN_TILE_PX / (2 * beyond.ext.tile * this.fitScale);
     // the view's half-diagonal, in board units at zoom z, is |(w, h)| / 2 s z;
     // a little over it, so only a view slid to the edge of the pan sees the
@@ -810,17 +841,18 @@ export class SvgBoard {
     return Math.min(1, Math.max(WON_MIN_ZOOM, tiles, reach));
   }
 
-  /** Make sure the outlines reach every corner of the screen. */
-  private coverBeyond(width: number, height: number): void {
+  /** Make sure the outlines reach every corner of the screen, given as a box
+   * in the board's SVG's pixels. */
+  private coverBeyond([x0, y0, x1, y1]: Box): void {
     const beyond = this.beyond;
     if (!beyond) return;
     const [mx, my] = beyond.mid;
     let need = 0;
     for (const corner of [
-      [0, 0],
-      [width, 0],
-      [0, height],
-      [width, height],
+      [x0, y0],
+      [x1, y0],
+      [x0, y1],
+      [x1, y1],
     ] as XY[]) {
       const [x, y] = this.screenToWorld(corner);
       need = Math.max(need, Math.hypot(x - mx, y - my));
@@ -869,8 +901,6 @@ export class SvgBoard {
   draw(): void {
     const { ring, region, regionCurves, regionMarks } = this.puzzle.level;
     this.still.replaceChildren();
-    // the tiling past a finished board, under everything on it
-    if (this.beyond) this.still.appendChild(this.beyond.path);
     const d = region
       .map((loop, i) =>
         outlinePath(

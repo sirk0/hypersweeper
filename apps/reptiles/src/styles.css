@@ -589,6 +589,24 @@ button.primary {
   stroke-linejoin: round;
 }
 
+/* Where the tiling past a finished board is drawn: the whole screen, edge to
+   edge — under the header, the notch and the home indicator, which the board's
+   own SVG stops short of — behind everything on the level's screen but the
+   page itself (#game isolates, so z-index -1 stays above the body's ground). */
+#game {
+  isolation: isolate;
+}
+
+.board-backdrop {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* The tiling past a finished board (src/extension.ts): its tiles' outlines,
    faint, out to the screen's edges under the region — nothing filled, nothing
    to tap. They come in once the board is finished. */
