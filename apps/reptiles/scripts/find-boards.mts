@@ -16,7 +16,8 @@
 // - an aperiodic tiling: the builder's own `variant`s, 1 to VARIANTS (each a
 //   window elsewhere in the patch, already held to one piece and not bitten
 //   into by the patch's rim);
-// - the hat's family: the window centred on each tile well inside the patch.
+// - the hat's family and the self-similar girih pattern: the window centred on
+//   each tile well inside the patch.
 //
 // A candidate is a board worth playing when it has about as many tiles as the
 // first (TOLERANCE), is about as square, is one outline with no hole and no
@@ -32,7 +33,6 @@ import { fileURLToPath } from "node:url";
 import { congruenceKey } from "../src/geometry/congruent";
 import { solidity } from "../src/geometry/outline";
 import type { Cyc, Ring } from "../src/geometry/cyclotomic";
-import { hatPatch } from "../src/geometry/hat";
 import { posed, turnsOnto } from "../src/geometry/shape";
 import { cornersOf, fitsConfig, span, type Corner } from "../src/geometry/vertexRule";
 import { BOARD_SOURCES, GRID, LEVELS, type Level, type Variant } from "../src/levels";
@@ -51,7 +51,7 @@ const MAX = { window: 6, variant: 8, centre: 8 } as const;
 const GROW = [0, 1, -1, 2, 3, 4, 5, 6, -2];
 /** The aperiodic builders' variants tried. */
 const VARIANTS = 160;
-/** How far from a hat patch's middle a window may be centred, as a share of
+/** How far from a hat or girih patch's middle a window may be centred, as a share of
  * the patch's half-width — far enough in that the window is all patch. */
 const CENTRE_REACH = 0.4;
 
@@ -190,8 +190,7 @@ function candidates(first: Level): Candidate[] {
       else found.set(key, { at: v, key, hits: 1 });
     }
   } else {
-    const { tile, depth } = first.hat!;
-    const whole = hatPatch(tile, depth, 1e9);
+    const whole = source.whole!();
     const centroids = whole.cells.map((cell) => {
       const pts = cell.map((v) => whole.ring.toXY(v));
       return [

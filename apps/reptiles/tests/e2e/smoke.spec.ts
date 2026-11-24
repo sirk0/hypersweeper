@@ -643,7 +643,7 @@ test("tray tiles are the size they land at, zoomed in or not", async ({ page }) 
   );
 });
 
-test("Tilings' families are named as Hypersweeper names them (and the stars, which it has not)", async ({
+test("Tilings' families are named as Hypersweeper names them (and the stars and girih, which it has not)", async ({
   page,
 }) => {
   await page.setViewportSize(PHONE);
@@ -656,6 +656,7 @@ test("Tilings' families are named as Hypersweeper names them (and the stars, whi
     "Laves",
     "2-isohedral",
     "Pentagonal",
+    "Girih",
     "Isogonal",
     "Congruent rectangles",
     "Rep-tiles",

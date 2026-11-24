@@ -29,8 +29,8 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
   {
     key: "irregular",
     name: "Irregular tiles",
-    hint: "One or two shapes that are not regular: the duals, and the pentagons",
-    families: ["laves", "2-isohedral", "pentagonal"],
+    hint: "Shapes that are not all regular: the duals, the pentagons and the girih tiles",
+    families: ["laves", "2-isohedral", "pentagonal", "girih"],
     icon: "cairo",
   },
   {

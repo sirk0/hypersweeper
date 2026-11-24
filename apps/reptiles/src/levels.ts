@@ -42,6 +42,7 @@ import { aperiodicPatch } from "./geometry/aperiodic";
 import { SOCOLAR_TAYLOR_PATCH, socolarTaylorPatch, stCell } from "./geometry/socolarTaylor";
 import { hatFrames, hatPatch, type HatTile } from "./geometry/hat";
 import { starSteps, starTiling, starWindow } from "./geometry/stars";
+import { girihPeriodicWindow, girihSteps, girihTiling, girihWindow, Z10 } from "./geometry/girih";
 import {
   adjacency,
   deriveRules,
@@ -210,6 +211,16 @@ export interface Level {
    * window's square, and for a board after the first where that square is
    * centred. */
   star?: { box: number; centre?: XY };
+  /** For a periodic girih tiling's level — Hypersweeper has no board for
+   * it either: defined here in `geometry/girih.ts`, keyed as the level is —
+   * the edge of its window's square, and for a board after the first where
+   * that square is centred. Its tiles carry girih strapwork, drawn only. */
+  girihTiling?: { box: number; centre?: XY };
+  /** For the self-similar girih level, from `geometry/girih.ts`: how many
+   * times the decagon its patch grows from is cut, how many tiles its
+   * centred window keeps, and for a board after the first the tile it is
+   * centred on. Its tiles carry girih strapwork, drawn only. */
+  girih?: { depth: number; keep: number; centre?: number };
   /** For a level whose tiles carry marks (geometry/marks.ts): the plain
    * level whose board it is, in how many colours (1 for `rules`: a matching
    * rule in one colour — lines across the tiles, made from a colouring by
@@ -778,6 +789,12 @@ export const GROUPS = [
     hint: "One convex pentagon throughout, found 1975 to 2015",
   },
   {
+    key: "girih",
+    // (Hypersweeper has no such family, so no label of its for it)
+    name: "Girih",
+    hint: "Islamic strapwork's five tiles — decagon, pentagon, hexagon, bowtie, rhombus",
+  },
+  {
     key: "isogonal",
     name: familyLabel("isogonal"),
     hint: "Regular shapes, every corner alike — but a corner can meet mid-side",
@@ -1331,6 +1348,10 @@ export interface BoardSource {
   kind: "window" | "variant" | "centre";
   cut(at?: Variant): { ring: Ring; cells: Cyc[][] };
   make(at?: Variant): Level;
+  /** For a `centre` source, the whole patch its windows are cut from: a
+   * board past the first is centred on one of its tiles (`at`, an index
+   * into these cells). */
+  whole?(): { ring: Ring; cells: Cyc[][] };
 }
 
 /** Every level that can have more than one board, by its first board's key. */
@@ -1430,6 +1451,77 @@ const hatBoards = (key: string, tile: HatTile, depth: number, keep: number): str
     kind: "centre",
     cut: (at) => hatPatch(tile, depth, keep, asNumber(at)),
     make: (at) => hatLevel(key, tile, depth, keep, asNumber(at)),
+    whole: () => hatPatch(tile, depth, 1e9),
+  });
+
+/** The periodic girih tilings (`GIRIH_TILINGS` in `geometry/girih.ts`), each
+ * with its window's square: the squarest one outline near two or three
+ * dozen tiles, found by scanning sizes. */
+export const GIRIH: [tiling: string, box: number][] = [
+  ["girihdecagons", 11.15],
+  ["girihhexagons", 8.7],
+  ["girihbowties", 8.25],
+];
+
+/** A periodic girih tiling's window (`girihPeriodicWindow`), moved `at`
+ * steps of 1/GRID of its lattice cell each way off its centre and grown by
+ * its third, in quarter edges. */
+function girihCut(key: string, box: number, at?: Variant) {
+  let offset: XY = [0, 0];
+  if (at !== undefined) {
+    if (typeof at === "number") throw new Error(`${key}: a window moves by a step, not ${at}`);
+    const [a, b] = girihSteps(key).map((v) => Z10.toXY(v));
+    const [i, j] = [at[0] / GRID, at[1] / GRID];
+    offset = [i * a![0] + j * b![0], i * a![1] + j * b![1]];
+  }
+  return girihPeriodicWindow(key, boxOf(box, at), offset);
+}
+
+/** A level on a `box`-edge square window of a periodic girih tiling, named
+ * for its tiles. Its `configs` are none: Hypersweeper's notation names
+ * regular polygons, and three of the girih tiles are not. */
+function girihTilingLevel(key: string, box: number, at?: Variant): Level {
+  const spec = girihTiling(key);
+  const { ring, cells, centre } = girihCut(key, box, at);
+  return {
+    ...makeLevel(key, spec.label, ring, whole(cells), "girih", [], spec.name),
+    girihTiling: { box: boxOf(box, at), ...(at === undefined ? {} : { centre }) },
+  };
+}
+
+const girihTilingBoards = (key: string, box: number): string =>
+  firstBoard(key, {
+    kind: "window",
+    cut: (at) => girihCut(key, box, at),
+    make: (at) => girihTilingLevel(key, box, at),
+  });
+
+/** The self-similar girih pattern (`girihPatch`): a decagon cut `depth`
+ * times, the `keep` tiles nearest its middle — the decagon, ringed by
+ * hexagons and bowties. */
+export const GIRIH_SELF_SIMILAR = { key: "girih", depth: 2, keep: 27 } as const;
+
+/** The self-similar girih level, or with `centre` a board centred on that
+ * tile of the patch. An aperiodic pattern, listed with the aperiodic
+ * tilings; named, as they are, for what it is. */
+function girihLevel(centre?: number): Level {
+  const { key, depth, keep } = GIRIH_SELF_SIMILAR;
+  const name = "Girih";
+  const label =
+    "A girih decagon, hexagons and bowties, cut τ² smaller over and over: it never repeats";
+  const { ring, cells } = girihWindow(depth, keep, centre);
+  return {
+    ...makeLevel(key, label, ring, whole(cells), "aperiodic", [], name),
+    girih: { depth, keep, ...(centre === undefined ? {} : { centre }) },
+  };
+}
+
+const girihBoards = (): string =>
+  firstBoard(GIRIH_SELF_SIMILAR.key, {
+    kind: "centre",
+    cut: (at) => girihWindow(GIRIH_SELF_SIMILAR.depth, GIRIH_SELF_SIMILAR.keep, asNumber(at)),
+    make: (at) => girihLevel(asNumber(at)),
+    whole: () => girihWindow(GIRIH_SELF_SIMILAR.depth, null),
   });
 
 /** The lattice each regular board repeats by, for its colourings: the
@@ -1896,12 +1988,14 @@ export function periodicContext(
   const wide =
     plain.group === "star"
       ? starWindow(plain.key, scale * box)
-      : plain.group === "laves"
-        ? lavesWindow(lavesPrimal(plain.key), scale * box)
-        : plain.group === "2-isohedral"
-          ? lavesWindow(plain.dualOf!, scale * box)
-          : // (an isogonal patch, as its window, can leave a lone tile at a corner)
-            templateWindow(plain.key, scale * box, { dropStrays });
+      : plain.group === "girih"
+        ? girihPeriodicWindow(plain.key, scale * box)
+        : plain.group === "laves"
+          ? lavesWindow(lavesPrimal(plain.key), scale * box)
+          : plain.group === "2-isohedral"
+            ? lavesWindow(plain.dualOf!, scale * box)
+            : // (an isogonal patch, as its window, can leave a lone tile at a corner)
+              templateWindow(plain.key, scale * box, { dropStrays });
   // a bond's bricks cut into steps, and a pentagonal or isogonal tiling's
   // tiles cut alike, as its painted board's are (`paintBase`)
   const wideCells: Cyc[][] =
@@ -1969,6 +2063,7 @@ export function paintedBox(key: string): number | undefined {
     ...PENTAGONAL,
     ...ISOGONAL,
     ...STARS,
+    ...GIRIH,
   ].find(([k]) => k === key)?.[1];
 }
 
@@ -2501,6 +2596,8 @@ const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
       // The three pentagonal tilings: one convex pentagon, turned and
       // mirrored.
       ...PENTAGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
+      // The periodic girih tilings: Islamic strapwork's five tiles.
+      ...GIRIH.map(([tiling, box]) => girihTilingBoards(tiling, box)),
       // The six isogonal tilings: regular polygons, every vertex alike, a
       // corner meeting the middle of a side at each.
       ...ISOGONAL.map(([tiling, box]) => windowBoards(tiling, box)),
@@ -2517,9 +2614,11 @@ const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
       // The spirals: one tile, wound round a centre.
       ...SPIRALS.map(([mode, rings, keep]) => maker(mode, () => spiralLevel(mode, rings, keep))),
       // The aperiodic tilings: a window onto a tiling that repeats nowhere.
+      // (Penrose's two and Ammann–Beenker's, then — ten-fold as Penrose's
+      // are — the self-similar girih pattern, then the Spectre's two)
       ...APERIODIC.map(([key, mode, depth, keep, round]) =>
         aperiodicBoards(key, mode, depth, keep, round),
-      ),
+      ).flatMap((key) => (key === "ammannbeenker" ? [key, girihBoards()] : [key])),
       // …the hat's family: the hat and the turtle, both ways up, and the
       // hat's four metatiles…
       ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatBoards(key, tile, depth, keep)),
