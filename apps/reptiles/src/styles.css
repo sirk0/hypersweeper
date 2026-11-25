@@ -1729,6 +1729,32 @@ button:disabled {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* Stars earned (src/tally.ts): a tiling's card in Tilings, a board's and a
+   tile set's on its page, washed in the accent — deeper for each star, as
+   `data-stars` has it, 0 to 3. Only the card: a board's outline inside it
+   keeps its own opaque fill (--region), so the tiles drawn in it read as
+   ever. After the pick's wash, which a tint takes the place of; the pick
+   keeps its ring. */
+.card[data-stars="1"],
+.board-card[data-stars="1"] {
+  --tint: 12%;
+}
+
+.card[data-stars="2"],
+.board-card[data-stars="2"] {
+  --tint: 25%;
+}
+
+.card[data-stars="3"],
+.board-card[data-stars="3"] {
+  --tint: 40%;
+}
+
+.card[data-stars]:not([data-stars="0"]),
+.board-card[data-stars]:not([data-stars="0"]) {
+  background: color-mix(in oklab, var(--accent) var(--tint), var(--button));
+}
+
 /* A board the picked tiles are not laid on, or tiles not laid on the picked
    board: still a tap away — picking one picks what goes with it. */
 .board-card.off,
@@ -1828,6 +1854,22 @@ button:disabled {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The picked board with the picked tiles: its own stars, in the button's
+   ink on its accent fill — the ones still to earn fainter. */
+.pick-play .play .stars {
+  flex: none;
+}
+
+.pick-play .play .stars .star {
+  color: inherit;
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+.pick-play .play .stars .star.done {
+  opacity: 1;
 }
 
 /* -- settings --------------------------------------------------------------- */

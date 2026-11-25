@@ -1079,6 +1079,21 @@ describe("puzzle", () => {
     expect(p.stars(false)).toBe(0);
   });
 
+  it("gives the second star only with every pile at 0, not just as many tiles in all", () => {
+    // the same cover, counted against piles one triangle more and one
+    // hexagon fewer: as many tiles in all, but two piles off 0
+    const level = levelByKey("trihex")!;
+    const tri = level.tiles.findIndex((t) => poly(t.pieces).length === 3);
+    const hex = level.tiles.findIndex((t) => poly(t.pieces).length === 6);
+    const need = level.need.map((n, k) => (k === tri ? n + 1 : k === hex ? n - 1 : n));
+    const p = new Puzzle({ ...level, need });
+    for (const cell of level.cells) p.place(poly(cell).length === 3 ? tri : hex, cell, 0);
+    expect(p.won).toBe(true);
+    expect(p.tiles.length).toBe(need.reduce((a, b) => a + b));
+    expect(p.pilesEmpty).toBe(false);
+    expect(p.stars(false)).toBe(1);
+  });
+
   /** A finished trihexagonal board with its innermost hexagon lifted out. */
   function trihexWithHole(rule?: number[]): { p: Puzzle; hex: Cyc[] } {
     const level = levelByKey("trihex")!;
@@ -1114,7 +1129,7 @@ describe("puzzle", () => {
     }
     expect(p.won).toBe(true);
     expect(p.tiles.length).toBe(p.level.cells.length + 5);
-    // finished, but with more tiles than needed: one star, hint or none
+    // finished, but a pile past 0 and another short of it: one star, hint or none
     expect(p.stars(false)).toBe(1);
   });
 

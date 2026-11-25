@@ -146,13 +146,18 @@ export class Puzzle {
     return this.tiles.filter((t) => t.kind === kind).length;
   }
 
+  /** Whether every pile in the tray is down to 0: of each kind, exactly as
+   * many tiles down as the board was cut from — not merely as many in all. */
+  get pilesEmpty(): boolean {
+    return this.level.need.every((n, kind) => this.used(kind) === n);
+  }
+
   /** The stars a finished board earns: one for finishing at all, two for
-   * doing it with no more tiles than the board was cut from, three for that
-   * with no hint (`hinted`: one was shown). */
+   * doing it with every pile in the tray down to 0 (`pilesEmpty`), three for
+   * that with no hint (`hinted`: one was shown). */
   stars(hinted: boolean): 0 | 1 | 2 | 3 {
     if (!this.won) return 0;
-    const need = this.level.need.reduce((a, b) => a + b, 0);
-    if (this.tiles.length > need) return 1;
+    if (!this.pilesEmpty) return 1;
     return hinted ? 2 : 3;
   }
 

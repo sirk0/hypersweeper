@@ -544,7 +544,7 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   const errors = watchErrors(page);
   await page.goto("/?level=squares");
   await finishSquares(page);
-  // no hint, no more tiles than needed: three stars
+  // no hint, every pile at 0: three stars
   await expect(page.locator("#won-stars")).toHaveText("★★★");
   await expect(page.locator("#won-detail")).toContainText("No hints.");
   await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d/);
@@ -1149,6 +1149,62 @@ test("a board left half-covered opens as it was, and Restart starts it afresh", 
   await page.goto("/?tiling=squares&pick=squares");
   await expect(page.locator(".pick-play .play")).toContainText("Play");
   await expect(page.locator(".pick-play .play")).not.toContainText("Resume");
+  expect(errors).toEqual([]);
+});
+
+test("a tiling's stars are its boards' and its tile sets' bests, the cards tinted by them", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.addInitScript(() => {
+    // three plain on board 1, two plain on board 2, one lined on board 1
+    localStorage.setItem(
+      "rep-tiles.stars",
+      JSON.stringify({ trihex: 3, "trihex-2": 2, "trihex.lines": 1 }),
+    );
+  });
+  await page.goto("/?tiling=trihex&pick=trihex");
+  // a board's card: its best with any tiles; a tile set's: its best on any board
+  await expect(page.locator('.board-card[data-board="trihex"]')).toHaveAttribute("data-stars", "3");
+  await expect(page.locator('.board-card[data-board="trihex-2"]')).toHaveAttribute(
+    "data-stars",
+    "2",
+  );
+  await expect(page.locator('.board-card[data-board="trihex-2"] .star.done')).toHaveCount(2);
+  await expect(page.locator('.marking-card[data-marking="trihex"]')).toHaveAttribute(
+    "data-stars",
+    "3",
+  );
+  await expect(page.locator('.marking-card[data-marking="trihex.lines"]')).toHaveAttribute(
+    "data-stars",
+    "1",
+  );
+  // tinted: a card with stars is not the colour of one without
+  const bg = (sel: string) =>
+    page
+      .locator(sel)
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+  const none = await bg('.marking-card[data-stars="0"]');
+  const one = await bg('.marking-card[data-stars="1"]');
+  expect(one).not.toBe(none);
+  // the picked board with the picked tiles: its own stars — on a desktop
+  // beside its picture, on a phone on Play
+  await expect(page.locator(".pick-facts .star.done")).toHaveCount(3);
+  await expect(page.locator(".pick-play .play .stars")).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".pick-play .play .star.done")).toHaveCount(3);
+
+  // the tiling's card in Tilings: 3 + 2 (boards) + 3 + 1 (tile sets), of
+  // three a board and three a tile set — not three a board by tile set
+  await page.goto("/?group=regular");
+  const card = page.locator('#catalog-list .card[data-tiling="trihex"]');
+  const [, earned, max] = /★ (\d+)\/(\d+)/.exec(
+    (await card.locator(".card-stars").textContent())!,
+  )!;
+  expect(Number(earned)).toBe(9);
+  expect(Number(max) % 3).toBe(0);
+  await expect(card).toHaveAttribute("data-stars", "1");
   expect(errors).toEqual([]);
 });
 
