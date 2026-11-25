@@ -11,7 +11,7 @@
 //   small to hold a whole period, from a wider window of the same tiling round
 //   it (`periodicContext`, already in the window's coordinates).
 // - **The rest** — the aperiodic windows, the hat's family, the self-similar
-//   girih pattern, the spirals, the
+//   girih pattern, the tilings Rep-tiles grows itself (`GROWN`), the spirals, the
 //   rep-tiles, the Socolar–Taylor tile — are found in bigger patches their own
 //   builders grow: the whole patch a window was cut from and deeper ones, more
 //   rings, more inflations.
@@ -32,6 +32,7 @@ import {
 import type { Cyc, Ring } from "./geometry/cyclotomic";
 import { hatPatch } from "./geometry/hat";
 import { girihWindow } from "./geometry/girih";
+import { grownWindow } from "./geometry/grown";
 import { piecePatch } from "./geometry/pieces";
 import { repTilePatch } from "./geometry/repTile";
 import { socolarTaylorPatch } from "./geometry/socolarTaylor";
@@ -92,7 +93,7 @@ function grown(level: Level): Iterable<Vertex[][]> | null {
       }
     },
   });
-  const { aperiodic, hat, girih, spiral, inflations, pieceTile, socolarTaylor } = level;
+  const { aperiodic, hat, girih, grown, spiral, inflations, pieceTile, socolarTaylor } = level;
   if (aperiodic) {
     const { mode, depth, variant } = aperiodic;
     // the whole patch the window was cut from, then deeper ones; a round tile
@@ -112,6 +113,12 @@ function grown(level: Level): Iterable<Vertex[][]> | null {
   if (girih) {
     return sizes((k) => {
       const { ring, cells } = girihWindow(girih.depth + k, null);
+      return plain(ring, cells);
+    });
+  }
+  if (grown) {
+    return sizes((k) => {
+      const { ring, cells } = grownWindow(level.base, grown.depth + k, null);
       return plain(ring, cells);
     });
   }

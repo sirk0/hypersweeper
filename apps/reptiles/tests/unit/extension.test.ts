@@ -46,6 +46,8 @@ describe("the tiling round a finished level", () => {
     ["penrose", "aperiodic, in the whole patch its window was cut from"],
     ["girih", "the self-similar girih pattern, in its patch"],
     ["hatmetatiles", "the hat's family, in its patch"],
+    ["penrosep1", "a tiling Rep-tiles grows itself, in its patch"],
+    ["mystic", "the Spectre's with its Mystics, in its patch"],
     ["chair", "a rep-tile, in a bigger copy"],
     ["penrose.rules", "a marked level, as its plain level"],
   ])("%s — %s", (key) => {

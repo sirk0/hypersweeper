@@ -579,9 +579,21 @@
   },
   { "key": "penrose", "label": "Penrose rhombi", "name": "Penrose rhombi", "group": "aperiodic" },
   {
+    "key": "penrosep1",
+    "label": "Penrose's first tiling: pentagons, stars, boats and diamonds",
+    "name": "Penrose pentagons",
+    "group": "aperiodic"
+  },
+  {
     "key": "kitedart",
     "label": "Penrose kites & darts",
     "name": "Penrose kites & darts",
+    "group": "aperiodic"
+  },
+  {
+    "key": "robinson",
+    "label": "Penrose's kites and darts each cut in two: an acute and an obtuse golden triangle",
+    "name": "Robinson triangles",
     "group": "aperiodic"
   },
   {
@@ -598,6 +610,12 @@
   },
   { "key": "tile11", "label": "Tile(1,1)", "name": "Tile(1,1)", "group": "aperiodic" },
   { "key": "spectre", "label": "The Spectre", "name": "The Spectre", "group": "aperiodic" },
+  {
+    "key": "mystic",
+    "label": "Tile(1,1), and the Mystic: two of it, one turned 30°, that the Spectre's substitution lays as one",
+    "name": "Tile(1,1) and the Mystic",
+    "group": "aperiodic"
+  },
   { "key": "hat", "label": "The hat", "name": "The hat", "group": "aperiodic" },
   { "key": "turtle", "label": "The turtle", "name": "The turtle", "group": "aperiodic" },
   {
@@ -5090,6 +5108,13 @@
     "name": "Hat metatiles · matching rules",
     "group": "rules",
     "decor": { "of": "hatmetatiles", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "mystic.rules",
+    "label": "Tile(1,1), and the Mystic: two of it, one turned 30°, that the Spectre's substitution lays as one, matching rules",
+    "name": "Tile(1,1) and the Mystic · matching rules",
+    "group": "rules",
+    "decor": { "of": "mystic", "colours": 1, "rules": true, "label": "matching rules" }
   },
   {
     "key": "socolartaylor.rules",

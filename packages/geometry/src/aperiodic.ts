@@ -1318,6 +1318,20 @@ export function spectreExact(levels: number, keep: number | null = null, variant
   return { order: 12, cells: spectreKept(levels, keep, variant).map((row) => [...row.verts]) };
 }
 
+/** Every Spectre of a level-`levels` cluster, exact in ℤ[ζ12], unit edges —
+ * each its 14 corners, the flat one included — with its label in the
+ * substitution: Kaplan's cluster names, and `Gamma1` and `Gamma2` the two
+ * Spectres of a Mystic, listed one after the other. Unwindowed, in the order
+ * the substitution lays them. */
+export function spectreLabelledExact(levels: number): ExactTiles & { labels: string[] } {
+  const leaves = spectreLeaves(levels);
+  return {
+    order: 12,
+    cells: leaves.map(([, at]) => SPECTRE_OUTLINE.map((p) => [...placePoint(at, p)])),
+    labels: leaves.map(([label]) => label),
+  };
+}
+
 /** The Spectres the board keeps, in its cell order (which numbers them). */
 function spectreKept(levels: number, keep: number | null, variant: number): SpectreRow[] {
   const rows: SpectreRow[] = [];

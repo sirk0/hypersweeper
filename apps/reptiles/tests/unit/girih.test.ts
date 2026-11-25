@@ -215,7 +215,14 @@ describe("the girih levels", () => {
     const girih = LEVELS.filter((l) => l.group === "girih").map((l) => l.key);
     expect(girih).toEqual(GIRIH.map(([k]) => k));
     const aperiodic = LEVELS.filter((l) => l.group === "aperiodic").map((l) => l.key);
-    expect(aperiodic.slice(0, 4)).toEqual(["penrose", "kitedart", "ammannbeenker", "girih"]);
+    expect(aperiodic.slice(0, 6)).toEqual([
+      "penrose",
+      "penrosep1",
+      "kitedart",
+      "robinson",
+      "ammannbeenker",
+      "girih",
+    ]);
   });
 
   it("windows the self-similar pattern round its decagon: a decagon, hexagons and bowties", () => {
