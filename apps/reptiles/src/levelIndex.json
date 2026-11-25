@@ -3704,6 +3704,1331 @@
     "painting": 4
   },
   {
+    "key": "star36a30.lines",
+    "label": "Six-pointed stars and triangles, their points 30°, lines",
+    "name": "3.6*30°.6**30° · lines",
+    "group": "rules",
+    "decor": { "of": "star36a30", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star36a30.lines2",
+    "label": "Six-pointed stars and triangles, their points 30°, lines II",
+    "name": "3.6*30°.6**30° · lines II",
+    "group": "rules",
+    "decor": { "of": "star36a30", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star36a30.2oneinthreebyshape",
+    "label": "Six-pointed stars and triangles, their points 30°, 2 colours, one in three, by shape",
+    "name": "3.6*30°.6**30° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star36a30",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star36a30.2oneinthree",
+    "label": "Six-pointed stars and triangles, their points 30°, 2 colours, one in three",
+    "name": "3.6*30°.6**30° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star36a30",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star36a30.3byshape",
+    "label": "Six-pointed stars and triangles, their points 30°, 3 colours, by shape",
+    "name": "3.6*30°.6**30° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star36a30", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star36a60.lines",
+    "label": "Six-pointed stars and triangles, their points 60°, lines",
+    "name": "3.6*60°.6**60° · lines",
+    "group": "rules",
+    "decor": { "of": "star36a60", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star36a60.lines2",
+    "label": "Six-pointed stars and triangles, their points 60°, lines II",
+    "name": "3.6*60°.6**60° · lines II",
+    "group": "rules",
+    "decor": { "of": "star36a60", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star36a60.2oneinthreebyshape",
+    "label": "Six-pointed stars and triangles, their points 60°, 2 colours, one in three, by shape",
+    "name": "3.6*60°.6**60° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star36a60",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star36a60.2oneinthree",
+    "label": "Six-pointed stars and triangles, their points 60°, 2 colours, one in three",
+    "name": "3.6*60°.6**60° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star36a60",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star36a60.3byshape",
+    "label": "Six-pointed stars and triangles, their points 60°, 3 colours, by shape",
+    "name": "3.6*60°.6**60° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star36a60", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star36a90.lines",
+    "label": "Six-pointed stars and triangles, their points 90°, lines",
+    "name": "3.6*90°.6**90° · lines",
+    "group": "rules",
+    "decor": { "of": "star36a90", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star36a90.lines2",
+    "label": "Six-pointed stars and triangles, their points 90°, lines II",
+    "name": "3.6*90°.6**90° · lines II",
+    "group": "rules",
+    "decor": { "of": "star36a90", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star36a90.2oneinthreebyshape",
+    "label": "Six-pointed stars and triangles, their points 90°, 2 colours, one in three, by shape",
+    "name": "3.6*90°.6**90° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star36a90",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star36a90.2oneinthree",
+    "label": "Six-pointed stars and triangles, their points 90°, 2 colours, one in three",
+    "name": "3.6*90°.6**90° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star36a90",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star36a90.3byshape",
+    "label": "Six-pointed stars and triangles, their points 90°, 3 colours, by shape",
+    "name": "3.6*90°.6**90° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star36a90", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star44a30.lines",
+    "label": "Four-pointed stars and squares, their points 30°, lines",
+    "name": "4.4*30°.4**30° · lines",
+    "group": "rules",
+    "decor": { "of": "star44a30", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star44a30.lines2",
+    "label": "Four-pointed stars and squares, their points 30°, lines II",
+    "name": "4.4*30°.4**30° · lines II",
+    "group": "rules",
+    "decor": { "of": "star44a30", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star44a30.2oneinthree",
+    "label": "Four-pointed stars and squares, their points 30°, 2 colours, one in three",
+    "name": "4.4*30°.4**30° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star44a30",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star44a30.2oneinthree2",
+    "label": "Four-pointed stars and squares, their points 30°, 2 colours, one in three II",
+    "name": "4.4*30°.4**30° · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "star44a30",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star44a30.3colours",
+    "label": "Four-pointed stars and squares, their points 30°, 3 colours",
+    "name": "4.4*30°.4**30° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star44a30", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star44a45.lines",
+    "label": "Four-pointed stars and squares, their points 45°, lines",
+    "name": "4.4*45°.4**45° · lines",
+    "group": "rules",
+    "decor": { "of": "star44a45", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star44a45.lines2",
+    "label": "Four-pointed stars and squares, their points 45°, lines II",
+    "name": "4.4*45°.4**45° · lines II",
+    "group": "rules",
+    "decor": { "of": "star44a45", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star44a45.2oneinthree",
+    "label": "Four-pointed stars and squares, their points 45°, 2 colours, one in three",
+    "name": "4.4*45°.4**45° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star44a45",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star44a45.2oneinthree2",
+    "label": "Four-pointed stars and squares, their points 45°, 2 colours, one in three II",
+    "name": "4.4*45°.4**45° · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "star44a45",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star44a45.3colours",
+    "label": "Four-pointed stars and squares, their points 45°, 3 colours",
+    "name": "4.4*45°.4**45° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star44a45", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star44a60.lines",
+    "label": "Four-pointed stars and squares, their points 60°, lines",
+    "name": "4.4*60°.4**60° · lines",
+    "group": "rules",
+    "decor": { "of": "star44a60", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star44a60.lines2",
+    "label": "Four-pointed stars and squares, their points 60°, lines II",
+    "name": "4.4*60°.4**60° · lines II",
+    "group": "rules",
+    "decor": { "of": "star44a60", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star44a60.2oneinthree",
+    "label": "Four-pointed stars and squares, their points 60°, 2 colours, one in three",
+    "name": "4.4*60°.4**60° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star44a60",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star44a60.2oneinthree2",
+    "label": "Four-pointed stars and squares, their points 60°, 2 colours, one in three II",
+    "name": "4.4*60°.4**60° · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "star44a60",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star44a60.3colours",
+    "label": "Four-pointed stars and squares, their points 60°, 3 colours",
+    "name": "4.4*60°.4**60° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star44a60", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star63a20.lines",
+    "label": "Three-pointed stars and hexagons, their points 20°, lines",
+    "name": "6.3*20°.3**20° · lines",
+    "group": "rules",
+    "decor": { "of": "star63a20", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star63a20.lines2",
+    "label": "Three-pointed stars and hexagons, their points 20°, lines II",
+    "name": "6.3*20°.3**20° · lines II",
+    "group": "rules",
+    "decor": { "of": "star63a20", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star63a20.2oneinthreebyshape",
+    "label": "Three-pointed stars and hexagons, their points 20°, 2 colours, one in three, by shape",
+    "name": "6.3*20°.3**20° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star63a20",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star63a20.3byshape",
+    "label": "Three-pointed stars and hexagons, their points 20°, 3 colours, by shape",
+    "name": "6.3*20°.3**20° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star63a20", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "star63a30.lines",
+    "label": "Three-pointed stars and hexagons, their points 30°, lines",
+    "name": "6.3*30°.3**30° · lines",
+    "group": "rules",
+    "decor": { "of": "star63a30", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star63a30.lines2",
+    "label": "Three-pointed stars and hexagons, their points 30°, lines II",
+    "name": "6.3*30°.3**30° · lines II",
+    "group": "rules",
+    "decor": { "of": "star63a30", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star63a30.2oneinthreebyshape",
+    "label": "Three-pointed stars and hexagons, their points 30°, 2 colours, one in three, by shape",
+    "name": "6.3*30°.3**30° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star63a30",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star63a30.3byshape",
+    "label": "Three-pointed stars and hexagons, their points 30°, 3 colours, by shape",
+    "name": "6.3*30°.3**30° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star63a30", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "star63a45.lines",
+    "label": "Three-pointed stars and hexagons, their points 45°, lines",
+    "name": "6.3*45°.3**45° · lines",
+    "group": "rules",
+    "decor": { "of": "star63a45", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star63a45.lines2",
+    "label": "Three-pointed stars and hexagons, their points 45°, lines II",
+    "name": "6.3*45°.3**45° · lines II",
+    "group": "rules",
+    "decor": { "of": "star63a45", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star63a45.2oneinthreebyshape",
+    "label": "Three-pointed stars and hexagons, their points 45°, 2 colours, one in three, by shape",
+    "name": "6.3*45°.3**45° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star63a45",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star63a45.3byshape",
+    "label": "Three-pointed stars and hexagons, their points 45°, 3 colours, by shape",
+    "name": "6.3*45°.3**45° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star63a45", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "star333a20.lines",
+    "label": "Three-pointed stars and triangles, their points 20°, lines",
+    "name": "3.3*20°.3.3**20° · lines",
+    "group": "rules",
+    "decor": { "of": "star333a20", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star333a20.dots",
+    "label": "Three-pointed stars and triangles, their points 20°, dots",
+    "name": "3.3*20°.3.3**20° · dots",
+    "group": "rules",
+    "decor": { "of": "star333a20", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "star333a20.2oneinthreebyshape",
+    "label": "Three-pointed stars and triangles, their points 20°, 2 colours, one in three, by shape",
+    "name": "3.3*20°.3.3**20° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star333a20",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star333a20.3byshape",
+    "label": "Three-pointed stars and triangles, their points 20°, 3 colours, by shape",
+    "name": "3.3*20°.3.3**20° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star333a20", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "star333a20.3colours",
+    "label": "Three-pointed stars and triangles, their points 20°, 3 colours",
+    "name": "3.3*20°.3.3**20° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star333a20", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star333a30.lines",
+    "label": "Three-pointed stars and triangles, their points 30°, lines",
+    "name": "3.3*30°.3.3**30° · lines",
+    "group": "rules",
+    "decor": { "of": "star333a30", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star333a30.dots",
+    "label": "Three-pointed stars and triangles, their points 30°, dots",
+    "name": "3.3*30°.3.3**30° · dots",
+    "group": "rules",
+    "decor": { "of": "star333a30", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "star333a30.2oneinthreebyshape",
+    "label": "Three-pointed stars and triangles, their points 30°, 2 colours, one in three, by shape",
+    "name": "3.3*30°.3.3**30° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star333a30",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star333a30.3byshape",
+    "label": "Three-pointed stars and triangles, their points 30°, 3 colours, by shape",
+    "name": "3.3*30°.3.3**30° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star333a30", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "star333a30.3colours",
+    "label": "Three-pointed stars and triangles, their points 30°, 3 colours",
+    "name": "3.3*30°.3.3**30° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star333a30", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star333a40.lines",
+    "label": "Three-pointed stars and triangles, their points 40°, lines",
+    "name": "3.3*40°.3.3**40° · lines",
+    "group": "rules",
+    "decor": { "of": "star333a40", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star333a40.dots",
+    "label": "Three-pointed stars and triangles, their points 40°, dots",
+    "name": "3.3*40°.3.3**40° · dots",
+    "group": "rules",
+    "decor": { "of": "star333a40", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "star333a40.2oneinthreebyshape",
+    "label": "Three-pointed stars and triangles, their points 40°, 2 colours, one in three, by shape",
+    "name": "3.3*40°.3.3**40° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star333a40",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star333a40.3byshape",
+    "label": "Three-pointed stars and triangles, their points 40°, 3 colours, by shape",
+    "name": "3.3*40°.3.3**40° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star333a40", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "star333a40.3colours",
+    "label": "Three-pointed stars and triangles, their points 40°, 3 colours",
+    "name": "3.3*40°.3.3**40° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star333a40", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star464.lines",
+    "label": "Squares, hexagons and four-pointed stars, lines",
+    "name": "4.6.4*30°.6 · lines",
+    "group": "rules",
+    "decor": { "of": "star464", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star464.lines2",
+    "label": "Squares, hexagons and four-pointed stars, lines II",
+    "name": "4.6.4*30°.6 · lines II",
+    "group": "rules",
+    "decor": { "of": "star464", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star464.2byshape",
+    "label": "Squares, hexagons and four-pointed stars, 2 colours, by shape",
+    "name": "4.6.4*30°.6 · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star464", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 2
+  },
+  {
+    "key": "star464.2oneinthree",
+    "label": "Squares, hexagons and four-pointed stars, 2 colours, one in three",
+    "name": "4.6.4*30°.6 · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "star464", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "star464.3colours",
+    "label": "Squares, hexagons and four-pointed stars, 3 colours",
+    "name": "4.6.4*30°.6 · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star464", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star84.lines",
+    "label": "Octagons and four-pointed stars, lines",
+    "name": "(8.4*45°)² · lines",
+    "group": "rules",
+    "decor": { "of": "star84", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star84.lines2",
+    "label": "Octagons and four-pointed stars, lines II",
+    "name": "(8.4*45°)² · lines II",
+    "group": "rules",
+    "decor": { "of": "star84", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star84.2oneinthree",
+    "label": "Octagons and four-pointed stars, 2 colours, one in three",
+    "name": "(8.4*45°)² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "star84", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 2
+  },
+  {
+    "key": "star84.2oneinthree2",
+    "label": "Octagons and four-pointed stars, 2 colours, one in three II",
+    "name": "(8.4*45°)² · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "star84",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star84.3colours",
+    "label": "Octagons and four-pointed stars, 3 colours",
+    "name": "(8.4*45°)² · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star84", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star12124.lines",
+    "label": "Dodecagons and four-pointed stars, lines",
+    "name": "12.12.4*60° · lines",
+    "group": "rules",
+    "decor": { "of": "star12124", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star12124.lines2",
+    "label": "Dodecagons and four-pointed stars, lines II",
+    "name": "12.12.4*60° · lines II",
+    "group": "rules",
+    "decor": { "of": "star12124", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star12124.2oneinthree",
+    "label": "Dodecagons and four-pointed stars, 2 colours, one in three",
+    "name": "12.12.4*60° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star12124",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star12124.2oneinthree2",
+    "label": "Dodecagons and four-pointed stars, 2 colours, one in three II",
+    "name": "12.12.4*60° · 2 colours, one in three II",
+    "group": "colourings",
+    "decor": {
+      "of": "star12124",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star12124.3colours",
+    "label": "Dodecagons and four-pointed stars, 3 colours",
+    "name": "12.12.4*60° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star12124", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star338438.lines",
+    "label": "Eight- and four-pointed stars and triangles, lines",
+    "name": "3.3.8*15°.4**60°.8*15° · lines",
+    "group": "rules",
+    "decor": { "of": "star338438", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star338438.lines2",
+    "label": "Eight- and four-pointed stars and triangles, lines II",
+    "name": "3.3.8*15°.4**60°.8*15° · lines II",
+    "group": "rules",
+    "decor": { "of": "star338438", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star338438.2byshape",
+    "label": "Eight- and four-pointed stars and triangles, 2 colours, by shape",
+    "name": "3.3.8*15°.4**60°.8*15° · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star338438", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 2
+  },
+  {
+    "key": "star338438.2oneinthreebyshape",
+    "label": "Eight- and four-pointed stars and triangles, 2 colours, one in three, by shape",
+    "name": "3.3.8*15°.4**60°.8*15° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star338438",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star338438.3byshape",
+    "label": "Eight- and four-pointed stars and triangles, 3 colours, by shape",
+    "name": "3.3.8*15°.4**60°.8*15° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star338438", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star3383438.dots",
+    "label": "Eight-pointed stars, squares and triangles, dots",
+    "name": "3.3.8*15°.3.4.3.8*15° · dots",
+    "group": "rules",
+    "decor": { "of": "star3383438", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 0
+  },
+  {
+    "key": "star3383438.2byshape",
+    "label": "Eight-pointed stars, squares and triangles, 2 colours, by shape",
+    "name": "3.3.8*15°.3.4.3.8*15° · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star3383438", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 1
+  },
+  {
+    "key": "star3383438.2byshape2",
+    "label": "Eight-pointed stars, squares and triangles, 2 colours, by shape II",
+    "name": "3.3.8*15°.3.4.3.8*15° · 2 colours, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "star3383438",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, by shape II"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star34838.lines",
+    "label": "Octagons, eight-pointed stars, squares and triangles, lines",
+    "name": "3.4.8.3.8*15° · lines",
+    "group": "rules",
+    "decor": { "of": "star34838", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star34838.dots",
+    "label": "Octagons, eight-pointed stars, squares and triangles, dots",
+    "name": "3.4.8.3.8*15° · dots",
+    "group": "rules",
+    "decor": { "of": "star34838", "colours": 1, "rules": true, "label": "dots" },
+    "painting": 1
+  },
+  {
+    "key": "star34838.2byshape",
+    "label": "Octagons, eight-pointed stars, squares and triangles, 2 colours, by shape",
+    "name": "3.4.8.3.8*15° · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star34838", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 2
+  },
+  {
+    "key": "star34838.2oneinthreebyshape",
+    "label": "Octagons, eight-pointed stars, squares and triangles, 2 colours, one in three, by shape",
+    "name": "3.4.8.3.8*15° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star34838",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star34838.2byshape2",
+    "label": "Octagons, eight-pointed stars, squares and triangles, 2 colours, by shape II",
+    "name": "3.4.8.3.8*15° · 2 colours, by shape II",
+    "group": "colourings",
+    "decor": { "of": "star34838", "colours": 2, "rules": false, "label": "2 colours, by shape II" },
+    "painting": 4
+  },
+  {
+    "key": "star55454.lines",
+    "label": "Pentagons and four-pointed stars, lines",
+    "name": "5.5.4*18°.5.4*18° · lines",
+    "group": "rules",
+    "decor": { "of": "star55454", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star55454.lines2",
+    "label": "Pentagons and four-pointed stars, lines II",
+    "name": "5.5.4*18°.5.4*18° · lines II",
+    "group": "rules",
+    "decor": { "of": "star55454", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star55454.2oneinthreebyshape",
+    "label": "Pentagons and four-pointed stars, 2 colours, one in three, by shape",
+    "name": "5.5.4*18°.5.4*18° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star55454",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star55454.3byshape",
+    "label": "Pentagons and four-pointed stars, 3 colours, by shape",
+    "name": "5.5.4*18°.5.4*18° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star55454", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 3
+  },
+  {
+    "key": "star55454.3byshape2",
+    "label": "Pentagons and four-pointed stars, 3 colours, by shape II",
+    "name": "5.5.4*18°.5.4*18° · 3 colours, by shape II",
+    "group": "colourings",
+    "decor": { "of": "star55454", "colours": 3, "rules": false, "label": "3 colours, by shape II" },
+    "painting": 4
+  },
+  {
+    "key": "star4666.lines",
+    "label": "Two kinds of six-pointed star, and squares, lines",
+    "name": "4.6*30°.6**90°.6*30° · lines",
+    "group": "rules",
+    "decor": { "of": "star4666", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star4666.lines2",
+    "label": "Two kinds of six-pointed star, and squares, lines II",
+    "name": "4.6*30°.6**90°.6*30° · lines II",
+    "group": "rules",
+    "decor": { "of": "star4666", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star4666.2byshape",
+    "label": "Two kinds of six-pointed star, and squares, 2 colours, by shape",
+    "name": "4.6*30°.6**90°.6*30° · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star4666", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 2
+  },
+  {
+    "key": "star4666.2oneinthreebyshape",
+    "label": "Two kinds of six-pointed star, and squares, 2 colours, one in three, by shape",
+    "name": "4.6*30°.6**90°.6*30° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star4666",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star4666.2oneinthreebyshape2",
+    "label": "Two kinds of six-pointed star, and squares, 2 colours, one in three, by shape II",
+    "name": "4.6*30°.6**90°.6*30° · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "star4666",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 4
+  },
+  {
+    "key": "star46.lines",
+    "label": "Six-pointed stars and squares, lines",
+    "name": "(4.6*30°)³ · lines",
+    "group": "rules",
+    "decor": { "of": "star46", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star46.lines2",
+    "label": "Six-pointed stars and squares, lines II",
+    "name": "(4.6*30°)³ · lines II",
+    "group": "rules",
+    "decor": { "of": "star46", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star46.2byshape",
+    "label": "Six-pointed stars and squares, 2 colours, by shape",
+    "name": "(4.6*30°)³ · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star46", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 2
+  },
+  {
+    "key": "star46.2oneinthree",
+    "label": "Six-pointed stars and squares, 2 colours, one in three",
+    "name": "(4.6*30°)³ · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "star46", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "star46.3colours",
+    "label": "Six-pointed stars and squares, 3 colours",
+    "name": "(4.6*30°)³ · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star46", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 4
+  },
+  {
+    "key": "star996.lines",
+    "label": "Nonagons and six-pointed stars, lines",
+    "name": "9.9.6*80° · lines",
+    "group": "rules",
+    "decor": { "of": "star996", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star996.lines2",
+    "label": "Nonagons and six-pointed stars, lines II",
+    "name": "9.9.6*80° · lines II",
+    "group": "rules",
+    "decor": { "of": "star996", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star996.2oneinthreebyshape",
+    "label": "Nonagons and six-pointed stars, 2 colours, one in three, by shape",
+    "name": "9.9.6*80° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star996",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star996.2oneinthree",
+    "label": "Nonagons and six-pointed stars, 2 colours, one in three",
+    "name": "9.9.6*80° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "star996", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "star996.3byshape",
+    "label": "Nonagons and six-pointed stars, 3 colours, by shape",
+    "name": "9.9.6*80° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star996", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star66.lines",
+    "label": "Hexagrams and hexagons, lines",
+    "name": "(6.6*60°)² · lines",
+    "group": "rules",
+    "decor": { "of": "star66", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star66.lines2",
+    "label": "Hexagrams and hexagons, lines II",
+    "name": "(6.6*60°)² · lines II",
+    "group": "rules",
+    "decor": { "of": "star66", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star66.2oneinthreebyshape",
+    "label": "Hexagrams and hexagons, 2 colours, one in three, by shape",
+    "name": "(6.6*60°)² · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star66",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star66.2oneinthree",
+    "label": "Hexagrams and hexagons, 2 colours, one in three",
+    "name": "(6.6*60°)² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "star66", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "star66.3byshape",
+    "label": "Hexagrams and hexagons, 3 colours, by shape",
+    "name": "(6.6*60°)² · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star66", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star123.lines",
+    "label": "Dodecagons and three-pointed stars, lines",
+    "name": "(12.3*30°)² · lines",
+    "group": "rules",
+    "decor": { "of": "star123", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star123.lines2",
+    "label": "Dodecagons and three-pointed stars, lines II",
+    "name": "(12.3*30°)² · lines II",
+    "group": "rules",
+    "decor": { "of": "star123", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star123.2oneinthreebyshape",
+    "label": "Dodecagons and three-pointed stars, 2 colours, one in three, by shape",
+    "name": "(12.3*30°)² · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star123",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star123.2oneinthree",
+    "label": "Dodecagons and three-pointed stars, 2 colours, one in three",
+    "name": "(12.3*30°)² · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "star123", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 3
+  },
+  {
+    "key": "star123.3byshape",
+    "label": "Dodecagons and three-pointed stars, 3 colours, by shape",
+    "name": "(12.3*30°)² · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star123", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star346312.2byshape",
+    "label": "Twelve-pointed stars, hexagons, squares and triangles, 2 colours, by shape",
+    "name": "3.4.6.3.12*30° · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star346312", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 0
+  },
+  {
+    "key": "star346312.2byshape2",
+    "label": "Twelve-pointed stars, hexagons, squares and triangles, 2 colours, by shape II",
+    "name": "3.4.6.3.12*30° · 2 colours, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "star346312",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, by shape II"
+    },
+    "painting": 1
+  },
+  {
+    "key": "star346312.2byshape3",
+    "label": "Twelve-pointed stars, hexagons, squares and triangles, 2 colours, by shape III",
+    "name": "3.4.6.3.12*30° · 2 colours, by shape III",
+    "group": "colourings",
+    "decor": {
+      "of": "star346312",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, by shape III"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star33312.2oneinthreebyshape",
+    "label": "Twelve-pointed stars and triangles, 2 colours, one in three, by shape",
+    "name": "3.3.3.12*30°.3.3.12*30° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star33312",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 0
+  },
+  {
+    "key": "star33312.2oneinthreebyshape2",
+    "label": "Twelve-pointed stars and triangles, 2 colours, one in three, by shape II",
+    "name": "3.3.3.12*30°.3.3.12*30° · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "star33312",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 1
+  },
+  {
+    "key": "star33312.2oneinthreebyshape3",
+    "label": "Twelve-pointed stars and triangles, 2 colours, one in three, by shape III",
+    "name": "3.3.3.12*30°.3.3.12*30° · 2 colours, one in three, by shape III",
+    "group": "colourings",
+    "decor": {
+      "of": "star33312",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape III"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star18183.lines",
+    "label": "Octadecagons and three-pointed stars, lines",
+    "name": "18.18.3*40° · lines",
+    "group": "rules",
+    "decor": { "of": "star18183", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star18183.lines2",
+    "label": "Octadecagons and three-pointed stars, lines II",
+    "name": "18.18.3*40° · lines II",
+    "group": "rules",
+    "decor": { "of": "star18183", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star18183.2oneinthreebyshape",
+    "label": "Octadecagons and three-pointed stars, 2 colours, one in three, by shape",
+    "name": "18.18.3*40° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star18183",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star18183.2oneinthree",
+    "label": "Octadecagons and three-pointed stars, 2 colours, one in three",
+    "name": "18.18.3*40° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": {
+      "of": "star18183",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star18183.3byshape",
+    "label": "Octadecagons and three-pointed stars, 3 colours, by shape",
+    "name": "18.18.3*40° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star18183", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star3666.lines",
+    "label": "Hexagrams, hexagons and triangles, lines",
+    "name": "3.6.6*60°.6 · lines",
+    "group": "rules",
+    "decor": { "of": "star3666", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star3666.2oneinthreebyshape",
+    "label": "Hexagrams, hexagons and triangles, 2 colours, one in three, by shape",
+    "name": "3.6.6*60°.6 · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star3666",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 1
+  },
+  {
+    "key": "star3666.2byshape",
+    "label": "Hexagrams, hexagons and triangles, 2 colours, by shape",
+    "name": "3.6.6*60°.6 · 2 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star3666", "colours": 2, "rules": false, "label": "2 colours, by shape" },
+    "painting": 2
+  },
+  {
+    "key": "star3666.2oneinthreebyshape2",
+    "label": "Hexagrams, hexagons and triangles, 2 colours, one in three, by shape II",
+    "name": "3.6.6*60°.6 · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "star3666",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star8386.lines",
+    "label": "Octagons, and three- and six-pointed stars, lines",
+    "name": "8.3*15°.8.6*75° · lines",
+    "group": "rules",
+    "decor": { "of": "star8386", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star8386.lines2",
+    "label": "Octagons, and three- and six-pointed stars, lines II",
+    "name": "8.3*15°.8.6*75° · lines II",
+    "group": "rules",
+    "decor": { "of": "star8386", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star8386.2oneinthreebyshape",
+    "label": "Octagons, and three- and six-pointed stars, 2 colours, one in three, by shape",
+    "name": "8.3*15°.8.6*75° · 2 colours, one in three, by shape",
+    "group": "colourings",
+    "decor": {
+      "of": "star8386",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape"
+    },
+    "painting": 2
+  },
+  {
+    "key": "star8386.2oneinthreebyshape2",
+    "label": "Octagons, and three- and six-pointed stars, 2 colours, one in three, by shape II",
+    "name": "8.3*15°.8.6*75° · 2 colours, one in three, by shape II",
+    "group": "colourings",
+    "decor": {
+      "of": "star8386",
+      "colours": 2,
+      "rules": false,
+      "label": "2 colours, one in three, by shape II"
+    },
+    "painting": 3
+  },
+  {
+    "key": "star8386.3byshape",
+    "label": "Octagons, and three- and six-pointed stars, 3 colours, by shape",
+    "name": "8.3*15°.8.6*75° · 3 colours, by shape",
+    "group": "colourings",
+    "decor": { "of": "star8386", "colours": 3, "rules": false, "label": "3 colours, by shape" },
+    "painting": 4
+  },
+  {
+    "key": "star9393.lines",
+    "label": "Nonagons, triangles and three-pointed stars, lines",
+    "name": "9.3.9.3*20° · lines",
+    "group": "rules",
+    "decor": { "of": "star9393", "colours": 1, "rules": true, "label": "lines" },
+    "painting": 0
+  },
+  {
+    "key": "star9393.lines2",
+    "label": "Nonagons, triangles and three-pointed stars, lines II",
+    "name": "9.3.9.3*20° · lines II",
+    "group": "rules",
+    "decor": { "of": "star9393", "colours": 1, "rules": true, "label": "lines II" },
+    "painting": 1
+  },
+  {
+    "key": "star9393.2oneinthree",
+    "label": "Nonagons, triangles and three-pointed stars, 2 colours, one in three",
+    "name": "9.3.9.3*20° · 2 colours, one in three",
+    "group": "colourings",
+    "decor": { "of": "star9393", "colours": 2, "rules": false, "label": "2 colours, one in three" },
+    "painting": 2
+  },
+  {
+    "key": "star9393.3colours",
+    "label": "Nonagons, triangles and three-pointed stars, 3 colours",
+    "name": "9.3.9.3*20° · 3 colours",
+    "group": "colourings",
+    "decor": { "of": "star9393", "colours": 3, "rules": false, "label": "3 colours" },
+    "painting": 3
+  },
+  {
+    "key": "star9393.3colours2",
+    "label": "Nonagons, triangles and three-pointed stars, 3 colours II",
+    "name": "9.3.9.3*20° · 3 colours II",
+    "group": "colourings",
+    "decor": { "of": "star9393", "colours": 3, "rules": false, "label": "3 colours II" },
+    "painting": 4
+  },
+  {
     "key": "penrose.rules",
     "label": "Penrose rhombi, matching rules",
     "name": "Penrose rhombi · matching rules",
@@ -5793,6 +7118,1014 @@
       "rules": false,
       "label": "jigsaw, 3 colours III",
       "jigsaw": "threescaletri.3colours3",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a30.2oneinthreebyshape.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 30°, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.6*30°.6**30° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a30",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star36a30.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a30.2oneinthree.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 30°, jigsaw, 2 colours, one in three",
+    "name": "3.6*30°.6**30° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a30",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star36a30.2oneinthree",
+      "size": 3
+    }
+  },
+  {
+    "key": "star36a30.3byshape.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 30°, jigsaw, 3 colours, by shape",
+    "name": "3.6*30°.6**30° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a30",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star36a30.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a60.2oneinthreebyshape.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 60°, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.6*60°.6**60° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a60",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star36a60.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a60.2oneinthree.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 60°, jigsaw, 2 colours, one in three",
+    "name": "3.6*60°.6**60° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a60",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star36a60.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a60.3byshape.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 60°, jigsaw, 3 colours, by shape",
+    "name": "3.6*60°.6**60° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a60",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star36a60.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a90.2oneinthreebyshape.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 90°, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.6*90°.6**90° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a90",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star36a90.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a90.2oneinthree.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 90°, jigsaw, 2 colours, one in three",
+    "name": "3.6*90°.6**90° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a90",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star36a90.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "star36a90.3byshape.jigsaw",
+    "label": "Six-pointed stars and triangles, their points 90°, jigsaw, 3 colours, by shape",
+    "name": "3.6*90°.6**90° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star36a90",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star36a90.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star44a30.2oneinthree.jigsaw",
+    "label": "Four-pointed stars and squares, their points 30°, jigsaw, 2 colours, one in three",
+    "name": "4.4*30°.4**30° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a30",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star44a30.2oneinthree",
+      "size": 3
+    }
+  },
+  {
+    "key": "star44a30.2oneinthree2.jigsaw",
+    "label": "Four-pointed stars and squares, their points 30°, jigsaw, 2 colours, one in three II",
+    "name": "4.4*30°.4**30° · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a30",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "star44a30.2oneinthree2",
+      "size": 3
+    }
+  },
+  {
+    "key": "star44a30.3colours.jigsaw",
+    "label": "Four-pointed stars and squares, their points 30°, jigsaw, 3 colours",
+    "name": "4.4*30°.4**30° · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a30",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "star44a30.3colours",
+      "size": 3
+    }
+  },
+  {
+    "key": "star44a45.2oneinthree.jigsaw",
+    "label": "Four-pointed stars and squares, their points 45°, jigsaw, 2 colours, one in three",
+    "name": "4.4*45°.4**45° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a45",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star44a45.2oneinthree",
+      "size": 1
+    }
+  },
+  {
+    "key": "star44a45.2oneinthree2.jigsaw",
+    "label": "Four-pointed stars and squares, their points 45°, jigsaw, 2 colours, one in three II",
+    "name": "4.4*45°.4**45° · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a45",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "star44a45.2oneinthree2",
+      "size": 1
+    }
+  },
+  {
+    "key": "star44a45.3colours.jigsaw",
+    "label": "Four-pointed stars and squares, their points 45°, jigsaw, 3 colours",
+    "name": "4.4*45°.4**45° · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a45",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "star44a45.3colours",
+      "size": 1
+    }
+  },
+  {
+    "key": "star44a60.2oneinthree.jigsaw",
+    "label": "Four-pointed stars and squares, their points 60°, jigsaw, 2 colours, one in three",
+    "name": "4.4*60°.4**60° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a60",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star44a60.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "star44a60.2oneinthree2.jigsaw",
+    "label": "Four-pointed stars and squares, their points 60°, jigsaw, 2 colours, one in three II",
+    "name": "4.4*60°.4**60° · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a60",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "star44a60.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "star44a60.3colours.jigsaw",
+    "label": "Four-pointed stars and squares, their points 60°, jigsaw, 3 colours",
+    "name": "4.4*60°.4**60° · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star44a60",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "star44a60.3colours",
+      "size": 0
+    }
+  },
+  {
+    "key": "star63a30.2oneinthreebyshape.jigsaw",
+    "label": "Three-pointed stars and hexagons, their points 30°, jigsaw, 2 colours, one in three, by shape",
+    "name": "6.3*30°.3**30° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star63a30",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star63a30.2oneinthreebyshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star63a30.3byshape.jigsaw",
+    "label": "Three-pointed stars and hexagons, their points 30°, jigsaw, 3 colours, by shape",
+    "name": "6.3*30°.3**30° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star63a30",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star63a30.3byshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star63a45.2oneinthreebyshape.jigsaw",
+    "label": "Three-pointed stars and hexagons, their points 45°, jigsaw, 2 colours, one in three, by shape",
+    "name": "6.3*45°.3**45° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star63a45",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star63a45.2oneinthreebyshape",
+      "size": 1
+    }
+  },
+  {
+    "key": "star63a45.3byshape.jigsaw",
+    "label": "Three-pointed stars and hexagons, their points 45°, jigsaw, 3 colours, by shape",
+    "name": "6.3*45°.3**45° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star63a45",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star63a45.3byshape",
+      "size": 1
+    }
+  },
+  {
+    "key": "star333a20.2oneinthreebyshape.jigsaw",
+    "label": "Three-pointed stars and triangles, their points 20°, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.3*20°.3.3**20° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star333a20",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star333a20.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star333a20.3byshape.jigsaw",
+    "label": "Three-pointed stars and triangles, their points 20°, jigsaw, 3 colours, by shape",
+    "name": "3.3*20°.3.3**20° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star333a20",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star333a20.3byshape",
+      "size": 2
+    }
+  },
+  {
+    "key": "star333a30.2oneinthreebyshape.jigsaw",
+    "label": "Three-pointed stars and triangles, their points 30°, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.3*30°.3.3**30° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star333a30",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star333a30.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star333a30.3byshape.jigsaw",
+    "label": "Three-pointed stars and triangles, their points 30°, jigsaw, 3 colours, by shape",
+    "name": "3.3*30°.3.3**30° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star333a30",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star333a30.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star333a40.2oneinthreebyshape.jigsaw",
+    "label": "Three-pointed stars and triangles, their points 40°, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.3*40°.3.3**40° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star333a40",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star333a40.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star333a40.3byshape.jigsaw",
+    "label": "Three-pointed stars and triangles, their points 40°, jigsaw, 3 colours, by shape",
+    "name": "3.3*40°.3.3**40° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star333a40",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star333a40.3byshape",
+      "size": 1
+    }
+  },
+  {
+    "key": "star464.2byshape.jigsaw",
+    "label": "Squares, hexagons and four-pointed stars, jigsaw, 2 colours, by shape",
+    "name": "4.6.4*30°.6 · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star464",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "star464.2byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star464.2oneinthree.jigsaw",
+    "label": "Squares, hexagons and four-pointed stars, jigsaw, 2 colours, one in three",
+    "name": "4.6.4*30°.6 · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star464",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star464.2oneinthree",
+      "size": 3
+    }
+  },
+  {
+    "key": "star464.3colours.jigsaw",
+    "label": "Squares, hexagons and four-pointed stars, jigsaw, 3 colours",
+    "name": "4.6.4*30°.6 · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star464",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "star464.3colours",
+      "size": 3
+    }
+  },
+  {
+    "key": "star84.2oneinthree.jigsaw",
+    "label": "Octagons and four-pointed stars, jigsaw, 2 colours, one in three",
+    "name": "(8.4*45°)² · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star84",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star84.2oneinthree",
+      "size": 1
+    }
+  },
+  {
+    "key": "star84.2oneinthree2.jigsaw",
+    "label": "Octagons and four-pointed stars, jigsaw, 2 colours, one in three II",
+    "name": "(8.4*45°)² · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star84",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "star84.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "star84.3colours.jigsaw",
+    "label": "Octagons and four-pointed stars, jigsaw, 3 colours",
+    "name": "(8.4*45°)² · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star84",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "star84.3colours",
+      "size": 1
+    }
+  },
+  {
+    "key": "star12124.2oneinthree.jigsaw",
+    "label": "Dodecagons and four-pointed stars, jigsaw, 2 colours, one in three",
+    "name": "12.12.4*60° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star12124",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star12124.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "star12124.2oneinthree2.jigsaw",
+    "label": "Dodecagons and four-pointed stars, jigsaw, 2 colours, one in three II",
+    "name": "12.12.4*60° · jigsaw, 2 colours, one in three II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star12124",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three II",
+      "jigsaw": "star12124.2oneinthree2",
+      "size": 0
+    }
+  },
+  {
+    "key": "star12124.3colours.jigsaw",
+    "label": "Dodecagons and four-pointed stars, jigsaw, 3 colours",
+    "name": "12.12.4*60° · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star12124",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "star12124.3colours",
+      "size": 0
+    }
+  },
+  {
+    "key": "star338438.2oneinthreebyshape.jigsaw",
+    "label": "Eight- and four-pointed stars and triangles, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.3.8*15°.4**60°.8*15° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star338438",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star338438.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star338438.3byshape.jigsaw",
+    "label": "Eight- and four-pointed stars and triangles, jigsaw, 3 colours, by shape",
+    "name": "3.3.8*15°.4**60°.8*15° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star338438",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star338438.3byshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star3383438.2byshape.jigsaw",
+    "label": "Eight-pointed stars, squares and triangles, jigsaw, 2 colours, by shape",
+    "name": "3.3.8*15°.3.4.3.8*15° · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star3383438",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "star3383438.2byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star3383438.2byshape2.jigsaw",
+    "label": "Eight-pointed stars, squares and triangles, jigsaw, 2 colours, by shape II",
+    "name": "3.3.8*15°.3.4.3.8*15° · jigsaw, 2 colours, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star3383438",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape II",
+      "jigsaw": "star3383438.2byshape2",
+      "size": 3
+    }
+  },
+  {
+    "key": "star34838.2byshape2.jigsaw",
+    "label": "Octagons, eight-pointed stars, squares and triangles, jigsaw, 2 colours, by shape II",
+    "name": "3.4.8.3.8*15° · jigsaw, 2 colours, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star34838",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape II",
+      "jigsaw": "star34838.2byshape2",
+      "size": 3
+    }
+  },
+  {
+    "key": "star55454.2oneinthreebyshape.jigsaw",
+    "label": "Pentagons and four-pointed stars, jigsaw, 2 colours, one in three, by shape",
+    "name": "5.5.4*18°.5.4*18° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star55454",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star55454.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star4666.2byshape.jigsaw",
+    "label": "Two kinds of six-pointed star, and squares, jigsaw, 2 colours, by shape",
+    "name": "4.6*30°.6**90°.6*30° · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star4666",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "star4666.2byshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star4666.2oneinthreebyshape.jigsaw",
+    "label": "Two kinds of six-pointed star, and squares, jigsaw, 2 colours, one in three, by shape",
+    "name": "4.6*30°.6**90°.6*30° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star4666",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star4666.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star4666.2oneinthreebyshape2.jigsaw",
+    "label": "Two kinds of six-pointed star, and squares, jigsaw, 2 colours, one in three, by shape II",
+    "name": "4.6*30°.6**90°.6*30° · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star4666",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "star4666.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "star46.2byshape.jigsaw",
+    "label": "Six-pointed stars and squares, jigsaw, 2 colours, by shape",
+    "name": "(4.6*30°)³ · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star46",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "star46.2byshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star46.2oneinthree.jigsaw",
+    "label": "Six-pointed stars and squares, jigsaw, 2 colours, one in three",
+    "name": "(4.6*30°)³ · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star46",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star46.2oneinthree",
+      "size": 3
+    }
+  },
+  {
+    "key": "star46.3colours.jigsaw",
+    "label": "Six-pointed stars and squares, jigsaw, 3 colours",
+    "name": "(4.6*30°)³ · jigsaw, 3 colours",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star46",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours",
+      "jigsaw": "star46.3colours",
+      "size": 0
+    }
+  },
+  {
+    "key": "star996.2oneinthreebyshape.jigsaw",
+    "label": "Nonagons and six-pointed stars, jigsaw, 2 colours, one in three, by shape",
+    "name": "9.9.6*80° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star996",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star996.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star996.2oneinthree.jigsaw",
+    "label": "Nonagons and six-pointed stars, jigsaw, 2 colours, one in three",
+    "name": "9.9.6*80° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star996",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star996.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "star996.3byshape.jigsaw",
+    "label": "Nonagons and six-pointed stars, jigsaw, 3 colours, by shape",
+    "name": "9.9.6*80° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star996",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star996.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star66.2oneinthreebyshape.jigsaw",
+    "label": "Hexagrams and hexagons, jigsaw, 2 colours, one in three, by shape",
+    "name": "(6.6*60°)² · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star66",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star66.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star66.2oneinthree.jigsaw",
+    "label": "Hexagrams and hexagons, jigsaw, 2 colours, one in three",
+    "name": "(6.6*60°)² · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star66",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star66.2oneinthree",
+      "size": 0
+    }
+  },
+  {
+    "key": "star66.3byshape.jigsaw",
+    "label": "Hexagrams and hexagons, jigsaw, 3 colours, by shape",
+    "name": "(6.6*60°)² · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star66",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star66.3byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star123.2oneinthreebyshape.jigsaw",
+    "label": "Dodecagons and three-pointed stars, jigsaw, 2 colours, one in three, by shape",
+    "name": "(12.3*30°)² · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star123",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star123.2oneinthreebyshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star123.2oneinthree.jigsaw",
+    "label": "Dodecagons and three-pointed stars, jigsaw, 2 colours, one in three",
+    "name": "(12.3*30°)² · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star123",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star123.2oneinthree",
+      "size": 3
+    }
+  },
+  {
+    "key": "star123.3byshape.jigsaw",
+    "label": "Dodecagons and three-pointed stars, jigsaw, 3 colours, by shape",
+    "name": "(12.3*30°)² · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star123",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star123.3byshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star346312.2byshape.jigsaw",
+    "label": "Twelve-pointed stars, hexagons, squares and triangles, jigsaw, 2 colours, by shape",
+    "name": "3.4.6.3.12*30° · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star346312",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "star346312.2byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star346312.2byshape2.jigsaw",
+    "label": "Twelve-pointed stars, hexagons, squares and triangles, jigsaw, 2 colours, by shape II",
+    "name": "3.4.6.3.12*30° · jigsaw, 2 colours, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star346312",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape II",
+      "jigsaw": "star346312.2byshape2",
+      "size": 3
+    }
+  },
+  {
+    "key": "star346312.2byshape3.jigsaw",
+    "label": "Twelve-pointed stars, hexagons, squares and triangles, jigsaw, 2 colours, by shape III",
+    "name": "3.4.6.3.12*30° · jigsaw, 2 colours, by shape III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star346312",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape III",
+      "jigsaw": "star346312.2byshape3",
+      "size": 0
+    }
+  },
+  {
+    "key": "star33312.2oneinthreebyshape.jigsaw",
+    "label": "Twelve-pointed stars and triangles, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.3.3.12*30°.3.3.12*30° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star33312",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star33312.2oneinthreebyshape",
+      "size": 3
+    }
+  },
+  {
+    "key": "star33312.2oneinthreebyshape2.jigsaw",
+    "label": "Twelve-pointed stars and triangles, jigsaw, 2 colours, one in three, by shape II",
+    "name": "3.3.3.12*30°.3.3.12*30° · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star33312",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "star33312.2oneinthreebyshape2",
+      "size": 3
+    }
+  },
+  {
+    "key": "star33312.2oneinthreebyshape3.jigsaw",
+    "label": "Twelve-pointed stars and triangles, jigsaw, 2 colours, one in three, by shape III",
+    "name": "3.3.3.12*30°.3.3.12*30° · jigsaw, 2 colours, one in three, by shape III",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star33312",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape III",
+      "jigsaw": "star33312.2oneinthreebyshape3",
+      "size": 0
+    }
+  },
+  {
+    "key": "star18183.2oneinthreebyshape.jigsaw",
+    "label": "Octadecagons and three-pointed stars, jigsaw, 2 colours, one in three, by shape",
+    "name": "18.18.3*40° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star18183",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star18183.2oneinthreebyshape",
+      "size": 1
+    }
+  },
+  {
+    "key": "star18183.2oneinthree.jigsaw",
+    "label": "Octadecagons and three-pointed stars, jigsaw, 2 colours, one in three",
+    "name": "18.18.3*40° · jigsaw, 2 colours, one in three",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star18183",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three",
+      "jigsaw": "star18183.2oneinthree",
+      "size": 1
+    }
+  },
+  {
+    "key": "star18183.3byshape.jigsaw",
+    "label": "Octadecagons and three-pointed stars, jigsaw, 3 colours, by shape",
+    "name": "18.18.3*40° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star18183",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star18183.3byshape",
+      "size": 2
+    }
+  },
+  {
+    "key": "star3666.2oneinthreebyshape.jigsaw",
+    "label": "Hexagrams, hexagons and triangles, jigsaw, 2 colours, one in three, by shape",
+    "name": "3.6.6*60°.6 · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star3666",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star3666.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star3666.2byshape.jigsaw",
+    "label": "Hexagrams, hexagons and triangles, jigsaw, 2 colours, by shape",
+    "name": "3.6.6*60°.6 · jigsaw, 2 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star3666",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, by shape",
+      "jigsaw": "star3666.2byshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star3666.2oneinthreebyshape2.jigsaw",
+    "label": "Hexagrams, hexagons and triangles, jigsaw, 2 colours, one in three, by shape II",
+    "name": "3.6.6*60°.6 · jigsaw, 2 colours, one in three, by shape II",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star3666",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape II",
+      "jigsaw": "star3666.2oneinthreebyshape2",
+      "size": 0
+    }
+  },
+  {
+    "key": "star8386.2oneinthreebyshape.jigsaw",
+    "label": "Octagons, and three- and six-pointed stars, jigsaw, 2 colours, one in three, by shape",
+    "name": "8.3*15°.8.6*75° · jigsaw, 2 colours, one in three, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star8386",
+      "colours": 2,
+      "rules": false,
+      "label": "jigsaw, 2 colours, one in three, by shape",
+      "jigsaw": "star8386.2oneinthreebyshape",
+      "size": 0
+    }
+  },
+  {
+    "key": "star8386.3byshape.jigsaw",
+    "label": "Octagons, and three- and six-pointed stars, jigsaw, 3 colours, by shape",
+    "name": "8.3*15°.8.6*75° · jigsaw, 3 colours, by shape",
+    "group": "jigsaw",
+    "decor": {
+      "of": "star8386",
+      "colours": 3,
+      "rules": false,
+      "label": "jigsaw, 3 colours, by shape",
+      "jigsaw": "star8386.3byshape",
       "size": 0
     }
   },

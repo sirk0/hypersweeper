@@ -866,12 +866,14 @@ button.primary {
 /* A lined board's line: cut square at each end, which lies on the edge, so
    it never pokes past the tile and runs on into the next one unbroken. A
    branch off another line ends inside that line's stroke (view/decor.ts,
-   branched), so lines meeting in a tile leave no notch. */
+   branched; on a star, at a round corner in its middle, starLines), so lines
+   meeting in a tile leave no notch. */
 .decor.line {
   fill: none;
   stroke: var(--decor-line);
   stroke-width: 0.06;
   stroke-linecap: butt;
+  stroke-linejoin: round;
   opacity: 0.75;
 }
 
