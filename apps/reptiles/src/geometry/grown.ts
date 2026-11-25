@@ -10,6 +10,7 @@
 import type { Cyc, Ring } from "./cyclotomic";
 import { centredWindow } from "./hat";
 import { mysticPatch } from "./mystic";
+import { p1Grown } from "./penroseP1";
 import { robinsonPatch } from "./robinson";
 
 /** A grown patch: its cells, and each one's kind. */
@@ -30,6 +31,11 @@ export interface GrownTiling {
   depth: number;
   /** How many tiles its level's window keeps. */
   keep: number;
+  /** For a tiling whose patch's very middle lacks one of its tiles, the kind
+   * its first board is centred on instead: the tile of that kind nearest the
+   * middle (Penrose's pentagons, whose middle is a ring of pentagons, a star
+   * the nearest five tiles away). */
+  centreOn?: number;
   /** The level the catalog lists it after. */
   after: string;
   /** The whole patch grown `depth` times. */
@@ -38,6 +44,16 @@ export interface GrownTiling {
 
 /** Every grown tiling, in the order the catalog lists them. */
 export const GROWN: readonly GrownTiling[] = [
+  {
+    key: "penrosep1",
+    name: "Penrose pentagons",
+    label: "Penrose's first tiling: pentagons, stars, boats and diamonds",
+    depth: 1,
+    keep: 31,
+    centreOn: 1,
+    after: "penrose",
+    patch: p1Grown,
+  },
   {
     key: "robinson",
     name: "Robinson triangles",
@@ -87,12 +103,40 @@ export function grownWindow(
 ): GrownPatch {
   const patch = grownPatch(key, depth);
   if (keep === null) return patch;
-  const kept = centredWindow(patch.ring, patch.cells, keep, centre);
+  const { centreOn } = grownTiling(key);
+  const at = centre ?? (centreOn === undefined ? undefined : nearestMiddle(patch, centreOn));
+  const kept = centredWindow(patch.ring, patch.cells, keep, at);
   return {
     ring: patch.ring,
     cells: kept.map((i) => patch.cells[i]!),
     kinds: kept.map((i) => patch.kinds[i]!),
   };
+}
+
+/** The tile of `kind` whose middle is nearest the patch's — the mean of its
+ * tiles' middles, as `centredWindow` takes it — ties to the first listed. */
+function nearestMiddle({ ring, cells, kinds }: GrownPatch, kind: number): number {
+  const middles = cells.map((cell) => {
+    let x = 0;
+    let y = 0;
+    for (const v of cell) {
+      const [px, py] = ring.toXY(v);
+      x += px;
+      y += py;
+    }
+    return [x / cell.length, y / cell.length] as const;
+  });
+  const gx = middles.reduce((s, [x]) => s + x, 0) / middles.length;
+  const gy = middles.reduce((s, [, y]) => s + y, 0) / middles.length;
+  let best = -1;
+  let bestD = Infinity;
+  middles.forEach(([x, y], i) => {
+    if (kinds[i] !== kind) return;
+    const d = Math.floor(Math.hypot(x - gx, y - gy) * 1e6 + 0.5);
+    if (d < bestD) [best, bestD] = [i, d];
+  });
+  if (best < 0) throw new Error(`no tile of kind ${kind} in the patch`);
+  return best;
 }
 
 /** Each cell listed from the corner that carries its kind's first cell onto

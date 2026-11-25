@@ -105,6 +105,7 @@ describe("boards", () => {
     const windows = LEVELS.filter((l) => l.aperiodic || l.girih || l.grown || l.hat);
     expect(windows.map((l) => l.key)).toEqual([
       "penrose",
+      "penrosep1",
       "kitedart",
       "robinson",
       "ammannbeenker",

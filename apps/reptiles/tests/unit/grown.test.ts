@@ -8,8 +8,20 @@ import type { Cyc, Ring } from "../../src/geometry/cyclotomic";
 import { Frontier } from "../../src/geometry/frontier";
 import { GROWN, grownWindow } from "../../src/geometry/grown";
 import { outline } from "../../src/geometry/outline";
+import { corners } from "../../src/geometry/repTile";
 import { aperiodicPatch } from "../../src/geometry/aperiodic";
 import { MYSTIC, MYSTIC_SPECTRE, mysticPatch } from "../../src/geometry/mystic";
+import {
+  P1_FILLS,
+  P1_KINDS,
+  P1_TURNS,
+  PHI2,
+  Z10 as P1_RING,
+  p1Cell,
+  p1Patch,
+  pentagonChildren,
+  type P1Kind,
+} from "../../src/geometry/penroseP1";
 import { signedArea } from "../../src/geometry/shape";
 import { spectreLabelledExact } from "@tiling/geometry";
 import { ROBINSON_ACUTE, ROBINSON_OBTUSE, robinsonPatch } from "../../src/geometry/robinson";
@@ -130,6 +142,102 @@ describe("Tile(1,1) and the Mystic", () => {
   it("make a level of the two, turned by 30° and never flipped", () => {
     const level = levelByKey("mystic")!;
     expect(level.tiles.map((t) => t.pieces[0]!.verts.length)).toEqual([13, 18]);
+    expect(level.mirror).toBe(false);
+    expect(level.turn).toBe(1);
+  });
+});
+
+describe("Penrose's pentagons (P1)", () => {
+  const R = P1_RING;
+  /** The golden triangle on the middle of each side of the big `kind` (side
+   * φ², framed at 0), apex outward (`out`) or in. */
+  const halves = (kind: P1Kind, out: boolean): Cyc[][] => {
+    const big = p1Cell(kind, R.zero, 0, PHI2);
+    const turns = P1_TURNS[kind];
+    let d = 0;
+    return big.map((a, i) => {
+      const p = R.add(a, R.zeta(d));
+      const q = R.add(p, R.mul(R.sub(R.add(R.zeta(1), R.conj(R.zeta(1))), R.one), R.zeta(d)));
+      const apex = R.add(p, R.zeta(out ? d - 2 : d + 2));
+      d += turns[(i + 1) % turns.length]!;
+      return out ? [p, apex, q] : [p, q, apex];
+    });
+  };
+
+  it("cuts a big pentagon into six pentagons and a half diamond on each side", () => {
+    const kids = pentagonChildren().map((t) => p1Cell(t.kind, t.at, t.dir));
+    const cells = [...kids, ...halves("pentagon", false)];
+    expect(tiles(R, cells)).toBe(true);
+    const big = outline(R, cells);
+    expect(big).toHaveLength(1);
+    expect(new Set(corners(R, big[0]!).map((v) => R.key(v)))).toEqual(
+      new Set(p1Cell("pentagon", R.zero, 0, PHI2).map((v) => R.key(v))),
+    );
+  });
+
+  it.each(["star", "boat", "diamond"] as const)(
+    "fills a big %s and the half diamonds on its sides exactly",
+    (kind) => {
+      const fill = P1_FILLS[kind].map(([k, at, dir]) => p1Cell(k, at as Cyc, dir));
+      const region = outline(R, [p1Cell(kind, R.zero, 0, PHI2), ...halves(kind, true)]);
+      expect(region).toHaveLength(1);
+      expect(tiles(R, fill)).toBe(true);
+      expect(new Set(outline(R, fill)[0]!.map((v) => R.key(v)))).toEqual(
+        new Set(region[0]!.map((v) => R.key(v))),
+      );
+    },
+  );
+
+  const patch = p1Patch(1);
+  const cells = patch.map((t) => p1Cell(t.kind, t.at, t.dir));
+
+  it("never lets a star, a boat or a diamond share a side with another", () => {
+    const owner = new Map<string, number>();
+    const key = (a: Cyc, b: Cyc): string => `${R.key(a)}>${R.key(b)}`;
+    cells.forEach((c, i) => c.forEach((a, j) => owner.set(key(a, c[(j + 1) % c.length]!), i)));
+    cells.forEach((c, i) => {
+      if (patch[i]!.kind === "pentagon") return;
+      c.forEach((a, j) => {
+        const n = owner.get(key(c[(j + 1) % c.length]!, a));
+        if (n !== undefined) expect(patch[n]!.kind).toBe("pentagon");
+      });
+    });
+  });
+
+  it("has the rule's tile frequencies round its middle", () => {
+    // a pentagon's children: six pentagons and, across each side another
+    // pentagon shares, half a diamond; a star's, a boat's and a diamond's as
+    // their fills count them — so the counts grow by this matrix, whose
+    // largest eigenvector the frequencies are
+    const fill = (kind: Exclude<P1Kind, "pentagon">) =>
+      P1_KINDS.map((k) => P1_FILLS[kind].filter(([c]) => c === k).length);
+    const [s, b, d] = (["star", "boat", "diamond"] as const).map(fill);
+    // diamonds: the pentagon–pentagon sides, (5P − 10S − 7B − 4D) / 2
+    const M = [
+      [6, s![0]!, b![0]!, d![0]!],
+      [0, s![1]!, b![1]!, d![1]!],
+      [0, s![2]!, b![2]!, d![2]!],
+      [2.5, -5, -3.5, -2],
+    ];
+    let x = [1, 0, 0, 0];
+    for (let i = 0; i < 60; i++) {
+      x = M.map((row) => row.reduce((sum, m, j) => sum + m * x[j]!, 0));
+      x = x.map((v) => v / x[0]!);
+    }
+    const count = [0, 0, 0, 0];
+    const mid = R.toXY(R.zero);
+    cells.forEach((c, i) => {
+      const [px, py] = R.toXY(c[0]!);
+      if (Math.hypot(px - mid[0], py - mid[1]) < 30) count[P1_KINDS.indexOf(patch[i]!.kind)]!++;
+    });
+    for (const k of [1, 2, 3]) expect(count[k]! / count[0]!).toBeCloseTo(x[k]!, 1);
+  });
+
+  it("make a level of four tiles that turn by 36° and never flip, a star among them", () => {
+    const level = levelByKey("penrosep1")!;
+    expect(level.tiles.map((t) => t.pieces[0]!.verts.length).sort((a, b) => a - b)).toEqual([
+      4, 5, 7, 10,
+    ]);
     expect(level.mirror).toBe(false);
     expect(level.turn).toBe(1);
   });

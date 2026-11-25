@@ -579,6 +579,12 @@
   },
   { "key": "penrose", "label": "Penrose rhombi", "name": "Penrose rhombi", "group": "aperiodic" },
   {
+    "key": "penrosep1",
+    "label": "Penrose's first tiling: pentagons, stars, boats and diamonds",
+    "name": "Penrose pentagons",
+    "group": "aperiodic"
+  },
+  {
     "key": "kitedart",
     "label": "Penrose kites & darts",
     "name": "Penrose kites & darts",
@@ -5102,6 +5108,13 @@
     "name": "Hat metatiles · matching rules",
     "group": "rules",
     "decor": { "of": "hatmetatiles", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "penrosep1.rules",
+    "label": "Penrose's first tiling: pentagons, stars, boats and diamonds, matching rules",
+    "name": "Penrose pentagons · matching rules",
+    "group": "rules",
+    "decor": { "of": "penrosep1", "colours": 1, "rules": true, "label": "matching rules" }
   },
   {
     "key": "robinson.rules",
