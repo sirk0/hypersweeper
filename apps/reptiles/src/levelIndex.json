@@ -585,6 +585,12 @@
     "group": "aperiodic"
   },
   {
+    "key": "robinson",
+    "label": "Penrose's kites and darts each cut in two: an acute and an obtuse golden triangle",
+    "name": "Robinson triangles",
+    "group": "aperiodic"
+  },
+  {
     "key": "ammannbeenker",
     "label": "Ammann–Beenker",
     "name": "Ammann–Beenker",
@@ -5090,6 +5096,13 @@
     "name": "Hat metatiles · matching rules",
     "group": "rules",
     "decor": { "of": "hatmetatiles", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "robinson.rules",
+    "label": "Penrose's kites and darts each cut in two: an acute and an obtuse golden triangle, matching rules",
+    "name": "Robinson triangles · matching rules",
+    "group": "rules",
+    "decor": { "of": "robinson", "colours": 1, "rules": true, "label": "matching rules" }
   },
   {
     "key": "socolartaylor.rules",

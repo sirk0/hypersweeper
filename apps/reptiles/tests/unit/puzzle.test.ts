@@ -261,6 +261,7 @@ describe("puzzle", () => {
       !l.hat &&
       !l.star &&
       !l.girih &&
+      !l.grown &&
       !l.girihTiling &&
       !l.decor,
   ).map((l) => l.key);

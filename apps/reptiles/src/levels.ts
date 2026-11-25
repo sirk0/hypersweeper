@@ -43,6 +43,7 @@ import { SOCOLAR_TAYLOR_PATCH, socolarTaylorPatch, stCell } from "./geometry/soc
 import { hatFrames, hatPatch, type HatTile } from "./geometry/hat";
 import { starSteps, starTiling, starWindow } from "./geometry/stars";
 import { girihPeriodicWindow, girihSteps, girihTiling, girihWindow, Z10 } from "./geometry/girih";
+import { GROWN, grownPatch, grownTiling, grownWindow } from "./geometry/grown";
 import {
   adjacency,
   deriveRules,
@@ -221,6 +222,11 @@ export interface Level {
    * centred window keeps, and for a board after the first the tile it is
    * centred on. Its tiles carry girih strapwork, drawn only. */
   girih?: { depth: number; keep: number; centre?: number };
+  /** For an aperiodic level Rep-tiles grows itself (`GROWN` in
+   * `geometry/grown.ts`, keyed as the level is): how many times its patch is
+   * grown, how many tiles its centred window keeps, and for a board after the
+   * first the tile it is centred on. */
+  grown?: { depth: number; keep: number; centre?: number };
   /** For a level whose tiles carry marks (geometry/marks.ts): the plain
    * level whose board it is, in how many colours (1 for `rules`: a matching
    * rule in one colour — lines across the tiles, made from a colouring by
@@ -1276,6 +1282,10 @@ export function patchFrames(key: string): FramedPatch {
     const { kinds, cells } = hatFrames(hat[1], hat[2]);
     return { ring: Z12, cells: cells.map((c, i) => ({ kind: kinds[i]!, pieces: [c] })) };
   }
+  if (GROWN.some((g) => g.key === key)) {
+    const { ring, cells, kinds } = grownPatch(key, grownTiling(key).depth);
+    return { ring, cells: cells.map((c, i) => ({ kind: kinds[i]!, pieces: [c] })) };
+  }
   if (key === "socolartaylor")
     return {
       ring: Z12,
@@ -1515,6 +1525,34 @@ function girihLevel(centre?: number): Level {
     girih: { depth, keep, ...(centre === undefined ? {} : { centre }) },
   };
 }
+
+/** An aperiodic level Rep-tiles grows itself (`GROWN`), or with `centre` a
+ * board centred on that tile of its patch; named, as the others are, for what
+ * it is. */
+function grownLevel(key: string, centre?: number): Level {
+  const { name, label, depth, keep } = grownTiling(key);
+  const { ring, cells } = grownWindow(key, depth, keep, centre);
+  return {
+    ...makeLevel(key, label, ring, whole(cells), "aperiodic", [], name),
+    grown: { depth, keep, ...(centre === undefined ? {} : { centre }) },
+  };
+}
+
+const grownBoards = (key: string): string => {
+  const { depth, keep } = grownTiling(key);
+  return firstBoard(key, {
+    kind: "centre",
+    cut: (at) => grownWindow(key, depth, keep, asNumber(at)),
+    make: (at) => grownLevel(key, asNumber(at)),
+    whole: () => grownWindow(key, depth, null),
+  });
+};
+
+/** The grown tilings each listed after (`after`), by that level's key. */
+const withGrown = (key: string): string[] => [
+  key,
+  ...GROWN.filter((g) => g.after === key).flatMap((g) => withGrown(grownBoards(g.key))),
+];
 
 const girihBoards = (): string =>
   firstBoard(GIRIH_SELF_SIMILAR.key, {
@@ -2248,6 +2286,7 @@ function kiteDartRulesLevel(plain: Level): Level {
 export const PATCH_MARKED: string[] = [
   ...APERIODIC.map(([key]) => key),
   ...HAT_FAMILY.map(([key]) => key),
+  ...GROWN.map(({ key }) => key),
   "socolartaylor",
   ...SPIRALS.map(([mode]) => mode),
   ...REPTILES.map(([mode]) => mode),
@@ -2622,10 +2661,14 @@ const SECTIONS: { keys: string[]; byEase?: boolean }[] = [
       // are — the self-similar girih pattern, then the Spectre's two)
       ...APERIODIC.map(([key, mode, depth, keep, round]) =>
         aperiodicBoards(key, mode, depth, keep, round),
-      ).flatMap((key) => (key === "ammannbeenker" ? [key, girihBoards()] : [key])),
+      )
+        .flatMap((key) => (key === "ammannbeenker" ? [key, girihBoards()] : [key]))
+        .flatMap(withGrown),
       // …the hat's family: the hat and the turtle, both ways up, and the
       // hat's four metatiles…
-      ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatBoards(key, tile, depth, keep)),
+      ...HAT_FAMILY.map(([key, tile, depth, keep]) => hatBoards(key, tile, depth, keep)).flatMap(
+        withGrown,
+      ),
       // …and one tile that does it alone, in nineteen pieces.
       maker("socolartaylor", () => socolarTaylorLevel(2)),
     ],
