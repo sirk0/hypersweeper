@@ -12,6 +12,10 @@
 // than one way — and laid into a corner it cannot be finished from, which is
 // what taking tiles back off is for.
 //
+// Once the board is finished it is locked: no tile is picked up, laid or
+// taken off, and the tray does not turn or flip, until an undo or a restart
+// (main.ts) leaves it unfinished; pinch, pan and wheel zoom still work.
+//
 // Each finished move — a tile laid, moved or taken off — is committed to the
 // puzzle's undo list (`Puzzle.commit`); a tile lifted and put back is no move.
 //
@@ -131,7 +135,8 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   };
 
   const setRemoving = (on: boolean): void => {
-    board.removing = on;
+    // a finished board is locked: nothing to take off
+    board.removing = on && !puzzle.won;
   };
 
   const update = (): void => {
@@ -162,7 +167,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
 
   // One turn for everything: every tray tile, and the one in hand.
   const turn = (dir: 1 | -1): void => {
-    if (!puzzle.canTurn()) return;
+    if (!puzzle.canTurn() || puzzle.won) return;
     playSound({ kind: "turn", dir });
     const step = dir * puzzle.level.turn;
     board.turn = mod(board.turn + step);
@@ -175,7 +180,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   };
 
   const flip = (): void => {
-    if (!puzzle.canFlip()) return;
+    if (!puzzle.canFlip() || puzzle.won) return;
     board.flip = !board.flip;
     board.turn = puzzle.flipTurn(board.turn);
     board.draw();
@@ -236,8 +241,10 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     let outline: Loop[];
     let c: XY;
     let origin: Placed | null = null;
-    const tray = target.closest("[data-tray]");
-    const placed = target.closest("[data-tile]");
+    // A finished board is locked until an undo or a restart: a press on a
+    // tile, placed or in the tray, only pans, as one on bare board does.
+    const tray = puzzle.won ? null : target.closest("[data-tray]");
+    const placed = puzzle.won ? null : target.closest("[data-tile]");
     if (placed && board.removing) {
       ev.preventDefault();
       puzzle.lift(Number(placed.getAttribute("data-tile")));

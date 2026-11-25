@@ -1055,6 +1055,19 @@ button.primary {
   cursor: pointer;
 }
 
+/* A finished board is locked until an undo or a restart (drag.ts): nothing
+   to pick up, and the tray and its controls fade back. */
+.finished .tile,
+.finished .knob {
+  cursor: default;
+}
+
+.finished .tray-layer,
+.finished .tray-controls {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
 .removing .tile:not(.in-tray):hover {
   fill: var(--remove);
   stroke: var(--remove-edge);

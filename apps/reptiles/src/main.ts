@@ -338,7 +338,8 @@ interface Session {
   started: number | null;
   finished: number | null;
   /** The win card was closed (Exit): it stays shut while the board stays
-   * finished. */
+   * finished — the board is locked then (drag.ts), so only an undo or a
+   * restart can unfinish it, and only an undo opens the card to show again. */
   dismissed: boolean;
   /** How many hints have been shown on this board — any costs the third
    * star; the win card says how many. */
@@ -347,11 +348,11 @@ interface Session {
    * goes once they change. */
   laidKey: string;
   /** The tiling round the finished board has been asked for (src/extension.ts):
-   * once a finish, again only after a tile is taken off and it is finished
+   * once a finish, again only after an undo and it is finished
    * anew. */
   extending: boolean;
   /** The board was finished at the last change — so the flourish plays once
-   * as it is finished, and again only after a tile is taken off and it is
+   * as it is finished, and again only after an undo and it is
    * finished anew. */
   wasWon: boolean;
   /** The layout last kept (saved.ts): a move since is kept again. */
@@ -389,6 +390,8 @@ function undo(): void {
   if (!s) return;
   s.control.cancel();
   if (!s.puzzle.undo()) return;
+  // stepping back off a finish: finished anew, the card shows again
+  s.dismissed = false;
   s.board.draw();
   changed();
 }
@@ -426,8 +429,13 @@ function changed(): void {
   redoButton.disabled = !puzzle.canRedo;
   // a move since the board was last kept: keep it again
   if (puzzle.layout !== s.kept) keep(s);
-  count.textContent = `${Math.floor(puzzle.coverage * 100)}%`;
-  if (!puzzle.won) s.dismissed = false;
+  // finished, the label says so — with the stars on a level — in place of 100%
+  count.textContent = !puzzle.won
+    ? `${Math.floor(puzzle.coverage * 100)}%`
+    : s.tutorial !== null
+      ? "Tiled"
+      : `Tiled ${starRow(puzzle.stars(s.hints > 0))}`;
+  s.board.svg.classList.toggle("finished", puzzle.won);
   if (puzzle.won && !s.wasWon) {
     playSound({ kind: "win", pan: s.control.lastPan() });
     haptic("win");
@@ -456,7 +464,7 @@ function changed(): void {
   const ms = elapsed(s);
   const stars = puzzle.stars(s.hints > 0);
   const stars3 = byId("won-stars");
-  stars3.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+  stars3.textContent = starRow(stars);
   stars3.setAttribute("aria-label", `${stars} of 3 stars`);
   // the piles not at 0: past it (extra tiles) or short of it (another kind
   // laid in their place)
@@ -493,6 +501,9 @@ function changed(): void {
     syncCloudStars();
   }
 }
+
+/** Three stars, `n` of them filled: ★★☆. */
+const starRow = (n: number): string => "★".repeat(n) + "☆".repeat(3 - n);
 
 /** Open `level`: as it was left, where a board of it is kept (saved.ts),
  * unless `fresh` — else a new puzzle, a new board in the stage. Given

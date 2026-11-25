@@ -354,7 +354,9 @@ some back off.
   and put back where it was is no move, and a new move clears what was
   undone. An undo cancels a tile in hand first (`DragControl.cancel`). A
   hint shown stays shown — undo is not a way back to the third star — and a
-  finished board undone and redone keeps its first finish's time.
+  finished board undone and redone keeps its first finish's time. Undo is
+  the one way back into a finished board, which is otherwise locked (the win
+  card, under Screens).
 - **A board left half-covered is kept** (`src/saved.ts`, `rep-tiles.boards`):
   its tiles, the time spent on it so far and the hints shown, saved at every
   move, as a hint is shown, and as the level is left — for another screen,
@@ -504,7 +506,11 @@ of the screen, the tray on a strip along the bottom (portrait) or the right
 (landscape). The win card has Play again and Next level (another level of
 the same difficulty, dealt at random as the die deals), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
-outside it). Each move between screens
+outside it). The card shows once a finish: a finished board is **locked**
+(`drag.ts`) — no tile picked up, laid or taken off, the tray and its controls
+faded and inert (`svg.board.finished`), only zoom and pan — and the coverage
+label reads "Tiled ★★☆" in place of 100%, until an undo steps back off the
+finish (the card shows again if it is finished anew) or a restart. Each move between screens
 is a history entry, so the browser's Back works (a tile's move is not: undo
 is the header's).
 
@@ -542,8 +548,8 @@ heard while dragged and kept when let go. A click as a tile lands, pitched by
 its shape (Hypersweeper's cell-opening click, `strikeVoice`); a short centred
 beep as the tray turns, gliding up one way round and down the other
 (`glideVoice`; flip is silent); and the win flourish as the board is
-finished (`flourishVoices`) — again only after a tile is taken off and it is
-finished anew. Putting a lifted tile back is silent. **Stereo:** a click is
+finished (`flourishVoices`) — again only after an undo and it is finished
+anew. Putting a lifted tile back is silent. **Stereo:** a click is
 panned to where the tile's middle landed across the screen
 (`SvgBoard.panAt`, -1 at the left edge to +1 at the right — the whole
 screen, as the speakers are, so on a desktop, the tray on the right, the
@@ -567,7 +573,7 @@ viewport behind `#game`, which isolates), lined up with the board's, and the boa
 then be zoomed out past the fit to see more of it: to `WON_MIN_ZOOM` (a
 third), held up where its tiles would be under `MIN_TILE_PX` across or the view
 would outrun how far the tiling is known; the tray keeps its fitted size.
-Taking a tile off takes them away and fits the board again. Where the tiling
+An undo off the finish takes them away and fits the board again. Where the tiling
 comes from is `src/extension.ts`, below. Three levels' boards have none
 (pentagon13 and pentagon15, whose windows sit in no wider window, and the
 right-angled fish, which grows once only and shows no period), and the round
