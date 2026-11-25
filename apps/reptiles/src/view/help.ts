@@ -114,7 +114,9 @@ const SECTIONS: Section[] = [
       [
         "The header",
         "Restart starts the level again; the die deals another level of the " +
-          "same difficulty. Finished, you get Play again and Next level.",
+          "same difficulty. Finished, you get Play again and Next level; close " +
+          "that card and the board stays as it is, its stars over it, until an " +
+          "undo steps back off the finish.",
       ],
       [
         "Leave and come back",

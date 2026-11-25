@@ -550,13 +550,56 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d/);
   await page.locator("#exit").click();
   await expect(page.locator("#won")).toBeHidden();
-  await expect(page.locator("#count")).toHaveText("100%");
+  // the label behind the board says it is finished, with its stars
+  await expect(page.locator("#count")).toHaveText("Tiled ★★★");
   // The tiling past the board is a setting, off by default: no outlines, and
   // the board stays fitted.
   const fitted = (await page.locator("svg.board path.region").boundingBox())!;
   await page.waitForTimeout(1500);
   await expect(page.locator(".board-backdrop path.beyond")).toHaveCount(0);
   expect(await wheelOut(page, 6)).toBeCloseTo(fitted.width, 0);
+  expect(errors).toEqual([]);
+});
+
+test("a finished board is locked, its win card shown once, until an undo", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  await finishSquares(page);
+  await page.locator("#exit").click();
+  await expect(page.locator("#won")).toBeHidden();
+  await expect(page.locator("svg.board")).toHaveClass(/finished/);
+  const tiles = page.locator("svg.board [data-tile]");
+  const first = tiles.first();
+  const at = (await first.boundingBox())!;
+  // a placed tile dragged a little and let go: nothing moves, no card again
+  await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(at.x + at.width, at.y + at.height / 2, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  await expect(page.locator("#won")).toBeHidden();
+  await expect(tiles).toHaveCount(16);
+  expect(await first.boundingBox()).toEqual(at);
+  // …nor dragged off over the tray, nor taken off in ✕ mode
+  const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+  await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2, { steps: 6 });
+  await page.mouse.up();
+  await page.keyboard.press("x");
+  await expect(page.locator("svg.board")).not.toHaveClass(/removing/);
+  await first.click();
+  await expect(tiles).toHaveCount(16);
+  await expect(page.locator("#won")).toBeHidden();
+  await expect(page.locator("#count")).toHaveText("Tiled ★★★");
+  // an undo steps back off the finish and unlocks it; laid again, the card
+  // is back
+  await page.keyboard.press("Control+z");
+  await expect(tiles).toHaveCount(15);
+  await expect(page.locator("svg.board")).not.toHaveClass(/finished/);
+  await expect(page.locator("#count")).toHaveText("93%");
+  await page.keyboard.press("Shift+Z");
+  await expect(page.locator("#won")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -608,10 +651,9 @@ test("with its setting on, a finished board shows the tiling past it and zooms o
   const out = await wheelOut(page, 12);
   expect(out).toBeLessThan(fitted.width * 0.4);
   expect(out).toBeGreaterThan(fitted.width / 3 - 1);
-  // Taking a tile off un-finishes it: the outlines go, and the board is fitted
-  // again.
-  await page.keyboard.press("x"); // ✕ remove mode
-  await page.locator("svg.board [data-tile]").first().click();
+  // An undo un-finishes it (the finished board is locked, nothing taken off
+  // by hand): the outlines go, and the board is fitted again.
+  await page.keyboard.press("Control+z");
   await expect(page.locator(".board-backdrop path.beyond")).toHaveCount(0);
   const back = (await page.locator("svg.board path.region").boundingBox())!;
   expect(back.width).toBeCloseTo(fitted.width, 0);
