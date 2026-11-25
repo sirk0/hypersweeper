@@ -57,8 +57,7 @@ const runs = <T>(items: T[], size: number): T[][] =>
 
 test("tapping a tiling with marked levels opens its page: V4.6.12", async ({ page }) => {
   const errors = watchErrors(page);
-  // its group: on a desktop that group's page (V4.6.12 is a Laves tiling),
-  // on a phone every family, scrolled to it
+  // its group's page (V4.6.12 is a Laves tiling), on a desktop or a phone
   await page.goto("/?group=irregular");
   await page
     .locator("#catalog .card")

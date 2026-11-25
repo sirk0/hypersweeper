@@ -37,7 +37,9 @@ test("boots under the deployed security policy, with no errors", async ({ page }
   expect(errors).toEqual([]);
 });
 
-test("a pick from home deals a level, and Tilings lists every family", async ({ page }) => {
+test("a pick from home deals a level, and Tilings lists the five groups, each a grid", async ({
+  page,
+}) => {
   await page.setViewportSize(PHONE);
   const errors = watchErrors(page);
   await page.goto("/");
@@ -46,19 +48,46 @@ test("a pick from home deals a level, and Tilings lists every family", async ({ 
   await expect(page.locator("svg.board path.region")).toHaveCount(1);
   await expect(page.locator("svg.board .in-tray").first()).toBeVisible();
 
+  // on a phone, Tilings is the five groups, a card each with its tray drawn
   await page.goto("/?tilings");
   await expect(page.locator("#catalog")).toBeVisible();
   await expect(page.locator("#catalog .hud-title")).toHaveText("Tilings");
-  await expect(page.locator("#catalog-list button, #catalog-list a").first()).toBeVisible();
+  await expect(page.locator("#catalog-list .group-card .group-name")).toHaveText([
+    "Regular polygons",
+    "Irregular tiles",
+    "Offset corners",
+    "Self-similar",
+    "Aperiodic",
+  ]);
+  await expect(page.locator("#catalog-list .group-card .group-meta").first()).toHaveText(
+    /^\d+ tilings · ★ \d+\/\d+$/,
+  );
+  await expect(page.locator('[data-group="regular"] .group-icon svg.tray-icon')).toBeVisible();
+  await expect(page.locator("#catalog-list .card")).toHaveCount(0);
+  // a group's card opens its page: its families, each a grid that wraps —
+  // the page scrolls one way only
+  await page.locator('[data-group="regular"]').click();
+  await expect(page).toHaveURL(/\?group=regular$/);
+  await expect(page.locator("#catalog .hud-title")).toHaveText("Regular polygons");
+  const rows = page.locator("#catalog-list .family-row");
+  await expect(rows.first()).toBeVisible();
+  expect(
+    await rows.evaluateAll((all) => all.filter((r) => r.scrollWidth > r.clientWidth).length),
+  ).toBe(0);
   // each card draws its tiles inside its board's outline, in one picture
   await expect(page.locator("#catalog .card-art svg.card-picture").first()).toBeVisible();
   await expect(page.locator('#catalog [data-tiling="trihex"] .card-picture path.tile')).toHaveCount(
     2,
   );
+  // Back goes back to the groups
+  await page.locator("#catalog [data-go-back]").click();
+  await expect(page).toHaveURL(/\?tilings$/);
+  await expect(page.locator("#catalog-list .group-card")).toHaveCount(5);
   // the old name's links still open it, and so do the Figures screen's
   for (const old of ["/?catalog", "/?figures", "/?figure=squares"]) {
     await page.goto(old);
     await expect(page.locator("#catalog")).toBeVisible();
+    await expect(page.locator("#catalog-list .group-card")).toHaveCount(5);
   }
   expect(errors).toEqual([]);
 });
@@ -664,22 +693,21 @@ test("Tilings' families are named as Hypersweeper names them (and the stars and 
   page,
 }) => {
   await page.setViewportSize(PHONE);
-  await page.goto("/?tilings");
-  await expect(page.locator(".family h2")).toHaveText([
-    "Regular",
-    "Uniform",
-    "2-uniform",
-    "Star polygons",
-    "Laves",
-    "2-isohedral",
-    "Pentagonal",
-    "Girih",
-    "Isogonal",
-    "Congruent rectangles",
-    "Rep-tiles",
-    "Spirals",
-    "Aperiodic",
-  ]);
+  // each group's page, its families in order — Aperiodic's one family named
+  // by the page's title alone
+  const families: [string, string[]][] = [
+    ["regular", ["Regular", "Uniform", "2-uniform", "Star polygons"]],
+    ["irregular", ["Laves", "2-isohedral", "Pentagonal", "Girih"]],
+    ["offset", ["Isogonal", "Congruent rectangles"]],
+    ["self-similar", ["Rep-tiles", "Spirals"]],
+  ];
+  for (const [group, names] of families) {
+    await page.goto(`/?group=${group}`);
+    await expect(page.locator(".family h2")).toHaveText(names);
+  }
+  await page.goto("/?group=aperiodic");
+  await expect(page.locator("#catalog .hud-title")).toHaveText("Aperiodic");
+  await expect(page.locator(".family h2")).toBeHidden();
 });
 
 test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows as arcs", async ({
@@ -769,7 +797,7 @@ test("a tiling's page: its boards on top, its tiles under them, then Play", asyn
   const errors = watchErrors(page);
   // Tilings has no section of its own for matching rules and colourings:
   // the hexagons' card opens a page of the tiling's boards and its tiles
-  await page.goto("/?tilings");
+  await page.goto("/?group=regular");
   await expect(page.locator("#catalog .family h2", { hasText: "Colourings" })).toHaveCount(0);
   const hexagons = page
     .locator("#catalog .card")
@@ -803,7 +831,7 @@ test("a tiling's page: its boards on top, its tiles under them, then Play", asyn
   );
 
   // a board by a marking: the running bond's second board, lined
-  await page.goto("/?tilings");
+  await page.goto("/?group=offset");
   await page
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^Running bond$/ }) })
@@ -838,7 +866,7 @@ test("a tiling's page: its boards on top, its tiles under them, then Play", asyn
 
   // a tiling of one level opens it straight away: the P-pentomino, one board
   // and no marks a level can have
-  await page.goto("/?tilings");
+  await page.goto("/?group=self-similar");
   await page
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^P-pentomino$/ }) })

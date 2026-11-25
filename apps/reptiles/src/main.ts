@@ -21,7 +21,7 @@ import {
 import { forgetBoard, hasBoard, keptCount, loadBoard, saveBoard } from "./saved";
 import { noteFinishForReview } from "./review";
 import { Puzzle } from "./puzzle";
-import { renderCatalog, type Tally } from "./view/catalog";
+import { renderCatalog, renderGroupIndex, type GroupTally, type Tally } from "./view/catalog";
 import {
   groupOfFamily,
   menuGroup,
@@ -200,31 +200,49 @@ function goSettings(push = true): void {
   show("settings", "settings");
 }
 
-/** Tilings: on a phone every family, a row each (scrolled to `groupKey`'s
- * first, where one is named); on a desktop one group's families in grids —
- * `groupKey`'s, or the first group's. */
+/** A group's tilings, the levels they are and the stars earned on them: what
+ * its card in the phone's Tilings counts. */
+function groupTally(group: MenuGroup): GroupTally {
+  const tallies = tilingsOf(group).map(tallyOf);
+  return {
+    tilings: tallies.length,
+    levels: tallies.reduce((sum, t) => sum + t.levels, 0),
+    stars: tallies.reduce((sum, t) => sum + t.stars, 0),
+  };
+}
+
+/** Tilings: one group's families in grids — `groupKey`'s, or on a desktop
+ * the first group's; on a phone with no group named, the five groups' index,
+ * a card each opening its page. */
 function goCatalog(push = true, groupKey: string | null = null): void {
   const named = menuGroup(groupKey);
   const group = wide.matches ? (named ?? MENU_GROUPS[0]!) : named;
   if (push) history.pushState(null, "", group && groupKey ? `?group=${group.key}` : "?tilings");
   const list = byId("catalog-list");
+  const links = byId("catalog-links");
+  links.replaceChildren();
+  if (!group) {
+    renderGroupIndex(list, MENU_GROUPS, groupTally, (key) => goCatalog(true, key));
+    byId("catalog-title").textContent = "Tilings";
+    show("catalog", "");
+    list.scrollTop = 0;
+    return;
+  }
   renderCatalog(
     list,
     LEVELS.filter((l) => !l.decor),
     tallyOf,
     (level) => open(level),
     (level) => goTiling(level),
-    wide.matches ? group?.families : undefined,
+    group.families,
   );
   // a group of one family: the page's title already names it
-  if (wide.matches && group?.families.length === 1)
+  if (group.families.length === 1)
     for (const head of list.querySelectorAll<HTMLElement>(".family > h2, .family-hint"))
       head.hidden = true;
-  byId("catalog-title").textContent = wide.matches && group ? group.name : "Tilings";
+  byId("catalog-title").textContent = group.name;
   // the group's hint and its families, each a jump to its section
-  const links = byId("catalog-links");
-  links.replaceChildren();
-  if (wide.matches && group) {
+  if (wide.matches) {
     const several = group.families.length > 1;
     const hint = document.createElement("span");
     hint.className = "pane-hint";
@@ -241,12 +259,8 @@ function goCatalog(push = true, groupKey: string | null = null): void {
       links.append(jump);
     }
   }
-  show("catalog", group ? `group:${group.key}` : "");
+  show("catalog", `group:${group.key}`);
   list.scrollTop = 0;
-  if (!wide.matches && group) {
-    const first = list.querySelector<HTMLElement>(`[data-family="${group.families[0]}"]`);
-    if (first) list.scrollTop = first.offsetTop - list.offsetTop;
-  }
 }
 
 /** Keep a page's pick in its URL, in place: Back from a level comes back to

@@ -3,7 +3,9 @@
 // Hypersweeper's and every group's page is a grid worth a wide screen. Each
 // family is in exactly one group (`tests/unit/groups.test.ts`), and a group's
 // page lists its families in `GROUPS`' order, one section each. The phone
-// keeps the families as they were, a row each on one page.
+// has the same groups: its Tilings is their index, a card each
+// (`renderGroupIndex` in view/catalog.ts), and a group's page the same
+// sections, their cards smaller.
 
 import { GROUPS } from "../levels";
 
