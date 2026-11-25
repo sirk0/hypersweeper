@@ -571,14 +571,15 @@ title. Home is **Quick start**: Easy, Medium and Hard as three cards side by
 side, each the picture of a tiling of that difficulty (`SHOWCASE` in
 `home.ts`: its outline and tiles, as its Tilings card draws it — never the
 board tiled), its counts and its hint; below 1100px, one under another. The
-catalog's thirteen families are put together in **five groups**
-(`MENU_GROUPS`): Regular polygons (regular, uniform, 2-uniform, star polygons), Irregular
-tiles (Laves, 2-isohedral, pentagonal, girih), Offset corners (isogonal, bonds),
-Self-similar (rep-tiles, spirals) and Aperiodic — each family in exactly one
-(`tests/unit/groups.test.ts`). A group's page (`?group=<key>`; `?tilings`
+catalog's fourteen families are put together in **five groups**
+(`MENU_GROUPS`): Regular polygons (regular, uniform, 2-uniform), Star polygons
+(adjustable angle, fixed angle), Irregular tiles (Laves, 2-isohedral,
+pentagonal, girih), Offset corners (isogonal, bonds) and Non-periodic
+(rep-tiles, spirals, aperiodic) — each family in exactly one
+(`tests/unit/groups.test.ts`). An old group's link (`?group=self-similar`,
+`?group=aperiodic`) opens the group it is in now. A group's page (`?group=<key>`; `?tilings`
 opens the first) is its families' sections, their cards in grids that wrap,
-with a jump to each under the title (none for a group of one family, nor its
-heading). A tiling's page is two columns from 1100px (`TWO_COLUMNS`): the
+with a jump to each under the title. A tiling's page is two columns from 1100px (`TWO_COLUMNS`): the
 level the pick makes on the left, held in view — its outline with its tiles
 inside it, its name, difficulty and stars, then Play — and the boards and
 tiles to pick from on the right; narrower, it is the phone's column inside
@@ -703,19 +704,21 @@ tilings beside them, which Hypersweeper has not), then spirals and
 aperiodic ones, and the uniform tilings again with every point held to their
 vertex configuration (`Level.rule`, the `.vertex` levels above).
 
-**Status: 141 tilings in thirteen sections, then 220 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, twenty-eight of the thirty star tilings, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the eight other aperiodic levels that ask one, four of the five spirals and sixteen of the seventeen rep-tiles) and 270 colourings of the uniform, 2-uniform, star, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 210 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 3459 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 141 tilings in fourteen sections, then 220 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, twenty-eight of the thirty star tilings, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the eight other aperiodic levels that ask one, four of the five spirals and sixteen of the seventeen rep-tiles) and 270 colourings of the uniform, 2-uniform, star, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 210 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 3459 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
-[3⁶; 3⁴.6]₁), *Star polygons* (a family of its own: Hypersweeper has none —
+[3⁶; 3⁴.6]₁), *Star polygons* (a group of their own, in two families: Hypersweeper has none —
 Grünbaum and Shephard's twenty-two "uniform" tilings with star polygons,
 regular polygons and isotoxal stars every vertex alike, named by their
 configuration as Wikipedia writes it with the angles in degrees: 3.6*60°.6**60°
 is a triangle, a six-pointed star's 60° point and another's dent round every
 vertex; the four whose stars' angle may be anything in a range each at three
 angles — 3.6*α.6**α at 30°, 60° and 90°, 4.4*α.4**α at 30°, 45° and 60°,
-6.3*α.3**α at 20°, 30° and 45°, 3.3*α.3.3**α at 20°, 30° and 40° — then the
-eighteen of one angle, 4.6.4*30°.6 to 9.3.9.3*20°, in Wikipedia's order; 21 to
+6.3*α.3**α at 20°, 30° and 45°, 3.3*α.3.3**α at 20°, 30° and 40°, the
+*Adjustable angle* family (`star-angle`, `STARS_ANY_ANGLE`) — then the
+eighteen of one angle, 4.6.4*30°.6 to 9.3.9.3*20°, in Wikipedia's order, the
+*Fixed angle* family (`star`, `STARS_ONE_ANGLE`); 21 to
 37 tiles a window, lined and coloured as the 2-uniform tilings are), *Laves* (the eight Laves tilings, V4.8² to V4.6.12),
 *2-isohedral* (the twenty 2-uniform tilings' duals, two kinds of tile each,
 named V and the primal's pair, V[3⁶; 3⁴.6]₁), *Pentagonal* (types 10, 13 and
@@ -1318,8 +1321,9 @@ quick way to see the win state.
   `aperiodicLevel` an aperiodic window from `APERIODIC` (the mode key, how
   many substitutions, how many tiles the centred window keeps).
   `starLevel` makes a star tiling's from `STARS` (its key in `STAR_TILINGS`
-  and its window's box), in the Star polygons section after the 2-uniform
-  ones, marked `star`, named as Wikipedia writes its configuration — its
+  and its window's box), in the Star polygons group, marked `star-angle`
+  (`STARS_ANY_ANGLE`) or `star` (`STARS_ONE_ANGLE`; `isStarFamily` asks for
+  either), named as Wikipedia writes its configuration — its
   `configs` none, a configuration here naming a star's points and dents
   apart.
   `girihTilingLevel` makes a periodic girih tiling's from `GIRIH` (its key

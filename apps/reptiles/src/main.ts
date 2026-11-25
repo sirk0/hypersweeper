@@ -218,6 +218,8 @@ function goCatalog(push = true, groupKey: string | null = null): void {
   const named = menuGroup(groupKey);
   const group = wide.matches ? (named ?? MENU_GROUPS[0]!) : named;
   if (push) history.pushState(null, "", group && groupKey ? `?group=${group.key}` : "?tilings");
+  // an old group's link (`?group=aperiodic`) reads as the group it is now in
+  else if (named && groupKey !== named.key) history.replaceState(null, "", `?group=${named.key}`);
   const list = byId("catalog-list");
   const links = byId("catalog-links");
   links.replaceChildren();

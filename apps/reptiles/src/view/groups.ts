@@ -1,4 +1,4 @@
-// The desktop's sidebar: the catalog's twelve families (`GROUPS` in
+// The desktop's sidebar: the catalog's fourteen families (`GROUPS` in
 // levels.ts) put together into five groups, so the sidebar is as short as
 // Hypersweeper's and every group's page is a grid worth a wide screen. Each
 // family is in exactly one group (`tests/unit/groups.test.ts`), and a group's
@@ -24,9 +24,16 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
   {
     key: "regular",
     name: "Regular polygons",
-    hint: "Triangles, squares, hexagons, octagons and dodecagons, corner to corner — and stars",
-    families: ["regular", "uniform", "2-uniform", "star"],
+    hint: "Triangles, squares, hexagons, octagons and dodecagons, corner to corner",
+    families: ["regular", "uniform", "2-uniform"],
     icon: "trihex",
+  },
+  {
+    key: "star",
+    name: "Star polygons",
+    hint: "Regular polygons and stars, every corner alike",
+    families: ["star-angle", "star"],
+    icon: "star36a60",
   },
   {
     key: "irregular",
@@ -43,20 +50,19 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
     icon: "pythagorean",
   },
   {
-    key: "self-similar",
-    name: "Self-similar",
-    hint: "One tile, filled with smaller copies of itself or wound round a centre",
-    families: ["reptile", "spiral"],
-    icon: "sphinx",
-  },
-  {
-    key: "aperiodic",
-    name: "Aperiodic",
-    hint: "A window onto a tiling that repeats nowhere",
-    families: ["aperiodic"],
+    key: "nonperiodic",
+    name: "Non-periodic",
+    hint: "Rep-tiles, spirals and tilings that repeat nowhere",
+    families: ["reptile", "spiral", "aperiodic"],
     icon: "spectre",
   },
 ];
+
+/** Groups since merged, by their old keys, so an old `?group=` link opens. */
+const MOVED: Readonly<Record<string, string>> = {
+  "self-similar": "nonperiodic",
+  aperiodic: "nonperiodic",
+};
 
 /** The group a family is in. */
 export function groupOfFamily(family: string): MenuGroup | undefined {
@@ -65,7 +71,8 @@ export function groupOfFamily(family: string): MenuGroup | undefined {
 
 /** The group by its key. */
 export function menuGroup(key: string | null | undefined): MenuGroup | undefined {
-  return MENU_GROUPS.find((g) => g.key === key);
+  const moved = key ? (MOVED[key] ?? key) : key;
+  return MENU_GROUPS.find((g) => g.key === moved);
 }
 
 /** The desktop layout's query — Hypersweeper's (`Menu.wideQuery` and the

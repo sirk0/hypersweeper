@@ -54,10 +54,10 @@ test("a pick from home deals a level, and Tilings lists the five groups, each a 
   await expect(page.locator("#catalog .hud-title")).toHaveText("Tilings");
   await expect(page.locator("#catalog-list .group-card .group-name")).toHaveText([
     "Regular polygons",
+    "Star polygons",
     "Irregular tiles",
     "Offset corners",
-    "Self-similar",
-    "Aperiodic",
+    "Non-periodic",
   ]);
   await expect(page.locator("#catalog-list .group-card .group-meta").first()).toHaveText(
     /^\d+ tilings · ★ \d+\/\d+$/,
@@ -693,21 +693,18 @@ test("Tilings' families are named as Hypersweeper names them (and the stars and 
   page,
 }) => {
   await page.setViewportSize(PHONE);
-  // each group's page, its families in order — Aperiodic's one family named
-  // by the page's title alone
+  // each group's page, its families in order
   const families: [string, string[]][] = [
-    ["regular", ["Regular", "Uniform", "2-uniform", "Star polygons"]],
+    ["regular", ["Regular", "Uniform", "2-uniform"]],
+    ["star", ["Adjustable angle", "Fixed angle"]],
     ["irregular", ["Laves", "2-isohedral", "Pentagonal", "Girih"]],
     ["offset", ["Isogonal", "Congruent rectangles"]],
-    ["self-similar", ["Rep-tiles", "Spirals"]],
+    ["nonperiodic", ["Rep-tiles", "Spirals", "Aperiodic"]],
   ];
   for (const [group, names] of families) {
     await page.goto(`/?group=${group}`);
     await expect(page.locator(".family h2")).toHaveText(names);
   }
-  await page.goto("/?group=aperiodic");
-  await expect(page.locator("#catalog .hud-title")).toHaveText("Aperiodic");
-  await expect(page.locator(".family h2")).toBeHidden();
 });
 
 test("marked boards: colours as half discs, lines edge to edge, Penrose's arrows as arcs", async ({
@@ -866,7 +863,7 @@ test("a tiling's page: its boards on top, its tiles under them, then Play", asyn
 
   // a tiling of one level opens it straight away: the P-pentomino, one board
   // and no marks a level can have
-  await page.goto("/?group=self-similar");
+  await page.goto("/?group=nonperiodic");
   await page
     .locator("#catalog .card")
     .filter({ has: page.locator(".card-name", { hasText: /^P-pentomino$/ }) })

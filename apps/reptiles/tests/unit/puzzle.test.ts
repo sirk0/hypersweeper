@@ -318,6 +318,7 @@ describe("puzzle", () => {
         "reptile",
         "spiral",
         "aperiodic",
+        "star-angle",
         "star",
         "girih",
       ].includes(familyOf(l)),
@@ -1022,9 +1023,12 @@ describe("puzzle", () => {
         expect(level.name).toBe(notation(level.configs[0]!));
     }
     // the star tilings as Wikipedia writes them, angles in degrees
-    expect(named("star")).toEqual(STAR_TILINGS.map((t) => t.name));
-    expect(named("star")).toHaveLength(30);
-    expect(named("star")).toContain("3.6*60°.6**60°");
+    // — the four of an adjustable angle (each at three), then the eighteen of one
+    const stars = [...named("star-angle"), ...named("star")];
+    expect(stars).toEqual(STAR_TILINGS.map((t) => t.name));
+    expect(stars).toHaveLength(30);
+    expect(named("star-angle")).toHaveLength(12);
+    expect(named("star-angle")).toContain("3.6*60°.6**60°");
     expect(named("star")).toContain("(8.4*45°)²");
     expect(notation([3, 3, 3, 4, 4])).toBe("3³.4²");
     expect(parseNotation("[3⁶; 3².4.12]")).toEqual([

@@ -41,7 +41,7 @@ const SCORES = JSON.parse(readFileSync("src/difficulty.json", "utf8")) as Record
   { score: number }
 >;
 
-const GROUP_KEYS = ["regular", "irregular", "offset", "self-similar", "aperiodic"];
+const GROUP_KEYS = ["regular", "star", "irregular", "offset", "nonperiodic"];
 
 test("Quick start: the sidebar, and three difficulty cards that deal their own", async ({
   page,
@@ -107,13 +107,11 @@ test("a group's page: its families in grids, a jump to each", async ({ page }) =
     "Regular",
     "Uniform",
     "2-uniform",
-    "Star polygons",
   ]);
   await expect(page.locator("#catalog-links .pane-link")).toHaveText([
     "Regular",
     "Uniform",
     "2-uniform",
-    "Star polygons",
   ]);
   // a grid that wraps, not a row that scrolls sideways
   const row = page.locator('#catalog-list [data-family="2-uniform"] .family-row');
@@ -122,11 +120,27 @@ test("a group's page: its families in grids, a jump to each", async ({ page }) =
   await page.locator("#catalog-links .pane-link", { hasText: "2-uniform" }).click();
   await expect(page.locator('#catalog-list [data-family="2-uniform"] h2')).toBeInViewport();
 
-  // a group of one family: no jump, and no heading repeating the title
+  // the stars, a group of their own: the four of an adjustable angle, then
+  // the eighteen of one
+  await page.goto("/?group=star");
+  await expect(page.locator("#catalog-title")).toHaveText("Star polygons");
+  await expect(page.locator("#catalog-list .family h2")).toHaveText([
+    "Adjustable angle",
+    "Fixed angle",
+  ]);
+  await expect(page.locator('#catalog-list [data-family="star-angle"] .card')).toHaveCount(12);
+  await expect(page.locator('#catalog-list [data-family="star"] .card')).toHaveCount(18);
+
+  // a merged group's old link opens the group it is in now
   await page.goto("/?group=aperiodic");
-  await expect(page.locator("#catalog-title")).toHaveText("Aperiodic");
-  await expect(page.locator("#catalog-links .pane-link")).toHaveCount(0);
-  await expect(page.locator("#catalog-list .family h2")).toBeHidden();
+  await expect(page).toHaveURL(/\?group=nonperiodic$/);
+  await expect(page.locator("#catalog-title")).toHaveText("Non-periodic");
+  await expect(page.locator("#catalog-list .family h2")).toHaveText([
+    "Rep-tiles",
+    "Spirals",
+    "Aperiodic",
+  ]);
+  await expect(page.locator('#sidebar [data-side="group:nonperiodic"]')).toHaveClass(/\bactive\b/);
 });
 
 test("a tiling's page: the level picked beside the picks, Play in view", async ({ page }) => {
@@ -176,17 +190,17 @@ test("crossing the desktop's width redraws the screen, and keeps a level's tiles
   page,
 }) => {
   const errors = watchErrors(page);
-  await page.goto("/?group=aperiodic");
-  await expect(page.locator("#catalog-list .family")).toHaveCount(1);
+  await page.goto("/?group=nonperiodic");
+  await expect(page.locator("#catalog-list .family")).toHaveCount(3);
   // narrowed to a phone: the same group's page, its cards small, and no
   // sidebar; Tilings there is the five groups' index
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("#sidebar")).toBeHidden();
-  await expect(page.locator("#catalog-title")).toHaveText("Aperiodic");
-  await expect(page.locator("#catalog-list .family")).toHaveCount(1);
+  await expect(page.locator("#catalog-title")).toHaveText("Non-periodic");
+  await expect(page.locator("#catalog-list .family")).toHaveCount(3);
   await expect(page.locator("#catalog-list .card-meta .bars").first()).toBeHidden();
   await page.setViewportSize({ width: 1280, height: 720 });
-  await expect(page.locator("#catalog-title")).toHaveText("Aperiodic");
+  await expect(page.locator("#catalog-title")).toHaveText("Non-periodic");
   await expect(page.locator("#catalog-list .card-meta .bars").first()).toBeVisible();
   await page.goto("/?tilings");
   await expect(page.locator("#catalog-title")).toHaveText("Regular polygons");

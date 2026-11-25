@@ -42,6 +42,7 @@ const PERIODIC = new Set([
   "regular",
   "uniform",
   "2-uniform",
+  "star-angle",
   "star",
   "girih",
   "laves",
