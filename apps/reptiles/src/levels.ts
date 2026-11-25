@@ -774,10 +774,15 @@ export const GROUPS = [
     hint: "Regular shapes, two kinds of corner",
   },
   {
-    key: "star",
+    key: "star-angle",
     // (Hypersweeper has no such family, so no label of its for it)
-    name: "Star polygons",
-    hint: "Regular polygons and stars, every corner alike",
+    name: "Adjustable angle",
+    hint: "The four whose stars' points may take any angle in a range — each here at three",
+  },
+  {
+    key: "star",
+    name: "Fixed angle",
+    hint: "Eighteen that tile with their stars at one angle only",
   },
   {
     key: "laves",
@@ -1417,7 +1422,15 @@ function starLevel(key: string, box: number, at?: Variant): Level {
   const spec = starTiling(key);
   const { ring, cells, centre } = starCut(key, box, at);
   return {
-    ...makeLevel(key, spec.label, ring, whole(cells), "star", [], spec.name),
+    ...makeLevel(
+      key,
+      spec.label,
+      ring,
+      whole(cells),
+      ANY_ANGLE.has(key) ? "star-angle" : "star",
+      [],
+      spec.name,
+    ),
     star: { box: boxOf(box, at), ...(at === undefined ? {} : { centre }) },
   };
 }
@@ -2026,17 +2039,16 @@ export function periodicContext(
   dropStrays = plain.group === "isogonal",
 ): Piece[][] {
   const { ring } = plain;
-  const wide =
-    plain.group === "star"
-      ? starWindow(plain.key, scale * box)
-      : plain.group === "girih"
-        ? girihPeriodicWindow(plain.key, scale * box)
-        : plain.group === "laves"
-          ? lavesWindow(lavesPrimal(plain.key), scale * box)
-          : plain.group === "2-isohedral"
-            ? lavesWindow(plain.dualOf!, scale * box)
-            : // (an isogonal patch, as its window, can leave a lone tile at a corner)
-              templateWindow(plain.key, scale * box, { dropStrays });
+  const wide = isStarFamily(plain.group)
+    ? starWindow(plain.key, scale * box)
+    : plain.group === "girih"
+      ? girihPeriodicWindow(plain.key, scale * box)
+      : plain.group === "laves"
+        ? lavesWindow(lavesPrimal(plain.key), scale * box)
+        : plain.group === "2-isohedral"
+          ? lavesWindow(plain.dualOf!, scale * box)
+          : // (an isogonal patch, as its window, can leave a lone tile at a corner)
+            templateWindow(plain.key, scale * box, { dropStrays });
   // a bond's bricks cut into steps, and a pentagonal or isogonal tiling's
   // tiles cut alike, as its painted board's are (`paintBase`)
   const wideCells: Cyc[][] =
@@ -2484,8 +2496,10 @@ export const UNIFORM: [tiling: string, box: number][] = [
 
 /** The star tilings (`STAR_TILINGS` in geometry/stars.ts), and each one's
  * window: the squarest near two or three dozen tiles that keeps one outline
- * and a whole vertex inside (`box`, in edges, measured by scanning sizes). */
-export const STARS: [tiling: string, box: number][] = [
+ * and a whole vertex inside (`box`, in edges, measured by scanning sizes).
+ * First the four whose stars' points may take any angle in a range, each at
+ * three angles — the Adjustable angle family (`star-angle`). */
+export const STARS_ANY_ANGLE: [tiling: string, box: number][] = [
   ["star36a30", 6.6],
   ["star36a60", 9.7],
   ["star36a90", 10.35],
@@ -2498,6 +2512,11 @@ export const STARS: [tiling: string, box: number][] = [
   ["star333a20", 5.25],
   ["star333a30", 5.45],
   ["star333a40", 6.1],
+];
+
+/** The eighteen star tilings of one angle each, as Wikipedia lists them, in
+ * the family after the adjustable ones (`STARS_ANY_ANGLE`). */
+export const STARS_ONE_ANGLE: [tiling: string, box: number][] = [
   ["star464", 8.2],
   ["star84", 12.4],
   ["star12124", 17.15],
@@ -2517,6 +2536,17 @@ export const STARS: [tiling: string, box: number][] = [
   ["star8386", 13.55],
   ["star9393", 10.5],
 ];
+
+/** Every star tiling: the four of an adjustable angle at three angles each,
+ * then the eighteen of one angle. */
+export const STARS: [tiling: string, box: number][] = [...STARS_ANY_ANGLE, ...STARS_ONE_ANGLE];
+
+/** The star tilings' two families: those whose stars may take any angle in a
+ * range (`star-angle`), and those of one angle (`star`). */
+const ANY_ANGLE = new Set(STARS_ANY_ANGLE.map(([key]) => key));
+
+/** Whether a family is one of the star tilings'. */
+export const isStarFamily = (group: string): boolean => group === "star" || group === "star-angle";
 
 /** Easiest first, roughly: fewer tile kinds, then fewer tiles. */
 const byEase = (a: Level, b: Level): number =>

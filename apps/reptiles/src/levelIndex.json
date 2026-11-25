@@ -124,73 +124,73 @@
     "key": "star36a30",
     "label": "Six-pointed stars and triangles, their points 30°",
     "name": "3.6*30°.6**30°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star36a60",
     "label": "Six-pointed stars and triangles, their points 60°",
     "name": "3.6*60°.6**60°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star36a90",
     "label": "Six-pointed stars and triangles, their points 90°",
     "name": "3.6*90°.6**90°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star44a30",
     "label": "Four-pointed stars and squares, their points 30°",
     "name": "4.4*30°.4**30°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star44a45",
     "label": "Four-pointed stars and squares, their points 45°",
     "name": "4.4*45°.4**45°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star44a60",
     "label": "Four-pointed stars and squares, their points 60°",
     "name": "4.4*60°.4**60°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star63a20",
     "label": "Three-pointed stars and hexagons, their points 20°",
     "name": "6.3*20°.3**20°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star63a30",
     "label": "Three-pointed stars and hexagons, their points 30°",
     "name": "6.3*30°.3**30°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star63a45",
     "label": "Three-pointed stars and hexagons, their points 45°",
     "name": "6.3*45°.3**45°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star333a20",
     "label": "Three-pointed stars and triangles, their points 20°",
     "name": "3.3*20°.3.3**20°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star333a30",
     "label": "Three-pointed stars and triangles, their points 30°",
     "name": "3.3*30°.3.3**30°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star333a40",
     "label": "Three-pointed stars and triangles, their points 40°",
     "name": "3.3*40°.3.3**40°",
-    "group": "star"
+    "group": "star-angle"
   },
   {
     "key": "star464",
