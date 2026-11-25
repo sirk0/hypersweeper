@@ -2299,8 +2299,18 @@ export const PATCH_MARKED: string[] = [
  * with no way, `deriveRules`), so its rule would mark every edge alike. A
  * seed and the tile's shape force that spiral; no rule of this shape adds
  * to them. The P-pentomino's board asks nothing either: its ten edge slots
- * all meet, either way along. */
-export const NO_PATCH_RULES = new Set(["penrose", "kitedart", "klaassen", "ppentomino"]);
+ * all meet, either way along. Nor do Penrose's pentagons (one class, no
+ * way: his three kinds of pentagon are one shape, so every side meets every
+ * other) or Robinson's triangles (two classes, no way: the long sides and
+ * the short ones, which their lengths already tell apart). */
+export const NO_PATCH_RULES = new Set([
+  "penrose",
+  "kitedart",
+  "klaassen",
+  "ppentomino",
+  "penrosep1",
+  "robinson",
+]);
 
 /** Each one's colouring, as `npm run colourings` chose it. */
 const APERIODIC_COLOURINGS = aperiodicColouringsData as Record<string, ChosenColouring>;

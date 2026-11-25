@@ -4103,6 +4103,70 @@
     "seen": 21,
     "hidden": 137
   },
+  "penrosep1": {
+    "score": 1.931,
+    "presses": 4,
+    "flips": 0,
+    "fits": 646,
+    "seen": 157,
+    "hidden": 380
+  },
+  "penrosep1-2": {
+    "score": 2.002,
+    "presses": 5,
+    "flips": 0,
+    "fits": 761,
+    "seen": 208,
+    "hidden": 436
+  },
+  "penrosep1-3": {
+    "score": 2.205,
+    "presses": 9,
+    "flips": 0,
+    "fits": 710,
+    "seen": 140,
+    "hidden": 460
+  },
+  "penrosep1-4": {
+    "score": 2.042,
+    "presses": 6,
+    "flips": 0,
+    "fits": 660,
+    "seen": 115,
+    "hidden": 438
+  },
+  "penrosep1-5": {
+    "score": 1.839,
+    "presses": 4,
+    "flips": 0,
+    "fits": 455,
+    "seen": 140,
+    "hidden": 207
+  },
+  "penrosep1-6": {
+    "score": 2.085,
+    "presses": 8,
+    "flips": 0,
+    "fits": 538,
+    "seen": 114,
+    "hidden": 313
+  },
+  "penrosep1-7": {
+    "score": 1.958,
+    "presses": 4,
+    "flips": 0,
+    "fits": 792,
+    "seen": 156,
+    "hidden": 518
+  },
+  "penrosep1-8": {
+    "score": 2.251,
+    "presses": 10,
+    "flips": 0,
+    "fits": 700,
+    "seen": 170,
+    "hidden": 419
+  },
   "kitedart": {
     "score": 2.232,
     "presses": 18,
@@ -4166,6 +4230,70 @@
     "fits": 384,
     "seen": 102,
     "hidden": 200
+  },
+  "robinson": {
+    "score": 1.922,
+    "presses": 18,
+    "flips": 0,
+    "fits": 264,
+    "seen": 13,
+    "hidden": 160
+  },
+  "robinson-2": {
+    "score": 1.819,
+    "presses": 14,
+    "flips": 0,
+    "fits": 284,
+    "seen": 15,
+    "hidden": 181
+  },
+  "robinson-3": {
+    "score": 2.08,
+    "presses": 21,
+    "flips": 0,
+    "fits": 273,
+    "seen": 12,
+    "hidden": 176
+  },
+  "robinson-4": {
+    "score": 1.86,
+    "presses": 17,
+    "flips": 0,
+    "fits": 281,
+    "seen": 16,
+    "hidden": 163
+  },
+  "robinson-5": {
+    "score": 2.139,
+    "presses": 22,
+    "flips": 0,
+    "fits": 267,
+    "seen": 19,
+    "hidden": 169
+  },
+  "robinson-6": {
+    "score": 2.024,
+    "presses": 20,
+    "flips": 0,
+    "fits": 277,
+    "seen": 17,
+    "hidden": 170
+  },
+  "robinson-7": {
+    "score": 1.895,
+    "presses": 18,
+    "flips": 0,
+    "fits": 277,
+    "seen": 17,
+    "hidden": 159
+  },
+  "robinson-8": {
+    "score": 2.089,
+    "presses": 21,
+    "flips": 0,
+    "fits": 272,
+    "seen": 19,
+    "hidden": 170
   },
   "ammannbeenker": {
     "score": 1.312,
@@ -4422,6 +4550,70 @@
     "fits": 782,
     "seen": 344,
     "hidden": 165
+  },
+  "mystic": {
+    "score": 2.403,
+    "presses": 18,
+    "flips": 0,
+    "fits": 2087,
+    "seen": 1431,
+    "hidden": 337
+  },
+  "mystic-2": {
+    "score": 2.174,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1806,
+    "seen": 1225,
+    "hidden": 279
+  },
+  "mystic-3": {
+    "score": 2.175,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1922,
+    "seen": 1338,
+    "hidden": 264
+  },
+  "mystic-4": {
+    "score": 2.173,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1890,
+    "seen": 1282,
+    "hidden": 291
+  },
+  "mystic-5": {
+    "score": 2.062,
+    "presses": 12,
+    "flips": 0,
+    "fits": 1874,
+    "seen": 1222,
+    "hidden": 329
+  },
+  "mystic-6": {
+    "score": 2.184,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1954,
+    "seen": 1336,
+    "hidden": 305
+  },
+  "mystic-7": {
+    "score": 2.391,
+    "presses": 18,
+    "flips": 0,
+    "fits": 1970,
+    "seen": 1375,
+    "hidden": 276
+  },
+  "mystic-8": {
+    "score": 2.19,
+    "presses": 14,
+    "flips": 0,
+    "fits": 2055,
+    "seen": 1391,
+    "hidden": 345
   },
   "hat": {
     "score": 1.575,
@@ -20454,6 +20646,70 @@
     "fits": 425,
     "seen": 247,
     "hidden": 88
+  },
+  "mystic.rules": {
+    "score": 2.342,
+    "presses": 18,
+    "flips": 0,
+    "fits": 1505,
+    "seen": 974,
+    "hidden": 232
+  },
+  "mystic.rules-2": {
+    "score": 2.079,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1203,
+    "seen": 743,
+    "hidden": 174
+  },
+  "mystic.rules-3": {
+    "score": 2.093,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1301,
+    "seen": 833,
+    "hidden": 172
+  },
+  "mystic.rules-4": {
+    "score": 2.107,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1353,
+    "seen": 872,
+    "hidden": 188
+  },
+  "mystic.rules-5": {
+    "score": 2.005,
+    "presses": 12,
+    "flips": 0,
+    "fits": 1382,
+    "seen": 876,
+    "hidden": 209
+  },
+  "mystic.rules-6": {
+    "score": 2.108,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1336,
+    "seen": 854,
+    "hidden": 193
+  },
+  "mystic.rules-7": {
+    "score": 2.299,
+    "presses": 18,
+    "flips": 0,
+    "fits": 1269,
+    "seen": 816,
+    "hidden": 161
+  },
+  "mystic.rules-8": {
+    "score": 2.111,
+    "presses": 14,
+    "flips": 0,
+    "fits": 1360,
+    "seen": 861,
+    "hidden": 208
   },
   "socolartaylor.rules": {
     "score": 1.36,

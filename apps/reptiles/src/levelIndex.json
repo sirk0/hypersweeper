@@ -5110,20 +5110,6 @@
     "decor": { "of": "hatmetatiles", "colours": 1, "rules": true, "label": "matching rules" }
   },
   {
-    "key": "penrosep1.rules",
-    "label": "Penrose's first tiling: pentagons, stars, boats and diamonds, matching rules",
-    "name": "Penrose pentagons · matching rules",
-    "group": "rules",
-    "decor": { "of": "penrosep1", "colours": 1, "rules": true, "label": "matching rules" }
-  },
-  {
-    "key": "robinson.rules",
-    "label": "Penrose's kites and darts each cut in two: an acute and an obtuse golden triangle, matching rules",
-    "name": "Robinson triangles · matching rules",
-    "group": "rules",
-    "decor": { "of": "robinson", "colours": 1, "rules": true, "label": "matching rules" }
-  },
-  {
     "key": "mystic.rules",
     "label": "Tile(1,1), and the Mystic: two of it, one turned 30°, that the Spectre's substitution lays as one, matching rules",
     "name": "Tile(1,1) and the Mystic · matching rules",

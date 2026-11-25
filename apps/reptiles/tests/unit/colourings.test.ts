@@ -632,6 +632,7 @@ describe("colourings", () => {
       "hat.rules",
       "turtle.rules",
       "hatmetatiles.rules",
+      "mystic.rules",
       "socolartaylor.rules",
       "phyllotaxis.rules",
       "klaassen.3apart",

@@ -83,16 +83,20 @@ some back off.
     Conway's on the kites and darts. **Every other aperiodic level** but the
     self-similar girih pattern (whose strapwork, below, is drawn only) —
     Ammann–Beenker, Tile(1,1), the Spectre, the hat, the turtle, the hat's
-    metatiles and the Socolar–Taylor tile (`?level=ammannbeenker.rules`,
-    `?level=hatmetatiles.rules`) — has a rule read off its builder's own
+    metatiles, Tile(1,1) and the Mystic, and the Socolar–Taylor tile
+    (`?level=ammannbeenker.rules`, `?level=hatmetatiles.rules`,
+    `?level=mystic.rules`) — has a rule read off its builder's own
     patch (`src/patchMarks.ts`): each edge of the prototile is a *slot*,
     slots that meet anywhere in the patch are one class, and a class whose
     meetings all agree on a way along the edge is an arrow. That is the
     finest rule of that shape every shared edge of the patch keeps:
     Ammann–Beenker's comes out as his arrows, one kind on every edge; the
     Spectre's one kind, the hat's and the turtle's two (their short and
-    long edges), the metatiles' five (one with no way), the Socolar–Taylor
-    tile's ten. A label is a point a third of the way back from its head (on
+    long edges), the metatiles' five (one with no way), Tile(1,1) and the
+    Mystic's two, the Socolar–Taylor tile's ten. Penrose's pentagons and
+    Robinson's triangles have none (`NO_PATCH_RULES`): their patches ask
+    nothing their shapes do not — every side of P1 meets every other, and
+    Robinson's two classes are just its long and short sides. A label is a point a third of the way back from its head (on
     the middle where it has no way), and a tile's points of one class are
     joined by a line in the class's colour, leaving each edge square on
     there — two by one curve, more paired as they come round the outline,
@@ -591,8 +595,9 @@ is cut to `src/boards.json`: a periodic tiling's square moved across one
 domain of it on a 32 × 32 grid of steps, its edge shrunk by up to half a
 tile edge or grown by up to one and a half, in quarters (moved, the first
 board's square, the tightest that holds its tiles, loses some); an
-aperiodic builder's other `variant`s; a hat window centred on another tile
-near the patch's middle. A cut is a board when it has within 10% of the
+aperiodic builder's other `variant`s; a hat window, or one of the tilings
+Rep-tiles grows itself (`GROWN`), centred on another tile near the patch's
+middle. A cut is a board when it has within 10% of the
 first board's tiles, is as square (what the tests hold every board to), is
 one outline with no pinch, not bitten into (`solidity`, its area over its
 convex hull's: no more than 0.05 below the first board's, or above 0.75 —
@@ -645,10 +650,10 @@ so its colouring stays on its first board. `npm run marked-boards`
 every board and writes to `src/markedBoards.json` those where it makes the
 very same tray as on its first board (`sameTray`: each tile the other's
 turned, marks and all, on whichever side it rests — a window can show a
-colouring's tiles in more ways or fewer: 107 of 1625 do): 1518 boards
-past the first, 2585 levels in all — and the jigsaws, on the boards their
+colouring's tiles in more ways or fewer: 107 of 1632 do): 1525 boards
+past the first, 2617 levels in all — and the jigsaws, on the boards their
 colourings are, 809 more, and the vertex rules, on every board, 33 more:
-3427. Run it after `npm run boards`,
+3459. Run it after `npm run boards`,
 `colourings` or `levels`, then `npm run difficulty`;
 `tests/unit/difficulty.test.ts` builds every listed one and holds it to that,
 and `tests/unit/boards.test.ts` to its numbering.
@@ -690,7 +695,7 @@ tilings beside them, which Hypersweeper has not), then spirals and
 aperiodic ones, and the uniform tilings again with every point held to their
 vertex configuration (`Level.rule`, the `.vertex` levels above).
 
-**Status: 138 tilings in thirteen sections, then 219 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, twenty-eight of the thirty star tilings, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the seven other aperiodic levels, four of the five spirals and sixteen of the seventeen rep-tiles) and 270 colourings of the uniform, 2-uniform, star, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 210 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 3427 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
+**Status: 141 tilings in thirteen sections, then 220 matching rules (lines on the eleven uniform tilings, nineteen of the twenty 2-uniform ones, twenty-eight of the thirty star tilings, the eight Laves tilings, the twenty 2-isohedral ones, four of the five bonds, the three pentagonal tilings and the six isogonal ones, Penrose's arrows on his rhombi and his kites and darts, and a rule read off its patch on each of the eight other aperiodic levels that ask one, four of the five spirals and sixteen of the seventeen rep-tiles) and 270 colourings of the uniform, 2-uniform, star, Laves and 2-isohedral tilings, four of the bonds, the three pentagonal tilings and the six isogonal ones, Ammann–Beenker, Klaassen's spiral and six rep-tiles in three more, then 210 of those colourings again as jigsaws, and a vertex rule on seven of the eight uniform tilings, every marking on every board of its tiling that it makes the same tray on, 3459 levels in all (see Boards above), deployed at <https://tiling-games.pages.dev/rep-tiles/>** — named as
 Hypersweeper names its families (`menu.familyLabels` in `data/catalog.json`):
 *Regular* (4⁴, 3⁶, 6³), *Uniform* (the other eight uniform tilings, 3.6.3.6 to
 4.6.12), *2-uniform* (all twenty, named as Hypersweeper's catalog writes them,
@@ -746,7 +751,19 @@ his kites and darts, Ammann–Beenker's squares and rhombi, the Spectre — each
 the centred window of its builder's patch, 24 to 33 tiles, the sun or star in
 the middle; any cover wins, so the matching rules that keep the other three
 aperiodic are not enforced — the Spectre, never flipped, needs none — then
-after Ammann–Beenker **the self-similar girih pattern** (`?level=girih`),
+three that Rep-tiles grows itself (`GROWN` in `src/geometry/grown.ts`), which
+Hypersweeper has no board for, none ever flipped: after Penrose's rhombi
+**Penrose's pentagons** (`?level=penrosep1`), his first tiling, P1 —
+pentagons, five-pointed stars, boats and thin 36° diamonds, 31 tiles round the
+star nearest the middle, which is a pentagon ringed by pentagons
+(`geometry/penroseP1.ts`); after his kites and darts **Robinson's triangles**
+(`?level=robinson`), every kite and dart of that level's patch cut along its
+axis into the acute and the obtuse golden triangle, 42 tiles, turned by 36°;
+and after the Spectre (below) **Tile(1,1) and the Mystic** (`?level=mystic`),
+the Spectre's patch as its substitution builds it, each Mystic — two
+Spectres, one turned 30° against the other, that the rule lays as one — a
+tile of its own, an 18-gon, 33 tiles. Then after Ammann–Beenker **the
+self-similar girih pattern** (`?level=girih`),
 which Hypersweeper has no board for: one decagon cut twice by a rule of the
 kind Lu and Steinhardt found on the Darb-i Imam shrine — every girih
 decagon, hexagon and bowtie cut τ² smaller, the small tiles straddling the
@@ -1054,6 +1071,47 @@ quick way to see the win state.
   (`tests/unit/hat.test.ts`) are its oracle: no overlap and no gap as hats and
   as metatiles, every hat the hat turned by sixths, the mirrored ones one in
   seven or so and apart, every turtle the turtle.
+- `src/geometry/grown.ts` — **the aperiodic tilings Rep-tiles grows itself**
+  (`GROWN`): each its key, name, label, how deep its patch is grown, its
+  window, the level it is listed after and how its whole patch is grown, every
+  tile listed from the corner that carries its kind's first tile onto it by a
+  turn (`framed`), as a rule read off the patch needs. `grownWindow` keeps the
+  `keep` tiles nearest the middle (`centredWindow`), or nearest a tile of the
+  kind `centreOn` names where the very middle lacks one (P1's star). A level,
+  its boards (`centre`), the tiling past a finished board and its patch's rule
+  all come from this one entry (`grownLevel`, `grownBoards` in `levels.ts`).
+  `tests/unit/grown.test.ts` is the oracle: no overlap and no gap, every tile
+  its kind's first turned, and each tiling's own facts below.
+- `src/geometry/robinson.ts` — Robinson's triangles: the kites-and-darts
+  patch (`aperiodicPatch("kitedart", …)`) with every tile cut along its axis,
+  the diagonal through its two corners whose sides are equal, so exact in
+  ℤ[ζ10]: a kite into two acute golden triangles, a dart into two obtuse ones.
+- `src/geometry/mystic.ts` — Tile(1,1) and the Mystic: the Spectre's patch
+  with each tile's label in the substitution (`spectreLabelledExact` in
+  @tiling/geometry), each Mystic's two Spectres (Kaplan's `Gamma1` and
+  `Gamma2`, laid one after the other) fused into the 18-gon they make
+  (`outline`), every other Spectre the 13-gon Tile(1,1) is.
+- `src/geometry/penroseP1.ts` — **Penrose's pentagons**, P1, in ℤ[ζ10]. The
+  rule grows each tile by φ²: a pentagon into six (one at each corner, one in
+  the middle turned against it), leaving a half diamond on each side, two of
+  which make a diamond where two pentagons meet; a star, boat or diamond, with
+  the half diamonds on its sides, filled as `P1_FILLS` lists — found by an
+  exact search of every way to fill each region and chosen as the Tilings
+  Encyclopedia draws the rule: the star's the one of its eleven with its
+  five-fold symmetry, the boat's the symmetric one with its star toward the
+  base, the diamond's a star at one tip. Which tip is read off the tiles round
+  it (Penrose's three kinds of pentagon say it, and the tiling shows it): the
+  one whose two pentagons along the diamond's sides each meet three tiles that
+  are not pentagons. That held at every diamond of the encyclopedia's own
+  patch, read back onto ℤ[ζ10] for the check (not shipped). A rule that looks
+  at a tile's neighbours cannot start from one tile, so the patch is grown as
+  the rule's fixed point (`p1Seed`): cut, laid again round the middle child of
+  the middle pentagon, cut down to a disc of radius 16, until the disc comes
+  out the same; then `p1Patch` cuts it on, trimming each cut to the disc it
+  is sure of. Checked against the encyclopedia's patch: every tile, vertex and
+  ring of neighbours four deep is one it has, and the other way round, and the
+  tile frequencies are the rule's eigenvector (a star to 18 pentagons, a boat
+  to 8, a diamond to 5); the tests check the fills and the frequencies.
 - `src/geometry/socolarTaylor.ts` — the Socolar–Taylor tile
   (`SOCOLAR_TAYLOR`, its nineteen pieces read off the shape-enforced drawing,
   in ℤ[ζ12] via the lattice points (a, b) — x = a·cos 30°, y = b/2 — that
