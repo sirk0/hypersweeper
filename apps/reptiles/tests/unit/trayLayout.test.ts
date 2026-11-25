@@ -3,6 +3,7 @@ import { orient, strictlyBetween, type Cyc } from "../../src/geometry/cyclotomic
 import { NONE, colours, partner } from "../../src/geometry/marks";
 import { posed, spotKey, type Piece, type XY } from "../../src/geometry/shape";
 import { LEVELS, levelByKey, type Level } from "../../src/levels";
+import { MENU_GROUPS } from "../../src/view/groups";
 import { groupsPlaced, trayGroups, type LaidTile } from "../../src/view/trayLayout";
 import { part } from "./shard";
 
@@ -122,6 +123,10 @@ function overlapping(level: Level, p: LaidTile, q: LaidTile): boolean {
 
 const SEVERAL = LEVELS.filter((l) => l.tiles.length > 1);
 
+/** The families of the Offset corners group: the isogonal tilings and the
+ * bonds, whose corners meet part-way along a side. */
+const OFFSET = new Set<string>(MENU_GROUPS.find((g) => g.key === "offset")!.families);
+
 describe("the tray's tiles joined for a picture", () => {
   it.each(part(SEVERAL.map((l) => [l.key, l] as const)))(
     "%s: one group, every tile a pose it may take, overlapping none, every shared edge a pair that may meet",
@@ -132,11 +137,16 @@ describe("the tray's tiles joined for a picture", () => {
       expect(groups).toHaveLength(1);
       const tiles = groups.flat();
       expect(tiles.map((t) => t.kind).sort((p, q) => p - q)).toEqual(level.tiles.map((_, k) => k));
-      const marked = level.tiles.some((s) =>
-        s.pieces.some(
-          (p) => (p.marks ?? []).some((m) => m !== NONE) || (p.curve ?? []).some((c) => c !== 0),
-        ),
-      );
+      // corners part-way along a side only on the Offset corners group's
+      // plain tiles, whose tilings meet so: every other tile meets whole
+      // edge to whole edge, corner on corner
+      const offset =
+        OFFSET.has(level.group) &&
+        !level.tiles.some((s) =>
+          s.pieces.some(
+            (p) => (p.marks ?? []).some((m) => m !== NONE) || (p.curve ?? []).some((c) => c !== 0),
+          ),
+        );
       // joined: tiles that touch along a stretch of edge, one component
       const root = tiles.map((_, i) => i);
       const find = (i: number): number => (root[i] === i ? i : (root[i] = find(root[i]!)));
@@ -147,6 +157,17 @@ describe("the tray's tiles joined for a picture", () => {
           expect(overlapping(level, p, q), `${level.key}: ${p.kind} over ${q.kind}`).toBe(false);
           for (const f of sidesOf(p))
             for (const g of sidesOf(q)) {
+              // a corner part-way along a side, touching or running along it
+              const { ring } = level;
+              const cornerOn =
+                strictlyBetween(ring, g.a, g.b, f.a) ||
+                strictlyBetween(ring, g.a, g.b, f.b) ||
+                strictlyBetween(ring, f.a, f.b, g.a) ||
+                strictlyBetween(ring, f.a, f.b, g.b);
+              if (cornerOn)
+                expect(offset, `${level.key}: a corner of ${p.kind}|${q.kind} part-way along`).toBe(
+                  true,
+                );
               if (!along(level, f, g)) continue;
               root[find(i)] = find(j);
               if (shared(level, f, g)) {
@@ -159,8 +180,8 @@ describe("the tray's tiles joined for a picture", () => {
                   `${level.key}: curves across ${p.kind}|${q.kind}`,
                 ).toBe(true);
               } else {
-                // part-way along each other: only plain tiles may
-                expect(marked, `${level.key}: ${p.kind} part-way along ${q.kind}`).toBe(false);
+                // part-way along each other
+                expect(offset, `${level.key}: ${p.kind} part-way along ${q.kind}`).toBe(true);
               }
             }
         });

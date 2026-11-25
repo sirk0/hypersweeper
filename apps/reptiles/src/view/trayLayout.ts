@@ -10,8 +10,12 @@
 // the opposite bulge — and every other edge the new tile ends up sharing with
 // one already down held to the same. A tile turns only by the level's rotate
 // step and is mirrored only where the level flips; its tray pose is preferred.
-// Tiles with no marks and no round edges may also lie a short edge along a
-// longer one, at either end.
+// Tiles meet whole edge to whole edge, corner on corner: no corner of one
+// part-way along a side of another, even where they only touch at it. The
+// Offset corners group's plain tiles (the isogonal tilings and the bonds),
+// whose tilings meet part-way along a side, are the exception: those may
+// also lie a short edge along a longer one, flush with either end, or touch
+// part-way along one.
 //
 // Joins are found exactly, in the level's ring; only the overlap test, the
 // ranking and the drawing read floats. A beam search keeps the arrangements
@@ -19,7 +23,7 @@
 // no partner edge, or no room for it — the tiles are split into as few joined
 // groups as it finds, each drawn apart.
 
-import { orient, sameDirection, strictlyBetween, type Cyc } from "../geometry/cyclotomic";
+import { sameDirection, strictlyBetween, type Cyc } from "../geometry/cyclotomic";
 import { NONE, partner } from "../geometry/marks";
 import {
   loopEdges,
@@ -32,6 +36,7 @@ import {
 } from "../geometry/shape";
 import type { Level } from "../levels";
 import { alongEdge, jigsawPoints, loopsOf, loopsReach, type Loop } from "./curve";
+import { groupOfFamily } from "./groups";
 
 /** A tray tile as a picture lays it: its kind and its pieces, exact, posed
  * and moved into its group (board units, y up). */
@@ -158,16 +163,20 @@ function layOut(level: Level): TrayGroups {
       });
     return out;
   });
-  const plain = level.tiles.every((s) =>
-    s.pieces.every(
-      (p) => !(p.marks ?? []).some((m) => m !== NONE) && !(p.curve ?? []).some((c) => c !== 0),
-    ),
-  );
+  // corners may meet part-way along a side only where the tiling's own do,
+  // and only on plain tiles: a mark or a curve is the whole edge's
+  const offset =
+    groupOfFamily(level.group)?.key === "offset" &&
+    level.tiles.every((s) =>
+      s.pieces.every(
+        (p) => !(p.marks ?? []).some((m) => m !== NONE) && !(p.curve ?? []).some((c) => c !== 0),
+      ),
+    );
   const scale = typicalEdge(level);
   const groups: TrayGroups = [];
   let left = level.tiles.map((_, k) => k);
   while (left.length) {
-    const group = bestGroup(level, poses, left, plain, scale);
+    const group = bestGroup(level, poses, left, offset, scale);
     groups.push(group.map((d) => d.tile));
     const used = new Set(group.map((d) => d.tile.kind));
     left = left.filter((k) => !used.has(k));
@@ -180,7 +189,7 @@ function bestGroup(
   level: Level,
   poses: PosedKind[][],
   kinds: number[],
-  plain: boolean,
+  offset: boolean,
   scale: number,
 ): Down[] {
   let beam: State[] = kinds.map((kind) => {
@@ -199,7 +208,7 @@ function bestGroup(
     const next: State[] = [];
     const seen = new Set<string>();
     for (const state of beam)
-      for (const tile of joins(level, poses, state, plain, scale)) {
+      for (const tile of joins(level, poses, state, offset, scale)) {
         const down = [...state.down, tile];
         const key = keyOf(level, down);
         if (seen.has(key)) continue;
@@ -245,7 +254,7 @@ function joins(
   level: Level,
   poses: PosedKind[][],
   state: State,
-  plain: boolean,
+  offset: boolean,
   scale: number,
 ): Down[] {
   const { ring } = level;
@@ -263,7 +272,7 @@ function joins(
       t,
       p.pose,
     );
-    if (!state.down.every((d) => fitsBeside(level, tile, d, plain, scale))) return;
+    if (!state.down.every((d) => fitsBeside(level, tile, d, offset, scale))) return;
     tile.tile.pieces = p.pieces.map((q) => ({ ...q, verts: q.verts.map((v) => ring.add(v, t)) }));
     out.push(tile);
   };
@@ -283,7 +292,7 @@ function joins(
           }
           // a short edge along a longer one, or a long one along a short
           // one, flush with either end
-          if (plain)
+          if (offset)
             for (const f of edges) {
               const vec = ring.sub(f.b, f.a);
               if (ring.eq(vec, want) || !sameDirection(ring, vec, want)) continue;
@@ -296,9 +305,15 @@ function joins(
 }
 
 /** Whether `tile` lies beside `other`, overlapping nothing, every edge they
- * share whole a partner pair — and, unless both are plain, no edge of one
- * lying part-way along an edge of the other. */
-function fitsBeside(level: Level, tile: Down, other: Down, plain: boolean, scale: number): boolean {
+ * share whole a partner pair — and, unless corners may be `offset`, no
+ * corner of one lying part-way along an edge of the other. */
+function fitsBeside(
+  level: Level,
+  tile: Down,
+  other: Down,
+  offset: boolean,
+  scale: number,
+): boolean {
   const { ring } = level;
   const eps = 1e-7 * scale;
   if (!boxesMeet(tile.box, other.box, eps)) return true;
@@ -324,16 +339,17 @@ function fitsBeside(level: Level, tile: Down, other: Down, plain: boolean, scale
         if (fe.curve !== -ge.curve || fe.mark !== partner(ge.mark)) return false;
         continue;
       }
-      if (plain) continue;
-      const collinear = orient(ring, ga, gb, fa) === 0 && orient(ring, ga, gb, fb) === 0;
-      if (!collinear) continue;
-      const along =
+      if (offset) continue;
+      // a corner of one part-way along a side of the other — whether or not
+      // the two run along each other — is a corner offset from the
+      // tiling's own, which only the Offset corners group has
+      if (
         strictlyBetween(ring, ga, gb, fa) ||
         strictlyBetween(ring, ga, gb, fb) ||
         strictlyBetween(ring, fa, fb, ga) ||
-        strictlyBetween(ring, fa, fb, gb) ||
-        (ring.eq(fa, ga) && ring.eq(fb, gb));
-      if (along) return false;
+        strictlyBetween(ring, fa, fb, gb)
+      )
+        return false;
     }
   }
   return (

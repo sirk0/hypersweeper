@@ -472,8 +472,9 @@ edge along one already down, the same length, only where the board would
 let them meet — the marks partners (a half disc against its colour, a line
 against a line, arrows agreeing, a knob in its socket), a round edge against
 the opposite bulge, every other edge they end up sharing held to the same,
-and no marked edge part-way along another (plain tiles may lie a short edge
-along a long one) — each turned only by the level's rotate step, mirrored
+and no corner of one part-way along a side of another, even only touching
+it (but the Offset corners group's plain tiles, whose tilings meet so: those
+may lie a short edge along a long one) — each turned only by the level's rotate step, mirrored
 only where it flips, and held as the tray holds it where that fills as well.
 The exact ring finds the joins; floats only test overlap and rank the
 arrangements, a beam search keeping those that fill the square round them
