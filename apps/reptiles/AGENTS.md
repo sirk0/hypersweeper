@@ -337,7 +337,9 @@ some back off.
   rhombi); a test holds that too.
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
   from still to go (past zero, how many extra). Finishing at all is one star;
-  with no more tiles than that, two; and that with no hint shown, three. No
+  with every pile at 0 — of each kind exactly the tiles the board was cut
+  from, not merely as many in all (`Puzzle.pilesEmpty`) — two; and that with
+  no hint shown, three. No
   clock shows while playing: the time from the first tile down to the last
   is told only on the win card, with how many hints were shown (a press
   again while a hint is on show is not another) — there is no time limit.
@@ -380,9 +382,18 @@ some back off.
   else the bulb glows and "thinking…" shows until it is — exact however long
   that takes (most boards in milliseconds; a stray tile on the hardest
   2-isohedral and coloured boards, tens of seconds).
-  The best per level is kept in `localStorage` and shown in Tilings — on a
-  tiling's card, as stars earned of stars to earn over all its levels; on a
-  tiling's page, per board and marking.
+  The best per level is kept in `localStorage`; Tilings counts it per card
+  of a tiling's page (`src/tally.ts`): a board earns the most stars any of
+  its tile sets has had on it, a tile set the most it has had on any board,
+  and a tiling's stars are those summed, of three per board and three per
+  tile set — never three for every board by every tile set: each board and
+  each tile set is a puzzle of its own, no one pair of them more. A tiling
+  of one level counts that level, of three. Each card is washed in the
+  accent, deeper for each star (`data-stars`, 0 to 3); a tiling's card in
+  Tilings by the share earned (`tierOf`: any, two thirds, all), its board's
+  outline left its own fill so the tiles in it read as ever.
+  `tests/unit/tally.test.ts` and `smoke.spec.ts` ("a tiling's stars…") pin
+  it.
 - **Zoom.** Two fingers pinch the board in, up to four times fitted, about
   their midpoint (a second finger landing mid-drag puts that tile back first;
   one on a control still turns or flips it); one finger on bare board pans it
@@ -449,15 +460,18 @@ must (the kissing square chain, whose three touching points no one
 shrink keeps, too). Then the name, difficulty as Hypersweeper's
 three bars, how many boards and tile sets it has (a tile set is a card of its
 page's Tiles row: plain, a matching rule, a colouring or a jigsaw), and the
-stars earned of its levels; a tiling of one level (the P-pentomino) opens it, any
+stars earned — its boards' and its tile sets' bests, summed (Piles and stars,
+above) — the card tinted by them; a tiling of one level (the P-pentomino) opens it, any
 other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
 top, as their outlines in a grid, one dealt at random; under them its
 markings in one row scrolling sideways — Plain first and picked, then its
 matching rules, then its colourings, then its jigsaws — each card the tray's tiles drawn big
 in a grid that fits them all (`trayIcon`), three cards to a row, no wider
 than leaves a row of them on screen under the boards on a short desktop
-window, never the board's outline, which is up top, with the level's difficulty and stars on the picked board; then
-Play, pinned to the foot of the screen, naming the level. A board the picked
+window, never the board's outline, which is up top, with the level's difficulty. A board's card shows its best stars
+with any tiles, a tile set's its best on any board, each tinted by them; then
+Play, pinned to the foot of the screen, naming the level, with the picked
+board and tiles' own stars (on a desktop, beside its picture instead). A board the picked
 marking is not laid on is dimmed, as is a marking not laid on the picked
 board; picking one picks what goes with it (a board it is laid on, or the
 plain tiles). The page keeps its pick in its URL (`&pick=<level>`), so Back
@@ -597,7 +611,7 @@ the first is `<key>`, the board it shipped with) — and each of its markings
 on each board too (`?level=<marking>-<n>`: `trihex.lines-2` is `trihex-2`
 lined; the next-board control steps through the boards a marking is laid
 on). Tilings lists a tiling once — its first board's outline, how
-many levels it is, the stars earned of them — and Easy/Medium/Hard and the
+many levels it is, the stars earned of its boards and tile sets — and Easy/Medium/Hard and the
 die deal from every board, plain and marked.
 `npm run boards` (`scripts/find-boards.mts`) finds them and writes where each
 is cut to `src/boards.json`: a periodic tiling's square moved across one
@@ -1429,6 +1443,10 @@ quick way to see the win state.
 - `src/progress.ts` — the best stars per level, in `localStorage` (guarded;
   the game works without it; the old finished-levels list reads as one star
   each), and the fastest finish per level (`rep-tiles.times`, milliseconds).
+- `src/tally.ts` — a tiling's stars as its page lays them out: each board's
+  best (`boardStars`) and each tile set's (`markingStars`), summed
+  (`tilingTally`), and how deep a card is tinted for them (`tierOf`); pure,
+  held by `tests/unit/tally.test.ts`.
 - `src/saved.ts` — the boards in play, kept per level (`saveBoard`,
   `loadBoard`, `forgetBoard`, `hasBoard`, `keptCount`; `fingerprint`), held by
   `tests/unit/history.test.ts` with undo and redo.
@@ -1441,7 +1459,7 @@ quick way to see the win state.
   unchanged — and, on a level with a rule, only edge to edge and where every
   vertex touched can still become the configuration: `allows`), `canTurn`,
   `won`, `coverage` (a share of the area, not a tile count — the count
-  depends on how the board is finished), `used`, `stars`, and `solve`, a
+  depends on how the board is finished), `used`, `pilesEmpty`, `stars`, and `solve`, a
   budgeted backtracking fill for the tests and the dev seam that always works
   the open corner with the fewest placements, trying the board's own tile
   there first (blind, it gets lost on V[3.4².6; 3.6.3.6]; on the

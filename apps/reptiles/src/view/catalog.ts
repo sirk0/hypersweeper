@@ -4,22 +4,25 @@
 // group's page is its families, each a grid of small cards; on a desktop the
 // sidebar lists the groups, and a group's page is the same grids, wider. A card shows what a player starts with (the first board's outline,
 // the tray's tiles inside it at their true sizes — view/cardArt.ts), the tiling's name, its first board's difficulty as
-// Hypersweeper's three bars, and how many levels it is — every board by
-// every way its tiles are marked (plain, matching rules, colourings) — with
-// the stars earned on them. A tiling of more than one level opens its own
+// Hypersweeper's three bars, how many boards and tile sets it has (plain,
+// matching rules, colourings, jigsaws), and the stars earned of them — a star
+// row of each board's best and each tile set's, summed (tally.ts) — the card
+// tinted the more of them are earned. A tiling of more than one level opens its own
 // page (view/picker.ts), where a board and its tiles are picked.
 
 import { BARS, bandOf } from "../difficulty";
 import { GROUPS, levelByKey, type Level } from "../levels";
+import { tierOf } from "../tally";
 import { cardArt } from "./cardArt";
 import type { MenuGroup } from "./groups";
 import { barsIcon, starRow, trayIcon } from "./icons";
 
 /** How many levels the tiling `level` is the first board of has, and the
- * stars earned on them. */
+ * stars earned of `max` to earn (tally.ts). */
 export type Tally = (level: Level) => {
   levels: number;
   stars: number;
+  max: number;
   /** Boards the tiling is cut in, and the tile sets it has — what its page's
    * Tiles row holds: plain, matching rules and colourings. */
   boards?: number;
@@ -60,11 +63,12 @@ export function renderCatalog(
   }
 }
 
-/** A group's tilings, the levels they are, and the stars earned on them. */
+/** A group's tilings, the levels they are, and the stars earned of `max`. */
 export interface GroupTally {
   tilings: number;
   levels: number;
   stars: number;
+  max: number;
 }
 
 /** The phone's Tilings: the five groups, a card each — the group's icon (its
@@ -81,7 +85,7 @@ export function renderGroupIndex(
   const list = document.createElement("div");
   list.className = "group-list";
   for (const group of groups) {
-    const { tilings, levels, stars } = tally(group);
+    const { tilings, stars, max } = tally(group);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "group-card";
@@ -98,7 +102,7 @@ export function renderGroupIndex(
     hint.textContent = group.hint;
     const meta = document.createElement("span");
     meta.className = "group-meta";
-    meta.textContent = `${tilings} tilings · ★ ${stars}/${levels * 3}`;
+    meta.textContent = `${tilings} tilings · ★ ${stars}/${max}`;
     text.append(name, hint, meta);
     button.append(icon, text);
     button.addEventListener("click", () => open(group.key));
@@ -117,7 +121,7 @@ export function renderGroupIndex(
  * difficulty, and the stars — earned of those to earn. */
 export function levelCard(
   level: Level,
-  { levels, stars, boards = 1, sets = 1 }: ReturnType<Tally>,
+  { levels, stars, max, boards = 1, sets = 1 }: ReturnType<Tally>,
   pick: (level: Level) => void,
 ): HTMLButtonElement {
   const button = document.createElement("button");
@@ -125,6 +129,7 @@ export function levelCard(
   button.className = "card";
   button.title = level.label;
   button.dataset["tiling"] = level.key;
+  button.dataset["stars"] = String(tierOf(stars, max));
   const band = bandOf(level.key);
   const name = document.createElement("span");
   name.className = "card-name";
@@ -138,7 +143,7 @@ export function levelCard(
   if (levels > 1) {
     const tallied = document.createElement("span");
     tallied.className = "card-stars";
-    tallied.textContent = `★ ${stars}/${levels * 3}`;
+    tallied.textContent = `★ ${stars}/${max}`;
     meta.append(bars, tallied);
   } else meta.append(bars, starRow(stars));
   // the tiles inside the board's outline, clear of it (view/cardArt.ts)

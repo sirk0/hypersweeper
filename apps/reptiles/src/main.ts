@@ -6,7 +6,8 @@ import { applyScheme } from "./scheme";
 import { attachDrag, type DragControl } from "./input/drag";
 import type { Laid } from "./hint";
 import { Hinter } from "./hintClient";
-import { BOARDS, LEVELS, boardKeys, levelByKey, markedOf, type Level } from "./levels";
+import { BOARDS, LEVELS, levelByKey, type Level } from "./levels";
+import { tilingTally } from "./tally";
 import { startCloudStars, syncCloudStars } from "./cloudStars";
 import { haptic, setHapticsEnabled } from "./haptics";
 import {
@@ -59,17 +60,11 @@ const thinking = byId("thinking");
  * move (hint.worker.ts), so a press of the hint button often finds it ready. */
 const hinter = new Hinter();
 
-/** Every level of the tiling `plain` is the first board of — each of its
- * boards plain, then marked each way it is (`markedOf`) — and the stars
- * earned on them: what the catalog shows for it. */
+/** The tiling `plain` is the first board of, as the catalog counts it: its
+ * levels, boards and tile sets, and the stars earned — its boards' and its
+ * tile sets' bests summed (tally.ts). */
 function tallyOf(plain: Level): ReturnType<Tally> {
-  const keys = [plain, ...markedOf(plain.key)].flatMap((l) => boardKeys(l.key));
-  return {
-    levels: keys.length,
-    stars: keys.reduce((sum, k) => sum + starsFor(k), 0),
-    boards: boardKeys(plain.key).length,
-    sets: markedOf(plain.key).length + 1,
-  };
+  return tilingTally(plain, starsFor);
 }
 
 // The colour scheme picked in Settings, before anything is drawn.
@@ -208,6 +203,7 @@ function groupTally(group: MenuGroup): GroupTally {
     tilings: tallies.length,
     levels: tallies.reduce((sum, t) => sum + t.levels, 0),
     stars: tallies.reduce((sum, t) => sum + t.stars, 0),
+    max: tallies.reduce((sum, t) => sum + t.max, 0),
   };
 }
 
@@ -459,21 +455,22 @@ function changed(): void {
   s.control.setRemoving(false);
   const ms = elapsed(s);
   const stars = puzzle.stars(s.hints > 0);
-  const need = puzzle.level.need.reduce((a, b) => a + b, 0);
   const stars3 = byId("won-stars");
   stars3.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
   stars3.setAttribute("aria-label", `${stars} of 3 stars`);
-  const used = puzzle.tiles.length;
+  // the piles not at 0: past it (extra tiles) or short of it (another kind
+  // laid in their place)
+  const off = puzzle.level.need.filter((n, kind) => puzzle.used(kind) !== n).length;
   const lines = [
     "★ Covered, no gaps, no overlaps.",
-    used <= need
-      ? `★ ${used} tiles — no more than the ${need} needed.`
-      : `☆ ${used} tiles — ${need} would do.`,
+    off === 0
+      ? "★ Every pile in the tray down to 0."
+      : `☆ ${off} ${off === 1 ? "pile" : "piles"} in the tray not at 0.`,
     stars === 3
       ? "★ No hints."
       : s.hints > 0
         ? `☆ ${s.hints} ${s.hints === 1 ? "hint" : "hints"} used.`
-        : "☆ No hints — that counts once the tiles are no more than needed.",
+        : "☆ No hints — that counts once every pile is at 0.",
     `Time: ${formatTime(ms)}${
       s.newBest
         ? s.bestBefore === null

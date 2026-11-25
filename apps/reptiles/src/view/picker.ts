@@ -10,7 +10,10 @@
 // board's outline, which is already up top — Plain first and picked; then a
 // Play button naming the level. A board a marking is not laid on is greyed
 // out, and so is a marking on a board it is not laid on — picking one picks
-// what goes with it.
+// what goes with it. Each board's card shows the most stars it has had with
+// any tiles, each tile set's the most it has had on any board — what a
+// tiling's stars are summed from (tally.ts) — the card tinted by them; Play
+// shows the picked pair's own.
 //
 // On a desktop the page is two columns: on the left, held in view, the
 // level the pick makes — its board's outline with its tiles inside it, drawn
@@ -18,22 +21,11 @@
 // from, in grids that fill the width.
 
 import { BARS, bandOf, type Band } from "../difficulty";
-import { boardKeys, levelByKey, markedOf, type Level } from "../levels";
+import { levelByKey, markedOf, type Level } from "../levels";
 import { formatTime } from "../progress";
+import { boardStars, boardsOf, keyOf, markingStars } from "../tally";
 import { cardArt } from "./cardArt";
 import { barsIcon, outlineIcon, starRow, trayIcon, vertexFigure } from "./icons";
-
-/** The level a board and a marking make: `<marking>` on the first board,
- * `<marking>-<n>` on the n-th. */
-const keyOf = (marking: string, board: number): string =>
-  board === 1 ? marking : `${marking}-${board}`;
-
-/** The boards `marking` (a plain or marked first board's key) is laid on. */
-function boardsOf(marking: string): Set<number> {
-  return new Set(
-    boardKeys(marking).map((k) => (k === marking ? 1 : Number(k.slice(marking.length + 1)))),
-  );
-}
 
 /** The pictures already drawn, by what they are of: a board's outline or a
  * marking's tray. Drawing one builds its level, so each is drawn once, after
@@ -155,21 +147,22 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       }
       for (const n of boardsOf(t.key)) {
         const on = t === tiling;
-        const key = keyOf(on ? marking : t.key, n);
         const button = document.createElement("button");
         button.type = "button";
         button.className = "board-card";
         button.dataset["board"] = keyOf(t.key, n);
         const picked = on && n === board;
         button.setAttribute("aria-pressed", String(picked));
-        const offMarking = on && !laid.has(n);
-        if (offMarking) button.classList.add("off");
+        if (on && !laid.has(n)) button.classList.add("off");
+        // a board's stars: its best with any tiles (tally.ts)
+        const earned = boardStars(t, n, stars);
+        button.dataset["stars"] = String(earned);
         const slot = document.createElement("span");
         slot.className = "outline-slot";
         drawLater(slot, `outline:${keyOf(t.key, n)}`, () =>
           outlineIcon(levelByKey(keyOf(t.key, n))!),
         );
-        button.append(slot, starRow(offMarking ? 0 : stars(key)));
+        button.append(slot, starRow(earned));
         button.title = `Board ${n} of ${t.name}`;
         button.addEventListener("click", () => {
           // a board this marking is not laid on: its plain tiles
@@ -213,7 +206,10 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       else drawLater(slot, `tray:${m.key}`, () => trayIcon(levelByKey(m.key)!));
       const meta = document.createElement("span");
       meta.className = "card-meta";
-      meta.append(bandIcon(bandOf(key)), starRow(here ? stars(key) : 0));
+      // a tile set's stars: its best on any board (tally.ts)
+      const earned = markingStars(m, stars);
+      button.dataset["stars"] = String(earned);
+      meta.append(bandIcon(bandOf(key)), starRow(earned));
       button.append(slot, meta);
       button.addEventListener("click", () => {
         // a marking not laid on this board: a board it is laid on
@@ -248,6 +244,9 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       what.append(" · ", time);
     }
     go.append(options.inPlay?.(level.key) ? "Resume" : "Play", bandIcon(band), what);
+    // the picked board with the picked tiles: its own stars (on a desktop,
+    // they are beside the picture, over Play)
+    if (!options.wide) go.append(starRow(stars(level.key)));
     go.addEventListener("click", () => play(level));
     bar.append(go);
 

@@ -89,7 +89,7 @@ const SECTIONS: Section[] = [
     heading: "Stars",
     rows: [
       ["★", "Cover the board."],
-      ["★★", "…with no more tiles than the board was cut from."],
+      ["★★", "…with every pile in the tray down to 0: the tiles the board was cut from."],
       ["★★★", "…and without a hint."],
       [
         "Hint",
@@ -127,7 +127,9 @@ const SECTIONS: Section[] = [
         "Picking a level",
         "Quick start deals one by difficulty. Tilings lists every tiling: open " +
           "one to pick its board and its tiles — plain, with a matching rule, " +
-          "a colouring or a jigsaw, or held to a vertex rule.",
+          "a colouring or a jigsaw, or held to a vertex rule. Each board and " +
+          "each tile set earns the best stars you have had with it, and a " +
+          "card is coloured the deeper the more stars it has.",
       ],
     ],
   },
