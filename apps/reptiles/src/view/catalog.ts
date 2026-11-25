@@ -1,6 +1,8 @@
-// The catalog — called Tilings on screen: every tiling, a family to a row —
-// named for its symmetry — each row scrolling sideways through its tilings'
-// cards. A card shows what a player starts with (the first board's outline,
+// The catalog — called Tilings on screen: its families — named for their
+// symmetry — put together in five groups (view/groups.ts). On a phone,
+// Tilings is the groups' index (`renderGroupIndex`), a card each, and a
+// group's page is its families, each a grid of small cards; on a desktop the
+// sidebar lists the groups, and a group's page is the same grids, wider. A card shows what a player starts with (the first board's outline,
 // the tray's tiles inside it at their true sizes — view/cardArt.ts), the tiling's name, its first board's difficulty as
 // Hypersweeper's three bars, and how many levels it is — every board by
 // every way its tiles are marked (plain, matching rules, colourings) — with
@@ -8,9 +10,10 @@
 // page (view/picker.ts), where a board and its tiles are picked.
 
 import { BARS, bandOf } from "../difficulty";
-import { GROUPS, type Level } from "../levels";
+import { GROUPS, levelByKey, type Level } from "../levels";
 import { cardArt } from "./cardArt";
-import { barsIcon, starRow } from "./icons";
+import type { MenuGroup } from "./groups";
+import { barsIcon, starRow, trayIcon } from "./icons";
 
 /** How many levels the tiling `level` is the first board of has, and the
  * stars earned on them. */
@@ -55,6 +58,58 @@ export function renderCatalog(
     section.append(heading, hint, row);
     host.appendChild(section);
   }
+}
+
+/** A group's tilings, the levels they are, and the stars earned on them. */
+export interface GroupTally {
+  tilings: number;
+  levels: number;
+  stars: number;
+}
+
+/** The phone's Tilings: the five groups, a card each — the group's icon (its
+ * `icon` tiling's tray, as the desktop sidebar draws it), its name, its hint,
+ * how many tilings it has and the stars earned of them. A card opens the
+ * group's page. */
+export function renderGroupIndex(
+  host: HTMLElement,
+  groups: readonly MenuGroup[],
+  tally: (group: MenuGroup) => GroupTally,
+  open: (key: string) => void,
+): void {
+  host.replaceChildren();
+  const list = document.createElement("div");
+  list.className = "group-list";
+  for (const group of groups) {
+    const { tilings, levels, stars } = tally(group);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "group-card";
+    button.dataset["group"] = group.key;
+    const icon = document.createElement("span");
+    icon.className = "group-icon";
+    const text = document.createElement("span");
+    text.className = "group-text";
+    const name = document.createElement("span");
+    name.className = "group-name";
+    name.textContent = group.name;
+    const hint = document.createElement("span");
+    hint.className = "group-hint";
+    hint.textContent = group.hint;
+    const meta = document.createElement("span");
+    meta.className = "group-meta";
+    meta.textContent = `${tilings} tilings · ★ ${stars}/${levels * 3}`;
+    text.append(name, hint, meta);
+    button.append(icon, text);
+    button.addEventListener("click", () => open(group.key));
+    list.appendChild(button);
+    // drawn once the page is up: building a level takes a moment
+    setTimeout(() => {
+      const level = levelByKey(group.icon);
+      if (level && icon.isConnected) icon.replaceChildren(trayIcon(level));
+    }, 0);
+  }
+  host.appendChild(list);
 }
 
 /** A tiling's card: its first board's outline, its tray's tiles, its name,

@@ -178,13 +178,23 @@ test("crossing the desktop's width redraws the screen, and keeps a level's tiles
   const errors = watchErrors(page);
   await page.goto("/?group=aperiodic");
   await expect(page.locator("#catalog-list .family")).toHaveCount(1);
-  // narrowed to a phone: every family, a row each, and no sidebar
+  // narrowed to a phone: the same group's page, its cards small, and no
+  // sidebar; Tilings there is the five groups' index
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("#sidebar")).toBeHidden();
-  await expect(page.locator("#catalog-title")).toHaveText("Tilings");
-  await expect(page.locator("#catalog-list .family")).toHaveCount(13);
+  await expect(page.locator("#catalog-title")).toHaveText("Aperiodic");
+  await expect(page.locator("#catalog-list .family")).toHaveCount(1);
+  await expect(page.locator("#catalog-list .card-meta .bars").first()).toBeHidden();
   await page.setViewportSize({ width: 1280, height: 720 });
   await expect(page.locator("#catalog-title")).toHaveText("Aperiodic");
+  await expect(page.locator("#catalog-list .card-meta .bars").first()).toBeVisible();
+  await page.goto("/?tilings");
+  await expect(page.locator("#catalog-title")).toHaveText("Regular polygons");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("#catalog-title")).toHaveText("Tilings");
+  await expect(page.locator("#catalog-list .group-card")).toHaveCount(5);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect(page.locator("#catalog-title")).toHaveText("Regular polygons");
 
   // a level keeps its tiles: only the name moves, and the board refits
   await page.goto("/?level=squares");

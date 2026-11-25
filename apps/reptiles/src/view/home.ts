@@ -1,5 +1,5 @@
 // The first screen: a level of a chosen difficulty, dealt at random, or a
-// level picked by hand from Tilings (the catalog, by family). (The settings gear is in the screen's corner,
+// level picked by hand from Tilings (the catalog, in five groups). (The settings gear is in the screen's corner,
 // in index.html.) On a desktop it is the Quick start page beside the
 // sidebar: the three difficulties as big cards, each the picture of a
 // tiling of that difficulty (`SHOWCASE`) — its board's outline and its tiles,
@@ -71,7 +71,7 @@ export function renderHome(
   grid.className = "catalog-glyph";
   grid.setAttribute("aria-hidden", "true");
   grid.textContent = "▦";
-  more.appendChild(pick("catalog-pick", grid, "Tilings", "Every tiling, by family", catalog));
+  more.appendChild(pick("catalog-pick", grid, "Tilings", "Every tiling, in five groups", catalog));
   // …and under it the way to the other games, a quiet link: only in a web
   // build (null in a packaged one), in a new tab so the game stays put. The
   // desktop's is in the sidebar's foot (main.ts), and this row is hidden there.

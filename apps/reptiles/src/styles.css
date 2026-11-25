@@ -1520,6 +1520,126 @@ button:disabled {
   height: 22px;
 }
 
+/* -- the phone's Tilings: the five groups, then a group's grids ------------
+   Tilings is the groups' index (view/catalog.ts, `renderGroupIndex`), a card
+   each; a group's page is its families, each a grid of small cards that
+   wraps — the picture, the name and the stars, no more — so the page scrolls
+   one way only. The desktop block at the foot gives the cards back their
+   size, their bars and their counts. */
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 6px 16px 8px;
+}
+
+.group-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px 14px 12px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.group-card:active {
+  border-color: var(--accent);
+  background: var(--selected);
+  box-shadow: none;
+}
+
+.group-icon {
+  display: block;
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+
+.group-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.group-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.group-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.group-hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.group-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+#catalog-list .family-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 8px;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+
+#catalog-list .card {
+  width: auto;
+  min-width: 0;
+  gap: 4px;
+  padding: 8px 6px 6px;
+  border-radius: 12px;
+}
+
+#catalog-list .card-art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+#catalog-list .card-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  min-height: 0;
+  overflow-wrap: anywhere;
+}
+
+#catalog-list .card-levels,
+#catalog-list .card-meta .bars {
+  display: none;
+}
+
+#catalog-list .card-meta {
+  justify-content: center;
+  margin-top: auto;
+}
+
+#catalog-list .card-meta .star,
+#catalog-list .card-stars {
+  font-size: 0.7rem;
+}
+
 /* -- picking a level: a tiling's page (view/picker.ts) ---------------------- */
 
 /* The boards, as their outlines: one tiling's in a grid that fills the
@@ -2378,7 +2498,37 @@ a.settings-row:active {
 
   #catalog-list .card {
     width: auto;
+    gap: 6px;
     padding: 14px 12px 10px;
+    border-radius: 16px;
+  }
+
+  #catalog-list .card-name {
+    display: flex;
+    font-size: inherit;
+    min-height: 2.5em;
+    overflow: visible;
+  }
+
+  #catalog-list .card-levels {
+    display: flex;
+  }
+
+  #catalog-list .card-meta .bars {
+    display: block;
+  }
+
+  #catalog-list .card-meta {
+    justify-content: space-between;
+    margin-top: 0;
+  }
+
+  #catalog-list .card-meta .star {
+    font-size: 0.8rem;
+  }
+
+  #catalog-list .card-stars {
+    font-size: 0.75rem;
   }
 
   #catalog-list .card-art {

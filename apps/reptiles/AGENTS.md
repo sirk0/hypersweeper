@@ -392,8 +392,16 @@ difficulty; Tilings at the foot — all four full-width rows, one under
 another; the difficulties in the accent fill, Tilings in the light one.
 Tilings opens the catalog (`?tilings`; old
 `?catalog` links still work, and so do the old Figures screen's `?figures`
-and `?figure=<key>`): each family a row of tiling cards scrolling
-sideways — one picture of the first board's outline with the tray's tiles
+and `?figure=<key>`): on a phone, the five groups the desktop's sidebar
+lists (`MENU_GROUPS`, below), a card each (`renderGroupIndex` in
+`src/view/catalog.ts`) — its icon tiling's tray, its name, its hint, how
+many tilings it has and the stars earned of them. A group's card opens its
+page (`?group=<key>`, as on a desktop; Back returns to the groups): its
+families, each a heading over a grid of tiling cards that wraps, four to a
+row on a phone's width, so the page scrolls one way only. A phone's card is
+small — the picture, the name and the stars; the difficulty bars and the
+boards and tile sets counts are a desktop card's (the stylesheet hides them
+below the desktop's width). A card is one picture of the first board's outline with the tray's tiles
 inside it, never crossing it (`src/view/cardArt.ts`, held to it by
 `tests/unit/cardArt.test.ts`). A rep-tile's tile is the outline made small
 (turned at any angle — the right isosceles triangle and the right-angled
@@ -548,7 +556,7 @@ buttons, and its tray card is inset a little further — `svgBoard.ts` reads
 both from the stylesheet (`--label-room`, `--tray-card-gap`). Every screen
 renders at either width, and crossing it re-renders the one on show; a
 level in play only moves its name and refits, keeping its tiles. A phone
-never sees any of it. `tests/e2e/desktop.spec.ts` pins it, and
+sees none of it but the groups, its Tilings' index (above). `tests/e2e/desktop.spec.ts` pins it, and
 `smoke.spec.ts` holds the phone's screens at a phone's size.
 
 **Boards.** A tiling cut in more than one place has more than one board, each
