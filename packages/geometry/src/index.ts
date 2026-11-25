@@ -74,6 +74,7 @@ export {
   phyllotaxisExact,
   spectreBoard,
   spectreExact,
+  spectreLabelledExact,
   z7ToXy,
   type ExactTiles,
 } from "./aperiodic";

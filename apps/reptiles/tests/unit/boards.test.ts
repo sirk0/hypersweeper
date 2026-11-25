@@ -111,6 +111,7 @@ describe("boards", () => {
       "girih",
       "tile11",
       "spectre",
+      "mystic",
       "hat",
       "turtle",
       "hatmetatiles",

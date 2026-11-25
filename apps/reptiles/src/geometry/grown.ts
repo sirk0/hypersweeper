@@ -9,6 +9,7 @@
 
 import type { Cyc, Ring } from "./cyclotomic";
 import { centredWindow } from "./hat";
+import { mysticPatch } from "./mystic";
 import { robinsonPatch } from "./robinson";
 
 /** A grown patch: its cells, and each one's kind. */
@@ -45,6 +46,16 @@ export const GROWN: readonly GrownTiling[] = [
     keep: 42,
     after: "kitedart",
     patch: robinsonPatch,
+  },
+  {
+    key: "mystic",
+    name: "Tile(1,1) and the Mystic",
+    label:
+      "Tile(1,1), and the Mystic: two of it, one turned 30°, that the Spectre's substitution lays as one",
+    depth: 3,
+    keep: 33,
+    after: "spectre",
+    patch: mysticPatch,
   },
 ];
 

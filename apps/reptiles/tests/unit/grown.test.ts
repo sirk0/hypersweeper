@@ -9,6 +9,9 @@ import { Frontier } from "../../src/geometry/frontier";
 import { GROWN, grownWindow } from "../../src/geometry/grown";
 import { outline } from "../../src/geometry/outline";
 import { aperiodicPatch } from "../../src/geometry/aperiodic";
+import { MYSTIC, MYSTIC_SPECTRE, mysticPatch } from "../../src/geometry/mystic";
+import { signedArea } from "../../src/geometry/shape";
+import { spectreLabelledExact } from "@tiling/geometry";
 import { ROBINSON_ACUTE, ROBINSON_OBTUSE, robinsonPatch } from "../../src/geometry/robinson";
 import { LEVELS, PATCH_MARKED, levelByKey } from "../../src/levels";
 
@@ -99,6 +102,34 @@ describe("Robinson's triangles", () => {
   it("make a level of two triangles that turn by 36° and never flip", () => {
     const level = levelByKey("robinson")!;
     expect(level.tiles).toHaveLength(2);
+    expect(level.mirror).toBe(false);
+    expect(level.turn).toBe(1);
+  });
+});
+
+describe("Tile(1,1) and the Mystic", () => {
+  const { ring, cells, kinds } = mysticPatch(3);
+  const area = (c: readonly Cyc[]): number => Math.abs(signedArea(c.map((v) => ring.toXY(v))));
+
+  it("fuse each of the Spectre patch's Mystics, and keep every other Spectre", () => {
+    const spectres = spectreLabelledExact(3).labels;
+    const mystics = spectres.filter((l) => l === "Gamma1").length;
+    expect(kinds.filter((k) => k === MYSTIC)).toHaveLength(mystics);
+    expect(cells).toHaveLength(spectres.length - mystics);
+  });
+
+  it("make the Mystic of two Spectres: an 18-gon of twice a Spectre's area", () => {
+    const spectre = area(cells[kinds.indexOf(MYSTIC_SPECTRE)]!);
+    cells.forEach((c, i) => {
+      if (kinds[i] !== MYSTIC) return;
+      expect(c).toHaveLength(18);
+      expect(area(c)).toBeCloseTo(2 * spectre, 9);
+    });
+  });
+
+  it("make a level of the two, turned by 30° and never flipped", () => {
+    const level = levelByKey("mystic")!;
+    expect(level.tiles.map((t) => t.pieces[0]!.verts.length)).toEqual([13, 18]);
     expect(level.mirror).toBe(false);
     expect(level.turn).toBe(1);
   });

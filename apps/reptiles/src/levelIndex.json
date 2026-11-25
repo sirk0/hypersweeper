@@ -604,6 +604,12 @@
   },
   { "key": "tile11", "label": "Tile(1,1)", "name": "Tile(1,1)", "group": "aperiodic" },
   { "key": "spectre", "label": "The Spectre", "name": "The Spectre", "group": "aperiodic" },
+  {
+    "key": "mystic",
+    "label": "Tile(1,1), and the Mystic: two of it, one turned 30°, that the Spectre's substitution lays as one",
+    "name": "Tile(1,1) and the Mystic",
+    "group": "aperiodic"
+  },
   { "key": "hat", "label": "The hat", "name": "The hat", "group": "aperiodic" },
   { "key": "turtle", "label": "The turtle", "name": "The turtle", "group": "aperiodic" },
   {
@@ -5103,6 +5109,13 @@
     "name": "Robinson triangles · matching rules",
     "group": "rules",
     "decor": { "of": "robinson", "colours": 1, "rules": true, "label": "matching rules" }
+  },
+  {
+    "key": "mystic.rules",
+    "label": "Tile(1,1), and the Mystic: two of it, one turned 30°, that the Spectre's substitution lays as one, matching rules",
+    "name": "Tile(1,1) and the Mystic · matching rules",
+    "group": "rules",
+    "decor": { "of": "mystic", "colours": 1, "rules": true, "label": "matching rules" }
   },
   {
     "key": "socolartaylor.rules",
