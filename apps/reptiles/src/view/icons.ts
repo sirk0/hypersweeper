@@ -7,6 +7,7 @@
 import { centroidOf, signedArea, type XY } from "../geometry/shape";
 import type { Level } from "../levels";
 import { loopsOf, loopsPath, loopsReach, outlinePath, reachPoints } from "./curve";
+import { groupsPlaced, type PlacedTile } from "./trayLayout";
 import { decorParts, markUnit, type MarkUnit } from "./decor";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -173,44 +174,44 @@ function decorate(
   }
 }
 
-/** Every tray tile of `level` in a grid of as near square as fits them —
- * three tiles in a row of three, four as two by two, six as three by two —
- * each in the middle of its cell, all at one scale (their true sizes), with
- * their marks: what a marking's card shows, big, in place of the board. */
+/** Every tray tile of `level`, all at one scale (their true sizes), with
+ * their marks, joined edge to edge as the board would let them meet
+ * (view/trayLayout.ts) — in groups side by side where not all of them can
+ * be — filling a square: what a marking's card shows, big, in place of the
+ * board. */
 export function trayIcon(level: Level): SVGSVGElement {
-  const { ring } = level;
-  const shapes = level.tiles.map((t) => loopsOf(ring, t.pieces));
-  // each tile's box, y flipped as drawn
-  const boxes = shapes.map((loops) => {
-    const xy = loopsReach(loops);
-    const xs = xy.map(([x]) => x);
-    const ys = xy.map(([, y]) => -y);
-    return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
-  });
-  const n = shapes.length;
-  const cols = Math.ceil(Math.sqrt(n));
-  const rows = Math.ceil(n / cols);
-  const cell = Math.max(...boxes.flatMap((b) => [b.x1 - b.x0, b.y1 - b.y0])) * 1.18;
-  const size = Math.max(cols, rows) * cell;
-  const svg = svgIn("tray-icon", [(cols * cell - size) / 2, (rows * cell - size) / 2, size, size]);
-  shapes.forEach((loops, kind) => {
-    const b = boxes[kind]!;
-    // the last row's tiles centred under the rest
-    const row = Math.floor(kind / cols);
-    const inRow = row === rows - 1 ? n - row * cols : cols;
-    const col = kind % cols;
-    const cx = (col + 0.5 + (cols - inRow) / 2) * cell;
-    const cy = (row + 0.5) * cell;
-    const dx = cx - (b.x0 + b.x1) / 2;
-    const dy = cy - (b.y0 + b.y1) / 2;
-    const map = ([x, y]: XY): XY => [x + dx, -y + dy];
+  const placed = groupsPlaced(level);
+  const at =
+    (m: PlacedTile["matrix"]) =>
+    ([x, y]: XY): XY => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  const drawn = placed.flatMap((t) => loopsReach(t.loops).map(at(t.matrix)));
+  const x0 = Math.min(...drawn.map(([x]) => x));
+  const x1 = Math.max(...drawn.map(([x]) => x));
+  const y0 = Math.min(...drawn.map(([, y]) => y));
+  const y1 = Math.max(...drawn.map(([, y]) => y));
+  // the tiles' own size, as a tray slot has it: what the stroke is a share of
+  const tile = Math.max(
+    ...placed.map((t) => {
+      const xy = loopsReach(t.loops);
+      const xs = xy.map(([x]) => x);
+      const ys = xy.map(([, y]) => y);
+      return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    }),
+  );
+  const stroke = tile * 0.035;
+  const size = Math.max(x1 - x0, y1 - y0) * 1.12 + stroke;
+  const cx = (x0 + x1) / 2;
+  const cy = (y0 + y1) / 2;
+  const svg = svgIn("tray-icon", [cx - size / 2, cy - size / 2, size, size]);
+  for (const { kind, loops, matrix } of placed) {
+    const map = at(matrix);
     const poly = document.createElementNS(NS, "path");
     poly.setAttribute("d", loopsPath(loops, map));
     poly.setAttribute("class", `tile ${level.colours[kind]}`);
-    poly.setAttribute("stroke-width", String(cell * 0.03));
+    poly.setAttribute("stroke-width", String(stroke));
     svg.appendChild(poly);
     decorate(svg, loops, map, markUnit(level), level.colours[kind]!);
-  });
+  }
   return svg;
 }
 

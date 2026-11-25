@@ -453,11 +453,11 @@ fish 45° off any turn of their ring — or mirrored where it flips:
 parts touch at on a kissing one (the fish, the kissing squares and
 triangles: the tile's touching point is the outline's), else toward the
 middle of the outline's kernel, clear of it all round. Any other tiling's
-tiles sit side by side at their true sizes, three to a row (four as two and
-two), each row on one bottom line, as big as 55% of the outline and near
-its middle as fits clear of the rim — smaller, or off the middle, where it
-must (the kissing square chain, whose three touching points no one
-shrink keeps, too). Then the name, difficulty as Hypersweeper's
+tiles are joined edge to edge at their true sizes, as a tile set's card
+joins them (below), as big as 55% of the outline and near its middle as
+fits clear of the rim — smaller, or off the middle, where it must (the
+kissing square chain, whose three touching points no one shrink keeps,
+too). Then the name, difficulty as Hypersweeper's
 three bars, how many boards and tile sets it has (a tile set is a card of its
 page's Tiles row: plain, a matching rule, a colouring or a jigsaw), and the
 stars earned — its boards' and its tile sets' bests, summed (Piles and stars,
@@ -466,7 +466,20 @@ other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
 top, as their outlines in a grid, one dealt at random; under them its
 markings in one row scrolling sideways — Plain first and picked, then its
 matching rules, then its colourings, then its jigsaws — each card the tray's tiles drawn big
-in a grid that fits them all (`trayIcon`), three cards to a row, no wider
+(`trayIcon`), joined edge to edge so they fill the card (`src/view/trayLayout.ts`,
+held to it by `tests/unit/trayLayout.test.ts`): each tile laid with a whole
+edge along one already down, the same length, only where the board would
+let them meet — the marks partners (a half disc against its colour, a line
+against a line, arrows agreeing, a knob in its socket), a round edge against
+the opposite bulge, every other edge they end up sharing held to the same,
+and no marked edge part-way along another (plain tiles may lie a short edge
+along a long one) — each turned only by the level's rotate step, mirrored
+only where it flips, and held as the tray holds it where that fills as well.
+The exact ring finds the joins; floats only test overlap and rank the
+arrangements, a beam search keeping those that fill the square round them
+best. Every level's tiles join into one group; one that could not would be
+split into as few joined groups as the search finds, drawn side by side
+(`groupsPlaced`). Three cards to a row, no wider
 than leaves a row of them on screen under the boards on a short desktop
 window, never the board's outline, which is up top, with the level's difficulty. A board's card shows its best stars
 with any tiles, a tile set's its best on any board, each tinted by them; then
@@ -1531,8 +1544,9 @@ quick way to see the win state.
   building its level), the settings, and How to play; `src/view/groups.ts` the
   desktop's five groups of families and its two queries (the sidebar itself
   is built in `main.ts`); `src/view/icons.ts` the pictures
-  they share (board outline, a tray's tiles in a grid, the three
-  bars, a star row) and the header's glyphs. The catalog shows only what a player starts with: the
+  they share (board outline, a tray's tiles joined edge to edge — laid out
+  by `src/view/trayLayout.ts`, which `cardArt.ts` lays its tiles by too —
+  the three bars, a star row) and the header's glyphs. The catalog shows only what a player starts with: the
   board's outline, the tray's tiles, the vertex configuration as the name
   (`notation`: 4⁴, 3.4.6.4), and the best stars — never a picture of the
   tiling, which would give the puzzle away. The descriptive label is only a
