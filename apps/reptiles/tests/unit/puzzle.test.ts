@@ -813,7 +813,8 @@ describe("puzzle", () => {
       (l) => !l.decor?.jigsaw && l.colours.some((c) => c.includes("twin")),
     );
     // and the aperiodic tilings of two quadrilaterals: Penrose's two rhombi,
-    // his kite and dart, Ammann–Beenker's square and rhombus; and the isogonal
+    // his kite and dart, Ammann–Beenker's square and rhombus; Robinson's two
+    // triangles (with no rule level: theirs asks nothing); and the isogonal
     // tilings of one polygon in two or three sizes — each with its lined
     // boards, which keep the plain board's classes (a coloured one is in its
     // paints); and the girih tilings with both the six-sided hexagon and
@@ -837,6 +838,7 @@ describe("puzzle", () => {
       "pythagorean",
       "pythagorean.lines",
       "pythagorean.lines2",
+      "robinson",
       "snubelongated2dual",
       "snubelongated2dual.lines",
       "snubelongated2dual.lines2",
