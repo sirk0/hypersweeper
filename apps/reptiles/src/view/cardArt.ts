@@ -6,9 +6,9 @@
 // rep-tile (the fish, the kissing squares and triangles), so the tile's
 // touching point is the outline's; else the middle of the outline's kernel,
 // the points every corner of it is seen from, so the shrunk copy stays clear
-// of the outline all round. Every other tiling's tiles sit side by side on
-// one bottom line, at their true sizes (three to a row, the rows stacked),
-// moved and shrunk until they fit inside the outline clear of it.
+// of the outline all round. Every other tiling's tiles are joined edge to
+// edge at their true sizes (view/trayLayout.ts, as a marking's card joins
+// them), moved and shrunk until they fit inside the outline clear of it.
 //
 // All in floats, for drawing only: the picture is laid out in the outline's
 // own units, y down (the board draws y up).
@@ -19,6 +19,7 @@ import type { Level } from "../levels";
 import { alongEdge, jigsawPoints, loopsOf, loopsPath, type Loop } from "./curve";
 import { decorParts, markUnit } from "./decor";
 import { boardFit, outlineFrame } from "./icons";
+import { groupsPlaced } from "./trayLayout";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -193,46 +194,10 @@ export function cardLayout(level: Level): CardLayout {
   const base = { frame, region, margin, tileStroke };
   const reptile = repTileLayout(level, region, margin);
   if (reptile) return { ...base, ...reptile };
-  return { ...base, how: "fit", tiles: fitted(rowsOf(level), region, margin) };
+  return { ...base, how: "fit", tiles: fitted(groupsPlaced(level), region, margin) };
 }
 
-/** The tray's tiles side by side at their true sizes, resting flat, three to
- * a row (four as two and two), each row's tiles on one bottom line and the
- * rows stacked, centred on one another: in units of the tiles, y down. */
-function rowsOf(level: Level): Placed[] {
-  const { ring } = level;
-  const shapes = level.tiles.map((t) => loopsOf(ring, t.pieces));
-  const boxes = shapes.map((loops) =>
-    boxOf(loops.flatMap((l) => flatten(l.xy, l.curve)).map(flipY)),
-  );
-  const n = shapes.length;
-  const perRow = n === 4 ? 2 : 3;
-  const tallest = Math.max(...boxes.map((b) => b.y1 - b.y0));
-  const gap = tallest * 0.25;
-  const rows: number[][] = [];
-  for (let i = 0; i < n; i += perRow) rows.push(shapes.slice(i, i + perRow).map((_, j) => i + j));
-  const widths = rows.map(
-    (row) => row.reduce((w, k) => w + boxes[k]!.x1 - boxes[k]!.x0, 0) + gap * (row.length - 1),
-  );
-  const widest = Math.max(...widths);
-  const placed: Placed[] = [];
-  let bottom = 0;
-  rows.forEach((row, r) => {
-    const height = Math.max(...row.map((k) => boxes[k]!.y1 - boxes[k]!.y0));
-    bottom += height;
-    let at = (widest - widths[r]!) / 2;
-    for (const k of row) {
-      const b = boxes[k]!;
-      // the tile's lowest point on the row's bottom line
-      placed.push({ kind: k, loops: shapes[k]!, matrix: [1, 0, 0, -1, at - b.x0, bottom - b.y1] });
-      at += b.x1 - b.x0 + gap;
-    }
-    bottom += gap;
-  });
-  return placed;
-}
-
-/** `tiles` (in their own units, as `rowsOf` lays them) scaled and moved to
+/** `tiles` (in their own units, as `groupsPlaced` lays them) scaled and moved to
  * fit inside `region` clear of its rim: as big as 55% of the outline's size
  * at most, as near its middle as fits. */
 function fitted(tiles: Placed[], region: XY[][], margin: number): Placed[] {
