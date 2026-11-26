@@ -152,13 +152,12 @@ export class Puzzle {
     return this.level.need.every((n, kind) => this.used(kind) === n);
   }
 
-  /** The stars a finished board earns: one for finishing at all, two for
-   * doing it with every pile in the tray down to 0 (`pilesEmpty`), three for
-   * that with no hint (`hinted`: one was shown). */
+  /** The stars a finished board earns, each on its own: one for finishing at
+   * all, one more for doing it with no hint (`hinted`: one was shown), and
+   * one more for every pile in the tray down to 0 (`pilesEmpty`). */
   stars(hinted: boolean): 0 | 1 | 2 | 3 {
     if (!this.won) return 0;
-    if (!this.pilesEmpty) return 1;
-    return hinted ? 2 : 3;
+    return (1 + (hinted ? 0 : 1) + (this.pilesEmpty ? 1 : 0)) as 1 | 2 | 3;
   }
 
   /**

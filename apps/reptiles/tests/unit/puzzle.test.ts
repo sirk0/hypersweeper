@@ -1066,7 +1066,7 @@ describe("puzzle", () => {
     expect(rhombi.need.reduce((a, b) => a + b)).toBe(rhombi.cells.length);
   });
 
-  it("gives one star for finishing, two for the tiles needed, three with no hint", () => {
+  it("gives a star for finishing, one for no hint and one for every pile at 0", () => {
     const p = new Puzzle(levelByKey("trihex")!);
     const kindOf = (sides: number): number =>
       p.level.tiles.findIndex((t) => poly(t.pieces).length === sides);
@@ -1079,7 +1079,7 @@ describe("puzzle", () => {
     expect(p.stars(false)).toBe(0);
   });
 
-  it("gives the second star only with every pile at 0, not just as many tiles in all", () => {
+  it("gives the pile star only with every pile at 0, not just as many tiles in all", () => {
     // the same cover, counted against piles one triangle more and one
     // hexagon fewer: as many tiles in all, but two piles off 0
     const level = levelByKey("trihex")!;
@@ -1091,7 +1091,9 @@ describe("puzzle", () => {
     expect(p.won).toBe(true);
     expect(p.tiles.length).toBe(need.reduce((a, b) => a + b));
     expect(p.pilesEmpty).toBe(false);
-    expect(p.stars(false)).toBe(1);
+    // finishing and no hint: two stars, the piles' missing
+    expect(p.stars(false)).toBe(2);
+    expect(p.stars(true)).toBe(1);
   });
 
   /** A finished trihexagonal board with its innermost hexagon lifted out. */
@@ -1129,8 +1131,9 @@ describe("puzzle", () => {
     }
     expect(p.won).toBe(true);
     expect(p.tiles.length).toBe(p.level.cells.length + 5);
-    // finished, but a pile past 0 and another short of it: one star, hint or none
-    expect(p.stars(false)).toBe(1);
+    // finished, but a pile past 0 and another short of it: no pile star
+    expect(p.stars(false)).toBe(2);
+    expect(p.stars(true)).toBe(1);
   });
 
   it("can hold a level to a vertex rule: then no six triangles in a hexagon's place", () => {

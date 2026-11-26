@@ -89,12 +89,12 @@ const SECTIONS: Section[] = [
     heading: "Stars",
     rows: [
       ["★", "Cover the board."],
-      ["★★", "…with every pile in the tray down to 0: the tiles the board was cut from."],
-      ["★★★", "…and without a hint."],
+      ["★", "…without a hint."],
+      ["★", "…with every pile in the tray down to 0: the tiles the board was cut from."],
       [
         "Hint",
         "The light bulb — or [H] — shows a tile to lay and where, or one to " +
-          "take off. Using it costs the third star.",
+          "take off. Using it costs a star.",
       ],
       [
         "Time",

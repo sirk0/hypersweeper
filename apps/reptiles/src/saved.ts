@@ -1,7 +1,7 @@
 // The boards in play, kept so a level left half-covered — for another screen,
 // a reload, or an iPhone that closed the app in the background — opens again
 // as it was left: its tiles, the time spent on it so far and the hints shown
-// (so leaving cannot win back the third star). Restart, Play again or
+// (so leaving cannot win back the no-hint star). Restart, Play again or
 // finishing the board forgets it.
 //
 // Kept in localStorage through the shared guard (`@tiling/platform`), as the
@@ -162,6 +162,12 @@ export function forgetBoard(levelKey: string): void {
  * opens by itself only for one with none). */
 export function keptCount(): number {
   return readAll().size;
+}
+
+/** The keys of every level with a board kept — each one in progress, its
+ * cards washed green — read once for a whole page of cards. */
+export function keptKeys(): Set<string> {
+  return new Set(readAll().keys());
 }
 
 /** Whether a board is kept for the level with this key — Play reads Resume. */

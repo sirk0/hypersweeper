@@ -27,6 +27,9 @@ export type Tally = (level: Level) => {
    * Tiles row holds: plain, matching rules and colourings. */
   boards?: number;
   sets?: number;
+  /** Whether any of its levels is in progress (a board kept half-covered,
+   * saved.ts): the card is washed green. */
+  inPlay?: boolean;
 };
 
 export function renderCatalog(
@@ -121,7 +124,7 @@ export function renderGroupIndex(
  * difficulty, and the stars — earned of those to earn. */
 export function levelCard(
   level: Level,
-  { levels, stars, max, boards = 1, sets = 1 }: ReturnType<Tally>,
+  { levels, stars, max, boards = 1, sets = 1, inPlay = false }: ReturnType<Tally>,
   pick: (level: Level) => void,
 ): HTMLButtonElement {
   const button = document.createElement("button");
@@ -130,6 +133,7 @@ export function levelCard(
   button.title = level.label;
   button.dataset["tiling"] = level.key;
   button.dataset["stars"] = String(tierOf(stars, max));
+  if (inPlay) button.classList.add("in-play");
   const band = bandOf(level.key);
   const name = document.createElement("span");
   name.className = "card-name";

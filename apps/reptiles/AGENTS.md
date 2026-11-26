@@ -336,10 +336,12 @@ some back off.
   shape never shows it at two angles (Klaassen's heptagons, the rhombille's
   rhombi); a test holds that too.
 - **Piles and stars.** Each pile shows how many of that tile the board was cut
-  from still to go (past zero, how many extra). Finishing at all is one star;
-  with every pile at 0 — of each kind exactly the tiles the board was cut
-  from, not merely as many in all (`Puzzle.pilesEmpty`) — two; and that with
-  no hint shown, three. No
+  from still to go (past zero, how many extra). The three stars are earned
+  each on its own (`Puzzle.stars`): one for finishing at all, one for doing it
+  with no hint shown, and one for every pile at 0 — of each kind exactly the
+  tiles the board was cut from, not merely as many in all
+  (`Puzzle.pilesEmpty`) — so a hinted finish with every pile at 0 is two, as
+  is an unhinted one with a pile off. No
   clock shows while playing: the time from the first tile down to the last
   is told only on the win card, with how many hints were shown (a press
   again while a hint is on show is not another) — there is no time limit.
@@ -353,7 +355,7 @@ some back off.
   end of each (`Puzzle.commit`, called by `done` in `drag.ts`); a tile lifted
   and put back where it was is no move, and a new move clears what was
   undone. An undo cancels a tile in hand first (`DragControl.cancel`). A
-  hint shown stays shown — undo is not a way back to the third star — and a
+  hint shown stays shown — undo is not a way back to the no-hint star — and a
   finished board undone and redone keeps its first finish's time. Undo is
   the one way back into a finished board, which is otherwise locked (the win
   card, under Screens).
@@ -363,7 +365,11 @@ some back off.
   another level, or the page hidden (`pagehide`, `visibilitychange`: an
   iPhone may close the app in the background). Opening the level again lays
   it back (`Puzzle.resume`, nothing to undo), the time running on from where
-  it was left; on its tiling's page Play reads **Resume**. Each tile is kept
+  it was left; on its tiling's page Play reads **Resume**, and a level in
+  progress is washed green (`.in-play`, `--fits` — the ✓'s colour — in place
+  of the stars' accent): its board's card and its tile set's card there
+  (`boardInPlay`, `markingInPlay` in `src/tally.ts`) and its tiling's card in
+  Tilings (`tilingInPlay`), read once a page (`keptKeys`). Each tile is kept
   exactly — its kind, turn, side and its pieces' vertices, integers — and
   checked as it is laid back (a translate of its kind held that way
   (`curveOnto`), allowed and fitting), with a fingerprint of the level's own
@@ -378,7 +384,7 @@ some back off.
   or a turn the shorter way) ringed too. If not, a tile to take off, ringed in
   the remove colour: one whose going alone lets the board be finished, where
   there is one, else a tile the board was not cut with (taking all of those
-  off always leaves a board that finishes). A hint shown costs the third
+  off always leaves a board that finishes). A hint shown costs the no-hint
   star. It is worked out in a worker (`src/hint.worker.ts`, driven by
   `src/hintClient.ts`) after every move, so a press often finds it ready;
   else the bulb glows and "thinking…" shows until it is — exact however long

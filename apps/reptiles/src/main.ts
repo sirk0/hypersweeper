@@ -7,7 +7,7 @@ import { attachDrag, type DragControl } from "./input/drag";
 import type { Laid } from "./hint";
 import { Hinter } from "./hintClient";
 import { BOARDS, LEVELS, levelByKey, type Level } from "./levels";
-import { tilingTally } from "./tally";
+import { tilingInPlay, tilingTally } from "./tally";
 import { startCloudStars, syncCloudStars } from "./cloudStars";
 import { haptic, setHapticsEnabled } from "./haptics";
 import {
@@ -19,7 +19,7 @@ import {
   recordTime,
   starsFor,
 } from "./progress";
-import { forgetBoard, hasBoard, keptCount, loadBoard, saveBoard } from "./saved";
+import { forgetBoard, keptCount, keptKeys, loadBoard, saveBoard } from "./saved";
 import { noteFinishForReview } from "./review";
 import { Puzzle } from "./puzzle";
 import { renderCatalog, renderGroupIndex, type GroupTally, type Tally } from "./view/catalog";
@@ -62,9 +62,11 @@ const hinter = new Hinter();
 
 /** The tiling `plain` is the first board of, as the catalog counts it: its
  * levels, boards and tile sets, and the stars earned — its boards' and its
- * tile sets' bests summed (tally.ts). */
-function tallyOf(plain: Level): ReturnType<Tally> {
-  return tilingTally(plain, starsFor);
+ * tile sets' bests summed (tally.ts) — and, given the levels with a board
+ * kept (`keptKeys`, read once for the page), whether any is in progress. */
+function tallyOf(plain: Level, kept?: ReadonlySet<string>): ReturnType<Tally> {
+  const counted = tilingTally(plain, starsFor);
+  return kept ? { ...counted, inPlay: tilingInPlay(plain, (k) => kept.has(k)) } : counted;
 }
 
 // The colour scheme picked in Settings, before anything is drawn.
@@ -198,7 +200,7 @@ function goSettings(push = true): void {
 /** A group's tilings, the levels they are and the stars earned on them: what
  * its card in the phone's Tilings counts. */
 function groupTally(group: MenuGroup): GroupTally {
-  const tallies = tilingsOf(group).map(tallyOf);
+  const tallies = tilingsOf(group).map((t) => tallyOf(t));
   return {
     tilings: tallies.length,
     levels: tallies.reduce((sum, t) => sum + t.levels, 0),
@@ -226,10 +228,11 @@ function goCatalog(push = true, groupKey: string | null = null): void {
     list.scrollTop = 0;
     return;
   }
+  const kept = keptKeys();
   renderCatalog(
     list,
     LEVELS.filter((l) => !l.decor),
-    tallyOf,
+    (l) => tallyOf(l, kept),
     (level) => open(level),
     (level) => goTiling(level),
     group.families,
@@ -275,11 +278,13 @@ function goTiling(level: Level, push = true, pick: string | null = null): void {
   const group = groupOfFamily(level.group);
   show("tiling", group ? `group:${group.key}` : "");
   byId("tiling-title").textContent = level.name;
+  // the levels in progress, read once for the page's cards
+  const kept = keptKeys();
   renderPicker(byId("tiling-list"), {
     tilings: [level],
     stars: starsFor,
     best: bestTimeFor,
-    inPlay: hasBoard,
+    inPlay: (k) => kept.has(k),
     play: (l) => open(l),
     initial: pick,
     remember: keepPick(`tiling=${level.key}`),
@@ -471,14 +476,10 @@ function changed(): void {
   const off = puzzle.level.need.filter((n, kind) => puzzle.used(kind) !== n).length;
   const lines = [
     "★ Covered, no gaps, no overlaps.",
+    s.hints > 0 ? `☆ ${s.hints} ${s.hints === 1 ? "hint" : "hints"} used.` : "★ No hints.",
     off === 0
       ? "★ Every pile in the tray down to 0."
       : `☆ ${off} ${off === 1 ? "pile" : "piles"} in the tray not at 0.`,
-    stars === 3
-      ? "★ No hints."
-      : s.hints > 0
-        ? `☆ ${s.hints} ${s.hints === 1 ? "hint" : "hints"} used.`
-        : "☆ No hints — that counts once every pile is at 0.",
     `Time: ${formatTime(ms)}${
       s.newBest
         ? s.bestBefore === null
@@ -629,7 +630,7 @@ function setThinking(on: boolean): void {
 
 /** Show the hint for the board as it stands: worked out already, often, in
  * the background; else "thinking" until it is. Exact however long it takes —
- * and, once shown, no third star on this board. */
+ * and, once shown, this board's no-hint star is gone. */
 async function showHint(): Promise<void> {
   const s = session;
   if (!s || s.tutorial !== null || s.puzzle.won || hintButton.classList.contains("thinking"))

@@ -10,7 +10,7 @@ MORE THAN 1,600 LEVELS
 
 PLAY YOUR WAY
 • Easy, Medium and Hard each deal a random level, with difficulty measured rather than guessed
-• Up to three stars a level: finish it, use no extra tiles, and do it without a hint
+• Up to three stars a level: one for finishing it, one for doing it without a hint, one for using exactly the tiles in the tray
 • Stuck? The hint works out exactly what to do next: a tile to lay, or the tile to take back off
 • Pinch to zoom, and drag a tile back to the tray to take it off
 • Light and dark themes, and three sound themes

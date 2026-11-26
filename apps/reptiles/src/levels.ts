@@ -134,7 +134,7 @@ export interface Level {
   turn: number;
   /** Per kind, how many tiles of it the board it was cut from takes — the
    * number on its pile. Using more is allowed; using exactly these, kind by
-   * kind — every pile down to 0 — is worth the second star. */
+   * kind — every pile down to 0 — is worth a star. */
   need: number[];
   /** The board the level was cut from, tile by tile: one way to finish it,
    * not the only one — any exact cover wins (six triangles where a hexagon
