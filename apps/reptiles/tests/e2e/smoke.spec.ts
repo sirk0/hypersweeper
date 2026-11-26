@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
 // The deployed build, end to end: it boots under the real security policy, its
@@ -660,7 +660,7 @@ test("with its setting on, a finished board shows the tiling past it and zooms o
   expect(errors).toEqual([]);
 });
 
-test("the hint shows a tile to lay, goes with the next move, and costs the third star", async ({
+test("the hint shows a tile to lay, goes with the next move, and costs a star", async ({
   page,
 }) => {
   const errors = watchErrors(page);
@@ -1179,6 +1179,24 @@ test("a board left half-covered opens as it was, and Restart starts it afresh", 
   // its tiling's page offers to resume it, and does
   await page.goto("/?tiling=squares&pick=squares");
   await expect(page.locator(".pick-play .play")).toContainText("Resume");
+  // …and washes its cards green: the board's and the plain tiles', not
+  // another tile set's — nor the colour of a card at rest
+  const board = page.locator('.board-card[data-board="squares"]');
+  const plain = page.locator('.marking-card[data-marking="squares"]');
+  const lined = page.locator('.marking-card[data-marking="squares.lines"]');
+  await expect(board).toHaveClass(/\bin-play\b/);
+  await expect(plain).toHaveClass(/\bin-play\b/);
+  await expect(lined).not.toHaveClass(/\bin-play\b/);
+  const bg = (el: Locator) => el.evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(await bg(plain)).not.toBe(await bg(lined));
+  // the tiling's card in Tilings too
+  await page.goto("/?group=regular");
+  const card = page.locator('#catalog-list .card[data-tiling="squares"]');
+  await expect(card).toHaveClass(/\bin-play\b/);
+  await expect(page.locator('#catalog-list .card[data-tiling="hexagons"]')).not.toHaveClass(
+    /\bin-play\b/,
+  );
+  await page.goto("/?tiling=squares&pick=squares");
   await page.locator(".pick-play .play").click();
   await expect(tiles).toHaveCount(2);
 
@@ -1191,6 +1209,10 @@ test("a board left half-covered opens as it was, and Restart starts it afresh", 
   await page.goto("/?tiling=squares&pick=squares");
   await expect(page.locator(".pick-play .play")).toContainText("Play");
   await expect(page.locator(".pick-play .play")).not.toContainText("Resume");
+  await expect(board).not.toHaveClass(/\bin-play\b/);
+  await expect(plain).not.toHaveClass(/\bin-play\b/);
+  await page.goto("/?group=regular");
+  await expect(card).not.toHaveClass(/\bin-play\b/);
   expect(errors).toEqual([]);
 });
 
@@ -1250,7 +1272,7 @@ test("a tiling's stars are its boards' and its tile sets' bests, the cards tinte
   expect(errors).toEqual([]);
 });
 
-test("a hint shown is kept with the board: leaving does not win back the third star", async ({
+test("a hint shown is kept with the board: leaving does not win back the no-hint star", async ({
   page,
 }) => {
   await page.goto("/?level=squares");

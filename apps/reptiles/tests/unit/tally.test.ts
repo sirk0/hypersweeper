@@ -4,7 +4,17 @@
 
 import { describe, expect, it } from "vitest";
 import { LEVELS, boardKeys, markedOf, type Level } from "../../src/levels";
-import { boardStars, boardsOf, keyOf, markingStars, tierOf, tilingTally } from "../../src/tally";
+import {
+  boardInPlay,
+  boardStars,
+  boardsOf,
+  keyOf,
+  markingInPlay,
+  markingStars,
+  tierOf,
+  tilingInPlay,
+  tilingTally,
+} from "../../src/tally";
 
 const plains = LEVELS.filter((l) => !l.decor);
 const setsOf = (plain: Level): Level[] => [plain, ...markedOf(plain.key)];
@@ -103,5 +113,34 @@ describe("a card's tint", () => {
     expect(tierOf(30, 30)).toBe(3);
     // a level's own stars, of three, are their own tint
     expect([0, 1, 2, 3].map((n) => tierOf(n, 3))).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe("a level in progress", () => {
+  /** Kept boards from a list of level keys. */
+  const keptOf =
+    (...keys: string[]) =>
+    (key: string): boolean =>
+      keys.includes(key);
+
+  it("marks its board's card, its tile set's card and its tiling's card", () => {
+    const marked = markedOf(wide.key).find((m) => boardsOf(m.key).has(2))!;
+    expect(marked).toBeTruthy();
+    // the marked tiles on board 2, half-covered
+    const kept = keptOf(keyOf(marked.key, 2));
+    expect(boardInPlay(wide, 2, kept)).toBe(true);
+    expect(boardInPlay(wide, 1, kept)).toBe(false);
+    expect(markingInPlay(marked, kept)).toBe(true);
+    expect(markingInPlay(wide, kept)).toBe(false);
+    expect(tilingInPlay(wide, kept)).toBe(true);
+  });
+
+  it("marks nothing where no board is kept, nor for another tiling's level", () => {
+    const other = plains.find((p) => p !== wide)!;
+    const kept = keptOf(other.key);
+    expect([...boardsOf(wide.key)].some((n) => boardInPlay(wide, n, kept))).toBe(false);
+    expect(setsOf(wide).some((m) => markingInPlay(m, kept))).toBe(false);
+    expect(tilingInPlay(wide, kept)).toBe(false);
+    expect(tilingInPlay(other, kept)).toBe(true);
   });
 });

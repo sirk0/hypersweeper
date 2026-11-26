@@ -68,6 +68,27 @@ export function tilingTally(
   };
 }
 
+/** Whether a level has a board kept half-covered (saved.ts), by key. */
+type KeptFor = (key: string) => boolean;
+
+/** Whether board `n` of `plain`'s tiling is in progress with any of its tile
+ * sets laid on it: its card is washed green. */
+export function boardInPlay(plain: Level, n: number, kept: KeptFor): boolean {
+  return setsOf(plain).some((m) => boardsOf(m.key).has(n) && kept(keyOf(m.key, n)));
+}
+
+/** Whether `marking` (a plain or marked first board) is in progress on any
+ * board it is laid on. */
+export function markingInPlay(marking: Level, kept: KeptFor): boolean {
+  return boardKeys(marking.key).some(kept);
+}
+
+/** Whether any level of the tiling `plain` is the first board of is in
+ * progress: its card in Tilings is washed green. */
+export function tilingInPlay(plain: Level, kept: KeptFor): boolean {
+  return setsOf(plain).some((m) => markingInPlay(m, kept));
+}
+
 /** How strongly a card is tinted for `stars` of `max`, as a card of one level
  * is for its 0 to 3 stars: none for nothing, 3 for everything, 2 from two
  * thirds of the way, else 1. */

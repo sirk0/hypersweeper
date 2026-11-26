@@ -1768,6 +1768,16 @@ button:disabled {
   background: color-mix(in oklab, var(--accent) var(--tint), var(--button));
 }
 
+/* In progress (src/saved.ts: a board kept half-covered, its Play reading
+   Resume): a tiling's card in Tilings, a board's and a tile set's on its page,
+   washed green — the ✓'s colour — in place of the stars' accent. The pick
+   keeps its ring. As specific as the stars' rule above (every such card
+   has `data-stars`), and after it, so the green wins. */
+.card.in-play[data-stars],
+.board-card.in-play[data-stars] {
+  background: color-mix(in oklab, var(--fits) 26%, var(--button));
+}
+
 /* A board the picked tiles are not laid on, or tiles not laid on the picked
    board: still a tap away — picking one picks what goes with it. */
 .board-card.off,

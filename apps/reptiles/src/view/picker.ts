@@ -23,7 +23,7 @@
 import { BARS, bandOf, type Band } from "../difficulty";
 import { levelByKey, markedOf, type Level } from "../levels";
 import { formatTime } from "../progress";
-import { boardStars, boardsOf, keyOf, markingStars } from "../tally";
+import { boardInPlay, boardStars, boardsOf, keyOf, markingInPlay, markingStars } from "../tally";
 import { cardArt } from "./cardArt";
 import { barsIcon, outlineIcon, starRow, trayIcon, vertexFigure } from "./icons";
 
@@ -74,7 +74,7 @@ export interface PickerOptions {
   /** A level's fastest finish, in milliseconds, or null: Play names it. */
   best?: (key: string) => number | null;
   /** Whether a board of the level is kept half-covered (saved.ts): Play
-   * reads Resume. */
+   * reads Resume, and the board's and the tile set's cards are washed green. */
   inPlay?: (key: string) => boolean;
   play: (level: Level) => void;
   /** The level picked when the page was last left (`?…&pick=<key>`), or
@@ -157,6 +157,8 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
         // a board's stars: its best with any tiles (tally.ts)
         const earned = boardStars(t, n, stars);
         button.dataset["stars"] = String(earned);
+        // in progress with any tiles: washed green
+        if (options.inPlay && boardInPlay(t, n, options.inPlay)) button.classList.add("in-play");
         const slot = document.createElement("span");
         slot.className = "outline-slot";
         drawLater(slot, `outline:${keyOf(t.key, n)}`, () =>
@@ -209,6 +211,8 @@ export function renderPicker(host: HTMLElement, options: PickerOptions): void {
       // a tile set's stars: its best on any board (tally.ts)
       const earned = markingStars(m, stars);
       button.dataset["stars"] = String(earned);
+      // in progress on any board: washed green
+      if (options.inPlay && markingInPlay(m, options.inPlay)) button.classList.add("in-play");
       meta.append(bandIcon(bandOf(key)), starRow(earned));
       button.append(slot, meta);
       button.addEventListener("click", () => {

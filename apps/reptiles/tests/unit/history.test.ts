@@ -179,7 +179,7 @@ describe("the boards kept (saved.ts)", () => {
     saved.saveBoard(lv, [], 5000, 0);
     expect(saved.hasBoard("squares")).toBe(false);
     expect(items["rep-tiles.boards"]).toBeUndefined();
-    // …but a hint shown is kept, so leaving cannot win back the third star
+    // …but a hint shown is kept, so leaving cannot win back the no-hint star
     saved.saveBoard(lv, [], 0, 2);
     expect(saved.loadBoard(lv)!.hints).toBe(2);
     saved.forgetBoard("squares");
