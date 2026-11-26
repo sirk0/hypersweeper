@@ -1214,7 +1214,12 @@ quick way to see the win state.
   holds the mark the tile across must bring (`partner`), a tile lies along it
   only with that mark, whole, and covering a tile leaves its marks' partners.
   The rim takes any mark, but a jigsaw's (`Level.regionMarks`, passed to
-  `Frontier.ofRegion`), which asks for the mark of the tile along it.
+  `Frontier.ofRegion`), which asks for the mark of the tile along it — so a
+  marked side laid along the rim may be cut by the rim's own flat points,
+  where two of the board's tiles met (`fitsOne`: the mirrored sphinx in
+  `sphinx.rules`' corner), though never by a corner where it turns, nor by a
+  placed tile's. `tests/unit/markedRim.test.ts` holds every marked board's
+  empty rim to its plain one's fits.
 - `src/colourings.ts` — **the colourings**: `paintings` tries every linear
   colouring of a periodic board in 2 or 3 colours — a tile of translation
   class t at lattice point (i, j) is colour (a·i + b·j + c[t]) mod k — with
@@ -1600,7 +1605,13 @@ the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`
   cos one ulp off, up, down and by turns, and fails on any level that comes
   out differently; `tests/e2e/every-level.spec.ts` opens every level and
   every tiling's page, in Chromium (WebKit is not run: the unit test is what
-  catches a level Safari's floats build differently).
+  catches a level Safari's floats build differently). A tile's marks are
+  drawn in floats too, so nothing `decor.ts` chooses may hang on the last
+  bit: a branch's hit on its line takes a hair past a sample point, its
+  angle is read off the line's tangent, and a flat point is no star's.
+  `tests/unit/decorStable.test.ts` draws every marked tray tile at every turn
+  and side with its corners an ulp off and fails on any drawing that changes
+  — a 5-gon's lines once changed as it turned, on an iPhone only.
 - **A level follows a Hypersweeper board** — but for the star tilings, which
   Hypersweeper has no board for: defined in `src/geometry/stars.ts` and
   checked by `tests/unit/stars.test.ts` (a period's tiles a lattice cell's
