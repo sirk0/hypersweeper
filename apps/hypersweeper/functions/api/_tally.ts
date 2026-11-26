@@ -91,7 +91,7 @@ export async function handleTally(
   } catch {
     // A missing or misbehaving binding must not become a 500 in the player's
     // console. If the report stays empty, the binding is the first thing to
-    // check — see "Analytics" in apps/hypersweeper/README.md.
+    // check — see "Analytics" in apps/hypersweeper/docs/deploy.md.
   }
   return new Response(null, NO_CONTENT);
 }

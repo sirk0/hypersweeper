@@ -189,7 +189,7 @@ differ, all handled for you:
 - **Size is a colour axis.** Two of these tilings use one regular polygon at
   two or three sizes, which hue (side count) and chroma (regularity) cannot
   tell apart; `classifyShapes` clusters tile spans and lightness carries the
-  result. See "Shape colour coding" in `apps/hypersweeper/README.md`.
+  result. See "Shape colour coding" in `apps/hypersweeper/docs/render.md`.
 
 Steps, for a new isogonal tiling `foo`:
 

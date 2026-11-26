@@ -1,7 +1,7 @@
 // Dev-only: render the README screenshots from the real app.
 //
 //   npm run screenshots -- [out-dir]
-//   (default out dir: ../docs/screenshots; SHOTS=a.png,b.png renders a subset)
+//   (default out dir: ../../docs/screenshots/hypersweeper; SHOTS=a.png,b.png renders a subset)
 //
 // Builds `dist/`, serves it with `vite preview`, then drives each shot through
 // the `window.__ms` seam: start the board with an explicit mine layout (so the
@@ -234,7 +234,7 @@ async function shoot(browser: Browser, shot: Shot, outDir: string): Promise<void
 async function main(): Promise<void> {
   const outDir = path.resolve(
     process.cwd(),
-    process.argv[2] ?? path.join(WEB, "../../docs/screenshots"),
+    process.argv[2] ?? path.join(WEB, "../../docs/screenshots/hypersweeper"),
   );
   mkdirSync(outDir, { recursive: true });
 
