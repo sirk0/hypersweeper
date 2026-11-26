@@ -599,9 +599,13 @@ export class Frontier {
     }
     // Tile pieces off the frontier must be in the uncovered area.
     for (const piece of splitAt(ring, tile, vertexMap(near))) {
-      // a corner part-way along a round or marked side
-      if ((piece.bulge || piece.mark) && !piece.whole) return false;
-      if (near.some((f) => meet(piece, f) && onEdge(ring, piece, f))) continue; // judged above
+      const rim = near.find((f) => meet(piece, f) && onEdge(ring, piece, f));
+      // a corner part-way along a round or marked side — but a marked side
+      // laid along the rim, which takes any mark, may be cut by its points
+      if ((piece.bulge || piece.mark) && !piece.whole) {
+        if (piece.bulge || !rim || rim.bulge || rim.mark !== NONE) return false;
+      }
+      if (rim) continue; // judged above
       if (this.windingAt(midpoint(piece)) !== 1) return false;
     }
     return true;

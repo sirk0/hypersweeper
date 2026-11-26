@@ -251,7 +251,7 @@ export function branched(
         if (k === a || k === b) continue;
         const { at, n } = arms[k]!;
         // straight on: the nearest crossing of the arm's normal with the line
-        let hit: { s: number; p: XY; dir: XY } | null = null;
+        let hit: { s: number; p: XY; t: number } | null = null;
         for (let e = 1; e < along.length; e++) {
           const [p0, p1] = [along[e - 1]!, along[e]!];
           const dir = sub(p1, p0);
@@ -260,10 +260,15 @@ export function branched(
           const w = sub(p0, at);
           const s = cross(w, dir) / den;
           const u = cross(w, n) / den;
-          if (s > 1e-9 && u >= 0 && u <= 1 && (!hit || s < hit.s))
-            hit = { s, p: lerp(p0, p1, u), dir };
+          if (s > 1e-9 && u >= -1e-9 && u <= 1 + 1e-9 && (!hit || s < hit.s))
+            hit = { s, p: lerp(p0, p1, u), t: (e - 1 + u) / SAMPLES };
         }
-        if (hit && Math.abs(cross(n, unit(hit.dir))) >= Math.sin(SHALLOW)) {
+        // the angle with the line's own tangent there, not a chord of it
+        const tangentAt = (t: number): XY => {
+          const h = 1e-4;
+          return unit(sub(main.at(Math.min(1, t + h)), main.at(Math.max(0, t - h))));
+        };
+        if (hit && Math.abs(cross(n, tangentAt(hit.t))) >= Math.sin(SHALLOW)) {
           cost += hit.s;
           d += `M${pt(map(at))}L${pt(map(hit.p))}`;
           branches.push([at, hit.p]);
@@ -318,11 +323,13 @@ interface StarHub {
 function starHub(xy: readonly XY[]): StarHub | null {
   const m = xy.length;
   if (m < 6 || m % 2) return null;
-  const reflex = xy.map((v, i) => {
-    const prev = xy[(i - 1 + m) % m]!;
-    const next = xy[(i + 1) % m]!;
-    return cross(sub(v, prev), sub(next, v)) < 0;
+  const turns = xy.map((v, i) => {
+    const [a, b] = [sub(v, xy[(i - 1 + m) % m]!), sub(xy[(i + 1) % m]!, v)];
+    return cross(a, b) / (Math.hypot(...a) * Math.hypot(...b));
   });
+  // a flat point (a cut tile's) is neither a point nor a dent: no star
+  if (turns.some((t) => Math.abs(t) < 1e-9)) return null;
+  const reflex = turns.map((t) => t < 0);
   if (!reflex.every((r, i) => r !== reflex[(i + 1) % m])) return null;
   const centre: XY = [xy.reduce((s, p) => s + p[0], 0) / m, xy.reduce((s, p) => s + p[1], 0) / m];
   const tips = xy.map((_, i) => (reflex[i] ? (i + 1) % m : i));
