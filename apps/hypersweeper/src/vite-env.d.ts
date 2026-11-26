@@ -14,7 +14,7 @@ declare const __APP_PACKAGED__: boolean;
 // and never in a packaged one). Only the Cloudflare deploy has the Pages
 // Function the counter posts to, so every other build leaves it out entirely
 // rather than posting into a 404 the browser then logs. See "Analytics" in
-// apps/hypersweeper/README.md.
+// apps/hypersweeper/docs/deploy.md.
 declare const __APP_ANALYTICS__: boolean;
 // Where the game is published, origin *and* base path, ending in "/": the same
 // VITE_SITE_URL the build stamps into og:url and the canonical link (a PR

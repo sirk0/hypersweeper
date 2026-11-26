@@ -240,6 +240,8 @@ the same branch, and the change is done when CI is green.
   test suite passing. Headless recipes: `apps/hypersweeper/docs/testing.md` for the
   TypeScript app, `docs/agents/pygame.md` for the pygame one.
 - Do not commit PR screenshots to `docs/screenshots/` (that folder holds only
-  the curated README shots: the gallery, rendered from the TypeScript app by
-  `make web-screenshots`, and the one pygame shot under
-  `docs/screenshots/pygame/` from `make screenshots`).
+  the curated README shots, a folder per game: `hypersweeper/`, rendered from
+  the TypeScript app by `make web-screenshots`; `reptiles/`, a few of
+  Rep-tiles' App Store shots (`DEVICES=iphone-6.3 npm run store-screenshots`)
+  scaled to 603px wide; and the one pygame shot under `pygame/` from
+  `make screenshots`).

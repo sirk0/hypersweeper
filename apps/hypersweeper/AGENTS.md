@@ -57,9 +57,9 @@ the repo root); see [`docs/deploy.md`](docs/deploy.md).
 | Adding a board | [`../docs/agents/board-recipes.md`](../../docs/agents/board-recipes.md) |
 | The `data/*.json` both front-ends read | [`../docs/agents/shared-data.md`](../../docs/agents/shared-data.md) |
 
-[`README.md`](README.md) carries the milestone history — what each milestone
-changed and why — which is worth reading when you need the reasoning behind a
-design rather than the rule itself.
+[`README.md`](README.md) is the player-facing overview: what the game is, its
+boards and controls, and the screenshots. When you need the reasoning behind a
+design rather than the rule itself, `git log` on the file is the history.
 
 ## Rules that apply to every change here
 

@@ -324,7 +324,7 @@ In this order, because each step is checked by the next:
    `tests/unit/dashboards.test.ts` for the dashboards.
 7. **The privacy copy**: `apps/hypersweeper/public/privacy.html` lists every field an event
    holds, so any new field goes there. If the field is about the client,
-   `README.md` and the Privacy note in `apps/hypersweeper/src/ui/settings.ts` also say what is
+   `apps/hypersweeper/README.md` and the Privacy note in `apps/hypersweeper/src/ui/settings.ts` also say what is
    sent. All three must stay true.
 
 `npm run typecheck` runs twice — the second pass compiles the contract with no
