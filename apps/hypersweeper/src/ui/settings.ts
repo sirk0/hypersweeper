@@ -16,6 +16,17 @@ import {
   longPressSupported,
 } from "../input/hold";
 import { allBestTimes } from "../leaderboard";
+import { cloudRecordSupported } from "../cloudRecord";
+import { shareBaseFor } from "../share";
+import {
+  currentRecord,
+  decodeTransfer,
+  encodeTransfer,
+  findToken,
+  parseTransfer,
+  TRANSFER_PARAM,
+  transferUrlFor,
+} from "../transfer";
 import { animationsEnabled } from "../settings";
 import { boardShape, SHAPE_KEYS } from "../render/cellStyle";
 import {
@@ -35,8 +46,9 @@ import {
 // it, built from the same `.menu-entry` cards as every other row. That keeps
 // the phone layout, the scrolling body and the back-row idiom for free.
 //
-// Five sections: the best times (a page below, like the theme picker), the
-// three appearance settings — the theme (the palette, the page, and what the
+// Five sections: the record (best times and achievements, pages below like
+// the theme picker, and the transfer link that carries them to another
+// browser), the three appearance settings — the theme (the palette, the page, and what the
 // board is coloured in), the board shape (how its cells are cut) and the colour
 // scheme (which half of the theme's palette pair is used), each a page below —
 // the sound / haptics / animations behaviour rows, the Privacy switch, and an
@@ -379,6 +391,127 @@ async function checkForUpdates(status: HTMLElement): Promise<void> {
   if (!(await loadDeployedBuild())) {
     status.textContent = "The new build is still downloading — reopen the app to finish.";
   }
+}
+
+/** Hand this browser's record over as a transfer link (transfer.ts): the
+ * share sheet where there is one — on a phone, the way to send a link to your
+ * own other device — and the clipboard otherwise. Where neither takes it, the
+ * link is shown in a field to copy by hand. */
+async function copyTransferLink(status: HTMLElement, fallback: HTMLElement): Promise<void> {
+  status.textContent = "Preparing…";
+  fallback.replaceChildren();
+  const base = shareBaseFor(__APP_PACKAGED__, __APP_SITE_URL__, window.location);
+  const url = transferUrlFor(base, await encodeTransfer(currentRecord()));
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share({ title: `${screens.menu.title} progress`, url });
+      status.textContent = "Open the link on the other device.";
+      return;
+    } catch {
+      /* cancelled or refused: the clipboard instead */
+    }
+  }
+  if (typeof navigator.clipboard?.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(url);
+      status.textContent = "Link copied — open it in the other browser.";
+      return;
+    } catch {
+      /* no permission: show it instead */
+    }
+  }
+  status.textContent = "Copy this link and open it in the other browser:";
+  const field = document.createElement("input");
+  field.className = "settings-transfer-input";
+  field.readOnly = true;
+  field.value = url;
+  field.setAttribute("aria-label", "Transfer link");
+  field.addEventListener("focus", () => field.select());
+  fallback.append(field);
+  field.focus();
+}
+
+/** Bring in a record from a pasted transfer link. Checked here, so a bad paste
+ * is answered on the row; a good one reloads the page with the link in its
+ * address, which is the one import path (`takeTransferLink`, at boot) — the
+ * settings, the menu and every record are then read with it in place. */
+async function importPastedLink(text: string, status: HTMLElement): Promise<void> {
+  const token = findToken(text);
+  if (token === null || !parseTransfer(await decodeTransfer(token))) {
+    status.textContent = "That is not a transfer link, or it was cut short.";
+    return;
+  }
+  status.textContent = "Importing…";
+  try {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#${TRANSFER_PARAM}=${token}`,
+    );
+    window.location.reload();
+  } catch {
+    status.textContent = "Could not import here — open the link in this browser instead.";
+  }
+}
+
+/** The two transfer rows: copy a link of this record, and — outside the App
+ * Store builds, which sync through iCloud instead — paste one in. Pasting is
+ * for the place a link cannot be opened into: a home-screen copy of the game
+ * keeps storage of its own, and tapping a link opens the browser, not it. */
+function transferRows(): HTMLElement[] {
+  const status = document.createElement("span");
+  status.className = "menu-entry-hint settings-status";
+  const label = textBlock(
+    "Transfer progress",
+    "A link with your times, achievements and stars, for another browser or device",
+  );
+  label.append(status);
+  const fallback = document.createElement("div");
+  fallback.className = "settings-transfer-fallback";
+  const { li: copyLi, btn: copyBtn } = buttonRow(
+    [label],
+    () => void copyTransferLink(status, fallback),
+    "settings-update",
+  );
+  copyBtn.dataset["action"] = "transfer-copy";
+  copyLi.append(fallback);
+  if (cloudRecordSupported()) return [copyLi];
+
+  const pasteStatus = document.createElement("span");
+  pasteStatus.className = "menu-entry-hint settings-status";
+  const pasteLabel = textBlock("Paste a transfer link", "Bring in progress from another browser");
+  pasteLabel.append(pasteStatus);
+  const form = document.createElement("form");
+  form.className = "settings-transfer-form";
+  form.hidden = true;
+  const field = document.createElement("input");
+  field.className = "settings-transfer-input";
+  field.type = "text";
+  field.placeholder = "Paste the link here";
+  field.autocomplete = "off";
+  field.spellcheck = false;
+  field.setAttribute("aria-label", "Transfer link to import");
+  const submit = document.createElement("button");
+  submit.className = "dialog-btn dialog-primary";
+  submit.type = "submit";
+  submit.textContent = "Import";
+  submit.dataset["action"] = "transfer-import";
+  form.append(field, submit);
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    void importPastedLink(field.value, pasteStatus);
+  });
+  const { li: pasteLi, btn: pasteBtn } = buttonRow(
+    [pasteLabel],
+    () => {
+      form.hidden = false;
+      field.focus();
+    },
+    "settings-update",
+  );
+  pasteBtn.dataset["action"] = "transfer-paste";
+  pasteLi.append(form);
+  return [copyLi, pasteLi];
 }
 
 /** The theme page: the full list, ticked at the active one. Reached from the
@@ -761,7 +894,7 @@ export function renderSettings(host: SettingsHost, pages: SettingsPages): Docume
   );
   achBtn.dataset["settingsGroup"] = gameCenter ? "game-center" : "achievements";
 
-  records.append(achLi, bestLi);
+  records.append(achLi, bestLi, ...transferRows());
   frag.append(records);
 
   // -- Appearance ------------------------------------------------------------

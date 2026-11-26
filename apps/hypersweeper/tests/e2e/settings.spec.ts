@@ -402,7 +402,9 @@ test.describe("settings", () => {
   test("the update check reports this build as the latest", async ({ page }) => {
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-action="check-updates"]').click();
-    await expect(page.locator(".settings-status")).toHaveText("You are on the latest build.");
+    await expect(page.locator('[data-action="check-updates"] .settings-status')).toHaveText(
+      "You are on the latest build.",
+    );
   });
 
   test("a newly deployed build is found and loaded", async ({ page }) => {
@@ -445,7 +447,9 @@ test.describe("settings", () => {
     await page.route("**/version.json*", (route) => route.abort());
     await page.locator('.menu-header-btn[data-action="settings"]').click();
     await page.locator('.menu-entry[data-action="check-updates"]').click();
-    await expect(page.locator(".settings-status")).toHaveText("Could not check for updates.");
+    await expect(page.locator('[data-action="check-updates"] .settings-status')).toHaveText(
+      "Could not check for updates.",
+    );
   });
 
   // The page follows the board's own tiling (ui/backgroundPattern.ts).

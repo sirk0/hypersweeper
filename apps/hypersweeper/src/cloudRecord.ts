@@ -8,7 +8,7 @@ import {
 } from "./achievements";
 import { mergeStars, parseStars, replaceStars, storedStars, type Stars } from "./favourites";
 import { catchUpGameCenter } from "./gameCenter";
-import { TOP_N, parseEntries, replaceBoards, storedBoards, type ScoreEntry } from "./leaderboard";
+import { mergeBoards, replaceBoards, storedBoards, type ScoreEntry } from "./leaderboard";
 import { cloudRead, cloudStoreSupported, cloudWrite, onCloudChange } from "@tiling/native";
 import { readObject, storage } from "@tiling/platform";
 
@@ -208,32 +208,6 @@ function earliest(a: Record<string, number>, b: Record<string, number>): Record<
 
 function storedJson(rec: Stored, since: number): string {
   return stable({ v: 1, since, ...rec.progress, unlocked: rec.unlocked });
-}
-
-/** Every source's times for each board, cleared ones left out: the fastest
- * `TOP_N`, each time once. */
-function mergeBoards(
-  sources: Record<string, unknown>[],
-  reset: number,
-): Record<string, ScoreEntry[]> {
-  const keys = new Set(sources.flatMap((s) => Object.keys(s)));
-  const out: Record<string, ScoreEntry[]> = {};
-  for (const key of [...keys].sort()) {
-    const seen = new Set<string>();
-    const all: ScoreEntry[] = [];
-    for (const source of sources) {
-      for (const entry of parseEntries(source[key])) {
-        if (reset > 0 && entry.at <= reset) continue;
-        const id = `${entry.ms}@${entry.at}`;
-        if (seen.has(id)) continue;
-        seen.add(id);
-        all.push(entry);
-      }
-    }
-    const entries = parseEntries(all).slice(0, TOP_N);
-    if (entries.length > 0) out[key] = entries;
-  }
-  return out;
 }
 
 /** One sync: the local record and iCloud's, merged. Pure, so the unit tests

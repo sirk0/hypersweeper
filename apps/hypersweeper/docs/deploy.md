@@ -134,7 +134,12 @@ Moving it is an edit to `packaging.json`: drop `web.project`, set `web.url` to
 `/api/tally` collector) and the `GAME_EVENTS` binding move to the shared site's
 `site/functions/hypersweeper/` and `site/wrangler.toml`, since a Function only
 runs from the deployed project's root. And `public/404.html`'s absolute links
-go relative to the folder.
+go relative to the folder. **Progress does not follow by itself**: the record is
+the old origin's `localStorage`, which the new one cannot read. So the old
+project must not answer `/` with a bare 301 the way `moved` does today; it has
+to serve a page whose script reads the `ms:*` keys and redirects with them as a
+transfer link (`#transfer=j<base64url JSON>` — the format in "Transfer links" in
+[`ui.md`](ui.md)), which the app imports on arrival.
 
 It is served from the domain root, so the job sets no `VITE_BASE` and takes
 `vite.config.ts`'s default `"/"`. That path is baked into the bundle at build

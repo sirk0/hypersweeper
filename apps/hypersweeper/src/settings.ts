@@ -286,7 +286,26 @@ function readRecord(): Record<string, unknown> | null {
 /** The stored settings, with every field validated independently. */
 export function loadSettings(): Settings {
   const rec = readRecord();
-  if (!rec) return { ...DEFAULT_SETTINGS };
+  return rec ? parseRecord(rec) : { ...DEFAULT_SETTINGS };
+}
+
+/** Whether this browser has a settings record of its own. A transferred one
+ * (`transfer.ts`) is only adopted where there is none: choices already made
+ * here are this browser's, and outrank another's. */
+export function hasStoredSettings(): boolean {
+  return readRecord() !== null;
+}
+
+/** A settings record that did not come from this browser's storage — one a
+ * transfer link carried — migrated from whatever version wrote it and
+ * validated the way every read is. */
+export function settingsFromRecord(raw: Record<string, unknown>): Settings {
+  const version = typeof raw["version"] === "number" ? raw["version"] : 1;
+  return parseRecord(migrate(raw, version));
+}
+
+/** A migrated record, every field validated on its own. */
+function parseRecord(rec: Record<string, unknown>): Settings {
   return {
     // A theme or difficulty that has since been removed (or was never valid)
     // falls back rather than propagating an unknown key into the UI.

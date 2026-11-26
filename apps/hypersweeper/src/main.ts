@@ -12,7 +12,8 @@ import {
 } from "./achievements";
 import { setAnalyticsEnabled, trackGame } from "./analytics";
 import { clipBoard, tellClip } from "./appClip";
-import { startCloudRecord, syncCloudRecord } from "./cloudRecord";
+import { cloudRecordSupported, startCloudRecord, syncCloudRecord } from "./cloudRecord";
+import { findToken, takeTransferLink, type TransferOutcome } from "./transfer";
 import { subscribeFavourites } from "./favourites";
 import type { PreviousState, StartTrigger } from "./analyticsEvent";
 import { applyWebAppIcon, nativeAppIcon, setAppIcon, type AppIconKey } from "./appIcon";
@@ -44,6 +45,7 @@ import { bestTimes, recordTime, type ScoreEntry } from "./leaderboard";
 import { boardFacts } from "./ui/boardFacts";
 import { BoardInfo } from "./ui/boardInfo";
 import { openInfoDialog } from "./ui/infoDialog";
+import { openTransferDialog } from "./ui/transferDialog";
 import { symmetryPictures } from "./ui/symmetryIcon";
 import { boardConditions, Hud } from "./ui/hud";
 import { Menu } from "./ui/menu";
@@ -169,6 +171,9 @@ class App {
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly ui: HTMLElement,
+    /** What a transfer link in the address brought (transfer.ts), imported
+     * before this was constructed so every record below reads it. */
+    transfer: TransferOutcome | null = null,
   ) {
     this.paintTheme(); // before anything measures or paints
     applyWebAppIcon(this.settings.appIcon);
@@ -309,6 +314,10 @@ class App {
     if (!this.clip) startMenuBar(this.settings.difficulty);
     if (this.clip) this.startGame(this.clip, this.settings.difficulty, { trigger: "link" });
     else if (!this.startFromDeepLink()) this.showMenu();
+    if (transfer) {
+      // Over the menu (a transfer link names no board): what came across.
+      openTransferDialog(this.ui, { outcome: transfer, animate: this.animationsEnabled });
+    }
     requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
   }
 
@@ -1458,6 +1467,19 @@ async function boot(): Promise<void> {
       /* fall back to system fonts */
     }
   }
-  new App(canvas, ui);
+  // A transfer link's record goes into storage before anything reads it — the
+  // settings, the best times, the achievements (transfer.ts). Never throws.
+  let transfer: TransferOutcome | null = null;
+  try {
+    transfer = await takeTransferLink(!cloudRecordSupported());
+  } catch {
+    /* storage refused mid-import; boot on what there is */
+  }
+  new App(canvas, ui, transfer);
+  // A transfer link opened in a tab already showing the game changes only the
+  // fragment, which loads nothing: reload, so the import above sees it.
+  window.addEventListener("hashchange", () => {
+    if (findToken(window.location.hash) !== null) window.location.reload();
+  });
 }
 void boot();
