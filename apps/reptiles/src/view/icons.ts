@@ -313,20 +313,14 @@ export function starRow(earned: number): HTMLSpanElement {
 
 const STROKE = `stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
 
-/** The header's and home screen's glyphs, on a 24-unit square: home, undo
- * and redo, restart,
- * a light bulb for the hint, a die for a new random level and the settings
+/** The header's and home screen's glyphs, on a 24-unit square: back, home,
+ * restart, a light bulb for the hint, a die for a new random level and the settings
  * gear, and the question mark for How to play (all three Hypersweeper's). */
 export const GLYPHS: Record<string, string> = {
   back: `<path d="M14.6 5.4 L8 12 L14.6 18.6" ${STROKE}/>`,
   home: `<path d="M3.8 11.2 L12 4 L20.2 11.2" ${STROKE}/>
     <path d="M6.2 9.4 V19.6 H17.8 V9.4" ${STROKE}/>
     <path d="M10.2 19.6 V14.4 H13.8 V19.6" ${STROKE}/>`,
-  // Undo and redo: a hooked arrow back to the left, and its mirror image.
-  undo: `<path d="M8.6 4.8 L4.4 9 L8.6 13.2" ${STROKE}/>
-    <path d="M4.4 9 H14.2 A5.2 5.2 0 0 1 14.2 19.4 H9.6" ${STROKE}/>`,
-  redo: `<path d="M15.4 4.8 L19.6 9 L15.4 13.2" ${STROKE}/>
-    <path d="M19.6 9 H9.8 A5.2 5.2 0 0 0 9.8 19.4 H14.4" ${STROKE}/>`,
   restart: `<path d="M4.5 12 A7.5 7.5 0 1 0 12 4.5" ${STROKE}/>
     <path d="M15.1 1.4 L11.4 4.5 L15.1 7.6" ${STROKE}/>`,
   hint: `<path d="M9.2 17.2 V15.6 C9.2 14.2 8.4 13.4 7.5 12.4 A6 6 0 1 1 16.5 12.4 C15.6 13.4 14.8 14.2 14.8 15.6 V17.2 Z" ${STROKE}/>
@@ -337,8 +331,10 @@ export const GLYPHS: Record<string, string> = {
     <circle cx="8.3" cy="8.3" r="1.55" fill="currentColor"/>
     <circle cx="12" cy="12" r="1.55" fill="currentColor"/>
     <circle cx="15.7" cy="15.7" r="1.55" fill="currentColor"/>`,
-  // How to play: Hypersweeper's question mark in a ring (its src/ui/help.ts
-  // HELP_ICON), on the gear's 24 × 24 box and about its span.
+  // How to play: a question mark in a ring, on the gear's 24 × 24 box and
+  // about its span — drawn, not a font's glyph, so it sits on the ring's
+  // centre whatever the font: the hook's top (5.7) and the dot's foot (18.4)
+  // either side of 12, the hook 8.3 to 15.7 across.
   // More games: a 2×2 of tiles, Hypersweeper's glyph for the same link.
   games: `<g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
     <rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/>
@@ -347,9 +343,9 @@ export const GLYPHS: Record<string, string> = {
     <rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>
   </g>`,
   help: `<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.9"/>
-    <text x="12" y="12.7" text-anchor="middle" dominant-baseline="central"
-      font-family="Space Grotesk, system-ui, sans-serif" font-weight="700" font-size="12.5"
-      fill="currentColor">?</text>`,
+    <path d="M9.25 9.4 A2.75 2.75 0 1 1 13.77 11.51 C12.6 12.3 12 12.9 12 14" fill="none"
+      stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+    <circle cx="12" cy="17.2" r="1.2" fill="currentColor"/>`,
   // Hypersweeper's own gear (apps/hypersweeper/src/ui/settings.ts GEAR_ICON).
   settings: `<path fill="currentColor" fill-rule="evenodd" d="M21.48 10.50A9.6 9.6 0 0 1 21.48 13.50L18.60 13.65A6.8 6.8 0 0 1 17.83 15.50L19.77 17.64A9.6 9.6 0 0 1 17.64 19.77L15.50 17.83A6.8 6.8 0 0 1 13.65 18.60L13.50 21.48A9.6 9.6 0 0 1 10.50 21.48L10.35 18.60A6.8 6.8 0 0 1 8.50 17.83L6.36 19.77A9.6 9.6 0 0 1 4.23 17.64L6.17 15.50A6.8 6.8 0 0 1 5.40 13.65L2.52 13.50A9.6 9.6 0 0 1 2.52 10.50L5.40 10.35A6.8 6.8 0 0 1 6.17 8.50L4.23 6.36A9.6 9.6 0 0 1 6.36 4.23L8.50 6.17A6.8 6.8 0 0 1 10.35 5.40L10.50 2.52A9.6 9.6 0 0 1 13.50 2.52L13.65 5.40A6.8 6.8 0 0 1 15.50 6.17L17.64 4.23A9.6 9.6 0 0 1 19.77 6.36L17.83 8.50A6.8 6.8 0 0 1 18.60 10.35L21.48 10.50ZM8.6 12A3.4 3.4 0 1 0 15.4 12A3.4 3.4 0 1 0 8.6 12Z"/>`,
 };

@@ -3,8 +3,8 @@ import { spotKey } from "../../src/geometry/shape";
 import { levelByKey, type Level } from "../../src/levels";
 import { Puzzle, type LaidTile } from "../../src/puzzle";
 
-// Undo and redo (`Puzzle.commit`, `undo`, `redo`), and a board in play kept
-// and laid back (src/saved.ts, `Puzzle.resume`).
+// A move's end (`Puzzle.commit`, `layout`), and a board in play kept and laid
+// back (src/saved.ts, `Puzzle.resume`).
 
 function level(key: string): Level {
   const out = levelByKey(key);
@@ -16,32 +16,17 @@ function level(key: string): Level {
 const layoutOf = (p: Puzzle, tiles: readonly LaidTile[] = p.tiles): string[] =>
   tiles.map((t) => `${t.kind}|${t.rot}|${t.flip}|${spotKey(p.level.ring, t.pieces)}`).sort();
 
-describe("undo and redo", () => {
-  it("step back and forth through finished moves", () => {
+describe("a move", () => {
+  it("is what the layout holds once it is finished", () => {
     const p = new Puzzle(level("squares"));
-    expect(p.canUndo).toBe(false);
-    expect(p.canRedo).toBe(false);
+    expect(p.layout).toHaveLength(0);
     p.layOwn(1);
+    expect(p.layout).toHaveLength(0);
     expect(p.commit()).toBe(true);
-    const one = layoutOf(p);
+    expect(layoutOf(p, p.layout)).toEqual(layoutOf(p));
     p.layOwn(2);
     expect(p.commit()).toBe(true);
-    const three = layoutOf(p);
-    expect(three).toHaveLength(3);
-
-    expect(p.undo()).toBe(true);
-    expect(layoutOf(p)).toEqual(one);
-    expect(layoutOf(p, p.layout)).toEqual(one);
-    expect(p.undo()).toBe(true);
-    expect(p.tiles).toHaveLength(0);
-    expect(p.canUndo).toBe(false);
-    expect(p.undo()).toBe(false);
-
-    expect(p.redo()).toBe(true);
-    expect(p.redo()).toBe(true);
-    expect(layoutOf(p)).toEqual(three);
-    expect(p.canRedo).toBe(false);
-    expect(p.redo()).toBe(false);
+    expect(layoutOf(p, p.layout)).toHaveLength(3);
   });
 
   it("a tile lifted and put back is no move; taking one off is", () => {
@@ -57,33 +42,7 @@ describe("undo and redo", () => {
     p.lift(p.tiles[0]!.id);
     expect(p.commit()).toBe(true);
     expect(p.tiles).toHaveLength(1);
-    p.undo();
-    expect(p.tiles).toHaveLength(2);
-  });
-
-  it("a new move after an undo leaves nothing to redo", () => {
-    const p = new Puzzle(level("triangles"));
-    p.layOwn(1);
-    p.commit();
-    p.layOwn(1);
-    p.commit();
-    p.undo();
-    expect(p.canRedo).toBe(true);
-    p.lift(p.tiles[0]!.id);
-    p.commit();
-    expect(p.canRedo).toBe(false);
-    expect(p.tiles).toHaveLength(0);
-  });
-
-  it("undoes the finishing move, and redoes it to finish again", () => {
-    const p = new Puzzle(level("squares"));
-    p.layOwn();
-    p.commit();
-    expect(p.won).toBe(true);
-    p.undo();
-    expect(p.won).toBe(false);
-    p.redo();
-    expect(p.won).toBe(true);
+    expect(p.layout).toHaveLength(1);
   });
 });
 
@@ -114,7 +73,6 @@ describe("a board kept and laid back", () => {
       q.resume(kept.tiles);
       expect(layoutOf(q)).toEqual(layoutOf(p));
       expect(layoutOf(q, q.layout)).toEqual(layoutOf(p));
-      expect(q.canUndo).toBe(false);
       expect(q.coverage).toBeCloseTo(p.coverage, 9);
       // and it plays on from there
       q.solve();
