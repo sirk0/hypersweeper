@@ -326,12 +326,17 @@ test("the level screen: one header row, no level list, a random level of the sam
 }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=cairo");
-  // home, back, undo, redo, the hint, restart and the die — and no clock:
-  // the time taken shows only once the board is finished
-  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(7);
-  await expect(page.locator("#clock")).toHaveCount(0);
+  // home, back, the hint, restart and the die — no undo or redo, and no
+  // clock: the time taken shows only once the board is finished
+  await expect(page.locator("#game .hud .hud-btn:visible")).toHaveCount(5);
+  await expect(page.locator("#undo, #redo, #clock")).toHaveCount(0);
   await expect(page.locator("#game nav, #levels")).toHaveCount(0);
   await expect(page.locator("#level")).toHaveText(/V3²\.4\.3\.4/);
+  // its difficulty before its name: hard, three bars of three
+  const band = page.locator("#level-band");
+  await expect(band).toBeVisible();
+  await expect(band).toHaveAttribute("aria-label", "hard");
+  await expect(band.locator(".bar.on")).toHaveCount(3);
   // Cairo is hard; the die deals another hard level.
   // every level measured hard: from `HARD` (1.0, src/difficulty.ts) up
   const measured = JSON.parse(
@@ -561,7 +566,7 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   expect(errors).toEqual([]);
 });
 
-test("a finished board is locked, its win card shown once, until an undo", async ({ page }) => {
+test("a finished board is locked, its win card shown once, until a restart", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=squares");
   await finishSquares(page);
@@ -592,13 +597,17 @@ test("a finished board is locked, its win card shown once, until an undo", async
   await expect(tiles).toHaveCount(16);
   await expect(page.locator("#won")).toBeHidden();
   await expect(page.locator("#count")).toHaveText("Tiled ★★★");
-  // an undo steps back off the finish and unlocks it; laid again, the card
-  // is back
+  // Z is no undo: the board stays finished
   await page.keyboard.press("Control+z");
-  await expect(tiles).toHaveCount(15);
+  await page.keyboard.press("z");
+  await expect(tiles).toHaveCount(16);
+  await expect(page.locator("svg.board")).toHaveClass(/finished/);
+  // a restart clears and unlocks it; finished again, the card is back
+  await page.locator("#restart").click();
+  await expect(tiles).toHaveCount(0);
   await expect(page.locator("svg.board")).not.toHaveClass(/finished/);
-  await expect(page.locator("#count")).toHaveText("93%");
-  await page.keyboard.press("Shift+Z");
+  await expect(page.locator("#count")).toHaveText("0%");
+  await finishSquares(page);
   await expect(page.locator("#won")).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -651,9 +660,9 @@ test("with its setting on, a finished board shows the tiling past it and zooms o
   const out = await wheelOut(page, 12);
   expect(out).toBeLessThan(fitted.width * 0.4);
   expect(out).toBeGreaterThan(fitted.width / 3 - 1);
-  // An undo un-finishes it (the finished board is locked, nothing taken off
+  // A restart un-finishes it (the finished board is locked, nothing taken off
   // by hand): the outlines go, and the board is fitted again.
-  await page.keyboard.press("Control+z");
+  await page.locator("#restart").click();
   await expect(page.locator(".board-backdrop path.beyond")).toHaveCount(0);
   const back = (await page.locator("svg.board path.region").boundingBox())!;
   expect(back.width).toBeCloseTo(fitted.width, 0);
@@ -1119,43 +1128,34 @@ async function dropSquareAt(page: Page, col: number): Promise<void> {
   await page.mouse.up();
 }
 
-test("undo and redo take a move back and make it again, by button and by key", async ({ page }) => {
+test("Back goes one level up, however the screen was reached", async ({ page }) => {
   const errors = watchErrors(page);
-  await page.goto("/?level=squares");
-  const tiles = page.locator("svg.board [data-tile]");
-  const undo = page.locator("#undo");
-  const redo = page.locator("#redo");
-  await expect(undo).toBeDisabled();
-  await expect(redo).toBeDisabled();
-  await dropSquareAt(page, 0);
-  await dropSquareAt(page, 1);
-  await expect(tiles).toHaveCount(2);
-  await expect(undo).toBeEnabled();
-
-  await undo.click();
-  await expect(tiles).toHaveCount(1);
-  await expect(redo).toBeEnabled();
-  await page.keyboard.press("z");
-  await expect(tiles).toHaveCount(0);
-  await expect(page.locator("#count")).toHaveText("0%");
-  await expect(undo).toBeDisabled();
-
-  await page.keyboard.press("Shift+Z");
-  await expect(tiles).toHaveCount(1);
-  await redo.click();
-  await expect(tiles).toHaveCount(2);
-  await expect(redo).toBeDisabled();
-
-  // taking a tile off is a move too; a new move leaves nothing to redo
-  await page.keyboard.press("x");
-  await tiles.first().click();
-  await expect(tiles).toHaveCount(1);
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Control+z");
-  await expect(tiles).toHaveCount(2);
-  await dropSquareAt(page, 2);
-  await expect(tiles).toHaveCount(3);
-  await expect(redo).toBeDisabled();
+  await page.setViewportSize(PHONE);
+  // a level opened straight from a link: up to its tiling's page, it picked
+  await page.goto("/?level=trihex-2");
+  await page.locator("#back").click();
+  await expect(page).toHaveURL(/\?tiling=trihex&pick=trihex-2$/);
+  await expect(page.locator('.board-card[data-board="trihex-2"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  // …then its group's page, Tilings' groups and home
+  await page.locator("#tiling [data-go-back]").click();
+  await expect(page).toHaveURL(/\?group=regular$/);
+  await page.locator("#catalog [data-go-back]").click();
+  await expect(page).toHaveURL(/\?tilings$/);
+  await expect(page.locator("#catalog-list .group-card")).toHaveCount(5);
+  await page.locator("#catalog [data-go-back]").click();
+  await expect(page.locator("#home")).toBeVisible();
+  // a level dealt from home goes up to its tiling's page too, not home
+  await page.locator("#home .home-pick").first().click();
+  await expect(page.locator("#game")).toBeVisible();
+  await page.locator("#back").click();
+  await expect(page.locator("#tiling")).toBeVisible();
+  // a tiling of one level has no page: up from it is its group's
+  await page.goto("/?level=ppentomino");
+  await page.locator("#back").click();
+  await expect(page).toHaveURL(/\?group=nonperiodic$/);
   expect(errors).toEqual([]);
 });
 
@@ -1170,11 +1170,10 @@ test("a board left half-covered opens as it was, and Restart starts it afresh", 
   await expect(tiles).toHaveCount(2);
   const coverage = await page.locator("#count").textContent();
 
-  // a reload: the same tiles, nothing to undo
+  // a reload: the same tiles
   await page.reload();
   await expect(tiles).toHaveCount(2);
   await expect(page.locator("#count")).toHaveText(coverage ?? "");
-  await expect(page.locator("#undo")).toBeDisabled();
 
   // its tiling's page offers to resume it, and does
   await page.goto("/?tiling=squares&pick=squares");
@@ -1319,8 +1318,15 @@ test("the best time: on the win card, beaten or not, and on Play", async ({ page
 /** Drop the tray's first tile with its middle at a share of the region's box:
  * `fx` across from its left, `fy` down from its top. */
 async function dropInRegion(page: Page, fx: number, fy: number): Promise<void> {
-  const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
-  const r = (await page.locator("svg.board path.region").boundingBox())!;
+  // the board is drawn anew after a move or a Next: a box read mid-redraw is
+  // null, so read each until it is there
+  const boxOf = async (l: Locator) => {
+    let box: Awaited<ReturnType<Locator["boundingBox"]>> = null;
+    await expect.poll(async () => (box = await l.boundingBox()) !== null).toBe(true);
+    return box!;
+  };
+  const t = await boxOf(page.locator("svg.board .tile.in-tray").first());
+  const r = await boxOf(page.locator("svg.board path.region"));
   await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
   await page.mouse.down();
   await page.mouse.move(r.x + fx * r.width, r.y + fy * r.height, { steps: 6 });

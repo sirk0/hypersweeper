@@ -13,11 +13,12 @@
 // what taking tiles back off is for.
 //
 // Once the board is finished it is locked: no tile is picked up, laid or
-// taken off, and the tray does not turn or flip, until an undo or a restart
-// (main.ts) leaves it unfinished; pinch, pan and wheel zoom still work.
+// taken off, and the tray does not turn or flip, until a restart (main.ts)
+// leaves it unfinished; pinch, pan and wheel zoom still work.
 //
 // Each finished move — a tile laid, moved or taken off — is committed to the
-// puzzle's undo list (`Puzzle.commit`); a tile lifted and put back is no move.
+// puzzle (`Puzzle.commit`), which is what a board kept is (saved.ts); a tile
+// lifted and put back is no move.
 //
 // A tile lands only as it is held. The rotate controls — one each way (R and
 // Shift+R) — turn every tray tile at once, and the tile in hand, before or
@@ -76,8 +77,7 @@ export interface DragControl {
   /** Where the last tile laid landed across the screen, -1..1: what the win
    * flourish leans toward. */
   lastPan(): number;
-  /** Put a tile in hand back where it came from, ending the drag — before an
-   * undo or a redo lays the board anew. */
+  /** Put a tile in hand back where it came from, ending the drag. */
   cancel(): void;
 }
 
@@ -128,7 +128,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     changed();
   };
 
-  /** The end of a move: on the undo list, if the tiles down changed. */
+  /** The end of a move: the puzzle's layout, if the tiles down changed. */
   const done = (): void => {
     puzzle.commit();
     settle();
@@ -241,7 +241,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     let outline: Loop[];
     let c: XY;
     let origin: Placed | null = null;
-    // A finished board is locked until an undo or a restart: a press on a
+    // A finished board is locked until a restart: a press on a
     // tile, placed or in the tray, only pans, as one on bare board does.
     const tray = puzzle.won ? null : target.closest("[data-tray]");
     const placed = puzzle.won ? null : target.closest("[data-tile]");

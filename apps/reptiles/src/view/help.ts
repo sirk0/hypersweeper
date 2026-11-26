@@ -3,7 +3,7 @@
 // `.settings-list` rows, so it gets their look and the desktop pane's header.
 //
 // Everything here is a statement about the code, so keep it true: the rules
-// and the stars are `src/puzzle.ts` (`won`, `stars`, undo and redo), a board
+// and the stars are `src/puzzle.ts` (`won`, `stars`), a board
 // kept `src/saved.ts`, the best time `src/progress.ts`, the gestures
 // `src/input/drag.ts`, the keys `onKey` in `src/main.ts`, and the header
 // `index.html`. Its first button opens the tutorial (`src/tutorial.ts`).
@@ -59,11 +59,6 @@ const SECTIONS: Section[] = [
           "or picking up a tray tile ends it.",
       ],
       [
-        "Undo and redo",
-        "The hooked arrows in the header — [Z], and [Shift]+[Z] or [Y] — take " +
-          "back the last move (a tile laid, moved or taken off) and make it again.",
-      ],
-      [
         "Matching rules and colourings",
         "Some boards mark each tile's edges with lines, arrows or colours. A " +
           "tile lands only where its marks meet its neighbours' as they should, " +
@@ -113,10 +108,10 @@ const SECTIONS: Section[] = [
       ],
       [
         "The header",
-        "Restart starts the level again; the die deals another level of the " +
-          "same difficulty. Finished, you get Play again and Next level; close " +
-          "that card and the board stays as it is, its stars over it, until an " +
-          "undo steps back off the finish.",
+        "The bars beside the level's name are its difficulty. Restart starts " +
+          "the level again; the die deals another level of the same difficulty. " +
+          "Finished, you get Play again and Next level; close that card and the " +
+          "board stays as it is, its stars over it, until a restart.",
       ],
       [
         "Leave and come back",

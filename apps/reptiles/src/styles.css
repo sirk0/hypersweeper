@@ -504,6 +504,23 @@ button.primary {
   content: "· ";
 }
 
+/* The level's difficulty before its name: the three bars, as a tiling's
+   page draws them, in the label's own ink. */
+.board-name .level-band svg {
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.4em;
+  vertical-align: -0.2em;
+}
+
+.board-name .level-band .bar {
+  stroke: currentColor;
+}
+
+.board-name .level-band .bar.on {
+  fill: currentColor;
+}
+
 /* A vertex-rule level's sign beside its name (icons.ts `vertexFigure`): the
    configuration every point must keep, drawn round one point. */
 .board-name .level-rule svg {
@@ -1055,7 +1072,7 @@ button.primary {
   cursor: pointer;
 }
 
-/* A finished board is locked until an undo or a restart (drag.ts): nothing
+/* A finished board is locked until a restart (drag.ts): nothing
    to pick up, and the tray and its controls fade back. */
 .finished .tile,
 .finished .knob {
@@ -1671,10 +1688,27 @@ button:disabled {
   gap: 4px 18px;
 }
 
+/* A board's card and a tile set's are one size, in grids of one column
+   count (`--pick-cols`): four to a row on a phone held upright, the page
+   scrolling where there are more rows than fit; as many as the width takes
+   on one held sideways (below), the boards and the tiles alike. The
+   desktop's two columns size their own (the block at the foot). */
+.picker {
+  --pick-cols: 4;
+  --pick-gap: 6px;
+}
+
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(max(64px, calc(25% - 4px)), 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(var(--pick-cols), minmax(0, 1fr));
+  gap: var(--pick-gap);
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .picker:not(.wide) .board-grid,
+  .picker:not(.wide) .pick-tiles .marking-row {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  }
 }
 
 .tiling-groups .board-grid {
@@ -1711,9 +1745,9 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
-  padding: 3px 2px 2px;
+  padding: 4px 4px 3px;
   border-radius: 14px;
   box-shadow: var(--shadow);
 }
@@ -1721,7 +1755,6 @@ button:disabled {
 .outline-slot {
   display: block;
   width: 100%;
-  max-width: 72px;
   aspect-ratio: 1;
 }
 
@@ -1809,11 +1842,8 @@ button:disabled {
   /* three to a row, as wide as the page allows on a phone — but no wider
      than leaves a row of them on screen under the boards on a wide, short
      desktop window, where a third of the width is taller than the room */
-  grid-template-columns: repeat(
-    3,
-    minmax(0, max(120px, min(320px, calc((100dvh - 520px) * 1.25))))
-  );
-  gap: 6px;
+  grid-template-columns: repeat(var(--pick-cols), minmax(0, 1fr));
+  gap: var(--pick-gap);
   overflow: visible;
   padding: 2px 16px 8px;
 }
@@ -1828,6 +1858,39 @@ button:disabled {
   display: block;
   width: 100%;
   aspect-ratio: 1.25;
+}
+
+/* On a phone a tile set's card is a board's: the same box, the picture
+   square, one line under it — its difficulty and its stars where a board's
+   has its stars. */
+.picker:not(.wide) .marking-card {
+  gap: 2px;
+  padding: 4px 4px 3px;
+  border-radius: 14px;
+}
+
+.picker:not(.wide) .tray-slot {
+  aspect-ratio: 1;
+}
+
+.picker:not(.wide) .board-card .stars,
+.picker:not(.wide) .marking-card .card-meta {
+  display: flex;
+  align-items: center;
+  height: 16px;
+}
+
+.picker:not(.wide) .marking-card .card-meta {
+  padding: 0 2px;
+}
+
+.picker:not(.wide) .marking-card .card-meta .bars {
+  width: 16px;
+  height: 16px;
+}
+
+.picker:not(.wide) .marking-card .card-meta .star {
+  font-size: 0.7rem;
 }
 
 .tray-slot .tray-icon {
