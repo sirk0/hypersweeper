@@ -5,7 +5,7 @@
 //   DEVICES=iphone-6.3,ipad and SHOTS=01-penrose,… render a subset)
 //
 // Serves the game as the iPhone app packages it (`VITE_PACKAGED=1`: no update
-// row, no privacy link, no More games) from a Vite dev server — the dev build
+// row, no More games, the bundled privacy policy) from a Vite dev server — the dev build
 // is what has the `window.__reptiles` seam, which lays part of a board
 // (`lay(n)`, the board's own tiles from its bottom-left) or the whole of one
 // (`fill()`) — and shoots each scene at the pixel size App Store Connect asks
@@ -64,16 +64,18 @@ interface Scene {
 }
 
 // The first three are the ones a search result shows: the boards least like
-// any other puzzle's.
+// any other puzzle's. Then two of the markings — a jigsaw and a matching rule —
+// then the screens a level is picked from, widest first, and home.
 const SCENES: Scene[] = [
   { name: "01-penrose", query: "level=penrose", laid: 0.55 },
   { name: "02-hat", query: "level=hat", laid: 0.5 },
   { name: "03-ammann-beenker-colours", query: "level=ammannbeenker.3apart", laid: 0.45 },
-  { name: "04-tilings", query: "tilings" },
-  { name: "05-tiling-page", query: "tiling=trihex" },
-  { name: "06-spectre", query: "level=spectre", laid: 0.5 },
-  { name: "07-finished", query: "level=kitedart.rules", laid: 1 },
-  { name: "08-home", query: "" },
+  { name: "04-jigsaw", query: "level=rhombitrihex.3byshape.jigsaw", laid: 0.5 },
+  { name: "05-cairo-lines", query: "level=cairo.lines", laid: 0.5 },
+  { name: "06-tilings", query: "tilings" },
+  { name: "07-irregular", query: "group=irregular" },
+  { name: "08-tiling-page", query: "tiling=trihex" },
+  { name: "09-home", query: "" },
 ];
 
 function pick<T extends { key?: string; name?: string }>(all: T[], env: string | undefined): T[] {

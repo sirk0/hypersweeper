@@ -105,6 +105,7 @@ field, to paste as is:
 
 | File | Field | Limit |
 |---|---|---|
+| `subtitle.txt` | Subtitle (words in it, as in the name, are searched: keep them out of the keywords) | 30 |
 | `promotional-text.txt` | Promotional Text | 170 |
 | `description.txt` | Description | 4000 |
 | `keywords.txt` | Keywords (comma-separated, no spaces needed) | 100 |
@@ -112,16 +113,18 @@ field, to paste as is:
 
 Every claim in them is the code's. `apps/reptiles/tests/unit/storeListing.test.ts`
 checks each file against its limit, that "more than N levels" stays below the
-levels the game has (every board of every tiling, plain and marked), and that
-"N tilings" is no more than it has.
+levels the game has (every board of every tiling, plain and marked) but within
+a tenth of it, that "N tilings" is what it has and "fourteen families" as many
+as Tilings lists — so the listing neither promises more than the game nor
+sells it short.
 
 ### Screenshots
 
-`npm run store-screenshots` in `apps/reptiles/` renders eight scenes per slot into
+`npm run store-screenshots` in `apps/reptiles/` renders nine scenes per slot into
 `app-store-screenshots/reptiles/<slot>/` (git-ignored): the Penrose rhombi, the
-hat and Ammann–Beenker's colouring part-covered, the Tilings catalog, a tiling's
-page, the Spectre, a finished kites-and-darts board with its matching rules,
-and home. It serves the packaged build from a Vite dev server, whose
+hat and Ammann–Beenker's colouring part-covered, 3.4.6.4's jigsaw and the
+Cairo pentagonal tiling's lines part-covered, the Tilings catalog, the
+Irregular tiles group, 3.6.3.6's page, and home. It serves the packaged build from a Vite dev server, whose
 `window.__reptiles` seam lays part of a board (`lay(n)`) or all of it (`fill()`),
 in the light scheme, with Chromium emulating the device's safe-area insets so
 the header clears the Dynamic Island. `DEVICES=` and `SHOTS=` render a subset.

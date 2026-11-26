@@ -1,8 +1,10 @@
 Rep-tiles is a self-contained puzzle game: cover a region exactly with tiles by drag and drop. It needs no account and has no sign-up, ads or in-app purchases. The game contacts no server of ours and works fully offline.
 
-To try it: on iPhone, the home screen offers Easy, Medium and Hard, which each deal a random level, and Tilings, which lists every tiling. On iPad a sidebar shows the same. Drag a tile from the tray at the bottom (or right) onto the board; it snaps into place where it fits. The round-arrow controls at the end of the tray turn every tray tile; drag a placed tile back over the tray to take it off. The bulb in the header shows a hint. A quick level to finish is Tilings › Regular › 4⁴ (sixteen squares).
+To try it: the first launch opens a four-step tutorial (drag, turn, flip, take off), each a tiny board; "Skip tutorial" leaves it, and How to play (the ? on the home screen) opens it again. After it, on iPhone the home screen offers Easy, Medium and Hard, which each deal a random level, and Tilings, which lists every tiling. On iPad a sidebar shows the same. Drag a tile from the tray at the bottom (or right) onto the board; it snaps into place where it fits. The round-arrow controls at the end of the tray turn every tray tile; drag a placed tile back over the tray to take it off. The bulb in the header shows a hint. A quick level to finish is Tilings › Regular polygons › 4⁴ (sixteen squares).
 
-iCloud: the stars earned on each level are kept in step between the user's devices through iCloud key-value storage, so they also survive a reinstall. With iCloud signed out or offline, everything works from the copy on the device.
+The privacy policy is in Settings (the gear on the home screen) › About › Privacy policy.
+
+iCloud: the stars and best time earned on each level are kept in step between the user's devices through iCloud key-value storage, so they also survive a reinstall. With iCloud signed out or offline, everything works from the copy on the device.
 
 The rating prompt is requested once, after the third finished board.
 

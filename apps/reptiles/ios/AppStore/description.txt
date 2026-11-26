@@ -1,21 +1,28 @@
-Cover the shape exactly with the tiles in the tray. Drag a tile onto the board and it snaps into place; turn and flip the tray to make the rest fit. Any exact cover wins, not only the one the level was cut from, so the puzzle is in seeing which pieces go where before the corners run out.
+Square board games are boring!
 
-It starts gently with squares, triangles and hexagons, and goes all the way to tilings that never repeat: Penrose's rhombi and his kites and darts, Ammann–Beenker, the Spectre, and the hat, the first single tile that only tiles the plane aperiodically.
+Rep-tiles is a puzzle on every other kind of floor. Cover the shape exactly with the tiles in the tray: drag a tile onto the board and it snaps into place; turn and flip the tray to make the rest fit. Any exact cover wins, not only the one the level was cut from, so the puzzle is in seeing which pieces go where before the corners run out.
 
-MORE THAN 1,600 LEVELS
-• 104 tilings in eleven families: regular, uniform, 2-uniform, Laves, 2-isohedral, pentagonal, isogonal, brick bonds, rep-tiles, spirals and aperiodic
+It starts gently with triangles and hexagons, and goes all the way to tilings that never repeat: Penrose's rhombi and his kites and darts, Ammann–Beenker, the Spectre, and the hat, the first single tile that only tiles the plane aperiodically.
+
+MORE THAN 3,400 LEVELS
+• 141 tilings in fourteen families: regular, uniform and 2-uniform; star polygons at fixed and adjustable angles; Laves, 2-isohedral, pentagonal and girih; isogonal and brick bonds; rep-tiles, spirals and aperiodic
 • Every tiling cut into several boards, each a level of its own
 • Matching rules and colourings: tiles with lines or coloured marks on their edges that must meet their partners, turning an easy board into a real puzzle
+• Jigsaws: the same colourings cut as knobs and sockets along every edge
+• Vertex rules: every corner must come out as the tiling's own
 • Rep-tiles: a big copy of a shape to fill with small copies of itself, from the sphinx and the chair to tiles of several pieces moved as one
 
 PLAY YOUR WAY
+• A short tutorial shows dragging, turning, flipping and taking tiles off
 • Easy, Medium and Hard each deal a random level, with difficulty measured rather than guessed
 • Up to three stars a level: one for finishing it, one for doing it without a hint, one for using exactly the tiles in the tray
 • Stuck? The hint works out exactly what to do next: a tile to lay, or the tile to take back off
+• Leave a board half done and pick it up later, right where you were
+• Once a board is finished, see its tiling carried on to the edges of the screen
 • Pinch to zoom, and drag a tile back to the tray to take it off
 • Light and dark themes, and three sound themes
 • Haptic feedback on iPhone as tiles land and boards are finished
 
-Your stars are kept in step between your iPhone and iPad through iCloud.
+Your stars and best times are kept in step between your iPhone and iPad through iCloud.
 
 No account, no ads, no in-app purchases, no tracking. Everything runs on your device and works offline.
