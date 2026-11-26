@@ -9068,8 +9068,8 @@
     "presses": 15,
     "flips": 0,
     "fits": 189,
-    "seen": 92,
-    "hidden": 0
+    "seen": 83,
+    "hidden": 9
   },
   "floret.lines-3": {
     "score": 1.73,
@@ -9084,40 +9084,40 @@
     "presses": 17,
     "flips": 0,
     "fits": 199,
-    "seen": 94,
-    "hidden": 4
+    "seen": 92,
+    "hidden": 6
   },
   "floret.lines-5": {
     "score": 1.907,
     "presses": 17,
     "flips": 0,
     "fits": 200,
-    "seen": 97,
-    "hidden": 4
+    "seen": 94,
+    "hidden": 7
   },
   "floret.lines-6": {
     "score": 1.896,
     "presses": 17,
     "flips": 0,
     "fits": 209,
-    "seen": 108,
-    "hidden": 1
+    "seen": 99,
+    "hidden": 10
   },
   "floret.lines2": {
     "score": 1.875,
     "presses": 17,
     "flips": 0,
     "fits": 236,
-    "seen": 116,
-    "hidden": 14
+    "seen": 107,
+    "hidden": 23
   },
   "floret.lines2-2": {
     "score": 1.847,
     "presses": 15,
     "flips": 0,
     "fits": 218,
-    "seen": 105,
-    "hidden": 16
+    "seen": 93,
+    "hidden": 28
   },
   "floret.lines2-3": {
     "score": 1.792,
@@ -9132,24 +9132,24 @@
     "presses": 17,
     "flips": 0,
     "fits": 220,
-    "seen": 101,
-    "hidden": 18
+    "seen": 96,
+    "hidden": 23
   },
   "floret.lines2-5": {
     "score": 1.957,
     "presses": 17,
     "flips": 0,
     "fits": 216,
-    "seen": 106,
-    "hidden": 11
+    "seen": 101,
+    "hidden": 16
   },
   "floret.lines2-6": {
     "score": 1.967,
     "presses": 17,
     "flips": 0,
     "fits": 235,
-    "seen": 119,
-    "hidden": 16
+    "seen": 109,
+    "hidden": 26
   },
   "floret.3paired": {
     "score": 2.378,
@@ -9360,204 +9360,204 @@
     "hidden": 125
   },
   "kisrhombille.lines": {
-    "score": 2.175,
+    "score": 2.28,
     "presses": 15,
     "flips": 8,
-    "fits": 97,
-    "seen": 29,
-    "hidden": 30
+    "fits": 121,
+    "seen": 25,
+    "hidden": 58
   },
   "kisrhombille.lines-2": {
-    "score": 2.47,
+    "score": 2.557,
     "presses": 21,
     "flips": 11,
-    "fits": 103,
-    "seen": 13,
-    "hidden": 47
+    "fits": 122,
+    "seen": 18,
+    "hidden": 61
   },
   "kisrhombille.lines-3": {
-    "score": 2.491,
+    "score": 2.577,
     "presses": 21,
     "flips": 10,
-    "fits": 107,
-    "seen": 25,
-    "hidden": 38
+    "fits": 141,
+    "seen": 22,
+    "hidden": 70
   },
   "kisrhombille.lines-4": {
-    "score": 2.48,
+    "score": 2.643,
     "presses": 19,
     "flips": 10,
-    "fits": 84,
-    "seen": 15,
-    "hidden": 32
+    "fits": 122,
+    "seen": 19,
+    "hidden": 64
   },
   "kisrhombille.lines-5": {
-    "score": 2.467,
+    "score": 2.528,
     "presses": 21,
     "flips": 9,
-    "fits": 104,
-    "seen": 13,
-    "hidden": 49
+    "fits": 117,
+    "seen": 16,
+    "hidden": 59
   },
   "kisrhombille.lines-6": {
-    "score": 2.513,
+    "score": 2.603,
     "presses": 21,
     "flips": 12,
-    "fits": 110,
-    "seen": 22,
-    "hidden": 43
+    "fits": 146,
+    "seen": 18,
+    "hidden": 78
   },
   "kisrhombille.lines2": {
-    "score": 2.175,
+    "score": 2.28,
     "presses": 15,
     "flips": 8,
-    "fits": 97,
-    "seen": 29,
-    "hidden": 30
+    "fits": 121,
+    "seen": 25,
+    "hidden": 58
   },
   "kisrhombille.lines2-2": {
-    "score": 2.47,
+    "score": 2.557,
     "presses": 21,
     "flips": 11,
-    "fits": 103,
-    "seen": 13,
-    "hidden": 47
+    "fits": 122,
+    "seen": 18,
+    "hidden": 61
   },
   "kisrhombille.lines2-3": {
-    "score": 2.491,
+    "score": 2.577,
     "presses": 21,
     "flips": 10,
-    "fits": 107,
-    "seen": 25,
-    "hidden": 38
+    "fits": 141,
+    "seen": 22,
+    "hidden": 70
   },
   "kisrhombille.lines2-4": {
-    "score": 2.48,
+    "score": 2.643,
     "presses": 19,
     "flips": 10,
-    "fits": 84,
-    "seen": 15,
-    "hidden": 32
+    "fits": 122,
+    "seen": 19,
+    "hidden": 64
   },
   "kisrhombille.lines2-5": {
-    "score": 2.467,
+    "score": 2.528,
     "presses": 21,
     "flips": 9,
-    "fits": 104,
-    "seen": 13,
-    "hidden": 49
+    "fits": 117,
+    "seen": 16,
+    "hidden": 59
   },
   "kisrhombille.lines2-6": {
-    "score": 2.513,
+    "score": 2.603,
     "presses": 21,
     "flips": 12,
-    "fits": 110,
-    "seen": 22,
-    "hidden": 43
+    "fits": 146,
+    "seen": 18,
+    "hidden": 78
   },
   "kisrhombille.2apart": {
-    "score": 2.102,
+    "score": 2.229,
     "presses": 17,
     "flips": 0,
-    "fits": 87,
+    "fits": 111,
     "seen": 45,
-    "hidden": 4
+    "hidden": 28
   },
   "kisrhombille.2apart-2": {
-    "score": 2.559,
+    "score": 2.659,
     "presses": 27,
     "flips": 0,
-    "fits": 96,
-    "seen": 28,
-    "hidden": 25
+    "fits": 115,
+    "seen": 37,
+    "hidden": 35
   },
   "kisrhombille.2apart-3": {
-    "score": 2.727,
+    "score": 2.885,
     "presses": 29,
     "flips": 0,
-    "fits": 95,
-    "seen": 32,
-    "hidden": 21
+    "fits": 129,
+    "seen": 37,
+    "hidden": 50
   },
   "kisrhombille.2apart-4": {
-    "score": 2.793,
+    "score": 3.033,
     "presses": 29,
     "flips": 0,
-    "fits": 73,
-    "seen": 22,
-    "hidden": 13
+    "fits": 111,
+    "seen": 33,
+    "hidden": 40
   },
   "kisrhombille.2apart-5": {
-    "score": 2.599,
+    "score": 2.674,
     "presses": 27,
     "flips": 0,
-    "fits": 93,
-    "seen": 25,
-    "hidden": 26
+    "fits": 106,
+    "seen": 30,
+    "hidden": 34
   },
   "kisrhombille.2apart-6": {
-    "score": 2.769,
+    "score": 2.941,
     "presses": 31,
     "flips": 0,
-    "fits": 94,
-    "seen": 27,
-    "hidden": 24
+    "fits": 130,
+    "seen": 33,
+    "hidden": 54
   },
   "kisrhombille.3mixed": {
-    "score": 2.711,
+    "score": 2.763,
     "presses": 15,
     "flips": 6,
-    "fits": 232,
-    "seen": 85,
-    "hidden": 109
+    "fits": 304,
+    "seen": 73,
+    "hidden": 193
   },
   "kisrhombille.3mixed-2": {
-    "score": 3.271,
+    "score": 3.316,
     "presses": 27,
     "flips": 6,
-    "fits": 246,
-    "seen": 34,
-    "hidden": 169
+    "fits": 303,
+    "seen": 49,
+    "hidden": 211
   },
   "kisrhombille.3mixed-3": {
-    "score": 3.18,
+    "score": 3.228,
     "presses": 25,
     "flips": 5,
-    "fits": 247,
-    "seen": 77,
-    "hidden": 128
+    "fits": 349,
+    "seen": 72,
+    "hidden": 230
   },
   "kisrhombille.3mixed-4": {
-    "score": 3.156,
+    "score": 3.281,
     "presses": 23,
     "flips": 6,
-    "fits": 161,
-    "seen": 41,
-    "hidden": 81
+    "fits": 275,
+    "seen": 51,
+    "hidden": 183
   },
   "kisrhombille.3mixed-5": {
-    "score": 3.212,
+    "score": 3.244,
     "presses": 25,
     "flips": 6,
-    "fits": 245,
-    "seen": 36,
-    "hidden": 167
+    "fits": 284,
+    "seen": 45,
+    "hidden": 197
   },
   "kisrhombille.3mixed-6": {
-    "score": 3.204,
+    "score": 3.252,
     "presses": 25,
     "flips": 7,
-    "fits": 260,
-    "seen": 71,
-    "hidden": 146
+    "fits": 368,
+    "seen": 63,
+    "hidden": 257
   },
   "studdedtridual.dots": {
     "score": 1.875,
     "presses": 13,
     "flips": 0,
     "fits": 372,
-    "seen": 200,
-    "hidden": 46
+    "seen": 191,
+    "hidden": 55
   },
   "studdedtridual.dots-2": {
     "score": 1.838,
@@ -9572,16 +9572,16 @@
     "presses": 13,
     "flips": 0,
     "fits": 331,
-    "seen": 160,
-    "hidden": 53
+    "seen": 148,
+    "hidden": 65
   },
   "studdedtridual.dots-4": {
     "score": 1.887,
     "presses": 13,
     "flips": 0,
     "fits": 364,
-    "seen": 185,
-    "hidden": 55
+    "seen": 175,
+    "hidden": 65
   },
   "studdedtridual.dots-5": {
     "score": 1.851,
@@ -9604,8 +9604,8 @@
     "presses": 11,
     "flips": 4,
     "fits": 1437,
-    "seen": 986,
-    "hidden": 280
+    "seen": 952,
+    "hidden": 314
   },
   "studdedtridual.2byshape-2": {
     "score": 2.539,
@@ -9620,16 +9620,16 @@
     "presses": 15,
     "flips": 6,
     "fits": 1035,
-    "seen": 607,
-    "hidden": 267
+    "seen": 585,
+    "hidden": 289
   },
   "studdedtridual.2byshape-4": {
     "score": 2.598,
     "presses": 15,
     "flips": 6,
     "fits": 1134,
-    "seen": 695,
-    "hidden": 283
+    "seen": 677,
+    "hidden": 301
   },
   "studdedtridual.2byshape-5": {
     "score": 2.29,
@@ -10236,8 +10236,8 @@
     "presses": 18,
     "flips": 7,
     "fits": 262,
-    "seen": 102,
-    "hidden": 21
+    "seen": 97,
+    "hidden": 26
   },
   "tritrunctrihexdual.lines-3": {
     "score": 2.197,
@@ -10252,24 +10252,24 @@
     "presses": 22,
     "flips": 8,
     "fits": 316,
-    "seen": 130,
-    "hidden": 40
+    "seen": 124,
+    "hidden": 46
   },
   "tritrunctrihexdual.lines-5": {
     "score": 2.316,
     "presses": 22,
     "flips": 8,
     "fits": 299,
-    "seen": 127,
-    "hidden": 42
+    "seen": 119,
+    "hidden": 50
   },
   "tritrunctrihexdual.lines-6": {
     "score": 2.296,
     "presses": 20,
     "flips": 8,
     "fits": 292,
-    "seen": 126,
-    "hidden": 43
+    "seen": 120,
+    "hidden": 49
   },
   "tritrunctrihexdual.lines2": {
     "score": 2.045,
@@ -10284,8 +10284,8 @@
     "presses": 18,
     "flips": 7,
     "fits": 262,
-    "seen": 102,
-    "hidden": 21
+    "seen": 97,
+    "hidden": 26
   },
   "tritrunctrihexdual.lines2-3": {
     "score": 2.197,
@@ -10300,31 +10300,31 @@
     "presses": 22,
     "flips": 8,
     "fits": 316,
-    "seen": 130,
-    "hidden": 40
+    "seen": 124,
+    "hidden": 46
   },
   "tritrunctrihexdual.lines2-5": {
     "score": 2.316,
     "presses": 22,
     "flips": 8,
     "fits": 299,
-    "seen": 127,
-    "hidden": 42
+    "seen": 119,
+    "hidden": 50
   },
   "tritrunctrihexdual.lines2-6": {
     "score": 2.296,
     "presses": 20,
     "flips": 8,
     "fits": 292,
-    "seen": 126,
-    "hidden": 43
+    "seen": 120,
+    "hidden": 49
   },
   "fannedhexdual.lines": {
-    "score": 2.303,
+    "score": 2.32,
     "presses": 21,
     "flips": 0,
-    "fits": 149,
-    "seen": 70,
+    "fits": 153,
+    "seen": 74,
     "hidden": 4
   },
   "fannedhexdual.lines-2": {
@@ -10336,43 +10336,43 @@
     "hidden": 16
   },
   "fannedhexdual.lines-3": {
-    "score": 1.905,
+    "score": 1.914,
     "presses": 17,
     "flips": 0,
-    "fits": 171,
-    "seen": 65,
+    "fits": 173,
+    "seen": 67,
     "hidden": 14
   },
   "fannedhexdual.lines-4": {
-    "score": 2.103,
+    "score": 2.107,
     "presses": 17,
     "flips": 0,
-    "fits": 167,
+    "fits": 168,
     "seen": 83,
-    "hidden": 7
+    "hidden": 8
   },
   "fannedhexdual.lines-5": {
-    "score": 2.024,
+    "score": 2.033,
     "presses": 17,
     "flips": 0,
-    "fits": 150,
-    "seen": 60,
+    "fits": 152,
+    "seen": 62,
     "hidden": 12
   },
   "fannedhexdual.lines-6": {
-    "score": 1.972,
+    "score": 1.979,
     "presses": 15,
     "flips": 0,
-    "fits": 164,
+    "fits": 166,
     "seen": 76,
-    "hidden": 12
+    "hidden": 14
   },
   "fannedhexdual.lines2": {
-    "score": 2.303,
+    "score": 2.32,
     "presses": 21,
     "flips": 0,
-    "fits": 149,
-    "seen": 70,
+    "fits": 153,
+    "seen": 74,
     "hidden": 4
   },
   "fannedhexdual.lines2-2": {
@@ -10384,44 +10384,44 @@
     "hidden": 16
   },
   "fannedhexdual.lines2-3": {
-    "score": 1.905,
+    "score": 1.914,
     "presses": 17,
     "flips": 0,
-    "fits": 171,
-    "seen": 65,
+    "fits": 173,
+    "seen": 67,
     "hidden": 14
   },
   "fannedhexdual.lines2-4": {
-    "score": 2.103,
+    "score": 2.107,
     "presses": 17,
     "flips": 0,
-    "fits": 167,
+    "fits": 168,
     "seen": 83,
-    "hidden": 7
+    "hidden": 8
   },
   "fannedhexdual.lines2-5": {
-    "score": 2.024,
+    "score": 2.033,
     "presses": 17,
     "flips": 0,
-    "fits": 150,
-    "seen": 60,
+    "fits": 152,
+    "seen": 62,
     "hidden": 12
   },
   "fannedhexdual.lines2-6": {
-    "score": 1.972,
+    "score": 1.979,
     "presses": 15,
     "flips": 0,
-    "fits": 164,
+    "fits": 166,
     "seen": 76,
-    "hidden": 12
+    "hidden": 14
   },
   "hexbandsdual.lines": {
     "score": 1.483,
     "presses": 7,
     "flips": 0,
     "fits": 301,
-    "seen": 173,
-    "hidden": 30
+    "seen": 164,
+    "hidden": 39
   },
   "hexbandsdual.lines-2": {
     "score": 1.411,
@@ -10452,8 +10452,8 @@
     "presses": 7,
     "flips": 0,
     "fits": 316,
-    "seen": 178,
-    "hidden": 38
+    "seen": 170,
+    "hidden": 46
   },
   "hexbandsdual.lines-6": {
     "score": 1.403,
@@ -10468,8 +10468,8 @@
     "presses": 7,
     "flips": 0,
     "fits": 285,
-    "seen": 165,
-    "hidden": 22
+    "seen": 157,
+    "hidden": 30
   },
   "hexbandsdual.lines2-2": {
     "score": 1.349,
@@ -10500,8 +10500,8 @@
     "presses": 7,
     "flips": 0,
     "fits": 294,
-    "seen": 176,
-    "hidden": 18
+    "seen": 170,
+    "hidden": 24
   },
   "hexbandsdual.lines2-6": {
     "score": 1.339,
@@ -10516,8 +10516,8 @@
     "presses": 10,
     "flips": 3,
     "fits": 901,
-    "seen": 613,
-    "hidden": 132
+    "seen": 581,
+    "hidden": 164
   },
   "hexbandsdual.2oneinthree-2": {
     "score": 2.192,
@@ -10548,8 +10548,8 @@
     "presses": 10,
     "flips": 4,
     "fits": 936,
-    "seen": 638,
-    "hidden": 146
+    "seen": 610,
+    "hidden": 174
   },
   "hexbandsdual.2oneinthree-6": {
     "score": 2.119,
@@ -10564,8 +10564,8 @@
     "presses": 8,
     "flips": 3,
     "fits": 912,
-    "seen": 623,
-    "hidden": 169
+    "seen": 615,
+    "hidden": 177
   },
   "hexbandsdual.3colours-2": {
     "score": 2.467,
@@ -10596,8 +10596,8 @@
     "presses": 8,
     "flips": 3,
     "fits": 932,
-    "seen": 628,
-    "hidden": 182
+    "seen": 620,
+    "hidden": 190
   },
   "hexbandsdual.3colours-6": {
     "score": 2.449,
@@ -10612,8 +10612,8 @@
     "presses": 8,
     "flips": 3,
     "fits": 911,
-    "seen": 620,
-    "hidden": 171
+    "seen": 596,
+    "hidden": 195
   },
   "hexbandsdual.3colours2-2": {
     "score": 2.466,
@@ -10644,8 +10644,8 @@
     "presses": 8,
     "flips": 3,
     "fits": 938,
-    "seen": 635,
-    "hidden": 181
+    "seen": 617,
+    "hidden": 199
   },
   "hexbandsdual.3colours2-6": {
     "score": 2.446,
@@ -10656,916 +10656,916 @@
     "hidden": 190
   },
   "snubelongated2dual.lines": {
-    "score": 2.428,
+    "score": 2.443,
     "presses": 15,
     "flips": 7,
-    "fits": 425,
-    "seen": 159,
+    "fits": 441,
+    "seen": 175,
     "hidden": 131
   },
   "snubelongated2dual.lines2": {
-    "score": 2.456,
+    "score": 2.47,
     "presses": 15,
     "flips": 7,
-    "fits": 455,
-    "seen": 165,
+    "fits": 471,
+    "seen": 181,
     "hidden": 155
   },
   "snubelongated2dual.2oneinthreebyshape": {
-    "score": 2.678,
+    "score": 2.685,
     "presses": 16,
     "flips": 4,
-    "fits": 575,
-    "seen": 239,
+    "fits": 591,
+    "seen": 255,
     "hidden": 216
   },
   "snubelongated2dual.2oneinthreebyshape2": {
-    "score": 2.268,
+    "score": 2.286,
     "presses": 16,
     "flips": 0,
-    "fits": 231,
-    "seen": 98,
+    "fits": 239,
+    "seen": 106,
     "hidden": 40
   },
   "snubelongated2dual.3byshape": {
-    "score": 2.703,
+    "score": 2.711,
     "presses": 16,
     "flips": 4,
-    "fits": 516,
-    "seen": 265,
+    "fits": 532,
+    "seen": 281,
     "hidden": 153
   },
   "snubelongateddual.lines": {
-    "score": 3.303,
+    "score": 3.306,
     "presses": 19,
     "flips": 4,
-    "fits": 531,
-    "seen": 265,
-    "hidden": 131
+    "fits": 535,
+    "seen": 261,
+    "hidden": 139
   },
   "snubelongateddual.lines-2": {
-    "score": 3.314,
+    "score": 3.332,
     "presses": 19,
     "flips": 4,
-    "fits": 446,
-    "seen": 236,
+    "fits": 466,
+    "seen": 256,
     "hidden": 74
   },
   "snubelongateddual.lines-3": {
-    "score": 3.543,
+    "score": 3.562,
     "presses": 19,
     "flips": 4,
-    "fits": 385,
-    "seen": 195,
-    "hidden": 86
+    "fits": 407,
+    "seen": 209,
+    "hidden": 94
   },
   "snubelongateddual.lines-4": {
-    "score": 4.867,
+    "score": 4.883,
     "presses": 31,
     "flips": 4,
-    "fits": 430,
-    "seen": 253,
-    "hidden": 57
+    "fits": 450,
+    "seen": 259,
+    "hidden": 71
   },
   "snubelongateddual.lines-5": {
-    "score": 3.438,
+    "score": 3.454,
     "presses": 19,
     "flips": 4,
-    "fits": 411,
-    "seen": 222,
+    "fits": 429,
+    "seen": 240,
     "hidden": 75
   },
   "snubelongateddual.lines-6": {
-    "score": 3.301,
+    "score": 3.315,
     "presses": 19,
     "flips": 4,
-    "fits": 472,
-    "seen": 249,
-    "hidden": 102
+    "fits": 492,
+    "seen": 263,
+    "hidden": 108
   },
   "snubelongateddual.lines2": {
-    "score": 3.201,
+    "score": 3.203,
     "presses": 17,
     "flips": 4,
-    "fits": 525,
-    "seen": 265,
-    "hidden": 163
+    "fits": 529,
+    "seen": 263,
+    "hidden": 169
   },
   "snubelongateddual.lines2-2": {
-    "score": 3.241,
+    "score": 3.254,
     "presses": 17,
     "flips": 4,
-    "fits": 419,
-    "seen": 219,
+    "fits": 439,
+    "seen": 239,
     "hidden": 113
   },
   "snubelongateddual.lines2-3": {
-    "score": 3.357,
+    "score": 3.373,
     "presses": 17,
     "flips": 3,
-    "fits": 368,
-    "seen": 197,
-    "hidden": 94
+    "fits": 390,
+    "seen": 211,
+    "hidden": 102
   },
   "snubelongateddual.lines2-4": {
-    "score": 3.914,
+    "score": 3.926,
     "presses": 21,
     "flips": 5,
-    "fits": 392,
-    "seen": 228,
-    "hidden": 88
+    "fits": 412,
+    "seen": 236,
+    "hidden": 100
   },
   "snubelongateddual.lines2-5": {
-    "score": 3.327,
+    "score": 3.339,
     "presses": 17,
     "flips": 4,
-    "fits": 392,
-    "seen": 227,
+    "fits": 410,
+    "seen": 245,
     "hidden": 86
   },
   "snubelongateddual.lines2-6": {
-    "score": 3.155,
+    "score": 3.166,
     "presses": 17,
     "flips": 3,
-    "fits": 460,
-    "seen": 246,
-    "hidden": 127
+    "fits": 480,
+    "seen": 260,
+    "hidden": 133
   },
   "dissectedtrunchex2dual.lines": {
-    "score": 2.4,
+    "score": 2.439,
     "presses": 21,
     "flips": 10,
-    "fits": 399,
-    "seen": 168,
-    "hidden": 63
+    "fits": 429,
+    "seen": 190,
+    "hidden": 71
   },
   "dissectedtrunchex2dual.lines-2": {
-    "score": 2.289,
+    "score": 2.31,
     "presses": 19,
     "flips": 10,
-    "fits": 530,
-    "seen": 266,
-    "hidden": 74
+    "fits": 554,
+    "seen": 282,
+    "hidden": 82
   },
   "dissectedtrunchex2dual.lines-3": {
-    "score": 2.389,
+    "score": 2.407,
     "presses": 19,
     "flips": 10,
-    "fits": 514,
-    "seen": 254,
+    "fits": 534,
+    "seen": 274,
     "hidden": 76
   },
   "dissectedtrunchex2dual.lines-4": {
-    "score": 2.264,
+    "score": 2.299,
     "presses": 19,
     "flips": 8,
-    "fits": 408,
-    "seen": 192,
-    "hidden": 49
+    "fits": 436,
+    "seen": 208,
+    "hidden": 61
   },
   "dissectedtrunchex2dual.lines-5": {
-    "score": 2.345,
+    "score": 2.389,
     "presses": 19,
     "flips": 8,
-    "fits": 473,
-    "seen": 244,
-    "hidden": 64
+    "fits": 521,
+    "seen": 288,
+    "hidden": 68
   },
   "dissectedtrunchex2dual.lines-6": {
-    "score": 2.393,
+    "score": 2.447,
     "presses": 23,
     "flips": 10,
-    "fits": 447,
-    "seen": 236,
-    "hidden": 28
+    "fits": 495,
+    "seen": 280,
+    "hidden": 32
   },
   "dissectedtrunchex2dual.lines2": {
-    "score": 1.903,
+    "score": 1.939,
     "presses": 17,
     "flips": 0,
-    "fits": 236,
-    "seen": 101,
-    "hidden": 31
+    "fits": 251,
+    "seen": 109,
+    "hidden": 38
   },
   "dissectedtrunchex2dual.lines2-2": {
-    "score": 1.816,
+    "score": 1.832,
     "presses": 15,
     "flips": 0,
-    "fits": 291,
-    "seen": 139,
-    "hidden": 37
+    "fits": 300,
+    "seen": 144,
+    "hidden": 41
   },
   "dissectedtrunchex2dual.lines2-3": {
-    "score": 2.018,
+    "score": 2.038,
     "presses": 19,
     "flips": 0,
-    "fits": 246,
-    "seen": 118,
-    "hidden": 23
+    "fits": 255,
+    "seen": 125,
+    "hidden": 25
   },
   "dissectedtrunchex2dual.lines2-4": {
-    "score": 2.109,
-    "presses": 21,
-    "flips": 0,
-    "fits": 239,
-    "seen": 118,
-    "hidden": 18
-  },
-  "dissectedtrunchex2dual.lines2-5": {
-    "score": 1.988,
-    "presses": 17,
-    "flips": 0,
-    "fits": 270,
-    "seen": 141,
-    "hidden": 27
-  },
-  "dissectedtrunchex2dual.lines2-6": {
-    "score": 2.012,
+    "score": 2.141,
     "presses": 21,
     "flips": 0,
     "fits": 253,
-    "seen": 113,
-    "hidden": 28
+    "seen": 128,
+    "hidden": 22
+  },
+  "dissectedtrunchex2dual.lines2-5": {
+    "score": 2.03,
+    "presses": 17,
+    "flips": 0,
+    "fits": 294,
+    "seen": 161,
+    "hidden": 31
+  },
+  "dissectedtrunchex2dual.lines2-6": {
+    "score": 2.051,
+    "presses": 21,
+    "flips": 0,
+    "fits": 271,
+    "seen": 129,
+    "hidden": 30
   },
   "dissectedtrunchex2dual.2oneinthree": {
-    "score": 2.814,
+    "score": 2.844,
     "presses": 19,
     "flips": 9,
-    "fits": 584,
-    "seen": 339,
-    "hidden": 102
+    "fits": 644,
+    "seen": 378,
+    "hidden": 123
   },
   "dissectedtrunchex2dual.2oneinthree-2": {
-    "score": 2.962,
+    "score": 2.978,
     "presses": 23,
     "flips": 11,
-    "fits": 678,
-    "seen": 401,
-    "hidden": 122
+    "fits": 714,
+    "seen": 425,
+    "hidden": 134
   },
   "dissectedtrunchex2dual.2oneinthree-3": {
-    "score": 2.61,
+    "score": 2.624,
     "presses": 15,
     "flips": 7,
-    "fits": 638,
-    "seen": 359,
+    "fits": 670,
+    "seen": 391,
     "hidden": 144
   },
   "dissectedtrunchex2dual.2oneinthree-4": {
-    "score": 2.774,
+    "score": 2.797,
     "presses": 19,
     "flips": 8,
-    "fits": 540,
-    "seen": 289,
-    "hidden": 114
+    "fits": 580,
+    "seen": 321,
+    "hidden": 122
   },
   "dissectedtrunchex2dual.2oneinthree-5": {
-    "score": 2.933,
+    "score": 2.974,
     "presses": 21,
     "flips": 9,
-    "fits": 619,
-    "seen": 389,
-    "hidden": 89
+    "fits": 715,
+    "seen": 483,
+    "hidden": 91
   },
   "dissectedtrunchex2dual.2oneinthree-6": {
-    "score": 2.676,
+    "score": 2.717,
     "presses": 19,
     "flips": 8,
-    "fits": 592,
-    "seen": 325,
-    "hidden": 115
+    "fits": 672,
+    "seen": 397,
+    "hidden": 123
   },
   "dissectedtrunchex2dual.2colours": {
-    "score": 2.612,
+    "score": 2.652,
     "presses": 17,
     "flips": 8,
-    "fits": 456,
-    "seen": 247,
-    "hidden": 71
+    "fits": 506,
+    "seen": 285,
+    "hidden": 83
   },
   "dissectedtrunchex2dual.2colours-2": {
-    "score": 2.587,
+    "score": 2.608,
     "presses": 19,
     "flips": 6,
-    "fits": 514,
-    "seen": 301,
-    "hidden": 66
+    "fits": 544,
+    "seen": 323,
+    "hidden": 74
   },
   "dissectedtrunchex2dual.2colours-3": {
-    "score": 2.617,
+    "score": 2.638,
     "presses": 17,
     "flips": 7,
-    "fits": 511,
-    "seen": 324,
+    "fits": 541,
+    "seen": 354,
     "hidden": 45
   },
   "dissectedtrunchex2dual.2colours-4": {
-    "score": 2.573,
+    "score": 2.605,
     "presses": 17,
     "flips": 7,
-    "fits": 431,
-    "seen": 253,
-    "hidden": 44
+    "fits": 467,
+    "seen": 283,
+    "hidden": 50
   },
   "dissectedtrunchex2dual.2colours-5": {
-    "score": 2.615,
+    "score": 2.67,
     "presses": 17,
     "flips": 6,
-    "fits": 518,
-    "seen": 314,
+    "fits": 614,
+    "seen": 410,
     "hidden": 70
   },
   "dissectedtrunchex2dual.2colours-6": {
-    "score": 2.517,
+    "score": 2.566,
     "presses": 17,
     "flips": 7,
-    "fits": 476,
-    "seen": 289,
-    "hidden": 48
+    "fits": 544,
+    "seen": 351,
+    "hidden": 54
   },
   "dissectedtrunchex2dual.3byshape": {
-    "score": 2.585,
+    "score": 2.627,
     "presses": 17,
     "flips": 8,
-    "fits": 428,
-    "seen": 235,
-    "hidden": 55
+    "fits": 474,
+    "seen": 269,
+    "hidden": 67
   },
   "dissectedtrunchex2dual.3byshape-2": {
-    "score": 2.558,
+    "score": 2.579,
     "presses": 19,
     "flips": 6,
-    "fits": 478,
-    "seen": 279,
-    "hidden": 52
+    "fits": 504,
+    "seen": 299,
+    "hidden": 58
   },
   "dissectedtrunchex2dual.3byshape-3": {
-    "score": 2.587,
+    "score": 2.608,
     "presses": 17,
     "flips": 7,
-    "fits": 473,
-    "seen": 300,
+    "fits": 499,
+    "seen": 326,
     "hidden": 31
   },
   "dissectedtrunchex2dual.3byshape-4": {
-    "score": 2.518,
+    "score": 2.554,
     "presses": 17,
     "flips": 7,
-    "fits": 381,
-    "seen": 217,
-    "hidden": 30
+    "fits": 413,
+    "seen": 243,
+    "hidden": 36
   },
   "dissectedtrunchex2dual.3byshape-5": {
-    "score": 2.582,
+    "score": 2.647,
     "presses": 17,
     "flips": 6,
-    "fits": 473,
-    "seen": 279,
+    "fits": 569,
+    "seen": 375,
     "hidden": 60
   },
   "dissectedtrunchex2dual.3byshape-6": {
-    "score": 2.466,
+    "score": 2.525,
     "presses": 17,
     "flips": 7,
-    "fits": 422,
-    "seen": 249,
-    "hidden": 34
+    "fits": 486,
+    "seen": 307,
+    "hidden": 40
   },
   "squarerows2dual.lines": {
-    "score": 0.742,
+    "score": 0.826,
     "presses": 2,
     "flips": 0,
-    "fits": 129,
-    "seen": 27,
+    "fits": 141,
+    "seen": 39,
     "hidden": 8
   },
   "squarerows2dual.lines-2": {
-    "score": 0.725,
+    "score": 0.825,
     "presses": 2,
     "flips": 0,
-    "fits": 147,
-    "seen": 29,
-    "hidden": 8
+    "fits": 163,
+    "seen": 41,
+    "hidden": 12
   },
   "squarerows2dual.lines-3": {
-    "score": 0.716,
+    "score": 0.823,
     "presses": 2,
     "flips": 0,
-    "fits": 135,
-    "seen": 28,
-    "hidden": 6
+    "fits": 151,
+    "seen": 40,
+    "hidden": 10
   },
   "squarerows2dual.lines-4": {
-    "score": 0.733,
+    "score": 0.824,
     "presses": 2,
     "flips": 0,
-    "fits": 118,
-    "seen": 26,
-    "hidden": 6
+    "fits": 130,
+    "seen": 34,
+    "hidden": 10
   },
   "squarerows2dual.lines-5": {
-    "score": 0.65,
+    "score": 0.749,
     "presses": 2,
     "flips": 0,
-    "fits": 118,
-    "seen": 18,
-    "hidden": 6
+    "fits": 130,
+    "seen": 22,
+    "hidden": 14
   },
   "squarerows2dual.lines2": {
-    "score": 0.742,
+    "score": 0.826,
     "presses": 2,
     "flips": 0,
-    "fits": 129,
-    "seen": 27,
+    "fits": 141,
+    "seen": 39,
     "hidden": 8
   },
   "squarerows2dual.lines2-2": {
-    "score": 0.725,
+    "score": 0.825,
     "presses": 2,
     "flips": 0,
-    "fits": 147,
-    "seen": 29,
-    "hidden": 8
+    "fits": 163,
+    "seen": 41,
+    "hidden": 12
   },
   "squarerows2dual.lines2-3": {
-    "score": 0.716,
+    "score": 0.823,
     "presses": 2,
     "flips": 0,
-    "fits": 135,
-    "seen": 28,
-    "hidden": 6
+    "fits": 151,
+    "seen": 40,
+    "hidden": 10
   },
   "squarerows2dual.lines2-4": {
-    "score": 0.733,
+    "score": 0.824,
     "presses": 2,
     "flips": 0,
-    "fits": 118,
-    "seen": 26,
-    "hidden": 6
+    "fits": 130,
+    "seen": 34,
+    "hidden": 10
   },
   "squarerows2dual.lines2-5": {
-    "score": 0.65,
+    "score": 0.749,
     "presses": 2,
     "flips": 0,
-    "fits": 118,
-    "seen": 18,
-    "hidden": 6
+    "fits": 130,
+    "seen": 22,
+    "hidden": 14
   },
   "squarerows2dual.2oneinthreebyshape": {
-    "score": 0.742,
+    "score": 0.845,
     "presses": 1,
     "flips": 0,
-    "fits": 116,
-    "seen": 20,
+    "fits": 128,
+    "seen": 32,
     "hidden": 2
   },
   "squarerows2dual.2oneinthreebyshape-2": {
-    "score": 0.839,
+    "score": 0.939,
     "presses": 1,
     "flips": 0,
-    "fits": 147,
-    "seen": 17,
-    "hidden": 20
+    "fits": 163,
+    "seen": 29,
+    "hidden": 24
   },
   "squarerows2dual.2oneinthreebyshape-3": {
-    "score": 0.841,
+    "score": 0.945,
     "presses": 1,
     "flips": 0,
-    "fits": 137,
-    "seen": 18,
-    "hidden": 18
+    "fits": 153,
+    "seen": 30,
+    "hidden": 22
   },
   "squarerows2dual.2oneinthreebyshape-4": {
-    "score": 0.749,
+    "score": 0.856,
     "presses": 1,
     "flips": 0,
-    "fits": 108,
-    "seen": 18,
-    "hidden": 4
-  },
-  "squarerows2dual.2oneinthreebyshape-5": {
-    "score": 0.845,
-    "presses": 1,
-    "flips": 0,
-    "fits": 128,
+    "fits": 120,
     "seen": 26,
     "hidden": 8
   },
+  "squarerows2dual.2oneinthreebyshape-5": {
+    "score": 0.93,
+    "presses": 1,
+    "flips": 0,
+    "fits": 140,
+    "seen": 30,
+    "hidden": 16
+  },
   "squarerows2dual.2oneinthree": {
-    "score": 1.635,
+    "score": 1.771,
     "presses": 9,
     "flips": 2,
-    "fits": 279,
-    "seen": 74,
+    "fits": 351,
+    "seen": 146,
     "hidden": 68
   },
   "squarerows2dual.2oneinthree-2": {
-    "score": 1.689,
+    "score": 1.794,
     "presses": 6,
     "flips": 3,
-    "fits": 399,
-    "seen": 97,
-    "hidden": 142
+    "fits": 495,
+    "seen": 169,
+    "hidden": 166
   },
   "squarerows2dual.2oneinthree-3": {
-    "score": 1.687,
+    "score": 1.802,
+    "presses": 6,
+    "flips": 3,
+    "fits": 459,
+    "seen": 163,
+    "hidden": 148
+  },
+  "squarerows2dual.2oneinthree-4": {
+    "score": 1.706,
+    "presses": 5,
+    "flips": 4,
+    "fits": 325,
+    "seen": 106,
+    "hidden": 88
+  },
+  "squarerows2dual.2oneinthree-5": {
+    "score": 1.684,
     "presses": 6,
     "flips": 3,
     "fits": 363,
-    "seen": 91,
-    "hidden": 124
-  },
-  "squarerows2dual.2oneinthree-4": {
-    "score": 1.551,
-    "presses": 5,
-    "flips": 4,
-    "fits": 253,
-    "seen": 58,
-    "hidden": 64
-  },
-  "squarerows2dual.2oneinthree-5": {
-    "score": 1.546,
-    "presses": 6,
-    "flips": 3,
-    "fits": 291,
-    "seen": 68,
-    "hidden": 74
+    "seen": 92,
+    "hidden": 122
   },
   "squarerows2dual.3byshape": {
-    "score": 0.742,
-    "presses": 1,
-    "flips": 0,
-    "fits": 116,
-    "seen": 20,
-    "hidden": 2
-  },
-  "squarerows2dual.3byshape-2": {
-    "score": 0.839,
-    "presses": 1,
-    "flips": 0,
-    "fits": 147,
-    "seen": 17,
-    "hidden": 20
-  },
-  "squarerows2dual.3byshape-3": {
-    "score": 0.841,
-    "presses": 1,
-    "flips": 0,
-    "fits": 137,
-    "seen": 18,
-    "hidden": 18
-  },
-  "squarerows2dual.3byshape-4": {
-    "score": 0.749,
-    "presses": 1,
-    "flips": 0,
-    "fits": 108,
-    "seen": 18,
-    "hidden": 4
-  },
-  "squarerows2dual.3byshape-5": {
     "score": 0.845,
     "presses": 1,
     "flips": 0,
     "fits": 128,
-    "seen": 26,
-    "hidden": 8
+    "seen": 32,
+    "hidden": 2
+  },
+  "squarerows2dual.3byshape-2": {
+    "score": 0.939,
+    "presses": 1,
+    "flips": 0,
+    "fits": 163,
+    "seen": 30,
+    "hidden": 23
+  },
+  "squarerows2dual.3byshape-3": {
+    "score": 0.945,
+    "presses": 1,
+    "flips": 0,
+    "fits": 153,
+    "seen": 32,
+    "hidden": 20
+  },
+  "squarerows2dual.3byshape-4": {
+    "score": 0.856,
+    "presses": 1,
+    "flips": 0,
+    "fits": 120,
+    "seen": 27,
+    "hidden": 7
+  },
+  "squarerows2dual.3byshape-5": {
+    "score": 0.93,
+    "presses": 1,
+    "flips": 0,
+    "fits": 140,
+    "seen": 32,
+    "hidden": 14
   },
   "squarerows3dual.lines": {
-    "score": 0.805,
+    "score": 0.906,
     "presses": 3,
     "flips": 0,
-    "fits": 136,
-    "seen": 20,
+    "fits": 152,
+    "seen": 36,
     "hidden": 20
   },
   "squarerows3dual.lines-2": {
-    "score": 0.841,
+    "score": 0.915,
     "presses": 3,
     "flips": 0,
-    "fits": 183,
-    "seen": 24,
-    "hidden": 34
+    "fits": 199,
+    "seen": 32,
+    "hidden": 42
   },
   "squarerows3dual.lines-3": {
-    "score": 0.895,
-    "presses": 3,
-    "flips": 0,
-    "fits": 154,
-    "seen": 43,
-    "hidden": 12
-  },
-  "squarerows3dual.lines-4": {
-    "score": 0.887,
-    "presses": 3,
-    "flips": 0,
-    "fits": 137,
-    "seen": 34,
-    "hidden": 15
-  },
-  "squarerows3dual.lines-5": {
-    "score": 0.843,
-    "presses": 3,
-    "flips": 0,
-    "fits": 170,
-    "seen": 24,
-    "hidden": 31
-  },
-  "squarerows3dual.lines-6": {
-    "score": 0.768,
-    "presses": 3,
-    "flips": 0,
-    "fits": 126,
-    "seen": 19,
-    "hidden": 15
-  },
-  "squarerows3dual.lines2": {
-    "score": 0.801,
-    "presses": 3,
-    "flips": 0,
-    "fits": 141,
-    "seen": 14,
-    "hidden": 27
-  },
-  "squarerows3dual.lines2-2": {
-    "score": 0.933,
-    "presses": 3,
-    "flips": 0,
-    "fits": 169,
-    "seen": 18,
-    "hidden": 47
-  },
-  "squarerows3dual.lines2-3": {
-    "score": 0.808,
+    "score": 1.012,
     "presses": 3,
     "flips": 0,
     "fits": 178,
-    "seen": 33,
-    "hidden": 19
+    "seen": 63,
+    "hidden": 16
+  },
+  "squarerows3dual.lines-4": {
+    "score": 1.016,
+    "presses": 3,
+    "flips": 0,
+    "fits": 161,
+    "seen": 50,
+    "hidden": 23
+  },
+  "squarerows3dual.lines-5": {
+    "score": 0.921,
+    "presses": 3,
+    "flips": 0,
+    "fits": 186,
+    "seen": 32,
+    "hidden": 39
+  },
+  "squarerows3dual.lines-6": {
+    "score": 0.879,
+    "presses": 3,
+    "flips": 0,
+    "fits": 142,
+    "seen": 19,
+    "hidden": 31
+  },
+  "squarerows3dual.lines2": {
+    "score": 0.898,
+    "presses": 3,
+    "flips": 0,
+    "fits": 157,
+    "seen": 30,
+    "hidden": 27
+  },
+  "squarerows3dual.lines2-2": {
+    "score": 1.004,
+    "presses": 3,
+    "flips": 0,
+    "fits": 185,
+    "seen": 26,
+    "hidden": 55
+  },
+  "squarerows3dual.lines2-3": {
+    "score": 0.921,
+    "presses": 3,
+    "flips": 0,
+    "fits": 202,
+    "seen": 53,
+    "hidden": 23
   },
   "squarerows3dual.lines2-4": {
-    "score": 0.783,
+    "score": 0.91,
     "presses": 3,
     "flips": 0,
-    "fits": 160,
-    "seen": 24,
-    "hidden": 21
+    "fits": 184,
+    "seen": 40,
+    "hidden": 29
   },
   "squarerows3dual.lines2-5": {
-    "score": 0.916,
+    "score": 0.995,
     "presses": 3,
     "flips": 0,
-    "fits": 156,
-    "seen": 18,
-    "hidden": 41
+    "fits": 172,
+    "seen": 26,
+    "hidden": 49
   },
   "squarerows3dual.lines2-6": {
-    "score": 0.757,
+    "score": 0.866,
     "presses": 3,
     "flips": 0,
-    "fits": 130,
+    "fits": 146,
     "seen": 13,
-    "hidden": 21
+    "hidden": 37
   },
   "squarerows3dual.2oneinthreebyshape": {
-    "score": 1.077,
+    "score": 1.155,
     "presses": 3,
     "flips": 0,
-    "fits": 156,
-    "seen": 36,
+    "fits": 172,
+    "seen": 52,
     "hidden": 24
   },
   "squarerows3dual.2oneinthreebyshape-3": {
-    "score": 1.13,
+    "score": 1.222,
     "presses": 3,
     "flips": 0,
-    "fits": 181,
-    "seen": 54,
-    "hidden": 22
+    "fits": 205,
+    "seen": 74,
+    "hidden": 26
   },
   "squarerows3dual.2oneinthreebyshape2": {
-    "score": 0.895,
+    "score": 0.922,
     "presses": 1,
     "flips": 0,
-    "fits": 137,
-    "seen": 29,
+    "fits": 141,
+    "seen": 33,
     "hidden": 12
   },
   "squarerows3dual.2oneinthree": {
-    "score": 1.541,
+    "score": 1.64,
     "presses": 5,
     "flips": 4,
-    "fits": 290,
-    "seen": 61,
+    "fits": 338,
+    "seen": 109,
     "hidden": 80
   },
   "squarerows3dual.2oneinthree-2": {
-    "score": 1.599,
+    "score": 1.681,
     "presses": 8,
     "flips": 1,
-    "fits": 323,
-    "seen": 68,
-    "hidden": 104
+    "fits": 371,
+    "seen": 92,
+    "hidden": 128
   },
   "squarerows3dual.2oneinthree-3": {
-    "score": 1.6,
+    "score": 1.695,
     "presses": 6,
     "flips": 1,
-    "fits": 364,
-    "seen": 83,
-    "hidden": 126
+    "fits": 436,
+    "seen": 143,
+    "hidden": 138
   },
   "squarerows3dual.2oneinthree-4": {
-    "score": 1.646,
+    "score": 1.756,
     "presses": 7,
     "flips": 2,
-    "fits": 320,
-    "seen": 72,
-    "hidden": 107
+    "fits": 392,
+    "seen": 120,
+    "hidden": 131
   },
   "squarerows3dual.2oneinthree-5": {
-    "score": 1.647,
+    "score": 1.724,
     "presses": 7,
     "flips": 2,
-    "fits": 320,
-    "seen": 74,
-    "hidden": 106
+    "fits": 368,
+    "seen": 98,
+    "hidden": 130
   },
   "squarerows3dual.2oneinthree-6": {
-    "score": 1.421,
+    "score": 1.545,
     "presses": 3,
     "flips": 4,
-    "fits": 246,
+    "fits": 294,
     "seen": 43,
-    "hidden": 65
+    "hidden": 113
   },
   "dissectedtrunchexdual.lines": {
-    "score": 1.891,
+    "score": 1.917,
     "presses": 13,
     "flips": 0,
-    "fits": 280,
-    "seen": 164,
-    "hidden": 18
+    "fits": 296,
+    "seen": 176,
+    "hidden": 22
   },
   "dissectedtrunchexdual.lines-2": {
-    "score": 2.256,
+    "score": 2.273,
     "presses": 23,
     "flips": 0,
-    "fits": 257,
-    "seen": 128,
-    "hidden": 23
+    "fits": 265,
+    "seen": 130,
+    "hidden": 29
   },
   "dissectedtrunchexdual.lines-3": {
-    "score": 2.323,
+    "score": 2.35,
     "presses": 23,
     "flips": 0,
-    "fits": 236,
-    "seen": 115,
-    "hidden": 25
+    "fits": 248,
+    "seen": 121,
+    "hidden": 31
   },
   "dissectedtrunchexdual.lines-4": {
-    "score": 1.868,
+    "score": 1.882,
     "presses": 13,
     "flips": 0,
-    "fits": 279,
-    "seen": 166,
-    "hidden": 14
+    "fits": 287,
+    "seen": 168,
+    "hidden": 20
   },
   "dissectedtrunchexdual.lines2": {
-    "score": 1.927,
+    "score": 1.949,
     "presses": 13,
     "flips": 0,
-    "fits": 303,
-    "seen": 178,
-    "hidden": 27
+    "fits": 319,
+    "seen": 190,
+    "hidden": 31
   },
   "dissectedtrunchexdual.lines2-2": {
-    "score": 2.321,
+    "score": 2.335,
     "presses": 23,
     "flips": 0,
-    "fits": 291,
-    "seen": 148,
-    "hidden": 37
+    "fits": 299,
+    "seen": 150,
+    "hidden": 43
   },
   "dissectedtrunchexdual.lines2-3": {
-    "score": 2.392,
+    "score": 2.413,
     "presses": 23,
     "flips": 0,
-    "fits": 270,
-    "seen": 135,
-    "hidden": 39
+    "fits": 282,
+    "seen": 141,
+    "hidden": 45
   },
   "dissectedtrunchexdual.lines2-4": {
-    "score": 1.919,
+    "score": 1.93,
     "presses": 13,
     "flips": 0,
-    "fits": 312,
-    "seen": 186,
-    "hidden": 27
+    "fits": 320,
+    "seen": 188,
+    "hidden": 33
   },
   "dissectedtrunchexdual.2colours": {
+    "score": 2.94,
+    "presses": 16,
+    "flips": 10,
+    "fits": 828,
+    "seen": 505,
+    "hidden": 201
+  },
+  "dissectedtrunchexdual.2colours-2": {
+    "score": 2.933,
+    "presses": 21,
+    "flips": 6,
+    "fits": 817,
+    "seen": 499,
+    "hidden": 165
+  },
+  "dissectedtrunchexdual.2colours-3": {
+    "score": 3.019,
+    "presses": 21,
+    "flips": 6,
+    "fits": 782,
+    "seen": 482,
+    "hidden": 167
+  },
+  "dissectedtrunchexdual.2colours-4": {
+    "score": 3.114,
+    "presses": 22,
+    "flips": 9,
+    "fits": 762,
+    "seen": 431,
+    "hidden": 174
+  },
+  "dissectedtrunchexdual.2oneinthree": {
+    "score": 2.839,
+    "presses": 17,
+    "flips": 4,
+    "fits": 943,
+    "seen": 634,
+    "hidden": 193
+  },
+  "dissectedtrunchexdual.2oneinthree-2": {
+    "score": 2.967,
+    "presses": 21,
+    "flips": 6,
+    "fits": 759,
+    "seen": 459,
+    "hidden": 177
+  },
+  "dissectedtrunchexdual.2oneinthree-3": {
+    "score": 3.033,
+    "presses": 21,
+    "flips": 6,
+    "fits": 724,
+    "seen": 445,
+    "hidden": 163
+  },
+  "dissectedtrunchexdual.2oneinthree-4": {
+    "score": 2.895,
+    "presses": 17,
+    "flips": 8,
+    "fits": 693,
+    "seen": 472,
+    "hidden": 116
+  },
+  "dissectedtrunchexdual.3byshape": {
     "score": 2.923,
     "presses": 16,
     "flips": 10,
     "fits": 764,
-    "seen": 457,
-    "hidden": 185
-  },
-  "dissectedtrunchexdual.2colours-2": {
-    "score": 2.923,
-    "presses": 21,
-    "flips": 6,
-    "fits": 785,
-    "seen": 485,
-    "hidden": 147
-  },
-  "dissectedtrunchexdual.2colours-3": {
-    "score": 3.004,
-    "presses": 21,
-    "flips": 6,
-    "fits": 734,
-    "seen": 452,
-    "hidden": 149
-  },
-  "dissectedtrunchexdual.2colours-4": {
-    "score": 3.102,
-    "presses": 22,
-    "flips": 9,
-    "fits": 730,
-    "seen": 415,
-    "hidden": 158
-  },
-  "dissectedtrunchexdual.2oneinthree": {
-    "score": 2.832,
-    "presses": 17,
-    "flips": 4,
-    "fits": 903,
-    "seen": 606,
-    "hidden": 181
-  },
-  "dissectedtrunchexdual.2oneinthree-2": {
-    "score": 2.957,
-    "presses": 21,
-    "flips": 6,
-    "fits": 727,
-    "seen": 445,
-    "hidden": 159
-  },
-  "dissectedtrunchexdual.2oneinthree-3": {
-    "score": 3.017,
-    "presses": 21,
-    "flips": 6,
-    "fits": 676,
-    "seen": 411,
-    "hidden": 149
-  },
-  "dissectedtrunchexdual.2oneinthree-4": {
-    "score": 2.888,
-    "presses": 17,
-    "flips": 8,
-    "fits": 669,
-    "seen": 460,
-    "hidden": 104
-  },
-  "dissectedtrunchexdual.3byshape": {
-    "score": 2.903,
-    "presses": 16,
-    "flips": 10,
-    "fits": 700,
-    "seen": 417,
-    "hidden": 161
+    "seen": 473,
+    "hidden": 169
   },
   "dissectedtrunchexdual.3byshape-2": {
-    "score": 2.857,
+    "score": 2.873,
     "presses": 21,
     "flips": 6,
-    "fits": 628,
-    "seen": 388,
-    "hidden": 87
+    "fits": 660,
+    "seen": 402,
+    "hidden": 105
   },
   "dissectedtrunchexdual.3byshape-3": {
-    "score": 2.937,
+    "score": 2.961,
     "presses": 21,
     "flips": 6,
-    "fits": 575,
-    "seen": 349,
-    "hidden": 93
+    "fits": 623,
+    "seen": 383,
+    "hidden": 107
   },
   "dissectedtrunchexdual.3byshape-4": {
-    "score": 3.068,
+    "score": 3.083,
     "presses": 22,
     "flips": 9,
-    "fits": 654,
-    "seen": 377,
-    "hidden": 120
+    "fits": 686,
+    "seen": 393,
+    "hidden": 136
   },
   "hexrowsdual.lines": {
     "score": 1.484,
     "presses": 6,
     "flips": 3,
     "fits": 240,
-    "seen": 38,
-    "hidden": 107
+    "seen": 14,
+    "hidden": 131
   },
   "hexrowsdual.lines-2": {
     "score": 1.203,
@@ -11580,8 +11580,8 @@
     "presses": 8,
     "flips": 3,
     "fits": 265,
-    "seen": 49,
-    "hidden": 106
+    "seen": 25,
+    "hidden": 130
   },
   "hexrowsdual.lines-4": {
     "score": 1.216,
@@ -11596,8 +11596,8 @@
     "presses": 6,
     "flips": 3,
     "fits": 240,
-    "seen": 38,
-    "hidden": 107
+    "seen": 14,
+    "hidden": 131
   },
   "hexrowsdual.lines2-2": {
     "score": 1.203,
@@ -11612,8 +11612,8 @@
     "presses": 8,
     "flips": 3,
     "fits": 265,
-    "seen": 49,
-    "hidden": 106
+    "seen": 25,
+    "hidden": 130
   },
   "hexrowsdual.lines2-4": {
     "score": 1.216,
@@ -11628,8 +11628,8 @@
     "presses": 6,
     "flips": 0,
     "fits": 145,
-    "seen": 50,
-    "hidden": 26
+    "seen": 46,
+    "hidden": 30
   },
   "hexrowsdual.2oneinthreebyshape-2": {
     "score": 1.452,
@@ -11644,8 +11644,8 @@
     "presses": 8,
     "flips": 0,
     "fits": 165,
-    "seen": 57,
-    "hidden": 34
+    "seen": 55,
+    "hidden": 36
   },
   "hexrowsdual.2oneinthreebyshape-4": {
     "score": 1.502,
@@ -11660,8 +11660,8 @@
     "presses": 5,
     "flips": 3,
     "fits": 519,
-    "seen": 67,
-    "hidden": 345
+    "seen": 19,
+    "hidden": 393
   },
   "hexrowsdual.2oneinthree-2": {
     "score": 2.025,
@@ -11676,8 +11676,8 @@
     "presses": 7,
     "flips": 3,
     "fits": 576,
-    "seen": 71,
-    "hidden": 383
+    "seen": 31,
+    "hidden": 423
   },
   "hexrowsdual.2oneinthree-4": {
     "score": 2.154,
@@ -11692,8 +11692,8 @@
     "presses": 6,
     "flips": 0,
     "fits": 141,
-    "seen": 48,
-    "hidden": 24
+    "seen": 44,
+    "hidden": 28
   },
   "hexrowsdual.3byshape-2": {
     "score": 1.442,
@@ -11736,380 +11736,380 @@
     "hidden": 51
   },
   "hexringsdual.lines": {
-    "score": 3.065,
+    "score": 3.116,
     "presses": 24,
     "flips": 10,
-    "fits": 360,
-    "seen": 233,
-    "hidden": 46
-  },
-  "hexringsdual.lines-2": {
-    "score": 3.072,
-    "presses": 28,
-    "flips": 8,
-    "fits": 287,
-    "seen": 172,
-    "hidden": 17
-  },
-  "hexringsdual.lines-3": {
-    "score": 2.937,
-    "presses": 28,
-    "flips": 8,
-    "fits": 240,
-    "seen": 130,
-    "hidden": 14
-  },
-  "hexringsdual.lines-4": {
-    "score": 2.61,
-    "presses": 20,
-    "flips": 10,
-    "fits": 261,
-    "seen": 139,
-    "hidden": 36
-  },
-  "hexringsdual.lines2": {
-    "score": 3.065,
-    "presses": 24,
-    "flips": 10,
-    "fits": 360,
-    "seen": 233,
-    "hidden": 46
-  },
-  "hexringsdual.lines2-2": {
-    "score": 3.072,
-    "presses": 28,
-    "flips": 8,
-    "fits": 287,
-    "seen": 172,
-    "hidden": 17
-  },
-  "hexringsdual.lines2-3": {
-    "score": 2.937,
-    "presses": 28,
-    "flips": 8,
-    "fits": 240,
-    "seen": 130,
-    "hidden": 14
-  },
-  "hexringsdual.lines2-4": {
-    "score": 2.61,
-    "presses": 20,
-    "flips": 10,
-    "fits": 261,
-    "seen": 139,
-    "hidden": 36
-  },
-  "hexringsdual.2oneinthreebyshape": {
-    "score": 3.301,
-    "presses": 24,
-    "flips": 10,
-    "fits": 502,
-    "seen": 351,
+    "fits": 432,
+    "seen": 281,
     "hidden": 70
   },
-  "hexringsdual.2oneinthreebyshape2": {
-    "score": 3.244,
-    "presses": 22,
-    "flips": 11,
-    "fits": 477,
-    "seen": 347,
-    "hidden": 62
-  },
-  "hexringsdual.2oneinthreebyshape2-2": {
-    "score": 3.112,
-    "presses": 23,
-    "flips": 9,
-    "fits": 333,
-    "seen": 216,
-    "hidden": 39
-  },
-  "hexringsdual.2oneinthreebyshape2-3": {
-    "score": 3.142,
-    "presses": 25,
-    "flips": 9,
-    "fits": 312,
-    "seen": 191,
+  "hexringsdual.lines-2": {
+    "score": 3.163,
+    "presses": 28,
+    "flips": 8,
+    "fits": 357,
+    "seen": 219,
     "hidden": 40
   },
-  "hexringsdual.2oneinthreebyshape2-4": {
-    "score": 2.745,
-    "presses": 18,
+  "hexringsdual.lines-3": {
+    "score": 3.024,
+    "presses": 28,
     "flips": 8,
-    "fits": 345,
-    "seen": 213,
-    "hidden": 58
+    "fits": 286,
+    "seen": 146,
+    "hidden": 44
   },
-  "hexringsdual.3byshape": {
-    "score": 3.244,
+  "hexringsdual.lines-4": {
+    "score": 2.73,
+    "presses": 20,
+    "flips": 10,
+    "fits": 357,
+    "seen": 185,
+    "hidden": 86
+  },
+  "hexringsdual.lines2": {
+    "score": 3.116,
+    "presses": 24,
+    "flips": 10,
+    "fits": 432,
+    "seen": 281,
+    "hidden": 70
+  },
+  "hexringsdual.lines2-2": {
+    "score": 3.163,
+    "presses": 28,
+    "flips": 8,
+    "fits": 357,
+    "seen": 219,
+    "hidden": 40
+  },
+  "hexringsdual.lines2-3": {
+    "score": 3.024,
+    "presses": 28,
+    "flips": 8,
+    "fits": 286,
+    "seen": 146,
+    "hidden": 44
+  },
+  "hexringsdual.lines2-4": {
+    "score": 2.73,
+    "presses": 20,
+    "flips": 10,
+    "fits": 357,
+    "seen": 185,
+    "hidden": 86
+  },
+  "hexringsdual.2oneinthreebyshape": {
+    "score": 3.35,
+    "presses": 24,
+    "flips": 10,
+    "fits": 646,
+    "seen": 447,
+    "hidden": 118
+  },
+  "hexringsdual.2oneinthreebyshape2": {
+    "score": 3.289,
     "presses": 22,
     "flips": 11,
-    "fits": 475,
-    "seen": 345,
-    "hidden": 62
+    "fits": 621,
+    "seen": 443,
+    "hidden": 110
   },
-  "hexringsdual.3byshape-2": {
-    "score": 3.109,
+  "hexringsdual.2oneinthreebyshape2-2": {
+    "score": 3.192,
     "presses": 23,
     "flips": 9,
-    "fits": 330,
-    "seen": 213,
-    "hidden": 39
+    "fits": 447,
+    "seen": 302,
+    "hidden": 67
   },
-  "hexringsdual.3byshape-3": {
-    "score": 3.131,
+  "hexringsdual.2oneinthreebyshape2-3": {
+    "score": 3.201,
     "presses": 25,
     "flips": 9,
-    "fits": 303,
-    "seen": 188,
-    "hidden": 34
+    "fits": 376,
+    "seen": 229,
+    "hidden": 66
   },
-  "hexringsdual.3byshape-4": {
-    "score": 2.734,
+  "hexringsdual.2oneinthreebyshape2-4": {
+    "score": 2.84,
     "presses": 18,
     "flips": 8,
-    "fits": 333,
-    "seen": 207,
-    "hidden": 52
-  },
-  "squaretrihexdual.lines": {
-    "score": 2.221,
-    "presses": 15,
-    "flips": 5,
-    "fits": 260,
-    "seen": 78,
-    "hidden": 93
-  },
-  "squaretrihexdual.lines-2": {
-    "score": 1.767,
-    "presses": 9,
-    "flips": 5,
-    "fits": 151,
-    "seen": 70,
-    "hidden": 13
-  },
-  "squaretrihexdual.lines-3": {
-    "score": 2.146,
-    "presses": 15,
-    "flips": 5,
-    "fits": 304,
-    "seen": 88,
-    "hidden": 113
-  },
-  "squaretrihexdual.lines-4": {
-    "score": 2.305,
-    "presses": 15,
-    "flips": 5,
-    "fits": 212,
-    "seen": 64,
-    "hidden": 73
-  },
-  "squaretrihexdual.lines-5": {
-    "score": 1.85,
-    "presses": 9,
-    "flips": 5,
-    "fits": 225,
-    "seen": 93,
-    "hidden": 51
-  },
-  "squaretrihexdual.lines-6": {
-    "score": 1.889,
-    "presses": 9,
-    "flips": 5,
-    "fits": 208,
-    "seen": 88,
-    "hidden": 45
-  },
-  "squaretrihexdual.lines2": {
-    "score": 2.221,
-    "presses": 15,
-    "flips": 5,
-    "fits": 260,
-    "seen": 78,
-    "hidden": 93
-  },
-  "squaretrihexdual.lines2-2": {
-    "score": 1.767,
-    "presses": 9,
-    "flips": 5,
-    "fits": 151,
-    "seen": 70,
-    "hidden": 13
-  },
-  "squaretrihexdual.lines2-3": {
-    "score": 2.146,
-    "presses": 15,
-    "flips": 5,
-    "fits": 304,
-    "seen": 88,
-    "hidden": 113
-  },
-  "squaretrihexdual.lines2-4": {
-    "score": 2.305,
-    "presses": 15,
-    "flips": 5,
-    "fits": 212,
-    "seen": 64,
-    "hidden": 73
-  },
-  "squaretrihexdual.lines2-5": {
-    "score": 1.85,
-    "presses": 9,
-    "flips": 5,
-    "fits": 225,
-    "seen": 93,
-    "hidden": 51
-  },
-  "squaretrihexdual.lines2-6": {
-    "score": 1.889,
-    "presses": 9,
-    "flips": 5,
-    "fits": 208,
-    "seen": 88,
-    "hidden": 45
-  },
-  "squaretrihexdual.2oneinthree": {
-    "score": 2.451,
-    "presses": 11,
-    "flips": 4,
-    "fits": 465,
-    "seen": 115,
-    "hidden": 258
-  },
-  "squaretrihexdual.2oneinthree-3": {
-    "score": 2.4,
-    "presses": 11,
-    "flips": 4,
-    "fits": 543,
-    "seen": 141,
-    "hidden": 296
-  },
-  "squaretrihexdual.2oneinthree-5": {
-    "score": 2.484,
-    "presses": 11,
-    "flips": 6,
-    "fits": 381,
-    "seen": 170,
-    "hidden": 126
-  },
-  "squaretrihexdual.2oneinthree-6": {
-    "score": 2.411,
-    "presses": 9,
-    "flips": 5,
-    "fits": 383,
-    "seen": 186,
-    "hidden": 122
-  },
-  "squaretrihex2dual.lines": {
-    "score": 2.25,
-    "presses": 15,
-    "flips": 5,
-    "fits": 236,
-    "seen": 100,
-    "hidden": 55
-  },
-  "squaretrihex2dual.lines-2": {
-    "score": 1.836,
-    "presses": 9,
-    "flips": 5,
-    "fits": 280,
-    "seen": 76,
-    "hidden": 107
-  },
-  "squaretrihex2dual.lines-3": {
-    "score": 2.311,
-    "presses": 15,
-    "flips": 9,
-    "fits": 185,
-    "seen": 87,
-    "hidden": 24
-  },
-  "squaretrihex2dual.lines-4": {
-    "score": 2.183,
-    "presses": 15,
-    "flips": 5,
-    "fits": 249,
-    "seen": 105,
-    "hidden": 57
-  },
-  "squaretrihex2dual.lines-5": {
-    "score": 1.88,
-    "presses": 9,
-    "flips": 5,
-    "fits": 236,
-    "seen": 66,
-    "hidden": 87
-  },
-  "squaretrihex2dual.lines2": {
-    "score": 2.25,
-    "presses": 15,
-    "flips": 5,
-    "fits": 236,
-    "seen": 100,
-    "hidden": 55
-  },
-  "squaretrihex2dual.lines2-2": {
-    "score": 1.836,
-    "presses": 9,
-    "flips": 5,
-    "fits": 280,
-    "seen": 76,
-    "hidden": 107
-  },
-  "squaretrihex2dual.lines2-3": {
-    "score": 2.311,
-    "presses": 15,
-    "flips": 9,
-    "fits": 185,
-    "seen": 87,
-    "hidden": 24
-  },
-  "squaretrihex2dual.lines2-4": {
-    "score": 2.183,
-    "presses": 15,
-    "flips": 5,
-    "fits": 249,
-    "seen": 105,
-    "hidden": 57
-  },
-  "squaretrihex2dual.lines2-5": {
-    "score": 1.88,
-    "presses": 9,
-    "flips": 5,
-    "fits": 236,
-    "seen": 66,
-    "hidden": 87
-  },
-  "squaretrihex2dual.2oneinthree": {
-    "score": 2.812,
-    "presses": 15,
-    "flips": 7,
-    "fits": 405,
-    "seen": 203,
-    "hidden": 121
-  },
-  "squaretrihex2dual.2oneinthree-2": {
-    "score": 2.564,
-    "presses": 11,
-    "flips": 8,
-    "fits": 560,
-    "seen": 178,
-    "hidden": 282
-  },
-  "squaretrihex2dual.2oneinthree-4": {
-    "score": 2.776,
-    "presses": 15,
-    "flips": 9,
-    "fits": 399,
-    "seen": 184,
+    "fits": 514,
+    "seen": 316,
     "hidden": 124
   },
-  "squaretrihex2dual.2oneinthree-5": {
-    "score": 2.637,
+  "hexringsdual.3byshape": {
+    "score": 3.289,
+    "presses": 22,
+    "flips": 11,
+    "fits": 619,
+    "seen": 441,
+    "hidden": 110
+  },
+  "hexringsdual.3byshape-2": {
+    "score": 3.191,
+    "presses": 23,
+    "flips": 9,
+    "fits": 444,
+    "seen": 303,
+    "hidden": 63
+  },
+  "hexringsdual.3byshape-3": {
+    "score": 3.193,
+    "presses": 25,
+    "flips": 9,
+    "fits": 365,
+    "seen": 227,
+    "hidden": 57
+  },
+  "hexringsdual.3byshape-4": {
+    "score": 2.835,
+    "presses": 18,
+    "flips": 8,
+    "fits": 502,
+    "seen": 314,
+    "hidden": 114
+  },
+  "squaretrihexdual.lines": {
+    "score": 2.224,
+    "presses": 15,
+    "flips": 5,
+    "fits": 262,
+    "seen": 54,
+    "hidden": 119
+  },
+  "squaretrihexdual.lines-2": {
+    "score": 1.948,
+    "presses": 9,
+    "flips": 5,
+    "fits": 215,
+    "seen": 102,
+    "hidden": 45
+  },
+  "squaretrihexdual.lines-3": {
+    "score": 2.149,
+    "presses": 15,
+    "flips": 5,
+    "fits": 306,
+    "seen": 60,
+    "hidden": 143
+  },
+  "squaretrihexdual.lines-4": {
+    "score": 2.309,
+    "presses": 15,
+    "flips": 5,
+    "fits": 214,
+    "seen": 44,
+    "hidden": 95
+  },
+  "squaretrihexdual.lines-5": {
+    "score": 1.978,
+    "presses": 9,
+    "flips": 5,
+    "fits": 305,
+    "seen": 75,
+    "hidden": 149
+  },
+  "squaretrihexdual.lines-6": {
+    "score": 2.024,
+    "presses": 9,
+    "flips": 5,
+    "fits": 288,
+    "seen": 74,
+    "hidden": 139
+  },
+  "squaretrihexdual.lines2": {
+    "score": 2.224,
+    "presses": 15,
+    "flips": 5,
+    "fits": 262,
+    "seen": 54,
+    "hidden": 119
+  },
+  "squaretrihexdual.lines2-2": {
+    "score": 1.948,
+    "presses": 9,
+    "flips": 5,
+    "fits": 215,
+    "seen": 102,
+    "hidden": 45
+  },
+  "squaretrihexdual.lines2-3": {
+    "score": 2.149,
+    "presses": 15,
+    "flips": 5,
+    "fits": 306,
+    "seen": 60,
+    "hidden": 143
+  },
+  "squaretrihexdual.lines2-4": {
+    "score": 2.309,
+    "presses": 15,
+    "flips": 5,
+    "fits": 214,
+    "seen": 44,
+    "hidden": 95
+  },
+  "squaretrihexdual.lines2-5": {
+    "score": 1.978,
+    "presses": 9,
+    "flips": 5,
+    "fits": 305,
+    "seen": 75,
+    "hidden": 149
+  },
+  "squaretrihexdual.lines2-6": {
+    "score": 2.024,
+    "presses": 9,
+    "flips": 5,
+    "fits": 288,
+    "seen": 74,
+    "hidden": 139
+  },
+  "squaretrihexdual.2oneinthree": {
+    "score": 2.454,
+    "presses": 11,
+    "flips": 4,
+    "fits": 469,
+    "seen": 58,
+    "hidden": 319
+  },
+  "squaretrihexdual.2oneinthree-3": {
+    "score": 2.402,
+    "presses": 11,
+    "flips": 4,
+    "fits": 547,
+    "seen": 82,
+    "hidden": 359
+  },
+  "squaretrihexdual.2oneinthree-5": {
+    "score": 2.586,
+    "presses": 11,
+    "flips": 6,
+    "fits": 577,
+    "seen": 178,
+    "hidden": 314
+  },
+  "squaretrihexdual.2oneinthree-6": {
+    "score": 2.5,
+    "presses": 9,
+    "flips": 5,
+    "fits": 579,
+    "seen": 164,
+    "hidden": 340
+  },
+  "squaretrihex2dual.lines": {
+    "score": 2.317,
+    "presses": 15,
+    "flips": 5,
+    "fits": 276,
+    "seen": 61,
+    "hidden": 134
+  },
+  "squaretrihex2dual.lines-2": {
+    "score": 1.895,
+    "presses": 9,
+    "flips": 5,
+    "fits": 321,
+    "seen": 71,
+    "hidden": 153
+  },
+  "squaretrihex2dual.lines-3": {
+    "score": 2.44,
+    "presses": 15,
+    "flips": 9,
+    "fits": 243,
+    "seen": 103,
+    "hidden": 66
+  },
+  "squaretrihex2dual.lines-4": {
+    "score": 2.248,
+    "presses": 15,
+    "flips": 5,
+    "fits": 289,
+    "seen": 64,
+    "hidden": 138
+  },
+  "squaretrihex2dual.lines-5": {
+    "score": 1.945,
+    "presses": 9,
+    "flips": 5,
+    "fits": 273,
+    "seen": 69,
+    "hidden": 121
+  },
+  "squaretrihex2dual.lines2": {
+    "score": 2.317,
+    "presses": 15,
+    "flips": 5,
+    "fits": 276,
+    "seen": 61,
+    "hidden": 134
+  },
+  "squaretrihex2dual.lines2-2": {
+    "score": 1.895,
+    "presses": 9,
+    "flips": 5,
+    "fits": 321,
+    "seen": 71,
+    "hidden": 153
+  },
+  "squaretrihex2dual.lines2-3": {
+    "score": 2.44,
+    "presses": 15,
+    "flips": 9,
+    "fits": 243,
+    "seen": 103,
+    "hidden": 66
+  },
+  "squaretrihex2dual.lines2-4": {
+    "score": 2.248,
+    "presses": 15,
+    "flips": 5,
+    "fits": 289,
+    "seen": 64,
+    "hidden": 138
+  },
+  "squaretrihex2dual.lines2-5": {
+    "score": 1.945,
+    "presses": 9,
+    "flips": 5,
+    "fits": 273,
+    "seen": 69,
+    "hidden": 121
+  },
+  "squaretrihex2dual.2oneinthree": {
+    "score": 2.867,
+    "presses": 15,
+    "flips": 7,
+    "fits": 509,
+    "seen": 130,
+    "hidden": 298
+  },
+  "squaretrihex2dual.2oneinthree-2": {
+    "score": 2.602,
     "presses": 11,
     "flips": 8,
-    "fits": 482,
-    "seen": 154,
-    "hidden": 242
+    "fits": 665,
+    "seen": 159,
+    "hidden": 406
+  },
+  "squaretrihex2dual.2oneinthree-4": {
+    "score": 2.833,
+    "presses": 15,
+    "flips": 9,
+    "fits": 491,
+    "seen": 144,
+    "hidden": 256
+  },
+  "squaretrihex2dual.2oneinthree-5": {
+    "score": 2.676,
+    "presses": 11,
+    "flips": 8,
+    "fits": 575,
+    "seen": 167,
+    "hidden": 322
   },
   "dodecarhombitrihexdual.lines": {
     "score": 1.622,
@@ -12120,44 +12120,44 @@
     "hidden": 25
   },
   "dodecarhombitrihexdual.lines-2": {
-    "score": 2.112,
+    "score": 2.12,
     "presses": 13,
     "flips": 5,
-    "fits": 180,
-    "seen": 72,
-    "hidden": 53
+    "fits": 190,
+    "seen": 71,
+    "hidden": 62
   },
   "dodecarhombitrihexdual.lines-3": {
-    "score": 1.747,
+    "score": 1.764,
     "presses": 8,
     "flips": 5,
-    "fits": 177,
+    "fits": 183,
     "seen": 66,
-    "hidden": 44
+    "hidden": 50
   },
   "dodecarhombitrihexdual.lines-4": {
-    "score": 1.568,
+    "score": 1.566,
     "presses": 10,
     "flips": 3,
-    "fits": 200,
-    "seen": 65,
-    "hidden": 39
+    "fits": 216,
+    "seen": 61,
+    "hidden": 51
   },
   "dodecarhombitrihexdual.lines-5": {
-    "score": 2.111,
+    "score": 2.131,
     "presses": 13,
     "flips": 5,
-    "fits": 171,
-    "seen": 74,
-    "hidden": 40
+    "fits": 179,
+    "seen": 76,
+    "hidden": 46
   },
   "dodecarhombitrihexdual.lines-6": {
-    "score": 1.889,
+    "score": 1.896,
     "presses": 10,
     "flips": 3,
-    "fits": 205,
+    "fits": 212,
     "seen": 67,
-    "hidden": 79
+    "hidden": 85
   },
   "dodecarhombitrihexdual.lines2": {
     "score": 1.622,
@@ -12168,44 +12168,44 @@
     "hidden": 25
   },
   "dodecarhombitrihexdual.lines2-2": {
-    "score": 2.112,
+    "score": 2.12,
     "presses": 13,
     "flips": 5,
-    "fits": 180,
-    "seen": 72,
-    "hidden": 53
+    "fits": 190,
+    "seen": 71,
+    "hidden": 62
   },
   "dodecarhombitrihexdual.lines2-3": {
-    "score": 1.747,
+    "score": 1.764,
     "presses": 8,
     "flips": 5,
-    "fits": 177,
+    "fits": 183,
     "seen": 66,
-    "hidden": 44
+    "hidden": 50
   },
   "dodecarhombitrihexdual.lines2-4": {
-    "score": 1.568,
+    "score": 1.566,
     "presses": 10,
     "flips": 3,
-    "fits": 200,
-    "seen": 65,
-    "hidden": 39
+    "fits": 216,
+    "seen": 61,
+    "hidden": 51
   },
   "dodecarhombitrihexdual.lines2-5": {
-    "score": 2.111,
+    "score": 2.131,
     "presses": 13,
     "flips": 5,
-    "fits": 171,
-    "seen": 74,
-    "hidden": 40
+    "fits": 179,
+    "seen": 76,
+    "hidden": 46
   },
   "dodecarhombitrihexdual.lines2-6": {
-    "score": 1.889,
+    "score": 1.896,
     "presses": 10,
     "flips": 3,
-    "fits": 205,
+    "fits": 212,
     "seen": 67,
-    "hidden": 79
+    "hidden": 85
   },
   "dodecarhombitrihexdual.2oneinthreebyshape": {
     "score": 1.95,
@@ -12216,44 +12216,44 @@
     "hidden": 43
   },
   "dodecarhombitrihexdual.2oneinthreebyshape-2": {
-    "score": 2.493,
+    "score": 2.53,
     "presses": 15,
     "flips": 6,
-    "fits": 159,
-    "seen": 51,
-    "hidden": 69
+    "fits": 179,
+    "seen": 49,
+    "hidden": 91
   },
   "dodecarhombitrihexdual.2oneinthreebyshape-3": {
-    "score": 2.011,
+    "score": 2.03,
     "presses": 11,
     "flips": 2,
-    "fits": 133,
-    "seen": 61,
-    "hidden": 30
+    "fits": 139,
+    "seen": 60,
+    "hidden": 37
   },
   "dodecarhombitrihexdual.2oneinthreebyshape-4": {
-    "score": 1.977,
+    "score": 2.014,
     "presses": 11,
     "flips": 3,
-    "fits": 173,
-    "seen": 66,
-    "hidden": 51
+    "fits": 189,
+    "seen": 62,
+    "hidden": 71
   },
   "dodecarhombitrihexdual.2oneinthreebyshape-5": {
-    "score": 2.295,
+    "score": 2.326,
     "presses": 10,
     "flips": 7,
-    "fits": 159,
-    "seen": 71,
-    "hidden": 48
+    "fits": 175,
+    "seen": 75,
+    "hidden": 60
   },
   "dodecarhombitrihexdual.2oneinthreebyshape-6": {
-    "score": 2.092,
+    "score": 2.106,
     "presses": 11,
     "flips": 2,
-    "fits": 160,
-    "seen": 67,
-    "hidden": 52
+    "fits": 167,
+    "seen": 66,
+    "hidden": 60
   },
   "dodecarhombitrihexdual.2oneinthree": {
     "score": 2.296,
@@ -12272,44 +12272,44 @@
     "hidden": 41
   },
   "dodecarhombitrihexdual.3byshape-2": {
-    "score": 2.485,
+    "score": 2.524,
     "presses": 15,
     "flips": 6,
-    "fits": 155,
-    "seen": 52,
-    "hidden": 64
+    "fits": 175,
+    "seen": 48,
+    "hidden": 88
   },
   "dodecarhombitrihexdual.3byshape-3": {
-    "score": 1.984,
+    "score": 2.005,
     "presses": 11,
     "flips": 2,
-    "fits": 125,
-    "seen": 61,
-    "hidden": 22
+    "fits": 131,
+    "seen": 59,
+    "hidden": 30
   },
   "dodecarhombitrihexdual.3byshape-4": {
-    "score": 1.966,
+    "score": 2.005,
     "presses": 11,
     "flips": 3,
-    "fits": 169,
-    "seen": 65,
-    "hidden": 48
+    "fits": 185,
+    "seen": 61,
+    "hidden": 68
   },
   "dodecarhombitrihexdual.3byshape-5": {
-    "score": 2.275,
+    "score": 2.31,
     "presses": 10,
     "flips": 7,
-    "fits": 150,
-    "seen": 66,
-    "hidden": 44
+    "fits": 166,
+    "seen": 70,
+    "hidden": 56
   },
   "dodecarhombitrihexdual.3byshape-6": {
-    "score": 2.081,
+    "score": 2.096,
     "presses": 11,
     "flips": 2,
-    "fits": 155,
-    "seen": 79,
-    "hidden": 35
+    "fits": 162,
+    "seen": 76,
+    "hidden": 45
   },
   "stackedbond.lines": {
     "score": 0.105,
@@ -12744,19 +12744,19 @@
     "hidden": 461
   },
   "pentagon10.linkedpairs": {
-    "score": 1.401,
+    "score": 1.411,
     "presses": 9,
     "flips": 0,
-    "fits": 382,
-    "seen": 190,
+    "fits": 390,
+    "seen": 198,
     "hidden": 58
   },
   "pentagon10.linkedpairs-2": {
-    "score": 1.39,
+    "score": 1.396,
     "presses": 9,
     "flips": 0,
-    "fits": 336,
-    "seen": 163,
+    "fits": 340,
+    "seen": 167,
     "hidden": 49
   },
   "pentagon10.linkedpairs-3": {
@@ -12768,43 +12768,43 @@
     "hidden": 50
   },
   "pentagon10.linkedpairs-4": {
-    "score": 1.324,
+    "score": 1.334,
     "presses": 7,
     "flips": 0,
-    "fits": 364,
-    "seen": 178,
+    "fits": 372,
+    "seen": 186,
     "hidden": 57
   },
   "pentagon10.linkedpairs-5": {
-    "score": 1.374,
+    "score": 1.379,
     "presses": 9,
     "flips": 0,
-    "fits": 361,
-    "seen": 176,
+    "fits": 365,
+    "seen": 180,
     "hidden": 51
   },
   "pentagon10.linkedpairs-6": {
-    "score": 1.337,
+    "score": 1.347,
     "presses": 7,
     "flips": 0,
-    "fits": 374,
-    "seen": 188,
+    "fits": 382,
+    "seen": 196,
     "hidden": 57
   },
   "pentagon10.3mixed": {
-    "score": 1.874,
+    "score": 1.886,
     "presses": 9,
     "flips": 0,
-    "fits": 601,
-    "seen": 321,
+    "fits": 625,
+    "seen": 345,
     "hidden": 146
   },
   "pentagon10.3mixed-2": {
-    "score": 1.865,
+    "score": 1.872,
     "presses": 9,
     "flips": 0,
-    "fits": 517,
-    "seen": 267,
+    "fits": 529,
+    "seen": 279,
     "hidden": 126
   },
   "pentagon10.3mixed-3": {
@@ -12816,27 +12816,27 @@
     "hidden": 128
   },
   "pentagon10.3mixed-4": {
-    "score": 1.797,
+    "score": 1.809,
     "presses": 7,
     "flips": 0,
-    "fits": 570,
-    "seen": 305,
+    "fits": 594,
+    "seen": 329,
     "hidden": 136
   },
   "pentagon10.3mixed-5": {
-    "score": 1.857,
+    "score": 1.864,
     "presses": 9,
     "flips": 0,
-    "fits": 569,
-    "seen": 284,
+    "fits": 581,
+    "seen": 296,
     "hidden": 151
   },
   "pentagon10.3mixed-6": {
-    "score": 1.812,
+    "score": 1.823,
     "presses": 7,
     "flips": 0,
-    "fits": 600,
-    "seen": 347,
+    "fits": 624,
+    "seen": 371,
     "hidden": 124
   },
   "pentagon13.lines": {
@@ -20192,68 +20192,68 @@
     "hidden": 165
   },
   "kitedart.rules": {
-    "score": 1.952,
+    "score": 1.997,
     "presses": 18,
     "flips": 0,
-    "fits": 190,
-    "seen": 82,
-    "hidden": 27
+    "fits": 206,
+    "seen": 79,
+    "hidden": 46
   },
   "kitedart.rules-2": {
-    "score": 1.557,
+    "score": 1.592,
     "presses": 12,
     "flips": 0,
-    "fits": 166,
-    "seen": 40,
-    "hidden": 42
+    "fits": 175,
+    "seen": 39,
+    "hidden": 52
   },
   "kitedart.rules-3": {
-    "score": 2.009,
+    "score": 2.052,
     "presses": 19,
     "flips": 0,
-    "fits": 193,
-    "seen": 86,
-    "hidden": 26
+    "fits": 209,
+    "seen": 89,
+    "hidden": 39
   },
   "kitedart.rules-4": {
-    "score": 1.888,
+    "score": 1.935,
     "presses": 16,
     "flips": 0,
-    "fits": 201,
-    "seen": 64,
-    "hidden": 56
+    "fits": 220,
+    "seen": 62,
+    "hidden": 77
   },
   "kitedart.rules-5": {
-    "score": 1.717,
+    "score": 1.749,
     "presses": 14,
     "flips": 0,
-    "fits": 181,
-    "seen": 78,
-    "hidden": 20
+    "fits": 191,
+    "seen": 79,
+    "hidden": 29
   },
   "kitedart.rules-6": {
-    "score": 1.95,
+    "score": 1.99,
     "presses": 19,
     "flips": 0,
-    "fits": 177,
-    "seen": 58,
-    "hidden": 37
+    "fits": 189,
+    "seen": 55,
+    "hidden": 52
   },
   "kitedart.rules-7": {
-    "score": 1.824,
+    "score": 1.836,
     "presses": 16,
     "flips": 0,
-    "fits": 191,
-    "seen": 56,
-    "hidden": 49
+    "fits": 195,
+    "seen": 55,
+    "hidden": 54
   },
   "kitedart.rules-8": {
-    "score": 1.84,
+    "score": 1.864,
     "presses": 16,
     "flips": 0,
-    "fits": 187,
-    "seen": 67,
-    "hidden": 38
+    "fits": 195,
+    "seen": 68,
+    "hidden": 45
   },
   "ammannbeenker.rules": {
     "score": 1.928,
@@ -20584,68 +20584,68 @@
     "hidden": 230
   },
   "hatmetatiles.rules": {
-    "score": 1.941,
+    "score": 2.002,
     "presses": 7,
     "flips": 0,
-    "fits": 419,
-    "seen": 250,
+    "fits": 518,
+    "seen": 349,
     "hidden": 70
   },
   "hatmetatiles.rules-2": {
-    "score": 1.912,
+    "score": 1.987,
     "presses": 7,
     "flips": 0,
-    "fits": 396,
-    "seen": 221,
+    "fits": 504,
+    "seen": 329,
     "hidden": 73
   },
   "hatmetatiles.rules-3": {
-    "score": 1.871,
+    "score": 1.928,
     "presses": 5,
     "flips": 0,
-    "fits": 440,
-    "seen": 243,
-    "hidden": 101
+    "fits": 545,
+    "seen": 332,
+    "hidden": 117
   },
   "hatmetatiles.rules-4": {
-    "score": 1.806,
+    "score": 1.864,
     "presses": 5,
     "flips": 0,
-    "fits": 450,
-    "seen": 265,
-    "hidden": 65
+    "fits": 537,
+    "seen": 336,
+    "hidden": 81
   },
   "hatmetatiles.rules-5": {
-    "score": 1.887,
+    "score": 1.957,
     "presses": 6,
     "flips": 0,
-    "fits": 406,
-    "seen": 234,
-    "hidden": 74
+    "fits": 518,
+    "seen": 318,
+    "hidden": 102
   },
   "hatmetatiles.rules-6": {
-    "score": 1.885,
+    "score": 1.97,
     "presses": 7,
     "flips": 0,
-    "fits": 458,
-    "seen": 255,
+    "fits": 592,
+    "seen": 389,
     "hidden": 76
   },
   "hatmetatiles.rules-7": {
-    "score": 1.837,
+    "score": 1.891,
     "presses": 5,
     "flips": 0,
-    "fits": 476,
-    "seen": 297,
-    "hidden": 63
+    "fits": 570,
+    "seen": 375,
+    "hidden": 79
   },
   "hatmetatiles.rules-8": {
-    "score": 1.974,
+    "score": 2.041,
     "presses": 7,
     "flips": 0,
-    "fits": 425,
-    "seen": 247,
-    "hidden": 88
+    "fits": 555,
+    "seen": 371,
+    "hidden": 94
   },
   "mystic.rules": {
     "score": 2.342,
@@ -20760,12 +20760,12 @@
     "hidden": 7
   },
   "sphinx.rules": {
-    "score": 1.557,
+    "score": 1.667,
     "presses": 6,
     "flips": 4,
-    "fits": 146,
-    "seen": 29,
-    "hidden": 54
+    "fits": 180,
+    "seen": 47,
+    "hidden": 70
   },
   "chair.rules": {
     "score": 1.217,
@@ -20776,28 +20776,28 @@
     "hidden": 30
   },
   "ltetromino.rules": {
-    "score": 0.63,
+    "score": 0.644,
     "presses": 4,
     "flips": 0,
-    "fits": 72,
-    "seen": 7,
+    "fits": 73,
+    "seen": 8,
     "hidden": 9
   },
   "trapezoid.rules": {
-    "score": 0.692,
+    "score": 0.851,
     "presses": 8,
     "flips": 0,
-    "fits": 60,
-    "seen": 0,
-    "hidden": 0
+    "fits": 68,
+    "seen": 2,
+    "hidden": 6
   },
   "trapezoid.3apart": {
-    "score": 1.76,
+    "score": 1.947,
     "presses": 8,
     "flips": 0,
-    "fits": 70,
-    "seen": 20,
-    "hidden": 12
+    "fits": 94,
+    "seen": 36,
+    "hidden": 20
   },
   "righttrapezoid.rules": {
     "score": 1.374,
@@ -20808,27 +20808,27 @@
     "hidden": 23
   },
   "halftrapezoid.rules": {
-    "score": 2.015,
+    "score": 2.11,
     "presses": 11,
     "flips": 7,
-    "fits": 70,
-    "seen": 18,
-    "hidden": 16
+    "fits": 81,
+    "seen": 24,
+    "hidden": 21
   },
   "stretchedchair.rules": {
-    "score": 1.428,
+    "score": 1.508,
     "presses": 5,
     "flips": 4,
-    "fits": 122,
-    "seen": 40,
-    "hidden": 31
+    "fits": 142,
+    "seen": 54,
+    "hidden": 37
   },
   "rhombicl.rules": {
-    "score": 1.528,
+    "score": 1.541,
     "presses": 7,
     "flips": 4,
-    "fits": 102,
-    "seen": 32,
+    "fits": 104,
+    "seen": 34,
     "hidden": 18
   },
   "rightisosceles.rules": {
@@ -20848,28 +20848,28 @@
     "hidden": 116
   },
   "drafter.rules": {
-    "score": 1.561,
+    "score": 1.648,
     "presses": 14,
     "flips": 9,
-    "fits": 56,
-    "seen": 8,
-    "hidden": 11
+    "fits": 62,
+    "seen": 11,
+    "hidden": 14
   },
   "drafter.3apart": {
-    "score": 1.75,
+    "score": 1.85,
     "presses": 13,
     "flips": 0,
-    "fits": 68,
-    "seen": 13,
-    "hidden": 16
+    "fits": 78,
+    "seen": 19,
+    "hidden": 20
   },
   "ttetromino.rules": {
-    "score": 0.748,
+    "score": 0.847,
     "presses": 7,
     "flips": 0,
-    "fits": 82,
-    "seen": 14,
-    "hidden": 0
+    "fits": 90,
+    "seen": 20,
+    "hidden": 2
   },
   "fish.rules": {
     "score": 1.25,
