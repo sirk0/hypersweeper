@@ -510,8 +510,9 @@ default) or Off — and its volume (below), **Haptics** where the device can buz
 iPhone in the app, an Android browser; on by default), and the tiling past a finished board, a switch, off by
 default (below) — then shows the version, checks for updates (the shared check in `@tiling/platform`) and
 links the **privacy policy** (`public/privacy.html`, served as `/privacy`, in
-a new tab); the update row and the policy link are left out of a packaged
-build. Under Tilings on home, a quiet **More games ↗** links to the shared
+a new tab); the update row is left out of a packaged build, and there the
+policy link opens the bundled `privacy.html` in place (App Review asks for
+the link inside the app; its "Play Rep-tiles" link comes back). Under Tilings on home, a quiet **More games ↗** links to the shared
 site, <https://tiling-games.pages.dev/> (on a desktop, a row at the head of
 the sidebar's foot, above How to play); it opens in a new tab, and like the
 update row it is left out of a packaged build — its address is the shared Vite

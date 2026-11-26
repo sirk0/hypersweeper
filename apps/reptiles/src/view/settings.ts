@@ -115,21 +115,31 @@ export function renderSettings(
     button.append(block);
     button.addEventListener("click", () => void checkUpdates(hint));
     list.append(item(button));
+  }
 
-    const policy = document.createElement("a");
-    policy.className = "settings-row";
+  // The privacy policy, in every build: App Review asks for it inside the app
+  // as well as on the store page. On the web, the page the site serves at
+  // /privacy, in a tab of its own so the player keeps their place here. In a
+  // packaged app, the copy of public/privacy.html bundled with the game,
+  // opened in place — the app links out to nothing, its web view has no tabs
+  // and serves no clean URLs, and the policy's own "Play Rep-tiles" link
+  // (`./`) comes back; the board in play is kept as the page is left.
+  const policy = document.createElement("a");
+  policy.className = "settings-row";
+  policy.dataset["action"] = "privacy-policy";
+  if (__APP_PACKAGED__) {
+    policy.href = `${import.meta.env.BASE_URL}privacy.html`;
+  } else {
     policy.href = `${import.meta.env.BASE_URL}privacy`;
-    // A tab of its own, so the player reading it keeps their place here.
     policy.target = "_blank";
     policy.rel = "noopener";
-    policy.dataset["action"] = "privacy-policy";
-    const arrow = document.createElement("span");
-    arrow.className = "settings-value";
-    arrow.setAttribute("aria-hidden", "true");
-    arrow.textContent = "↗";
-    policy.append(textBlock("Privacy policy").block, arrow);
-    list.append(item(policy));
   }
+  const arrow = document.createElement("span");
+  arrow.className = "settings-value";
+  arrow.setAttribute("aria-hidden", "true");
+  arrow.textContent = __APP_PACKAGED__ ? "›" : "↗";
+  policy.append(textBlock("Privacy policy").block, arrow);
+  list.append(item(policy));
   host.append(heading, list);
 }
 

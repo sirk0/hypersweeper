@@ -1,1 +1,1 @@
-puzzle,tiling,tiles,jigsaw,tangram,geometry,penrose,spectre,hat,mosaic,pattern,shapes,brain,logic
+tiling,jigsaw,tangram,geometry,penrose,spectre,aperiodic,escher,mosaic,pattern,shapes,brain,logic
