@@ -32,7 +32,7 @@ and as a Mac app.
   (<kbd>F</kbd>) mirrors them, on levels that use a tile both ways round.
 - **Take a tile off** by dragging it back to the tray, or switch on remove
   (<kbd>X</kbd>) and tap tiles.
-- **Undo, redo and a hint.** The hint works out exactly what to do next: a
+- **A hint** works out exactly what to do next: a
   tile to lay or, if the board can no longer be finished, a tile to remove.
 - **Three stars** per level: one for finishing, one for not using a hint, and
   one for using exactly the tiles the board was cut from. Your best time is

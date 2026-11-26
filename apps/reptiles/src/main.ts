@@ -1,5 +1,5 @@
 import "./styles.css";
-import { bandOf, type Band } from "./difficulty";
+import { BARS, bandOf, type Band } from "./difficulty";
 import { findExtension, levelMid } from "./extension";
 import { preferences, type Preferences } from "./preferences";
 import { applyScheme } from "./scheme";
@@ -48,8 +48,6 @@ const count = byId("count");
 const won = byId("won");
 const next = byId<HTMLButtonElement>("next");
 const hintButton = byId<HTMLButtonElement>("hint");
-const undoButton = byId<HTMLButtonElement>("undo");
-const redoButton = byId<HTMLButtonElement>("redo");
 const randomButton = byId<HTMLButtonElement>("random");
 const coach = byId("coach");
 const coachNext = byId<HTMLButtonElement>("coach-next");
@@ -155,11 +153,19 @@ function tilingsOf(group: MenuGroup): Level[] {
 // on a desktop one group of it, ?group=<key>), one tiling's boards and tiles
 // to pick a level from (?tiling=<key>), How to play (?help), the settings
 // (?settings) and a level (?level=<key>). The privacy policy, /privacy, is a
-// page of its own (public/privacy.html), not a screen of the app. Each move between them is a history entry, so the browser's
-// Back goes back; a tiling's page keeps its pick in its URL (`&pick=<level>`),
-// so Back from a level comes back to the same one.
+// page of its own (public/privacy.html), not a screen of the app. Each move
+// between them is a history entry, so the browser's Back goes back; the
+// header's Back goes one level up instead (`up`), whatever the way in was. A
+// tiling's page keeps its pick in its URL (`&pick=<level>`), so Back from a
+// level comes up to the same one.
 
 const SCREENS = ["home", "catalog", "tiling", "help", "settings", "game"] as const;
+
+/** Where a list page's Back goes: the screen one level up from the one on
+ * show — Tilings' groups under home, a group's page under them (under home
+ * on a desktop, whose sidebar lists the groups), a tiling's page under its
+ * group's. */
+let up: () => void = () => goHome();
 type Screen = (typeof SCREENS)[number];
 
 /** Show `screen`, and in the sidebar highlight `side` (a `data-side`). */
@@ -222,12 +228,16 @@ function goCatalog(push = true, groupKey: string | null = null): void {
   const links = byId("catalog-links");
   links.replaceChildren();
   if (!group) {
+    up = () => goHome();
     renderGroupIndex(list, MENU_GROUPS, groupTally, (key) => goCatalog(true, key));
     byId("catalog-title").textContent = "Tilings";
     show("catalog", "");
     list.scrollTop = 0;
     return;
   }
+  // a group's page is under the phone's index of them; on a desktop the
+  // sidebar lists the groups, so it is under home
+  up = wide.matches ? () => goHome() : () => goCatalog(true);
   const kept = keptKeys();
   renderCatalog(
     list,
@@ -276,6 +286,7 @@ const keepPick =
 function goTiling(level: Level, push = true, pick: string | null = null): void {
   if (push) history.pushState(null, "", `?tiling=${level.key}`);
   const group = groupOfFamily(level.group);
+  up = () => goCatalog(true, group?.key ?? null);
   show("tiling", group ? `group:${group.key}` : "");
   byId("tiling-title").textContent = level.name;
   // the levels in progress, read once for the page's cards
@@ -343,8 +354,8 @@ interface Session {
   started: number | null;
   finished: number | null;
   /** The win card was closed (Exit): it stays shut while the board stays
-   * finished — the board is locked then (drag.ts), so only an undo or a
-   * restart can unfinish it, and only an undo opens the card to show again. */
+   * finished — the board is locked then (drag.ts), so only a restart can
+   * unfinish it. */
   dismissed: boolean;
   /** How many hints have been shown on this board — any costs the third
    * star; the win card says how many. */
@@ -353,12 +364,10 @@ interface Session {
    * goes once they change. */
   laidKey: string;
   /** The tiling round the finished board has been asked for (src/extension.ts):
-   * once a finish, again only after an undo and it is finished
-   * anew. */
+   * once a finish. */
   extending: boolean;
-  /** The board was finished at the last change — so the flourish plays once
-   * as it is finished, and again only after an undo and it is
-   * finished anew. */
+  /** The board was finished at the last change — so the flourish plays once,
+   * as it is finished. */
   wasWon: boolean;
   /** The layout last kept (saved.ts): a move since is kept again. */
   kept: unknown;
@@ -390,26 +399,6 @@ function keep(s: Session): void {
   else saveBoard(s.puzzle.level, s.puzzle.layout, elapsed(s), s.hints);
 }
 
-function undo(): void {
-  const s = session;
-  if (!s) return;
-  s.control.cancel();
-  if (!s.puzzle.undo()) return;
-  // stepping back off a finish: finished anew, the card shows again
-  s.dismissed = false;
-  s.board.draw();
-  changed();
-}
-
-function redo(): void {
-  const s = session;
-  if (!s) return;
-  s.control.cancel();
-  if (!s.puzzle.redo()) return;
-  s.board.draw();
-  changed();
-}
-
 const laidOf = (s: Session): Laid[] =>
   s.puzzle.tiles.map(({ id, kind, pieces }) => ({ id, kind, pieces }));
 
@@ -430,8 +419,6 @@ function changed(): void {
     if (!puzzle.won && s.tutorial === null) hinter.update(puzzle.level, laidOf(s));
   }
   hintButton.disabled = puzzle.won;
-  undoButton.disabled = !puzzle.canUndo;
-  redoButton.disabled = !puzzle.canRedo;
   // a move since the board was last kept: keep it again
   if (puzzle.layout !== s.kept) keep(s);
   // finished, the label says so — with the stars on a level — in place of 100%
@@ -556,6 +543,14 @@ function open(level: Level, push = true, fresh = false, tutorial: number | null 
   const name = byId("level");
   name.textContent = level.name;
   name.title = level.label;
+  // how hard it is, as the three bars a tiling's page shows (none in the
+  // tutorial, whose boards are not measured)
+  const bandMark = byId("level-band");
+  const band = tutorial === null ? bandOf(level.key) : null;
+  bandMark.replaceChildren(...(band ? [barsIcon(BARS[band])] : []));
+  bandMark.hidden = !band;
+  if (band) bandMark.setAttribute("aria-label", band);
+  else bandMark.removeAttribute("aria-label");
   // a vertex rule's sign: its tray is the plain one, so the name says it
   const rule = byId("level-rule");
   rule.replaceChildren(...(level.rule ? [vertexFigure(level)] : []));
@@ -603,8 +598,8 @@ function drawCoach(step: number, done: boolean): void {
   byId("coach-step").textContent = `${step + 1} of ${steps.length} · ${title}`;
   const text =
     done && last
-      ? `${said} That's all you need. Undo — the hooked arrow, or [Z] — takes back a ` +
-        "move, and the bulb shows a hint when you are stuck."
+      ? `${said} That's all you need. The bulb shows a hint when you are stuck, ` +
+        "and restart clears the board."
       : done
         ? said
         : body;
@@ -687,8 +682,6 @@ function dismiss(): void {
 }
 
 byId("restart").addEventListener("click", restart);
-undoButton.addEventListener("click", undo);
-redoButton.addEventListener("click", redo);
 hintButton.addEventListener("click", () => void showHint());
 document
   .querySelector("#home [data-action=settings]")
@@ -707,27 +700,27 @@ won.addEventListener("click", (ev) => {
 next.addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));
 });
-// Back from a level: the page of its tiling, with this level picked.
+// Back from a level: one level up, however it was opened — the page of its
+// tiling, with this level picked; a tiling of one level has no page (Tilings
+// opens the level itself), so its group's. The tutorial is under home.
 byId("back").addEventListener("click", () => {
-  const level = session?.puzzle.level;
+  const s = session;
+  const level = s?.puzzle.level;
   const tiling = level && levelByKey(level.decor?.of ?? level.base);
-  if (level && tiling) goTiling(tiling, true, level.key);
-  else goHome();
+  if (!s || s.tutorial !== null || !level || !tiling) goHome();
+  else if (tallyOf(tiling).levels > 1) goTiling(tiling, true, level.key);
+  else goCatalog(true, groupOfFamily(tiling.group)?.key ?? null);
 });
-// Back from a list page: wherever the player came from, else home.
+// Back from a list page: one level up, never where the player came from —
+// set by the screen on show.
 for (const button of document.querySelectorAll("[data-go-back]"))
-  button.addEventListener("click", () => (history.length > 1 ? history.back() : goHome()));
+  button.addEventListener("click", () => up());
 for (const button of document.querySelectorAll("[data-go-home]"))
   button.addEventListener("click", () => goHome());
 document.addEventListener("keydown", (ev) => {
   if (!session || byId("game").hidden) return;
   const { control, board } = session;
-  if (ev.key === "z" || ev.key === "Z" || ev.key === "y" || ev.key === "Y") {
-    // Z undoes; Shift+Z or Y redoes — with Ctrl or ⌘ too, as elsewhere
-    ev.preventDefault();
-    if (ev.key === "y" || ev.key === "Y" || ev.shiftKey) redo();
-    else undo();
-  } else if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
+  if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
   else if (ev.key === "Escape") {
     if (!won.hidden) dismiss();
     else control.setRemoving(false);

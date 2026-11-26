@@ -133,26 +133,6 @@
           <button
             type="button"
             class="hud-btn"
-            id="undo"
-            title="Undo the last move (Z)"
-            aria-label="Undo"
-            disabled
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="undo"></svg>
-          </button>
-          <button
-            type="button"
-            class="hud-btn"
-            id="redo"
-            title="Redo (Shift+Z)"
-            aria-label="Redo"
-            disabled
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" data-icon="redo"></svg>
-          </button>
-          <button
-            type="button"
-            class="hud-btn"
             id="hint"
             title="Hint: a tile to lay, or one to take off (H) — costs a star"
             aria-label="Hint"
@@ -185,6 +165,7 @@
       </section>
       <main id="stage">
         <p class="board-name">
+          <span class="level-band" id="level-band" role="img" hidden></span>
           <span class="level-rule" id="level-rule" hidden></span>
           <span class="level" id="level"></span>
           <span class="board-of" id="board-of" hidden></span>

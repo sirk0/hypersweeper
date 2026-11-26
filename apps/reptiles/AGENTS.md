@@ -349,22 +349,19 @@ some back off.
   (`recordTime`, `rep-tiles.times`): the win card says "— a new best!" when
   one beats it, else "· best m:ss" (a first finish is only its time), and a
   tiling's page shows it on Play ("best 0:42").
-- **Undo and redo** (the hooked arrows at the head of the header's right
-  cluster; Z, and Shift+Z or Y, with or without Ctrl/⌘) step back and forth
-  through moves: a tile laid, moved or taken off. The drag control marks the
-  end of each (`Puzzle.commit`, called by `done` in `drag.ts`); a tile lifted
-  and put back where it was is no move, and a new move clears what was
-  undone. An undo cancels a tile in hand first (`DragControl.cancel`). A
-  hint shown stays shown — undo is not a way back to the no-hint star — and a
-  finished board undone and redone keeps its first finish's time. Undo is
-  the one way back into a finished board, which is otherwise locked (the win
-  card, under Screens).
+- **No undo or redo.** A move — a tile laid, moved or taken off — is taken
+  back by taking the tile off; the header has no undo or redo, and no key
+  does it. The drag control marks the end of each move (`Puzzle.commit`,
+  called by `done` in `drag.ts`; a tile lifted and put back where it was is
+  no move), and the layout it leaves (`Puzzle.layout`) is what a board kept
+  is (below). A finished board is locked; a restart is the way back into it
+  (the win card, under Screens).
 - **A board left half-covered is kept** (`src/saved.ts`, `rep-tiles.boards`):
   its tiles, the time spent on it so far and the hints shown, saved at every
   move, as a hint is shown, and as the level is left — for another screen,
   another level, or the page hidden (`pagehide`, `visibilitychange`: an
   iPhone may close the app in the background). Opening the level again lays
-  it back (`Puzzle.resume`, nothing to undo), the time running on from where
+  it back (`Puzzle.resume`), the time running on from where
   it was left; on its tiling's page Play reads **Resume**, and a level in
   progress is washed green (`.in-play`, `--fits` — the ✓'s colour — in place
   of the stars' accent): its board's card and its tile set's card there
@@ -472,7 +469,7 @@ stars earned — its boards' and its tile sets' bests, summed (Piles and stars,
 above) — the card tinted by them; a tiling of one level (the P-pentomino) opens it, any
 other its **page** (`?tiling=<key>`, `src/view/picker.ts`): its boards on
 top, as their outlines in a grid, one dealt at random; under them its
-markings in one row scrolling sideways — Plain first and picked, then its
+markings in a grid under them — Plain first and picked, then its
 matching rules, then its colourings, then its jigsaws — each card the tray's tiles drawn big
 (`trayIcon`), joined edge to edge so they fill the card (`src/view/trayLayout.ts`,
 held to it by `tests/unit/trayLayout.test.ts`): each tile laid with a whole
@@ -488,9 +485,16 @@ The exact ring finds the joins; floats only test overlap and rank the
 arrangements, a beam search keeping those that fill the square round them
 best. Every level's tiles join into one group; one that could not would be
 split into as few joined groups as the search finds, drawn side by side
-(`groupsPlaced`). Three cards to a row, no wider
-than leaves a row of them on screen under the boards on a short desktop
-window, never the board's outline, which is up top, with the level's difficulty. A board's card shows its best stars
+(`groupsPlaced`). On a phone a board's card and a tile set's are **one
+size** — a square picture and one line under it, a board's stars, a tile
+set's difficulty and stars — in grids of one column count: four to a row
+held upright, the page scrolling under its pinned Play where there are more
+rows than fit (every tiling's fit a 390 × 844 screen without; a 375 × 667
+one scrolls the busiest), and held sideways (`orientation: landscape`, under
+500px tall) as many as the width takes, 88px or more, boards and tiles
+alike. The desktop's two columns keep their own: tile sets three to a row,
+wider than tall, the boards smaller. A tile set's card is never the board's
+outline, which is up top, with the level's difficulty. A board's card shows its best stars
 with any tiles, a tile set's its best on any board, each tinted by them; then
 Play, pinned to the foot of the screen, naming the level, with the picked
 board and tiles' own stars (on a desktop, beside its picture instead). A board the picked
@@ -511,16 +515,19 @@ build. Under Tilings on home, a quiet **More games ↗** links to the shared
 site, <https://tiling-games.pages.dev/> (on a desktop, a row at the head of
 the sidebar's foot, above How to play); it opens in a new tab, and like the
 update row it is left out of a packaged build — its address is the shared Vite
-preset's `__GAMES_SITE_URL__`, read from `site/site.json` and null there. The **?** in home's top-right corner (Hypersweeper's, too) opens **How
+preset's `__GAMES_SITE_URL__`, read from `site/site.json` and null there. The **?** in home's top-right corner (Hypersweeper's, too — drawn
+here, a hook and a dot centred in the ring, not a font's glyph, which sat
+low) opens **How
 to play** (`?help`, `src/view/help.ts`): the puzzle, laying, turning,
 flipping and taking off tiles with their keys, marks, the stars and the hint,
 zoom — drawn as the settings are; every line of it is a statement about the
 code, so it changes with the behaviour it describes. On a desktop both are in
 the sidebar's foot. `smoke.spec.ts` pins all three, and More games. Levels are picked in
 Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
-home and back, then (no clock: the time taken is on the win card) undo, redo, the hint, restart,
+home and back, then (no clock: the time taken is on the win card) the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
-the level's name, which board it is (`board 2/6`) and the coverage as a faint
+the level's difficulty as the three bars (`#level-band`; none in the
+tutorial), its name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest
 of the screen, the tray on a strip along the bottom (portrait) or the right
 (landscape). The win card has Play again and Next level (another level of
@@ -529,10 +536,15 @@ corner that closes it to look at the finished board (as do Escape and a tap
 outside it). The card shows once a finish: a finished board is **locked**
 (`drag.ts`) — no tile picked up, laid or taken off, the tray and its controls
 faded and inert (`svg.board.finished`), only zoom and pan — and the coverage
-label reads "Tiled ★★☆" in place of 100%, until an undo steps back off the
-finish (the card shows again if it is finished anew) or a restart. Each move between screens
-is a history entry, so the browser's Back works (a tile's move is not: undo
-is the header's).
+label reads "Tiled ★★☆" in place of 100%, until a restart. Each move between screens
+is a history entry, so the browser's Back works (a tile's move is not). The
+header's **Back goes one level up**, never back to wherever the player came
+from (`up` in `main.ts`): a level to its tiling's page, with it picked (a
+tiling of one level, which has no page, to its group's page), a tiling's
+page to its group's, a group's page to Tilings' groups (home on a desktop,
+whose sidebar lists them), and those to home — however the screen was
+reached, a link or a level dealt from home. `smoke.spec.ts` ("Back goes one
+level up…") pins it.
 
 **The first-run tutorial** (`?tutorial`, `src/tutorial.ts`) — four tiny
 boards, one lesson each: *Drag* (a 2×2 of squares, nothing to turn), *Turn*
@@ -568,8 +580,7 @@ heard while dragged and kept when let go. A click as a tile lands, pitched by
 its shape (Hypersweeper's cell-opening click, `strikeVoice`); a short centred
 beep as the tray turns, gliding up one way round and down the other
 (`glideVoice`; flip is silent); and the win flourish as the board is
-finished (`flourishVoices`) — again only after an undo and it is finished
-anew. Putting a lifted tile back is silent. **Stereo:** a click is
+finished (`flourishVoices`). Putting a lifted tile back is silent. **Stereo:** a click is
 panned to where the tile's middle landed across the screen
 (`SvgBoard.panAt`, -1 at the left edge to +1 at the right — the whole
 screen, as the speakers are, so on a desktop, the tray on the right, the
@@ -593,7 +604,7 @@ viewport behind `#game`, which isolates), lined up with the board's, and the boa
 then be zoomed out past the fit to see more of it: to `WON_MIN_ZOOM` (a
 third), held up where its tiles would be under `MIN_TILE_PX` across or the view
 would outrun how far the tiling is known; the tray keeps its fitted size.
-An undo off the finish takes them away and fits the board again. Where the tiling
+A restart takes them away and fits the board again. Where the tiling
 comes from is `src/extension.ts`, below. Three levels' boards have none
 (pentagon13 and pentagon15, whose windows sit in no wider window, and the
 right-angled fish, which grows once only and shows no period), and the round
@@ -1475,7 +1486,7 @@ quick way to see the win state.
   held by `tests/unit/tally.test.ts`.
 - `src/saved.ts` — the boards in play, kept per level (`saveBoard`,
   `loadBoard`, `forgetBoard`, `hasBoard`, `keptCount`; `fingerprint`), held by
-  `tests/unit/history.test.ts` with undo and redo.
+  `tests/unit/history.test.ts` with `Puzzle.commit`.
 - `src/tutorial.ts` — the first-run tutorial's four boards
   (`tutorialSteps`) and whether it has been seen (`tutorialSeen`,
   `markTutorialSeen`); the coach and the routing are `main.ts`'s
@@ -1491,9 +1502,9 @@ quick way to see the win state.
   there first (blind, it gets lost on V[3.4².6; 3.6.3.6]; on the
   Socolar–Taylor board it takes a quarter of a minute, so its test is left
   out), and `layOwn`, which lays every one of the board's own tiles that
-  still fits — what the dev seam's `fill()` does first. Undo and redo:
-  `commit` marks the end of a move (the layout it leaves is `layout`),
-  `undo`, `redo`, `canUndo`, `canRedo`; `resume` lays a kept board back.
+  still fits — what the dev seam's `fill()` does first. `commit` marks the end of a
+  move (the layout it leaves is `layout`, what a kept board is); `resume`
+  lays a kept board back.
 - `src/view/curve.ts` — drawing a tile: a `Loop` per piece (`loopsOf`),
   drawn as one path with a sub-path each (`loopsPath`), bounded by
   `loopsReach`; and round edges: `outlinePath` (a polygon as an
