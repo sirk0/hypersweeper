@@ -153,6 +153,11 @@ const CARD_RADIUS = 18;
 /** A control's radius, and the gap between controls. */
 const KNOB = 0.4;
 const KNOB_GAP = 0.15;
+/** How long a turn of the tray takes to show (`animateTurn`), and its easing:
+ * quick off the mark and settling, so the tiles never lag a second press. */
+const TURN_MS = 280;
+const TURN_EASING = "cubic-bezier(0.2, 0.9, 0.3, 1)";
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 /** A pile's count badge radius, in tray units — but never under `PILE_PX`
  * on screen, where a wide board (the kissing square chain, 16 units) puts a
  * unit at a couple of dozen pixels. */
@@ -992,6 +997,9 @@ export class SvgBoard {
       );
       const outline = this.outline(kind, this.turn, this.flip);
       const at = ([x, y]: XY): XY => [x + cx, y + cy];
+      // The tile and its marks as one group, which a turn swings round the
+      // tile's centre (`animateTurn`).
+      const spin = el("g", { class: "tray-spin", "data-cx": cx, "data-cy": cy }, this.shelf);
       el(
         "path",
         {
@@ -999,9 +1007,9 @@ export class SvgBoard {
           class: `tile ${this.puzzle.level.colours[kind]} in-tray`,
           "data-tray": kind,
         },
-        this.shelf,
+        spin,
       );
-      decor(outline, this.shelf, at, markUnit(this.puzzle.level), this.puzzle.level.colours[kind]!);
+      decor(outline, spin, at, markUnit(this.puzzle.level), this.puzzle.level.colours[kind]!);
     });
     // The piles' counts, over every tile, so a neighbour never hides one: how
     // many more the board was cut with. Past zero it shows how many extra are
@@ -1231,6 +1239,58 @@ export class SvgBoard {
     if (!at || rect.width <= 0) return 0;
     const pan = ((at[0] - rect.left) / rect.width) * 2 - 1;
     return Number.isFinite(pan) ? Math.max(-1, Math.min(1, pan)) : 0;
+  }
+
+  /**
+   * Show a turn of the tray happen (`dir` 1 anticlockwise, -1 clockwise),
+   * after the `draw()` that turned it: every tray tile swings from where it
+   * was into where it now is, about its own centre, and the control pressed
+   * pops and swings its arrow the same way — so a turn reads as one, not a
+   * jump (and in the store videos, `scripts/make-store-videos.mts`). Nothing
+   * moves where the device asks for reduced motion.
+   */
+  animateTurn(dir: 1 | -1): void {
+    if (typeof matchMedia === "function" && matchMedia(REDUCED_MOTION).matches) return;
+    const degrees = (360 * this.puzzle.level.turn) / this.puzzle.level.ring.n;
+    // The shelf and the controls are drawn y up (their transforms flip y), so
+    // a rotate here is anticlockwise for a positive angle, as ζᵏ is: the
+    // tile starts held as it was, `dir` steps back.
+    const from = -dir * degrees;
+    const about = (x: number, y: number, inner: string): string =>
+      `translate(${x}px, ${y}px) ${inner} translate(${-x}px, ${-y}px)`;
+    for (const spin of this.shelf.querySelectorAll<SVGGElement>(".tray-spin")) {
+      const x = Number(spin.dataset["cx"]);
+      const y = Number(spin.dataset["cy"]);
+      spin.animate(
+        [
+          { transform: about(x, y, `rotate(${from}deg)`) },
+          { transform: about(x, y, "rotate(0deg)") },
+        ],
+        { duration: TURN_MS, easing: TURN_EASING },
+      );
+    }
+    const control = dir === 1 ? "rotate-ccw" : "rotate-cw";
+    const at = this.controlsAt.get(control);
+    const knob = this.knobs.querySelector<SVGGElement>(`.knob-${control}`);
+    if (!at || !knob) return;
+    const [kx, ky] = at;
+    knob.animate(
+      [
+        { transform: about(kx, ky, "scale(0.84)") },
+        { transform: about(kx, ky, "scale(1.06)"), offset: 0.55 },
+        { transform: about(kx, ky, "scale(1)") },
+      ],
+      { duration: TURN_MS, easing: "ease-out" },
+    );
+    for (const part of knob.querySelectorAll<SVGElement>(".knob-arc, .knob-head"))
+      part.animate(
+        [
+          { transform: about(kx, ky, `rotate(${from}deg)`) },
+          { transform: about(kx, ky, "rotate(0deg)") },
+        ],
+        { duration: TURN_MS, easing: TURN_EASING },
+      );
+    knob.querySelector(".knob-face")?.classList.add("pressed");
   }
 
   /** A point in board units on the screen (client pixels), or null where the

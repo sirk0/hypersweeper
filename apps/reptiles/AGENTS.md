@@ -34,7 +34,13 @@ some back off.
   number centred, its ° to the right (`turnGlyph`) — clockwise first (on top
   in landscape, on the left in portrait), and both are left out where nothing
   ever needs turning. No control has a label under it: the step is inside
-  the arrows, and a tooltip names each one and its key.
+  the arrows, and a tooltip names each one and its key. A turn shows itself
+  (`SvgBoard.animateTurn`, called from `turn` in `drag.ts`, a key's too):
+  every tray tile swings from its old way round into the new about its own
+  middle (`.tray-spin`, the tile and its marks), and the control pressed pops,
+  flashes the accent and swings its arrow the same way — about a quarter of a
+  second, none where the device asks for reduced motion (`smoke.spec.ts`, "a
+  turn swings the tray tiles round…").
 - Where a board uses a tile both ways round (the kisrhombille's triangles,
   five of the 2-isohedral levels' tiles, the hat and the turtle),
   a flip control (or F) mirrors every tray tile and the one in hand across
@@ -966,13 +972,19 @@ npm run colourings   # list each painted tiling's lined and coloured levels into
 npm run levels       # build every first board and list them into src/levelIndex.json (seconds)
 npm run difficulty   # re-measure every board into src/difficulty.json (half an hour on four cores, a process per core; ONLY=missing measures only boards it does not list yet)
 npm run icons        # redraw public/favicon.svg, the PNG icons and packaging/icon.png
+npm run store-screenshots # the App Store screenshots (ios/README.md, "Screenshots")
+npm run store-videos # the App Store app previews and a 1080p promo of Tile(1,1) played through (ios/README.md; needs ffmpeg)
 ```
 
 or from the root: `make reptiles-install`, `make reptiles-run`, `make reptiles-test`,
 `make reptiles-e2e`.
 `?level=<key>` opens a level directly. In dev builds `window.__reptiles.fill()`
 finishes the board (the board's own tiles that still fit, then a search) — the
-quick way to see the win state.
+quick way to see the win state. The same seam serves the store scripts:
+`lay(n)` (part of a board, for the screenshots), and for the videos `plan()`
+(the board played through, `src/demoPlan.ts`), `layPlan(n)` (its first `n`
+moves at once), `clientAt(point)` and `trayAt(kind)` (where a board point and a
+tray tile's middle are on screen).
 
 ## Layout
 
@@ -1614,6 +1626,12 @@ quick way to see the win state.
   tooltip.
 - `src/input/drag.ts` — pointer drag and drop, rotate and flip, the ✕
   remove mode, and pinch, pan and wheel zoom.
+- `src/demoPlan.ts` — a board played through move by move, as a person
+  might: the board's own tiles, each where a drop snaps it (a placement at an
+  open corner), with the flip and rotate presses that hold it so, the one
+  needing fewest presses near the last tile taken next, so the board fills as
+  a sweep. What `npm run store-videos` (`scripts/make-store-videos.mts`) plays;
+  `tests/unit/demoPlan.test.ts` holds every move to one a drag can make.
 
 The geometry is the `@tiling/geometry` workspace package (`packages/geometry`),
 the shared data the `@tiling/data` one (`data/`) and the sound `@tiling/sound`

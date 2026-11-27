@@ -135,6 +135,36 @@ the header clears the Dynamic Island. `DEVICES=` and `SHOTS=` render a subset.
 | `iphone-6.3` | iPhone 6.1" / 6.3" display | 1206 × 2622 |
 | `ipad` | iPad 13" display | 2064 × 2752 |
 
+### App previews and promo videos
+
+`npm run store-videos` in `apps/reptiles/` records Tile(1,1) (`?level=tile11`)
+being played to the finish — rotate presses, drags, the confetti and the win
+panel — into `app-store-previews/reptiles/<device>/tile11.mp4` (git-ignored),
+in about three minutes for all three:
+
+| Folder | For | Pixels |
+|---|---|---|
+| `iphone-6.9` | the iPhone 6.9" / 6.5" app preview | 886 × 1920 |
+| `ipad` | the iPad 13" app preview | 1200 × 1600 |
+| `desktop` | posts (Reddit and the like), with a drawn mouse pointer | 1920 × 1080 |
+
+Each is H.264 (High, yuv420p) at 30 fps with a 48 kHz stereo AAC track of the
+game's own sounds: what App Store Connect asks of an app preview. Without
+`FULL=1` the clip is the board's last part, laid off-camera up to where the
+rest fits in 15–30 s, the preview's limits; `FULL=1` plays it from empty (past
+30 s: for posts only). `DEVICES=`, `LEVEL=<key>`, `SOUND=0` (a silent track) and
+`SCHEME=dark` change the rest. It needs `ffmpeg` on the `PATH` (`brew install
+ffmpeg`).
+
+It plays the board as `src/demoPlan.ts` lays it (`plan()` and `layPlan(n)` on
+the dev seam), with real input — touches on the iPhone and iPad, the mouse on
+the desktop — and renders every frame rather than filming: the page runs on
+Playwright's paused fake clock, stepped a thirtieth of a second a frame, every
+running animation set to that time, and each frame screenshot at the output's
+size. The sound is rendered the same way, through an `OfflineAudioContext` in
+the place of `AudioContext`. So a clip comes out smooth however slow the
+machine is, and the same every run.
+
 ## Releasing
 
 The first time:
