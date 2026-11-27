@@ -584,6 +584,18 @@ On a `macos-26` GitHub-hosted runner, with the newest stable Xcode, it:
    profiles are stored anywhere. The team is read from the project's
    `DEVELOPMENT_TEAM`.
 
+   On a fresh runner the keychain is empty, so every archive has Xcode create
+   a new Apple Development certificate, named "Created via API", whose private
+   key dies with the runner. Apple caps how many a team may hold, and once
+   they pile up the archive fails with *Your account has reached the maximum
+   number of certificates*. So before archiving, the job revokes the
+   development certificates "Created via API" that earlier runs left
+   (`scripts/revoke-ci-certs.mjs`, with the same key). It never touches a
+   person's own certificate or any distribution certificate, and revoking a
+   development certificate affects no build already uploaded. To see what it
+   would revoke without revoking anything, run it with `--dry-run` and the
+   key in `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH`.
+
 The upload job is titled with the game and the version it uploads
 (`Upload hypersweeper 0.2.133 (both)`),
 read from `apps/hypersweeper/package.json` by a few-second job before it: a run's own title is
