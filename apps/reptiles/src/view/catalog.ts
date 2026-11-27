@@ -2,10 +2,11 @@
 // symmetry — put together in five groups (view/groups.ts). On a phone,
 // Tilings is the groups' index (`renderGroupIndex`), a card each, and a
 // group's page is its families, each a grid of small cards; on a desktop the
-// sidebar lists the groups, and a group's page is the same grids, wider. A card shows what a player starts with (the first board's outline,
+// sidebar lists the groups, and a group's page is the same grids of small
+// cards, as many to a row as fit. A card shows what a player starts with (the first board's outline,
 // the tray's tiles inside it at their true sizes — view/cardArt.ts), the tiling's name, its first board's difficulty as
-// Hypersweeper's three bars, how many boards and tile sets it has (plain,
-// matching rules, colourings, jigsaws), and the stars earned of them — a star
+// Hypersweeper's three bars (a desktop's only), how many boards and tile sets it has (plain,
+// matching rules, colourings, jigsaws — in the DOM, not shown), and the stars earned of them — a star
 // row of each board's best and each tile set's, summed (tally.ts) — the card
 // tinted the more of them are earned. A tiling of more than one level opens its own
 // page (view/picker.ts), where a board and its tiles are picked.
