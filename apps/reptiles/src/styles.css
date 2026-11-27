@@ -1556,8 +1556,8 @@ button:disabled {
    Tilings is the groups' index (view/catalog.ts, `renderGroupIndex`), a card
    each; a group's page is its families, each a grid of small cards that
    wraps — the picture, the name and the stars, no more — so the page scrolls
-   one way only. The desktop block at the foot gives the cards back their
-   size, their bars and their counts. */
+   one way only. The desktop block at the foot keeps them small, a little
+   wider, and gives them back their difficulty bars. */
 .group-list {
   display: flex;
   flex-direction: column;
@@ -2618,47 +2618,30 @@ a.settings-row:active {
     font-size: 1.15rem;
   }
 
+  /* The phone's small cards, a little wider, as many to a row as fit: the
+     picture, the name (two lines at most, every card's room for two, so a
+     row's stars line up) and one line under it — the difficulty bars and the
+     stars. The boards and tile sets counts stay hidden, as on a phone. */
   #catalog-list .family-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
-    gap: 16px;
-    overflow: visible;
-    padding: 4px 0 14px;
-  }
-
-  #catalog-list .card {
-    width: auto;
-    gap: 6px;
-    padding: 14px 12px 10px;
-    border-radius: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    padding: 2px 0 10px;
   }
 
   #catalog-list .card-name {
-    display: flex;
-    font-size: inherit;
+    font-size: 0.78rem;
     min-height: 2.5em;
-    overflow: visible;
-  }
-
-  #catalog-list .card-levels {
-    display: flex;
   }
 
   #catalog-list .card-meta .bars {
     display: block;
+    width: 16px;
+    height: 16px;
   }
 
   #catalog-list .card-meta {
     justify-content: space-between;
-    margin-top: 0;
-  }
-
-  #catalog-list .card-meta .star {
-    font-size: 0.8rem;
-  }
-
-  #catalog-list .card-stars {
-    font-size: 0.75rem;
+    padding: 0 2px;
   }
 
   #catalog-list .card-art {

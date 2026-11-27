@@ -445,10 +445,11 @@ lists (`MENU_GROUPS`, below), a card each (`renderGroupIndex` in
 many tilings it has and the stars earned of them. A group's card opens its
 page (`?group=<key>`, as on a desktop; Back returns to the groups): its
 families, each a heading over a grid of tiling cards that wraps, four to a
-row on a phone's width, so the page scrolls one way only. A phone's card is
-small — the picture, the name and the stars; the difficulty bars and the
-boards and tile sets counts are a desktop card's (the stylesheet hides them
-below the desktop's width). A card is one picture of the first board's outline with the tray's tiles
+row on a phone's width, so the page scrolls one way only. A card is small —
+the picture, the name and the stars; on a desktop or an iPad it is the same
+small card, 100px or more, as many to a row as fit, with the difficulty bars
+beside the stars (the stylesheet hides the bars below the desktop's width).
+The boards and tile sets counts are in the card but shown nowhere. A card is one picture of the first board's outline with the tray's tiles
 inside it, never crossing it (`src/view/cardArt.ts`, held to it by
 `tests/unit/cardArt.test.ts`). A rep-tile's tile is the outline made small
 (turned at any angle — the right isosceles triangle and the right-angled
