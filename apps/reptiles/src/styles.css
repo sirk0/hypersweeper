@@ -1246,6 +1246,17 @@ button:disabled {
   display: none;
 }
 
+/* A win's confetti (view/confetti.ts): over the whole screen, the win card
+   too, and never in the way of a tap. */
+.confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
 .won-card {
   position: relative;
   background: var(--card);
@@ -2295,6 +2306,113 @@ a.settings-row:active {
 
 .tray-scroll-thumb {
   fill: var(--muted);
+}
+
+/* -- a phone held sideways -------------------------------------------------
+   Under 501px tall — `SIDEWAYS_QUERY` in view/groups.ts holds too, and the
+   two must match; never the desktop, which starts at 501px. Home's four
+   picks go two to a row (Easy and Medium, then Hard and Tilings) and
+   Tilings' five groups two to a row, so neither needs to scroll; a level's
+   name moves into its header (main.ts, `placeName`), as on a desktop, and the
+   board takes the line it had over it. */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --label-room: 0px;
+  }
+
+  .home {
+    overflow-y: auto;
+    padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
+    gap: 2px;
+  }
+
+  .home-title {
+    font-size: 2.25rem;
+  }
+
+  .home-sub {
+    margin: 0 0 10px;
+  }
+
+  .home-picks {
+    flex: 1 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: center;
+    gap: 10px;
+    width: min(640px, 100%);
+  }
+
+  .home-bands,
+  .home-more {
+    display: contents;
+  }
+
+  .home-pick {
+    padding: 12px 14px;
+  }
+
+  .home-games {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .group-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+    padding: 0 16px 4px;
+  }
+
+  #catalog .catalog-list {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .group-card {
+    gap: 10px;
+    padding: 8px 12px 8px 8px;
+  }
+
+  .group-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .group-name {
+    font-size: 1rem;
+  }
+
+  .group-hint {
+    -webkit-line-clamp: 1;
+  }
+
+  /* A level's header keeps its buttons' size, but not the room under them:
+     the board's own margin is gap enough. */
+  #game .hud {
+    padding-bottom: 2px;
+  }
+
+  /* The level's name in the header, between Back and the hint, as on a
+     desktop — cut short with an ellipsis where it runs long. */
+  #game .hud .board-name {
+    position: static;
+    grid-column: 2;
+    padding: 0 8px;
+    color: var(--ink);
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    opacity: 1;
+  }
+
+  #game .hud .board-name .level {
+    font-weight: 600;
+  }
+
+  #game .hud .board-name .board-of,
+  #game .hud .board-name .count,
+  #game .hud .board-name .thinking {
+    color: var(--muted);
+  }
 }
 
 /* -- the desktop: a sidebar and a pane --------------------------------------

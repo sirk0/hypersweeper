@@ -82,6 +82,12 @@ export function menuGroup(key: string | null | undefined): MenuGroup | undefined
 export const WIDE_QUERY =
   "(min-width: 900px) and (min-height: 501px), (min-width: 720px) and (min-height: 800px)";
 
+/** A phone held sideways: under 501px tall, so never the desktop. Home's
+ * picks and Tilings' groups go two to a row, and a level's name moves into
+ * the header, as on a desktop, so the board takes its line too.
+ * `styles.css` repeats it; the two must match. */
+export const SIDEWAYS_QUERY = "(orientation: landscape) and (max-height: 500px)";
+
 /** Where a tiling's page is two columns, the level picked beside the picks:
  * a desktop of 1100px and more. Narrower, the pane is too narrow for both,
  * and the page is the phone's one column (styles.css says the same). */

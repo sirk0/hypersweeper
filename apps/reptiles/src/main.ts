@@ -28,9 +28,11 @@ import {
   menuGroup,
   MENU_GROUPS,
   TWO_COLUMNS,
+  SIDEWAYS_QUERY,
   WIDE_QUERY,
   type MenuGroup,
 } from "./view/groups";
+import { throwConfetti } from "./view/confetti";
 import { renderHelp, withKeys } from "./view/help";
 import { markTutorialSeen, tutorialSeen, tutorialSteps } from "./tutorial";
 import { renderHome } from "./view/home";
@@ -83,6 +85,7 @@ fillGlyphs(document);
  * columns. Every screen renders at either width, and crossing it re-renders
  * the one on show (below). */
 const wide = matchMedia(WIDE_QUERY);
+const sideways = matchMedia(SIDEWAYS_QUERY);
 const twoColumns = matchMedia(TWO_COLUMNS);
 
 // -- the sidebar ----------------------------------------------------------------
@@ -431,7 +434,15 @@ function changed(): void {
   if (puzzle.won && !s.wasWon) {
     playSound({ kind: "win", pan: s.control.lastPan() });
     haptic("win");
-    if (s.tutorial === null) noteFinishForReview();
+    if (s.tutorial === null) {
+      noteFinishForReview();
+      // Hypersweeper's confetti, from the last tile laid (view/confetti.ts)
+      const room = byId("stage").getBoundingClientRect();
+      throwConfetti(
+        s.control.lastAt() ?? [room.left + room.width / 2, room.top + room.height / 2],
+        room,
+      );
+    }
   }
   s.wasWon = puzzle.won;
   won.hidden = !puzzle.won || s.dismissed || s.tutorial !== null;
@@ -741,13 +752,13 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("popstate", route);
 
-/** The level's name: on a phone a faint label on the page behind the board;
- * on a desktop the header's title, between its two clusters of buttons — the
- * one element, moved. */
+/** The level's name: on a phone held upright a faint label on the page
+ * behind the board; on a desktop, or a phone held sideways, the header's
+ * title, between its two clusters of buttons — the one element, moved. */
 function placeName(): void {
   const name = document.querySelector<HTMLElement>(".board-name")!;
   const header = document.querySelector<HTMLElement>("#game .hud")!;
-  if (wide.matches) {
+  if (wide.matches || sideways.matches) {
     if (name.parentElement !== header)
       header.insertBefore(name, header.querySelector(".hud-right"));
   } else if (name.parentElement !== byId("stage")) byId("stage").prepend(name);
@@ -763,6 +774,14 @@ function crossed(): void {
   } else route();
 }
 wide.addEventListener("change", crossed);
+// Turning a phone sideways or back moves the name the same way; any other
+// screen lays itself out by the stylesheet alone.
+sideways.addEventListener("change", () => {
+  if (session && !byId("game").hidden) {
+    placeName();
+    session.board.layout();
+  }
+});
 twoColumns.addEventListener("change", () => {
   if (!byId("tiling").hidden) route();
 });

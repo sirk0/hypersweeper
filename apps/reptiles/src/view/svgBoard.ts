@@ -1198,12 +1198,20 @@ export class SvgBoard {
   /** Where a board point is across the screen, -1 (the left edge) to +1
    * (the right): the stereo pan of a sound made there (src/sound.ts). */
   panAt(point: XY): number {
-    const m = this.still.getScreenCTM();
+    const at = this.clientAt(point);
     const rect = this.svg.getBoundingClientRect();
-    if (!m || rect.width <= 0) return 0;
-    const x = new DOMPoint(point[0], point[1]).matrixTransform(m).x;
-    const pan = ((x - rect.left) / rect.width) * 2 - 1;
+    if (!at || rect.width <= 0) return 0;
+    const pan = ((at[0] - rect.left) / rect.width) * 2 - 1;
     return Number.isFinite(pan) ? Math.max(-1, Math.min(1, pan)) : 0;
+  }
+
+  /** A point in board units on the screen (client pixels), or null where the
+   * board is not laid out. */
+  clientAt(point: XY): XY | null {
+    const m = this.still.getScreenCTM();
+    if (!m) return null;
+    const { x, y } = new DOMPoint(point[0], point[1]).matrixTransform(m);
+    return Number.isFinite(x) && Number.isFinite(y) ? [x, y] : null;
   }
 
   /** A client (screen) point in board units. */

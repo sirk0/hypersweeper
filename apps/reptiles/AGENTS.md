@@ -425,8 +425,11 @@ some back off.
   unless more are 2% better (`shelfIn`, `fit` in `svgBoard.ts`). Zoomed in,
   a shelf longer than the strip scrolls, with a scroll bar between the
   shelf and the controls: drag its thumb or press its track, drag the
-  strip's bare background, or wheel over it. In landscape the level's name
-  is centred over the board's room, clear of the strip (`--tray-side`). The
+  strip's bare background, or wheel over it. On a phone held sideways
+  (`SIDEWAYS_QUERY`, under 501px tall) the level's name is in the header,
+  between Back and the hint, as on a desktop, and the board takes the line
+  it had over it; a wider landscape screen that is not the desktop keeps it
+  centred over the board's room, clear of the strip (`--tray-side`). The
   four-kind levels, [3.4.6.4; 4.6.12] and the hat's metatiles, and
   Ammann–Beenker's five coloured tiles, are the ones to check a tray change
   on — on a small phone (375 × 667), a large one, and in landscape.
@@ -436,11 +439,16 @@ grain, Space Grotesk, and Caprasimo for the title — the two fonts bundled in
 `public/fonts`). Home (no query): the title on top; Easy, Medium and Hard,
 the main buttons, in the middle, each dealing a random level of that
 difficulty; Tilings at the foot — all four full-width rows, one under
-another; the difficulties in the accent fill, Tilings in the light one.
+another; the difficulties in the accent fill, Tilings in the light one. On a
+phone held sideways (`SIDEWAYS_QUERY` in `src/view/groups.ts`, under 501px
+tall) the four go two to a row — Easy and Medium, then Hard and Tilings —
+so all of them fit without a scroll (`smoke.spec.ts`, "a phone held
+sideways…").
 Tilings opens the catalog (`?tilings`; old
 `?catalog` links still work, and so do the old Figures screen's `?figures`
 and `?figure=<key>`): on a phone, the five groups the desktop's sidebar
-lists (`MENU_GROUPS`, below), a card each (`renderGroupIndex` in
+lists (`MENU_GROUPS`, below), a card each, two to a row held sideways so
+all five fit (`renderGroupIndex` in
 `src/view/catalog.ts`) — its icon tiling's tray, its name, its hint, how
 many tilings it has and the stars earned of them. A group's card opens its
 page (`?group=<key>`, as on a desktop; Back returns to the groups): its
@@ -532,7 +540,11 @@ the level's difficulty as the three bars (`#level-band`; none in the
 tutorial), its name, which board it is (`board 2/6`) and the coverage as a faint
 label on the page behind the board, which fills the rest
 of the screen, the tray on a strip along the bottom (portrait) or the right
-(landscape). The win card has Play again and Next level (another level of
+(landscape). A finish throws Hypersweeper's confetti (`src/view/confetti.ts`:
+its colours, its two fountains low on either side and a burst from the last
+tile laid, its speeds and lives, on a 2D canvas over the whole screen that
+takes no taps and goes once the last strip has fallen) — never in the
+tutorial, nor where the device asks for reduced motion. The win card has Play again and Next level (another level of
 the same difficulty, dealt at random as the die deals), and an ✕ in its
 corner that closes it to look at the finished board (as do Escape and a tap
 outside it). The card shows once a finish: a finished board is **locked**
