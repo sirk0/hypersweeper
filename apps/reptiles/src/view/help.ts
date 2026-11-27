@@ -93,7 +93,7 @@ const SECTIONS: Section[] = [
       ],
       [
         "Time",
-        "The win card tells the time from the first tile down to the last, and " +
+        "Finished, the tray shows the time from the first tile down to the last, and " +
           "your best on that board. The best shows on Play, on its tiling's page.",
       ],
     ],

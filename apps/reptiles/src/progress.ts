@@ -79,7 +79,7 @@ function saveTimes(): void {
   }
 }
 
-/** A time as the win card and a tiling's page show it: minutes and seconds,
+/** A time as the win panel and a tiling's page show it: minutes and seconds,
  * `1:05`. */
 export function formatTime(ms: number): string {
   const seconds = Math.floor(ms / 1000);

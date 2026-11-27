@@ -343,10 +343,10 @@ some back off.
   (`Puzzle.pilesEmpty`) — so a hinted finish with every pile at 0 is two, as
   is an unhinted one with a pile off. No
   clock shows while playing: the time from the first tile down to the last
-  is told only on the win card, with how many hints were shown (a press
+  is told only on the win panel, with how many hints were shown (a press
   again while a hint is on show is not another) — there is no time limit.
   The fastest finish of each level, any number of stars, is kept
-  (`recordTime`, `rep-tiles.times`): the win card says "— a new best!" when
+  (`recordTime`, `rep-tiles.times`): the win panel says "· new best!" when
   one beats it, else "· best m:ss" (a first finish is only its time), and a
   tiling's page shows it on Play ("best 0:42").
 - **No undo or redo.** A move — a tile laid, moved or taken off — is taken
@@ -355,7 +355,7 @@ some back off.
   called by `done` in `drag.ts`; a tile lifted and put back where it was is
   no move), and the layout it leaves (`Puzzle.layout`) is what a board kept
   is (below). A finished board is locked; a restart is the way back into it
-  (the win card, under Screens).
+  (the win panel, under Screens).
 - **A board left half-covered is kept** (`src/saved.ts`, `rep-tiles.boards`):
   its tiles, the time spent on it so far and the hints shown, saved at every
   move, as a hint is shown, and as the level is left — for another screen,
@@ -430,6 +430,13 @@ some back off.
   between Back and the hint, as on a desktop, and the board takes the line
   it had over it; a wider landscape screen that is not the desktop keeps it
   centred over the board's room, clear of the strip (`--tray-side`). The
+  card is never smaller than the **win panel** (Screens, below): measured
+  as the level opens (`PanelSize`), its room is kept from the start, the
+  tray centred across a card it does not fill — so a finish moves and
+  resizes nothing. The panel is about as tall as the plainest tray (the
+  squares' one tile and ✕), so most boards are no smaller for it; one whose
+  tray is shorter gives up a little (the running bond on a 375 × 667 phone,
+  2%). The tutorial keeps no such room. The
   four-kind levels, [3.4.6.4; 4.6.12] and the hat's metatiles, and
   Ammann–Beenker's five coloured tiles, are the ones to check a tray change
   on — on a small phone (375 × 667), a large one, and in landscape.
@@ -534,7 +541,7 @@ zoom — drawn as the settings are; every line of it is a statement about the
 code, so it changes with the behaviour it describes. On a desktop both are in
 the sidebar's foot. `smoke.spec.ts` pins all three, and More games. Levels are picked in
 Tilings. A level is `?level=<key>`: one header row, Hypersweeper's —
-home and back, then (no clock: the time taken is on the win card) the hint, restart,
+home and back, then (no clock: the time taken is on the win panel) the hint, restart,
 and a die that deals another board of the same difficulty as this one — then
 the level's difficulty as the three bars (`#level-band`; none in the
 tutorial), its name, which board it is (`board 2/6`) and the coverage as a faint
@@ -544,13 +551,20 @@ of the screen, the tray on a strip along the bottom (portrait) or the right
 its colours, its two fountains low on either side and a burst from the last
 tile laid, its speeds and lives, on a 2D canvas over the whole screen that
 takes no taps and goes once the last strip has fallen) — never in the
-tutorial, nor where the device asks for reduced motion. The win card has Play again and Next level (another level of
-the same difficulty, dealt at random as the die deals), and an ✕ in its
-corner that closes it to look at the finished board (as do Escape and a tap
-outside it). The card shows once a finish: a finished board is **locked**
-(`drag.ts`) — no tile picked up, laid or taken off, the tray and its controls
-faded and inert (`svg.board.finished`), only zoom and pan — and the coverage
-label reads "Tiled ★★☆" in place of 100%, until a restart. Each move between screens
+tutorial, nor where the device asks for reduced motion. The finish is told
+by the **win panel** (`src/view/winPanel.ts`, `#won`), never a popup: it
+takes the tray card's place, the shelf, scroll bar and controls going from
+it (`svg.board.showing-result`), laid over the card where `svgBoard.ts` says
+it is (`--card-x`, `-y`, `-w`, `-h` on `#stage`) — "Tiled!" and the time on
+one line, the three stars each over a word on what earned or lost it
+("Covered", "No hints" or "2 hints", "Piles at 0" or "1 pile off", the whole
+sentence its tooltip), then Play again and Next level (another level of the
+same difficulty, dealt at random as the die deals). It covers nothing, so
+nothing closes it: no ✕, Escape or tap outside. A finished board is
+**locked** (`drag.ts`) — no tile picked up, laid or taken off, only zoom and
+pan, zoomed in or out the card keeping its size — and the coverage label
+reads "Tiled ★★☆" in place of 100%, until a restart or Play again. In the
+tutorial there is no panel: the tray stays, faded (`svg.board.finished`). Each move between screens
 is a history entry, so the browser's Back works (a tile's move is not). The
 header's **Back goes one level up**, never back to wherever the player came
 from (`up` in `main.ts`): a level to its tiling's page, with it picked (a
@@ -623,7 +637,7 @@ comes from is `src/extension.ts`, below. Three levels' boards have none
 (pentagon13 and pentagon15, whose windows sit in no wider window, and the
 right-angled fish, which grows once only and shows no period), and the round
 Spectre's outlines are its corners joined straight. `smoke.spec.ts` ("the win
-card's Exit…" with it off, "with its setting on…") pins it.
+panel, in the tray card…" with it off, "with its setting on…") pins it.
 
 **The desktop** — from 900px wide and 501px tall, or a tablet held upright
 (720 × 800): Hypersweeper's own query (`WIDE_QUERY` in
@@ -878,7 +892,7 @@ the desktop's in `tests/e2e/desktop.spec.ts`,
 a tiling's page — a board, its tiles, Play — the card pictures, settings, the header, the hint (followed to a two-star finish), rotating both ways, wheel and pinch zoom, the tray at
 board scale, every tile on screen at first, its rows and, zoomed in, its scroll bar, the family names, the Spectre's round
 edges, the hat's family's flip and 60° turn, a tile of several pieces moving as one, a coloured board's bands and lines, Ammann–Beenker's rule read off its patch and its colouring, a won board and
-its ✕) and every level — every marking on every board — and tiling page opening with no error
+its win panel, which moves nothing) and every level — every marking on every board — and tiling page opening with no error
 (`tests/e2e/every-level.spec.ts`). It packages as an offline desktop app through the
 shared shell — `make desktop-run GAME=reptiles`, `make mac-app GAME=reptiles`
 — from `packaging.json` (see `shells/desktop/README.md`); its data lives in
@@ -1579,7 +1593,11 @@ quick way to see the win state.
   pinned strip the shelf (at the world's scale, its slots in one to three
   rows, `shelfIn`, all on screen at zoom 1, `fit`; clipped to its room and,
   zoomed in, scrolled, `scrollTray`), its scroll bar (`scrollBarBy`,
-  `scrollBarTo`) and the controls' row (a fixed size).
+  `scrollBarTo`) and the controls' row (a fixed size); the card made room
+  for the win panel from the start (`PanelSize`, from `winPanel.ts`).
+- `src/view/winPanel.ts` — the win panel's words (`timeLine`, `starLines`,
+  `fillPanel`) and its size, measured on a hidden copy holding the widest it
+  can say (`panelSize`); `tests/unit/winPanel.test.ts` holds the words.
 - `src/view/home.ts`, `src/view/catalog.ts`, `src/view/cardArt.ts`,
   `src/view/picker.ts`, `src/view/settings.ts`, `src/view/help.ts` — the first screen, Tilings
   (the catalog) and its cards' pictures, a tiling's page (a board, then its

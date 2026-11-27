@@ -140,9 +140,9 @@ async function shoot(browser: Browser, device: Device, scene: Scene, out: string
     await page.waitForSelector("svg.board path.region");
     if (scene.laid >= 1) {
       await page.evaluate(() => (window as any).__reptiles.fill());
-      // The win card says how long it took, which here is no time at all:
-      // close it, and show the finished board.
-      await page.keyboard.press("Escape");
+      // The win panel, in the tray card, says how long it took, which here
+      // is no time at all: leave that line out.
+      await page.addStyleTag({ content: "#won-time { visibility: hidden; }" });
     } else {
       const total = await page.evaluate(
         () => (window as any).__reptiles.puzzle.level.cells.length as number,
