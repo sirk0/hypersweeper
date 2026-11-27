@@ -19,7 +19,9 @@ name: App Store upload
 # handed to a job that names the environment, and GitHub withholds secrets from
 # fork pull requests anyway, so nothing here reaches a PR or a fork. Signing is
 # Xcode's automatic cloud signing (-allowProvisioningUpdates with that key):
-# there are no certificates or profiles in the secrets.
+# there are no certificates or profiles in the secrets. Each archive makes a
+# throwaway Apple Development certificate, so the job first revokes the ones
+# earlier runs left (scripts/revoke-ci-certs.mjs) before Apple's cap is hit.
 #
 # Hypersweeper's iOS build carries the App Clip (apps/hypersweeper/ios/App/AppClip): an
 # App Clip is not uploaded on its own, App Store Connect reads it out of its
@@ -237,6 +239,21 @@ jobs:
             echo "path=$path"
             echo "dir=$dir"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Revoke development certificates left by earlier runs
+        # Cloud signing on this fresh runner, with an empty keychain, creates a
+        # new Apple Development certificate on every archive, and the runner
+        # throws its private key away. Left alone they pile up until Apple's
+        # cap refuses the next one ("Your account has reached the maximum
+        # number of certificates"). Only development certificates "Created via
+        # API" go; a person's own and every distribution certificate stay. The
+        # `concurrency` group above keeps another upload from losing its own
+        # mid-run. See scripts/lib/asc-certs.mjs.
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: ${{ steps.key.outputs.path }}
+        run: node scripts/revoke-ci-certs.mjs
 
       - name: Archive and upload
         env:
