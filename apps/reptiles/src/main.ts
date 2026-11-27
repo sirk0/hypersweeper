@@ -13,7 +13,6 @@ import { haptic, setHapticsEnabled } from "./haptics";
 import {
   allStars,
   bestTimeFor,
-  formatTime,
   onStarsMerged,
   recordStars,
   recordTime,
@@ -40,6 +39,7 @@ import { barsIcon, fillGlyphs, trayIcon, vertexFigure } from "./view/icons";
 import { dropQueued, renderPicker } from "./view/picker";
 import { renderSettings } from "./view/settings";
 import { SvgBoard } from "./view/svgBoard";
+import { fillPanel, panelSize } from "./view/winPanel";
 import { unlockAudio } from "@tiling/sound";
 import { applySound, playSound } from "./sound";
 
@@ -48,6 +48,9 @@ const byId = <T extends HTMLElement>(id: string): T => document.getElementById(i
 const host = byId("board-host");
 const count = byId("count");
 const won = byId("won");
+/** The win panel's size, measured on a hidden copy of it: the room the tray
+ * card keeps for it from the start, so a finish moves nothing. */
+const measurePanel = panelSize(won.querySelector<HTMLElement>(".won-card")!);
 const next = byId<HTMLButtonElement>("next");
 const hintButton = byId<HTMLButtonElement>("hint");
 const randomButton = byId<HTMLButtonElement>("random");
@@ -352,16 +355,12 @@ interface Session {
   board: SvgBoard;
   control: DragControl;
   /** When the first tile went down (performance.now), and when the board was
-   * finished: the time taken, shown only on the win card — no clock runs in
+   * finished: the time taken, shown only on the win panel — no clock runs in
    * the header. */
   started: number | null;
   finished: number | null;
-  /** The win card was closed (Exit): it stays shut while the board stays
-   * finished — the board is locked then (drag.ts), so only a restart can
-   * unfinish it. */
-  dismissed: boolean;
   /** How many hints have been shown on this board — any costs the third
-   * star; the win card says how many. */
+   * star; the win panel says how many. */
   hints: number;
   /** The tiles down when the hint was last asked for, by id — a hint on show
    * goes once they change. */
@@ -375,7 +374,7 @@ interface Session {
   /** The layout last kept (saved.ts): a move since is kept again. */
   kept: unknown;
   /** The level's best time before this finish, and whether this finish beat
-   * it — what the win card says of the time. */
+   * it — what the win panel says of the time. */
   bestBefore: number | null;
   newBest: boolean;
   /** The tutorial's step this board is (src/tutorial.ts), or null for a
@@ -431,6 +430,9 @@ function changed(): void {
       ? "Tiled"
       : `Tiled ${starRow(puzzle.stars(s.hints > 0))}`;
   s.board.svg.classList.toggle("finished", puzzle.won);
+  // finished, the tray card holds the win panel in place of its tiles
+  s.board.svg.classList.toggle("showing-result", puzzle.won && s.tutorial === null);
+  if (puzzle.won !== s.wasWon) s.board.layout();
   if (puzzle.won && !s.wasWon) {
     playSound({ kind: "win", pan: s.control.lastPan() });
     haptic("win");
@@ -445,7 +447,7 @@ function changed(): void {
     }
   }
   s.wasWon = puzzle.won;
-  won.hidden = !puzzle.won || s.dismissed || s.tutorial !== null;
+  won.hidden = !puzzle.won || s.tutorial !== null;
   if (s.tutorial !== null) {
     drawCoach(s.tutorial, puzzle.won);
     return;
@@ -464,37 +466,18 @@ function changed(): void {
     if (s.newBest) syncCloudStars();
   }
   s.control.setRemoving(false);
-  const ms = elapsed(s);
   const stars = puzzle.stars(s.hints > 0);
-  const stars3 = byId("won-stars");
-  stars3.textContent = starRow(stars);
-  stars3.setAttribute("aria-label", `${stars} of 3 stars`);
   // the piles not at 0: past it (extra tiles) or short of it (another kind
   // laid in their place)
   const off = puzzle.level.need.filter((n, kind) => puzzle.used(kind) !== n).length;
-  const lines = [
-    "★ Covered, no gaps, no overlaps.",
-    s.hints > 0 ? `☆ ${s.hints} ${s.hints === 1 ? "hint" : "hints"} used.` : "★ No hints.",
-    off === 0
-      ? "★ Every pile in the tray down to 0."
-      : `☆ ${off} ${off === 1 ? "pile" : "piles"} in the tray not at 0.`,
-    `Time: ${formatTime(ms)}${
-      s.newBest
-        ? s.bestBefore === null
-          ? ""
-          : " — a new best!"
-        : s.bestBefore === null
-          ? ""
-          : ` · best ${formatTime(s.bestBefore)}`
-    }`,
-  ];
-  byId("won-detail").replaceChildren(
-    ...lines.map((line) => {
-      const li = document.createElement("li");
-      li.textContent = line;
-      return li;
-    }),
-  );
+  fillPanel(won, {
+    stars,
+    hints: s.hints,
+    off,
+    ms: elapsed(s),
+    best: s.bestBefore,
+    newBest: s.newBest,
+  });
   if (stars > starsFor(puzzle.level.key)) {
     recordStars(puzzle.level.key, stars);
     syncCloudStars();
@@ -527,7 +510,8 @@ function open(level: Level, push = true, fresh = false, tutorial: number | null 
   }
   const resumed = saved !== null && puzzle.tiles.length === saved.tiles.length;
   host.replaceChildren();
-  const board = new SvgBoard(host, puzzle);
+  // the tutorial shows no win panel, so its tray keeps no room for one
+  const board = new SvgBoard(host, puzzle, tutorial === null ? measurePanel : null);
   const now = performance.now();
   session = {
     puzzle,
@@ -535,7 +519,6 @@ function open(level: Level, push = true, fresh = false, tutorial: number | null 
     control: attachDrag(board, puzzle, changed),
     started: resumed && (saved.ms > 0 || saved.tiles.length > 0) ? now - saved.ms : null,
     finished: null,
-    dismissed: false,
     hints: resumed ? saved.hints : 0,
     // not the empty board's, so `changed` starts on its hint
     laidKey: "-",
@@ -686,12 +669,6 @@ function settingsChanged(now: Preferences): void {
   }
 }
 
-/** Close the win card and look at the finished board. */
-function dismiss(): void {
-  if (session) session.dismissed = true;
-  won.hidden = true;
-}
-
 byId("restart").addEventListener("click", restart);
 hintButton.addEventListener("click", () => void showHint());
 document
@@ -703,10 +680,6 @@ randomButton.addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));
 });
 byId("again").addEventListener("click", restart);
-byId("exit").addEventListener("click", dismiss);
-won.addEventListener("click", (ev) => {
-  if (ev.target === won) dismiss();
-});
 // Next level: another of the same difficulty, dealt at random — as the die is.
 next.addEventListener("click", () => {
   if (session) playBand(bandOf(session.puzzle.level.key));
@@ -732,15 +705,16 @@ document.addEventListener("keydown", (ev) => {
   if (!session || byId("game").hidden) return;
   const { control, board } = session;
   if (ev.key === "x" || ev.key === "X") control.setRemoving(!board.removing);
-  else if (ev.key === "Escape") {
-    if (!won.hidden) dismiss();
-    else control.setRemoving(false);
-  } else if (ev.key === "r" || ev.key === "R") control.turn(ev.shiftKey ? 1 : -1);
+  else if (ev.key === "Escape") control.setRemoving(false);
+  else if (ev.key === "r" || ev.key === "R") control.turn(ev.shiftKey ? 1 : -1);
   else if (ev.key === "e" || ev.key === "E") control.turn(1);
   else if (ev.key === "f" || ev.key === "F") control.flip();
   else if (ev.key === "h" || ev.key === "H") void showHint();
 });
 new ResizeObserver(() => session?.board.layout()).observe(host);
+// The win panel's room is measured in the page's fonts: once they are in, the
+// tray card is fitted to it again.
+document.fonts?.addEventListener("loadingdone", () => session?.board.layout());
 // Leaving the page, or the app going to the background (where an iPhone may
 // close it): the board in play is kept with the time spent on it so far.
 const keepNow = (): void => {

@@ -173,34 +173,24 @@
           <span class="thinking" id="thinking" hidden>thinking…</span>
         </p>
         <div id="board-host"></div>
+        <!-- The win panel: laid over the tray card once the board is finished,
+             in place of its tiles and controls (main.ts, `fillPanel`). The
+             card is sized for it from the start (svgBoard.ts, `PanelSize`), so
+             a finish moves nothing. -->
+        <section class="won" id="won" aria-live="polite" hidden>
+          <div class="won-card">
+            <div class="won-head">
+              <p class="won-title">Tiled!</p>
+              <p class="won-time" id="won-time" data-won="time"></p>
+            </div>
+            <ul class="won-stars" id="won-stars" data-won="stars"></ul>
+            <div class="won-actions">
+              <button type="button" id="again">Play again</button>
+              <button type="button" id="next" class="primary">Next level</button>
+            </div>
+          </div>
+        </section>
       </main>
-    </div>
-    <div class="won" id="won" hidden>
-      <div class="won-card">
-        <button
-          type="button"
-          id="exit"
-          class="menu-header-btn won-close"
-          title="Close"
-          aria-label="Close"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M6 6 L18 18 M18 6 L6 18"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-        <p class="won-title">Tiled!</p>
-        <p class="won-stars" id="won-stars"></p>
-        <ul class="won-detail" id="won-detail"></ul>
-        <div class="won-actions">
-          <button type="button" id="again">Play again</button>
-          <button type="button" id="next" class="primary">Next level</button>
-        </div>
-      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

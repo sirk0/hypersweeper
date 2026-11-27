@@ -545,16 +545,18 @@ async function wheelOut(page: Page, steps: number): Promise<number> {
   return (await page.locator("svg.board path.region").boundingBox())!.width;
 }
 
-test("the win card's Exit closes it, leaving the finished board", async ({ page }) => {
+test("the win panel, in the tray card: three stars, the time, no ✕", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=squares");
   await finishSquares(page);
-  // no hint, every pile at 0: three stars
-  await expect(page.locator("#won-stars")).toHaveText("★★★");
-  await expect(page.locator("#won-detail")).toContainText("No hints.");
-  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d/);
-  await page.locator("#exit").click();
-  await expect(page.locator("#won")).toBeHidden();
+  // no hint, every pile at 0: three stars, each with its word
+  await expect(page.locator("#won-stars")).toHaveAttribute("aria-label", "3 of 3 stars");
+  await expect(page.locator("#won-stars li")).toHaveText(["★Covered", "★No hints", "★Piles at 0"]);
+  await expect(page.locator("#won-time")).toHaveText(/^\d+:\d\d$/);
+  // nothing closes it — it covers nothing: no ✕, and Escape leaves it
+  await expect(page.locator("#won button")).toHaveText(["Play again", "Next level"]);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#won")).toBeVisible();
   // the label behind the board says it is finished, with its stars
   await expect(page.locator("#count")).toHaveText("Tiled ★★★");
   // The tiling past the board is a setting, off by default: no outlines, and
@@ -566,49 +568,96 @@ test("the win card's Exit closes it, leaving the finished board", async ({ page 
   expect(errors).toEqual([]);
 });
 
-test("a finished board is locked, its win card shown once, until a restart", async ({ page }) => {
+test("a finished board is locked, its win panel staying, until a restart", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=squares");
   await finishSquares(page);
-  await page.locator("#exit").click();
-  await expect(page.locator("#won")).toBeHidden();
   await expect(page.locator("svg.board")).toHaveClass(/finished/);
+  // the panel has the card: the tray's tiles and controls are gone from it
+  await expect(page.locator("svg.board .tile.in-tray")).toBeHidden();
+  await expect(page.locator("svg.board .tray-controls")).toBeHidden();
   const tiles = page.locator("svg.board [data-tile]");
   const first = tiles.first();
   const at = (await first.boundingBox())!;
-  // a placed tile dragged a little and let go: nothing moves, no card again
+  // a placed tile dragged a little and let go: nothing moves
   await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
   await page.mouse.down();
   await page.mouse.move(at.x + at.width, at.y + at.height / 2, { steps: 6 });
   await page.mouse.up();
   await page.waitForTimeout(300);
-  await expect(page.locator("#won")).toBeHidden();
   await expect(tiles).toHaveCount(16);
   expect(await first.boundingBox()).toEqual(at);
   // …nor dragged off over the tray, nor taken off in ✕ mode
-  const t = (await page.locator("svg.board .tile.in-tray").first().boundingBox())!;
+  // (to the card's corner, clear of the panel's buttons)
+  const t = (await page.locator("svg.board .tray-zone").boundingBox())!;
   await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
   await page.mouse.down();
-  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2, { steps: 6 });
+  await page.mouse.move(t.x + 6, t.y + 6, { steps: 6 });
   await page.mouse.up();
   await page.keyboard.press("x");
   await expect(page.locator("svg.board")).not.toHaveClass(/removing/);
   await first.click();
   await expect(tiles).toHaveCount(16);
-  await expect(page.locator("#won")).toBeHidden();
+  await expect(page.locator("#won")).toBeVisible();
   await expect(page.locator("#count")).toHaveText("Tiled ★★★");
   // Z is no undo: the board stays finished
   await page.keyboard.press("Control+z");
   await page.keyboard.press("z");
   await expect(tiles).toHaveCount(16);
   await expect(page.locator("svg.board")).toHaveClass(/finished/);
-  // a restart clears and unlocks it; finished again, the card is back
+  // a restart clears and unlocks it, the tray back in its card; finished
+  // again, the panel is back
   await page.locator("#restart").click();
   await expect(tiles).toHaveCount(0);
   await expect(page.locator("svg.board")).not.toHaveClass(/finished/);
+  await expect(page.locator("#won")).toBeHidden();
+  await expect(page.locator("svg.board .tile.in-tray")).toBeVisible();
   await expect(page.locator("#count")).toHaveText("0%");
   await finishSquares(page);
   await expect(page.locator("#won")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+/** An element's box on screen, rounded to the pixel. */
+async function boxOf(page: Page, selector: string): Promise<[number, number, number, number]> {
+  const b = (await page.locator(selector).boundingBox())!;
+  return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)];
+}
+
+test("a finish moves nothing: the tray card was sized for the win panel from the start", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  // upright on a small phone, sideways, and a desktop
+  for (const size of [
+    { width: 375, height: 667 },
+    { width: 844, height: 390 },
+    { width: 1280, height: 800 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto("/?level=squares");
+    const region = await boxOf(page, "svg.board path.region");
+    const card = await boxOf(page, "svg.board .tray-zone");
+    await finishSquares(page);
+    await page.waitForTimeout(200);
+    // the board and the card stay just as they were
+    expect(await boxOf(page, "svg.board path.region")).toEqual(region);
+    expect(await boxOf(page, "svg.board .tray-zone")).toEqual(card);
+    // and the panel lies inside the card, clear of the board
+    const [px, py, pw, ph] = await boxOf(page, "#won .won-card");
+    const [cx, cy, cw, ch] = card;
+    expect(px).toBeGreaterThanOrEqual(cx);
+    expect(py).toBeGreaterThanOrEqual(cy);
+    expect(px + pw).toBeLessThanOrEqual(cx + cw);
+    expect(py + ph).toBeLessThanOrEqual(cy + ch);
+    const [rx, ry, rw, rh] = region;
+    expect(px >= rx + rw || py >= ry + rh).toBe(true);
+    // its buttons work: Play again is a fresh board, the tray back
+    await page.locator("#again").click();
+    await expect(page.locator("#won")).toBeHidden();
+    await expect(page.locator("svg.board [data-tile]")).toHaveCount(0);
+    expect(await boxOf(page, "svg.board .tray-zone")).toEqual(card);
+  }
   expect(errors).toEqual([]);
 });
 
@@ -632,7 +681,6 @@ test("with its setting on, a finished board shows the tiling past it and zooms o
   const fitted = (await page.locator("svg.board path.region").boundingBox())!;
   expect(await wheelOut(page, 6)).toBeCloseTo(fitted.width, 0);
   await finishSquares(page);
-  await page.locator("#exit").click();
   // The finished board's tiling, carried on past its edge as outlines
   // (src/extension.ts, worked out in a worker), and with it zoom out past the
   // fit — to a third of it, and no further.
@@ -697,7 +745,7 @@ test("the hint shows a tile to lay, goes with the next move, and costs a star", 
   await expect(ghost).toHaveCount(0);
 
   // the H key asks again; following the hint to the end finishes the
-  // board — with two stars, not three, and the win card counts the hints:
+  // board — with two stars, not three, and the win panel counts the hints:
   // one for each of the 16 tiles
   for (let laid = 1; laid < 16; laid++) {
     await page.keyboard.press("h");
@@ -711,9 +759,10 @@ test("the hint shows a tile to lay, goes with the next move, and costs a star", 
     await expect(page.locator("svg.board [data-tile]")).toHaveCount(laid + 1);
   }
   await expect(page.locator("#won")).toBeVisible();
-  await expect(page.locator("#won-stars")).toHaveText("★★☆");
-  await expect(page.locator("#won-detail")).toContainText("16 hints used.");
-  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d/);
+  await expect(page.locator("#won-stars")).toHaveAttribute("aria-label", "2 of 3 stars");
+  await expect(page.locator("#won-stars li.lost")).toHaveText("☆16 hints");
+  await expect(page.locator("#won-stars li.lost")).toHaveAttribute("title", "16 hints used.");
+  await expect(page.locator("#won-time")).toHaveText(/^\d+:\d\d/);
   await expect(page.locator("#hint")).toBeDisabled();
   expect(errors).toEqual([]);
 });
@@ -1279,16 +1328,16 @@ test("a hint shown is kept with the board: leaving does not win back the no-hint
   await expect(page.locator('svg.board [data-hint="place"]')).toHaveCount(1);
   await page.reload();
   await finishSquares(page);
-  await expect(page.locator("#won-stars")).toHaveText("★★☆");
-  await expect(page.locator("#won-detail")).toContainText("1 hint used.");
+  await expect(page.locator("#won-stars")).toHaveAttribute("aria-label", "2 of 3 stars");
+  await expect(page.locator("#won-stars li.lost")).toHaveText("☆1 hint");
 });
 
-test("the best time: on the win card, beaten or not, and on Play", async ({ page }) => {
+test("the best time: on the win panel, beaten or not, and on Play", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/?level=squares");
   await finishSquares(page);
   // a first finish is only its time
-  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d$/);
+  await expect(page.locator("#won-time")).toHaveText(/^\d+:\d\d$/);
   const best = await page.evaluate(
     () => JSON.parse(localStorage.getItem("rep-tiles.times") ?? "{}") as Record<string, number>,
   );
@@ -1302,13 +1351,13 @@ test("the best time: on the win card, beaten or not, and on Play", async ({ page
   }, 1);
   await page.reload();
   await finishSquares(page);
-  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d · best 0:00/);
+  await expect(page.locator("#won-time")).toHaveText(/^\d+:\d\d · best 0:00$/);
   await page.evaluate(() => {
     localStorage.setItem("rep-tiles.times", JSON.stringify({ squares: 3_600_000 }));
   });
   await page.reload();
   await finishSquares(page);
-  await expect(page.locator("#won-detail")).toContainText(/Time: \d+:\d\d — a new best!/);
+  await expect(page.locator("#won-time")).toHaveText(/^\d+:\d\d · new best!$/);
 
   await page.goto("/?tiling=squares&pick=squares");
   await expect(page.locator(".pick-play .play-best")).toHaveText(/^best \d+:\d\d$/);
@@ -1364,7 +1413,7 @@ test.describe("the first-run tutorial", () => {
       await dropInRegion(page, fx, fy);
     await expect(tiles).toHaveCount(4);
     await expect(next).toBeVisible();
-    // finishing a step is no level finished: no win card, nothing starred
+    // finishing a step is no level finished: no win panel, nothing starred
     await expect(page.locator("#won")).toBeHidden();
     await next.click();
 
@@ -1528,7 +1577,7 @@ test("a finish throws Hypersweeper's confetti — but not where motion is reduce
   await finishSquares(page);
   const confetti = page.locator("canvas.confetti");
   await expect(confetti).toHaveCount(1);
-  // it takes no taps: the win card's buttons under it still work
+  // it takes no taps: the win panel's buttons under it still work
   await expect(confetti).toHaveCSS("pointer-events", "none");
   // and is gone once the last strip has fallen
   await expect(confetti).toHaveCount(0, { timeout: 5000 });

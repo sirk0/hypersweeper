@@ -11,7 +11,7 @@ export const REVIEW_AFTER_WINS = 3;
 
 const prompt = reviewPrompt({ key: "rep-tiles.review", afterWins: REVIEW_AFTER_WINS });
 
-/** How long after the finish to ask: the flourish plays and the win card is
+/** How long after the finish to ask: the flourish plays and the win panel is
  * read first. */
 const ASK_AFTER_MS = 1500;
 

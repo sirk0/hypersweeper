@@ -6,9 +6,9 @@
 // pixels where Hypersweeper's are world units across a board as wide as 90%
 // of the screen.
 //
-// One canvas over the whole screen, over the win card too (which opens at
-// once here, where Hypersweeper's waits for its confetti), taking no pointer
-// events; it removes itself once the last strip is gone. Nothing is thrown
+// One canvas over the whole screen, over the win panel too (which shows at
+// once here, where Hypersweeper's card waits for its confetti), taking no
+// pointer events; it removes itself once the last strip is gone. Nothing is thrown
 // where the device asks for reduced motion.
 
 /** Hypersweeper's confetti colours: festive, and none of the tiles' own. */

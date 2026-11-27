@@ -233,6 +233,11 @@ function spacingOf(reach: readonly Box[]): Spacing {
  * shelf's box, padded — in tray units. */
 type Shelf = { at: XY[]; slots: Box[]; box: Box };
 
+/** The win panel's size on screen, [width, height] in pixels, at most
+ * `maxWidth` wide: what the tray card must hold besides its tiles, so that a
+ * finish shows the panel in the card without moving or resizing anything. */
+export type PanelSize = (maxWidth: number) => XY;
+
 export class SvgBoard {
   readonly svg: SVGSVGElement;
   /** The whole screen behind the page, edge to edge — under the header, the
@@ -283,6 +288,10 @@ export class SvgBoard {
   private strip: Box = [0, 0, 0, 0];
   /** The tray as drawn: the strip, or on a desktop the card inside it. */
   private card: Box = [0, 0, 0, 0];
+  /** The win panel's size (`PanelSize`), [width, height] in pixels, from
+   * the last layout: the card is never smaller — [0, 0] where there is none
+   * (the tutorial). */
+  private panelBox: XY = [0, 0];
   private shelfRoom: Box = [0, 0, 0, 0];
   /** `LABEL_ROOM` and the card's gap, as the stylesheet sets them. */
   private labelRoom = LABEL_ROOM;
@@ -327,6 +336,9 @@ export class SvgBoard {
   constructor(
     host: HTMLElement,
     private puzzle: Puzzle,
+    /** The win panel the tray card makes room for from the start, or null
+     * (the tutorial, which shows none). */
+    private panel: PanelSize | null = null,
   ) {
     this.backdrop = el("svg", { class: "board-backdrop", "aria-hidden": "true" });
     this.backdropWorld = el("g", {}, this.backdrop);
@@ -463,6 +475,12 @@ export class SvgBoard {
     };
     this.labelRoom = px("--label-room", LABEL_ROOM);
     this.cardGap = px("--tray-card-gap", 0);
+    // The win panel, measured for the room the card can take along the
+    // strip (portrait) or across it (landscape, up to half the screen).
+    this.panelBox =
+      this.panel && width > 0 && height > 0
+        ? this.panel(Math.max(0, (this.landscape ? width / 2 : width) - 2 * this.cardGap))
+        : [0, 0];
     const controls = this.controls();
     // One row of controls under the shelf in portrait; one column beside it
     // in landscape.
@@ -600,6 +618,8 @@ export class SvgBoard {
       knobScale,
       knobsW: knobScale * (k1 - k0),
       knobsH: knobScale * (l1 - l0),
+      panelAcross: land ? this.panelBox[0] : this.panelBox[1],
+      panelAlong: land ? this.panelBox[1] : this.panelBox[0],
     };
   }
 
@@ -607,11 +627,12 @@ export class SvgBoard {
    * strip with every tray tile on it, on screen. The strip grows with the
    * scale, so search for it — a long shelf shrinks the board rather than
    * scroll. The label's room comes off the screen's height: across the strip
-   * in portrait, along it in landscape. */
+   * in portrait, along it in landscape. The card is never thinner than the
+   * win panel, so a finish lays it in the card as it stands. */
   private fit(width: number, height: number, shelfBox: Box): number {
     const m = this.measures(width, height, shelfBox);
     const gap = this.cardGap;
-    const knobs = (m.land ? m.knobsW : m.knobsH) + 2 * gap;
+    const knobs = m.land ? m.knobsW : m.knobsH;
     const roomAlong = m.land ? m.length - this.labelRoom : m.length;
     const roomAcross = m.land ? m.across : m.across - this.labelRoom;
     const inset = Math.max(SHELF_INSET, gap);
@@ -620,10 +641,8 @@ export class SvgBoard {
     for (let i = 0; i < 40; i++) {
       const mid = (lo + hi) / 2;
       const shelf = Math.min(mid, m.cap);
-      if (
-        mid * m.boardAcross + shelf * m.shelfAcross + knobs <= roomAcross &&
-        shelf * m.shelfAlong <= m.length - 2 * inset
-      )
+      const card = Math.max(shelf * m.shelfAcross + knobs, m.panelAcross) + 2 * gap;
+      if (mid * m.boardAcross + card <= roomAcross && shelf * m.shelfAlong <= m.length - 2 * inset)
         lo = mid;
       else hi = mid;
     }
@@ -643,8 +662,10 @@ export class SvgBoard {
     this.knobScale = m.knobScale;
     this.fitScale = this.fit(width, height, this.shelfBox);
     this.scale = this.fitScale * this.zoom;
-    // zoomed out (a finished board), the tray stays its fitted size
-    this.shelfScale = Math.min(this.fitScale * Math.max(1, this.zoom), m.cap);
+    // zoomed out (a finished board), the tray stays its fitted size — and
+    // finished, at any zoom: the card holds the win panel then, not tiles
+    const grow = this.puzzle.won ? 1 : Math.max(1, this.zoom);
+    this.shelfScale = Math.min(this.fitScale * grow, m.cap);
     const ss = this.shelfScale;
     const thick = ss * m.shelfAcross;
     // on a desktop, the card's gap all round, inside the strip
@@ -655,7 +676,12 @@ export class SvgBoard {
     this.overflow = this.shelfLength - shelfRoomLen > 0.5 ? this.shelfLength - shelfRoomLen : 0;
     this.scrolled = Math.min(this.overflow, Math.max(0, this.scrolled));
     const barRoom = this.overflow > 0 ? BAR_ROOM : 0;
-    const strip = thick + barRoom + (land ? knobsW : knobsH) + 2 * g;
+    // The card holds the tray — or the win panel, where that is thicker, the
+    // tray then centred across it.
+    const tray = thick + barRoom + (land ? knobsW : knobsH);
+    const inner = Math.max(tray, m.panelAcross);
+    const lift = (inner - tray) / 2;
+    const strip = inner + 2 * g;
     // Where the shelf starts along the strip: centred in its room while it
     // fits, scrolled once it does not.
     const start = g + (this.overflow > 0 ? -this.scrolled : (shelfRoomLen - this.shelfLength) / 2);
@@ -665,6 +691,7 @@ export class SvgBoard {
     const content = Math.max(
       this.overflow > 0 ? shelfRoomLen : this.shelfLength,
       land ? knobsH : knobsW,
+      m.panelAlong,
     );
     const c0 = g > 0 ? Math.max(g, (length - content) / 2) : 0;
     const c1 = g > 0 ? Math.min(length - g, (length + content) / 2) : length;
@@ -675,7 +702,7 @@ export class SvgBoard {
       this.card = [sx0 + g, c0, width - g, c1];
       // The shelf, the bar down its right-hand side, the controls' column
       // beside that.
-      const shelfX0 = sx0 + g;
+      const shelfX0 = sx0 + g + lift;
       const shelfX1 = shelfX0 + thick;
       this.shelfRoom = [shelfX0, c0, shelfX1, c1];
       this.shelfAt = [(shelfX0 + shelfX1) / 2 - ss * ((s0 + s1) / 2), start + ss * t1];
@@ -688,7 +715,7 @@ export class SvgBoard {
       this.strip = [0, sy0, width, height];
       this.card = [c0, sy0 + g, c1, height - g];
       // The shelf, the bar under it, the controls' row under that.
-      const shelfY0 = sy0 + g;
+      const shelfY0 = sy0 + g + lift;
       this.shelfRoom = [c0, shelfY0, c1, shelfY0 + thick];
       this.shelfAt = [start - ss * s0, shelfY0 + thick / 2 + ss * ((t0 + t1) / 2)];
       const by = shelfY0 + thick + (BAR_ROOM - BAR) / 2;
@@ -762,11 +789,12 @@ export class SvgBoard {
     for (const [k, v] of Object.entries({ x: z0, y: w0, width: z1 - z0, height: w1 - w0, rx }))
       this.zone.setAttribute(k, String(v));
     // The level's name, on the page behind the board, is centred over the
-    // board's room, not under a strip down the right.
-    this.svg.parentElement?.parentElement?.style.setProperty(
-      "--tray-side",
-      `${this.landscape ? width - this.strip[0] : 0}px`,
-    );
+    // board's room, not under a strip down the right; and the win panel is
+    // laid over the card, in the stage's pixels (the board fills it).
+    const stage = this.svg.parentElement?.parentElement;
+    stage?.style.setProperty("--tray-side", `${this.landscape ? width - this.strip[0] : 0}px`);
+    for (const [k, v] of Object.entries({ x: z0, y: w0, w: z1 - z0, h: w1 - w0 }))
+      stage?.style.setProperty(`--card-${k}`, `${v}px`);
     const [r0, q0, r1, q1] = this.shelfRoom;
     for (const [k, v] of Object.entries({ x: r0, y: q0, width: r1 - r0, height: q1 - q0 }))
       this.shelfClip.setAttribute(k, String(v));
