@@ -77,6 +77,9 @@ export interface DragControl {
   /** Where the last tile laid landed across the screen, -1..1: what the win
    * flourish leans toward. */
   lastPan(): number;
+  /** Where the last tile laid landed on the screen (client pixels), or null
+   * before one is: where the win's confetti bursts from. */
+  lastAt(): XY | null;
   /** Put a tile in hand back where it came from, ending the drag. */
   cancel(): void;
 }
@@ -89,6 +92,8 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   let frame = 0;
   /** Where the last tile landed across the screen (`SvgBoard.panAt`). */
   let lastPan = 0;
+  /** …and where on the screen (`SvgBoard.clientAt`). */
+  let lastAt: XY | null = null;
   /** Every pointer down on the board that is not on a control, where it is now. */
   const touches = new Map<number, XY>();
   /** A pan (one pointer) or a pinch (two) in progress: the pointers, and their
@@ -366,7 +371,9 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
       puzzle.place(d.kind, ghost, d.rot, d.flip);
       // A click from where it landed — the tile's middle across the screen;
       // putting a lifted tile back is silent.
-      lastPan = board.panAt(centroidOf(loopsOf(ring, ghost).map((l) => l.xy)));
+      const mid = centroidOf(loopsOf(ring, ghost).map((l) => l.xy));
+      lastPan = board.panAt(mid);
+      lastAt = board.clientAt(mid);
       playSound({ kind: "place", sides: sides(puzzle.level.tiles[d.kind]!), pan: lastPan });
       // The last tile is felt as the finish instead (main.ts), not a tap and
       // then the finish on top of it.
@@ -400,5 +407,5 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
   // Safari's own pinch, which would zoom the page rather than the board.
   for (const type of ["gesturestart", "gesturechange", "gestureend"])
     svg.addEventListener(type, (ev) => ev.preventDefault());
-  return { turn, flip, setRemoving, lastPan: () => lastPan, cancel };
+  return { turn, flip, setRemoving, lastPan: () => lastPan, lastAt: () => lastAt, cancel };
 }

@@ -1454,3 +1454,89 @@ test.describe("the first-run tutorial", () => {
     expect(errors).toEqual([]);
   });
 });
+
+/** A small phone held sideways: under 501px tall (`SIDEWAYS_QUERY`). */
+const SIDEWAYS = { width: 667, height: 375 };
+
+/** Whether the element is wholly inside the viewport. */
+async function onScreen(page: Page, l: Locator): Promise<boolean> {
+  const b = (await l.boundingBox())!;
+  const v = page.viewportSize()!;
+  return b.x >= 0 && b.y >= 0 && b.x + b.width <= v.width && b.y + b.height <= v.height;
+}
+
+test("a phone held sideways: home's picks and Tilings' groups two to a row, all on screen", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.setViewportSize(SIDEWAYS);
+  await page.goto("/");
+  const picks = page.locator(".home-pick");
+  await expect(picks).toHaveCount(4);
+  for (let i = 0; i < 4; i++) expect(await onScreen(page, picks.nth(i))).toBe(true);
+  // Easy and Medium side by side, Hard and Tilings under them
+  const [easy, medium, hard, tilings] = await Promise.all(
+    [0, 1, 2, 3].map(async (i) => (await picks.nth(i).boundingBox())!),
+  );
+  expect(medium!.y).toBeCloseTo(easy!.y, 0);
+  expect(medium!.x).toBeGreaterThan(easy!.x + easy!.width);
+  expect(hard!.y).toBeGreaterThan(easy!.y + easy!.height);
+  expect(tilings!.y).toBeCloseTo(hard!.y, 0);
+  await expect(page.locator(".catalog-pick")).toHaveText(/Tilings/);
+
+  await page.locator(".catalog-pick").click();
+  const groups = page.locator(".group-card");
+  await expect(groups).toHaveCount(5);
+  for (let i = 0; i < 5; i++) expect(await onScreen(page, groups.nth(i))).toBe(true);
+  const [a, b] = await Promise.all([0, 1].map(async (i) => (await groups.nth(i).boundingBox())!));
+  expect(b!.y).toBeCloseTo(a!.y, 0);
+  expect(errors).toEqual([]);
+});
+
+test("a phone held sideways: a level's name in the header, the board taking its line", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.setViewportSize(SIDEWAYS);
+  await page.goto("/?level=squares");
+  const name = page.locator(".board-name");
+  await expect(page.locator("#game .hud .board-name")).toHaveCount(1);
+  // between Back and the hint
+  const back = (await page.locator("#back").boundingBox())!;
+  const hint = (await page.locator("#hint").boundingBox())!;
+  const n = (await name.boundingBox())!;
+  expect(n.x).toBeGreaterThanOrEqual(back.x + back.width);
+  expect(n.x + n.width).toBeLessThanOrEqual(hint.x);
+  const sideways = (await page.locator("svg.board path.region").boundingBox())!.height;
+  // held upright again, the name goes back over the board, which gives up
+  // its line for it
+  await page.setViewportSize({ width: 375, height: 667 });
+  await expect(page.locator("#stage > .board-name")).toHaveCount(1);
+  await page.setViewportSize(SIDEWAYS);
+  await expect(page.locator("#game .hud .board-name")).toHaveCount(1);
+  await expect
+    .poll(async () => (await page.locator("svg.board path.region").boundingBox())!.height)
+    .toBeCloseTo(sideways, 0);
+  expect(errors).toEqual([]);
+});
+
+test("a finish throws Hypersweeper's confetti — but not where motion is reduced", async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto("/?level=squares");
+  await finishSquares(page);
+  const confetti = page.locator("canvas.confetti");
+  await expect(confetti).toHaveCount(1);
+  // it takes no taps: the win card's buttons under it still work
+  await expect(confetti).toHaveCSS("pointer-events", "none");
+  // and is gone once the last strip has fallen
+  await expect(confetti).toHaveCount(0, { timeout: 5000 });
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?level=squares");
+  await finishSquares(page);
+  await page.waitForTimeout(100);
+  await expect(confetti).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
