@@ -1479,6 +1479,43 @@ Clip have no plugin, and nothing runs.
   bridge, and that the game plays on with iCloud failing every call. iCloud itself needs a device: two
   devices signed in to one Apple ID, or one app deleted and reinstalled.
 
+## Transfer links (`src/transfer.ts`)
+
+Everything a web player has earned lives in one origin's `localStorage`, so a
+second browser, a second device, the iPhone home-screen copy of the game (which
+keeps storage apart from Safari's) and the game served from a **new address**
+all start empty. A transfer link carries the record across:
+`<the game's address>#transfer=<token>`.
+
+- **Two rows under Records** (`transferRows` in `ui/settings.ts`). *Transfer
+  progress* offers the link through the share sheet, else the clipboard, else a
+  read-only field to copy by hand. *Paste a transfer link* opens a field: for
+  the home-screen copy, where tapping a link opens the browser instead. A good
+  paste puts the token in the address and reloads, so there is one import path.
+- **The import runs at boot, before anything reads storage** (`takeTransferLink`
+  in `main.ts`'s `boot`), takes the token out of the address either way, and
+  the menu opens under a window saying what changed (`ui/transferDialog.ts`).
+  A link opened in a tab already showing the game only changes the fragment,
+  so a `hashchange` listener reloads for it.
+- **It merges, idempotently.** The fastest three times of both
+  (`mergeBoards`, shared with the iCloud sync), the *larger* of each win count
+  (not the sum: the same link opened twice must not double the record), the
+  union of shapes, the earliest date of each unlock, the later change to each
+  star. Settings are adopted whole, and only where this browser never saved any.
+- **The payload is the stored records themselves**: `{ v: 1, scores,
+  achievements, favourites, settings }`, each the JSON its key (`ms:scores`,
+  `ms:achievements`, `ms:favourites`, `ms:settings`) holds, any of them
+  optional. So a plain script with none of this code can write one — which is
+  what the old address will do when the game moves (see "Deploy" in
+  [`deploy.md`](deploy.md)). The token is `z` + deflate-raw, or `j` + the JSON,
+  base64url either way; the fragment never reaches a server.
+- **Not imported in the App Store builds.** They sync through iCloud, which
+  counts every device's wins separately and would count an imported total
+  twice; the link opens a window saying so instead. Exporting works there.
+- Pinned by `tests/unit/transfer.test.ts` (the token, validation, the merge, a
+  round trip through two fake stores) and `tests/e2e/transfer.spec.ts` (copy in
+  one browser context, open or paste in another).
+
 ## The App Clip
 
 The iPhone app carries an App Clip (`apps/hypersweeper/ios/App/AppClip`, see

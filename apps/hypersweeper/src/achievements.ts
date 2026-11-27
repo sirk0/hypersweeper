@@ -11,7 +11,7 @@ import { hasMode } from "./modes/presets";
 import { screens } from "./config/screens";
 import { sideNoun } from "./ui/boardFacts";
 import { readObject, storage } from "@tiling/platform";
-import { allBestTimes, splitBoardKey } from "./leaderboard";
+import { allBestTimes, splitBoardKey, type ScoreEntry } from "./leaderboard";
 
 // Achievements: what a player has seen of the catalogue, and what is left.
 //
@@ -648,8 +648,15 @@ function loadStored(now: number = Date.now()): Stored {
 /** A progress record built from the best-times list. Runs at most once per
  * device (the write in `loadStored` means the next call reads a record). */
 function seedFromBestTimes(): Progress {
+  return seedFromBoards(allBestTimes());
+}
+
+/** A progress record built from a best-times list — this device's, or one a
+ * transfer link brought (`transfer.ts`) from a browser that never wrote an
+ * achievement record of its own. */
+export function seedFromBoards(boards: Iterable<[string, ScoreEntry[]]>): Progress {
   let progress = emptyProgress();
-  for (const [key, entries] of allBestTimes()) {
+  for (const [key, entries] of boards) {
     const split = splitBoardKey(key);
     if (!split || !hasMode(split.mode)) continue;
     for (const entry of entries) {

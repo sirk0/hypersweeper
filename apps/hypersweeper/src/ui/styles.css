@@ -3048,3 +3048,45 @@ body {
 :root:not([data-motion="off"]) .hud-counter.win-glow {
   animation: hud-win-glow 1400ms ease-out;
 }
+
+/* What a transfer link brought (ui/transferDialog.ts): a short plain list. */
+.dialog-transfer-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* The transfer rows' field (ui/settings.ts): under the row, the width of it. */
+.settings-transfer-form {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 4px;
+}
+
+.settings-transfer-form[hidden] {
+  display: none;
+}
+
+.settings-transfer-fallback:empty {
+  display: none;
+}
+
+.settings-transfer-fallback {
+  padding: 8px 0 4px;
+}
+
+.settings-transfer-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* under 16px iOS zooms the page on focus */
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}

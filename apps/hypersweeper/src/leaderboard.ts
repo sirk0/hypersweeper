@@ -186,6 +186,34 @@ export function replaceBoards(boards: Record<string, ScoreEntry[]>): void {
   }
 }
 
+/** Every source's times for each board, cleared ones left out: the fastest
+ * `TOP_N`, each time once. A union, so merging the same times twice changes
+ * nothing — what both the iCloud sync (`cloudRecord.ts`, which passes its
+ * last clear as `reset`) and a transferred record (`transfer.ts`) rely on. */
+export function mergeBoards(
+  sources: Record<string, unknown>[],
+  reset = 0,
+): Record<string, ScoreEntry[]> {
+  const keys = new Set(sources.flatMap((s) => Object.keys(s)));
+  const out: Record<string, ScoreEntry[]> = {};
+  for (const key of [...keys].sort()) {
+    const seen = new Set<string>();
+    const all: ScoreEntry[] = [];
+    for (const source of sources) {
+      for (const entry of parseEntries(source[key])) {
+        if (reset > 0 && entry.at <= reset) continue;
+        const id = `${entry.ms}@${entry.at}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        all.push(entry);
+      }
+    }
+    const entries = parseEntries(all).slice(0, TOP_N);
+    if (entries.length > 0) out[key] = entries;
+  }
+  return out;
+}
+
 /** Forget every stored time (the settings page's clear action). Only this
  * app's own key is touched. */
 export function clearBestTimes(): void {
