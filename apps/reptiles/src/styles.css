@@ -1028,6 +1028,18 @@ button.primary {
   stroke: var(--muted);
 }
 
+/* A rotate control just pressed: its face flashes the accent and fades back
+   (svgBoard.ts's animateTurn, which also pops it and swings its arrow). */
+.knob-face.pressed {
+  animation: knob-pressed 0.32s ease-out;
+}
+
+@keyframes knob-pressed {
+  from {
+    fill: var(--accent);
+  }
+}
+
 .knob-arc {
   fill: none;
   stroke: var(--ink);
@@ -1148,6 +1160,7 @@ button.primary {
   .hint-ghost,
   .hint-off,
   .knob.hinted .knob-face,
+  .knob-face.pressed,
   .hud-btn.thinking svg {
     animation: none;
   }

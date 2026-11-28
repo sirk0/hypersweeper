@@ -177,6 +177,7 @@ export function attachDrag(board: SvgBoard, puzzle: Puzzle, changed: () => void)
     const step = dir * puzzle.level.turn;
     board.turn = mod(board.turn + step);
     board.draw();
+    board.animateTurn(dir);
     if (drag) {
       drag.rot = mod(drag.rot + step);
       drag.outline = board.outline(drag.kind, drag.rot, drag.flip);

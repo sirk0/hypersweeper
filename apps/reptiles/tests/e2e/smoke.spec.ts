@@ -390,6 +390,55 @@ test("rotate turns the tray either way", async ({ page }) => {
   await expect(tile).toHaveAttribute("d", start!);
 });
 
+// What a turn's animation runs on: the tray tiles' groups, the control
+// pressed, its arrow and its face (`SvgBoard.animateTurn`).
+const turnAnimations = (page: Page): Promise<string[]> =>
+  page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter((a) => a.playState === "running")
+      .map((a) => {
+        const target = (a.effect as KeyframeEffect | null)?.target as Element | null;
+        return target?.getAttribute("class") ?? "";
+      }),
+  );
+
+test("a turn swings the tray tiles round, and the control pressed pops", async ({ page }) => {
+  await page.goto("/?level=tile11");
+  await expect(page.locator("svg.board .tile.in-tray")).toBeVisible();
+  expect(await turnAnimations(page)).toEqual([]);
+  await page.locator('[data-turn="-1"]').click();
+  const running = await turnAnimations(page);
+  expect(running).toContain("tray-spin");
+  expect(running.some((c) => c.includes("knob-rotate-cw"))).toBe(true);
+  expect(running).toContain("knob-arc");
+  expect(running.some((c) => c.includes("knob-face pressed"))).toBe(true);
+  // the R key turns them the same way
+  await expect.poll(() => turnAnimations(page)).toEqual([]);
+  await page.keyboard.press("r");
+  expect(await turnAnimations(page)).toContain("tray-spin");
+  // and it settles: each tile ends exactly where the turn put it
+  await expect.poll(() => turnAnimations(page)).toEqual([]);
+  expect(
+    await page
+      .locator("svg.board .tray-spin")
+      .evaluateAll((gs) => gs.map((g) => getComputedStyle(g).transform)),
+  ).toEqual(["none"]);
+});
+
+test.describe("asking for reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("a turn moves nothing but the tiles' new way round", async ({ page }) => {
+    await page.goto("/?level=tile11");
+    const tile = page.locator("svg.board .tile.in-tray");
+    const start = await tile.getAttribute("d");
+    await page.locator('[data-turn="1"]').click();
+    expect(await tile.getAttribute("d")).not.toEqual(start);
+    expect(await turnAnimations(page)).toEqual([]);
+  });
+});
+
 test("the wheel zooms the board in, and the tray tiles grow with it", async ({ page }) => {
   await page.goto("/?level=rhombille");
   const tray = page.locator("svg.board .tile.in-tray").first();

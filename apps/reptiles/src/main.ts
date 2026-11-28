@@ -21,6 +21,8 @@ import {
 import { forgetBoard, keptCount, keptKeys, loadBoard, saveBoard } from "./saved";
 import { noteFinishForReview } from "./review";
 import { Puzzle } from "./puzzle";
+import { demoPlan, type Move } from "./demoPlan";
+import type { XY } from "./geometry/shape";
 import { renderCatalog, renderGroupIndex, type GroupTally, type Tally } from "./view/catalog";
 import {
   groupOfFamily,
@@ -775,6 +777,7 @@ requestAnimationFrame(() => document.body.setAttribute("data-ready", "1"));
 // A seam for checking the game by hand or from a script, in dev builds only:
 // `__reptiles.fill()` finishes the board: the board's own tiles that still
 // fit, then a search (backtracking where it must).
+let demo: { key: string; moves: Move[] } | null = null;
 if (import.meta.env.DEV) {
   Object.assign(window, {
     __reptiles: {
@@ -797,6 +800,41 @@ if (import.meta.env.DEV) {
         session.puzzle.commit();
         session.board.draw();
         changed();
+      },
+      /** The board played through as `demoPlan` lays it, for the store
+       * videos (scripts/make-store-videos.mts): each move's presses and the
+       * tile's kind, and where its middle is dropped in board units. */
+      plan(): { kind: number; flip: boolean; turns: number; at: XY }[] {
+        if (!session) return [];
+        const level = session.puzzle.level;
+        if (demo?.key !== level.key) demo = { key: level.key, moves: demoPlan(level) };
+        return demo.moves.map(({ kind, flip, turns, at }) => ({ kind, flip, turns, at }));
+      },
+      /** Lay the plan's first `n` moves at once, the tray held as the last
+       * left it: the part of the board a video starts past. */
+      layPlan(n: number): void {
+        if (!session) return;
+        const level = session.puzzle.level;
+        if (demo?.key !== level.key) demo = { key: level.key, moves: demoPlan(level) };
+        const moves = demo.moves.slice(0, n);
+        for (const m of moves) session.puzzle.place(m.kind, m.spot, m.rot, m.flipped);
+        const last = moves[moves.length - 1];
+        if (last) {
+          session.board.turn = last.rot;
+          session.board.flip = last.flipped;
+        }
+        session.puzzle.commit();
+        session.board.draw();
+        changed();
+      },
+      /** A board point (board units) on the screen, in client pixels. */
+      clientAt(point: XY): XY | null {
+        return session?.board.clientAt(point) ?? null;
+      },
+      /** A tray tile's middle on the screen, in client pixels: pressed there,
+       * the tile is held by its middle. */
+      trayAt(kind: number): XY | null {
+        return session ? session.board.clientAt(session.board.trayCentre(kind)) : null;
       },
     },
   });

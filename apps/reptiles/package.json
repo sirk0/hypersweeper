@@ -21,7 +21,8 @@
     "format:check": "prettier --check .",
     "icons": "vite-node scripts/make-icons.mts",
     "e2e": "playwright test",
-    "store-screenshots": "vite-node scripts/make-store-screenshots.mts"
+    "store-screenshots": "vite-node scripts/make-store-screenshots.mts",
+    "store-videos": "vite-node scripts/make-store-videos.mts"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
